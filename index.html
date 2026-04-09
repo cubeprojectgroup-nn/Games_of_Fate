@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Игры Судьбы. v0.8.8.14</title>
+    <title>Игры Судьбы. v0.8.8.15</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
@@ -337,7 +337,7 @@
     <div id="stars" class="stars-layer stars-active bg1-stars"></div>
 
     <div id="mainMenuOverlay">
-        <div class="version">v0.8.8.14</div> <div class="menu-top-bar">
+        <div class="version">v0.8.8.15</div> <div class="menu-top-bar">
             <button class="menu-icon-btn" id="langSwitchBtn" onclick="App.toggleLanguage()"><i class="fas fa-globe"></i></button>
         </div>
         <div id="mainMenuTitle" class="menu-title-main">Игры Судьбы</div>
@@ -3279,8 +3279,566 @@
             return { init, mount, unmount, play, placeBet, loadBullet, loadRandomBullets, spinRandomly, reset, cashout, getStats: getStats, getGuestBank: () => window.guestBank, getGuestPool: () => window.guestPool, loadStats: loadStats, isDragging: () => isDragging, isSpinning: () => isSpinningDrum, isBusy: () => isSpinningDrum || isWaitingResult || isBetting, saveCurrentSubState, loadCurrentSubState, restoreDrumVisuals };
         })();
 
+// --- КОНЕЦ ЧЕТВЕРТОЙ ЧАСТИ ---
+// --- НАЧАЛО ПЯТОЙ ЧАСТИ ---
+// ==============================================
+        // 🪙 ПЛАГИН 3: ГРАНЬ ВЫБОРА (ИНЖЕКЦИЯ) v17 (Audio & Haptics)
+        // ==============================================
+        const CoinGame = (function() {
+            let isDragging = false, lastX = 0, lastY = 0, velX = 0, velY = 0, inertiaFrame, lastMoveTime = 0, lastTapTime = 0;
+            let rotX = -35, rotY = 0, rotZ = 0;
+
+            function getCryptoRandom() {
+                const array = new Uint32Array(1);
+                window.crypto.getRandomValues(array);
+                return array[0] / 4294967295;
+            }
+
+            // Локальный синтезатор звука летящей монеты
+            function playCoinTossSound() {
+                if (!GameState.sound) return;
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const playOsc = (freq, type, dur, vol) => {
+                    const osc = ctx.createOscillator(), g = ctx.createGain();
+                    osc.type = type; osc.frequency.setValueAtTime(freq, ctx.currentTime);
+                    g.gain.setValueAtTime(vol, ctx.currentTime);
+                    g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + dur);
+                    osc.connect(g); g.connect(ctx.destination);
+                    osc.start(); osc.stop(ctx.currentTime + dur);
+                };
+                // Щелчок пальцем
+                playOsc(1200, 'square', 0.05, 0.3);
+                // Звенящий полет (два тона для эффекта металла)
+                setTimeout(() => {
+                    playOsc(4500, 'sine', 1.8, 0.15);
+                    playOsc(3800, 'triangle', 1.5, 0.1);
+                }, 20);
+            }
+
+            function init() {
+                const stage = document.getElementById('coinStage');
+                if(!stage) return;
+                stage.addEventListener('mousedown', handlePointerDown); document.addEventListener('mousemove', handlePointerMove, {passive: false}); document.addEventListener('mouseup', handlePointerUp);
+                stage.addEventListener('touchstart', handlePointerDown, {passive: false}); document.addEventListener('touchmove', handlePointerMove, {passive: false}); document.addEventListener('touchend', handlePointerUp);
+            }
+
+            function mount() {
+                const st = document.getElementById('coinStage'); if(st) st.style.display = 'flex';
+                const hl = document.getElementById('historyListDice'); if(hl) hl.style.display = 'block'; 
+                
+                rotX = -35; rotY = 0; rotZ = 0;
+                const coin = document.getElementById('coinRotator'); 
+                if(coin) {
+                    coin.style.transition = 'none';
+                    coin.style.transform = `rotateX(${rotX}deg) rotateY(${rotY}deg) rotateZ(${rotZ}deg)`;
+                }
+
+                const t = LANG_DATA[GameState.lang];
+                document.getElementById('ui-title').innerText = t.menuCoin;
+                const stHist = document.getElementById('st-hist-head'); if(stHist) stHist.innerText = t.histCoinHead;
+                
+                const disp = document.getElementById('current-mode-display');
+                if(disp) {
+                    const subNamesCoin = { standard: t.smCoinStd, question: t.smCoinQst };
+                    disp.innerText = subNamesCoin[GameState.subModes.coin].toUpperCase();
+                    disp.style.display = 'inline';
+                }
+                
+                document.body.classList.remove('bank-mode-active');
+                const tqBtn = document.getElementById('toggleQuestionBtn');
+                if(tqBtn) tqBtn.style.display = 'flex';
+                
+                const qhKey = 'coin_' + GameState.subModes.coin;
+                const isHidden = GameState.questionHiddenMap[qhKey] !== undefined ? GameState.questionHiddenMap[qhKey] : GameState.isQuestionHidden;
+                GameState.isQuestionHidden = isHidden;
+                
+                const w = document.getElementById('inputWrapper');
+                if (w) {
+                    if (isHidden) w.classList.add('hidden');
+                    else w.classList.remove('hidden');
+                }
+                
+                if (tqBtn) {
+                    tqBtn.classList.toggle('active-magic', isHidden); 
+                    tqBtn.innerHTML = isHidden ? '<i class="fas fa-comment-slash"></i>' : '<i class="fas fa-question-circle"></i>'; 
+                }
+
+                document.querySelectorAll('.debug-dice-btn').forEach(b => b.style.display = 'none');
+                document.querySelectorAll('.debug-coin-btn').forEach(b => b.style.display = 'flex');
+
+                if(typeof App !== 'undefined') App.hideError();
+                
+                const rc = document.getElementById('res-content'); if(rc) rc.classList.remove('visible');
+                const rs = document.getElementById('res-status');
+                if (rs) {
+                    rs.classList.remove('visible');
+                    rs.innerText = isHidden ? t.idleNoQ : t.idle;
+                    setTimeout(() => rs.classList.add('visible'), 50);
+                }
+            }
+
+            function unmount() {
+                const st = document.getElementById('coinStage'); if(st) st.style.display = 'none';
+                
+                document.querySelectorAll('.debug-dice-btn').forEach(b => b.style.display = 'flex');
+                document.querySelectorAll('.debug-coin-btn').forEach(b => b.style.display = 'none');
+            }
+
+            function handlePointerDown(e) {
+                const rollBtn = document.getElementById('rollBtn');
+                if (!rollBtn || rollBtn.disabled || GameState.mode !== 'coin') return;
+
+                // Двойной тап для броска
+                const now = Date.now();
+                if (now - lastTapTime < 300) {
+                    if (typeof App !== 'undefined') App.askOracle();
+                    return;
+                }
+                lastTapTime = now;
+
+                isDragging = true; cancelAnimationFrame(inertiaFrame);
+                const coin = document.getElementById('coinRotator'); if(coin) coin.style.transition = 'none';
+                const clientX = e.touches ? e.touches[0].clientX : e.clientX; const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                lastX = clientX; lastY = clientY; velX = 0; velY = 0;
+            }
+
+            function handlePointerMove(e) {
+                if (!isDragging) return; e.preventDefault();
+                const clientX = e.touches ? e.touches[0].clientX : e.clientX; const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                const deltaX = clientX - lastX; const deltaY = clientY - lastY;
+                rotX -= deltaY * 0.8; rotY += deltaX * 0.5;
+                const coin = document.getElementById('coinRotator'); if(coin) coin.style.transform = `rotateX(${rotX}deg) rotateY(${rotY}deg) rotateZ(${rotZ}deg)`;
+                velX = deltaX; velY = deltaY; lastMoveTime = Date.now(); lastX = clientX; lastY = clientY;
+            }
+
+            function handlePointerUp() {
+                if (!isDragging) return; isDragging = false;
+                if (Date.now() - lastMoveTime > 100) { velX = 0; velY = 0; }
+                applyInertia();
+            }
+
+            function applyInertia() {
+                if (Math.abs(velX) < 0.05 && Math.abs(velY) < 0.05) return;
+                rotX -= velY * 0.8; rotY += velX * 0.5;
+                const coin = document.getElementById('coinRotator'); if(coin) coin.style.transform = `rotateX(${rotX}deg) rotateY(${rotY}deg) rotateZ(${rotZ}deg)`;
+                velX *= 0.95; velY *= 0.95; inertiaFrame = requestAnimationFrame(applyInertia);
+            }
+
+            async function play(forcedIdx = null) {
+                const uq = document.getElementById('userQuestion');
+                const q = uq ? uq.value.trim() : '';
+                const t = LANG_DATA[GameState.lang];
+                
+                if (!GameState.isQuestionHidden && !q && forcedIdx === null) {
+                    App.triggerButtonError(); App.showError(t.error); return;
+                }
+                
+                App.hideError(); isDragging = false; velX = 0; velY = 0;
+                cancelAnimationFrame(inertiaFrame);
+                const coin = document.getElementById('coinRotator'); if(coin) { coin.style.transition = 'none'; void coin.offsetWidth; }
+                
+                const originalQuestion = q; if (!GameState.isQuestionHidden && uq) uq.value = '';
+                
+                // Кастомный звук подброса монеты вместо глухого клика
+                playCoinTossSound();
+                
+                const rollBtn = document.getElementById('rollBtn');
+                if(rollBtn) { rollBtn.disabled = true; rollBtn.innerText = t.waiting; rollBtn.classList.add('gold-text-active'); }
+                
+                const rc = document.getElementById('res-content'); if(rc) rc.classList.remove('visible');
+                const rs = document.getElementById('res-status'); if(rs) rs.classList.remove('visible');
+                
+                const cryptoRand = getCryptoRandom();
+                let rIdx = forcedIdx !== null ? forcedIdx : (cryptoRand < 0.02 ? 2 : Math.floor(getCryptoRandom() * 2));
+                
+                const rollDuration = 2000 + Math.floor(getCryptoRandom() * 3500); 
+                const wobbleDur = 600; 
+                const flightDur = rollDuration - wobbleDur;
+                
+                const spinsX = 360 * (15 + Math.floor(getCryptoRandom() * 15)); 
+                let targetRotX = 0;
+                if (rIdx === 0) targetRotX = 0; 
+                else if (rIdx === 1) targetRotX = 180; 
+                else if (rIdx === 2) targetRotX = 85; 
+                
+                const baseRotX = Math.round(rotX / 360) * 360;
+                rotX = baseRotX + spinsX + targetRotX;
+                
+                const baseRotZ = Math.round(rotZ / 360) * 360;
+                rotZ = baseRotZ + (getCryptoRandom() * 1440 - 720); 
+                rotY = (rIdx === 2) ? 10 : 0; 
+
+                const overX = rotX + (rIdx === 2 ? 10 : 25);
+                const overY = rotY + (rIdx === 2 ? 5 : 15);
+                
+                const coinScene = document.getElementById('coinScene');
+                if(coinScene) {
+                    coinScene.style.transition = `transform ${flightDur * 0.5 / 1000}s cubic-bezier(0.2, 0.8, 0.2, 1)`;
+                    coinScene.style.transform = "scale(2.5)";
+                    setTimeout(() => {
+                        coinScene.style.transition = `transform ${flightDur * 0.5 / 1000}s cubic-bezier(0.6, 0, 0.9, 1)`;
+                        coinScene.style.transform = "scale(1)";
+                    }, flightDur * 0.5);
+                }
+
+                if(coin) {
+                    coin.style.transition = `transform ${flightDur / 1000}s cubic-bezier(0.3, 0.1, 0.4, 1)`;
+                    coin.style.transform = `rotateX(${overX}deg) rotateY(${overY}deg) rotateZ(${rotZ}deg)`;
+                }
+                
+                if (tg.HapticFeedback) {
+                    const startT = Date.now();
+                    const haptics = () => {
+                        const el = Date.now() - startT; 
+                        if (el >= flightDur - 100) return;
+                        tg.HapticFeedback.impactOccurred('light');
+                        setTimeout(haptics, 60 + (el/flightDur)*150); 
+                    }; haptics();
+                }
+                
+                // В момент касания земли
+                setTimeout(() => {
+                    if(coin) {
+                        coin.style.transition = `transform ${wobbleDur / 1000}s cubic-bezier(0.34, 1.56, 0.64, 1)`; 
+                        coin.style.transform = `rotateX(${rotX}deg) rotateY(${rotY}deg) rotateZ(${rotZ}deg)`;
+                    }
+                    
+                    // Звук удара об пол (используем звонкий звук монеток из ядра)
+                    if(typeof App !== 'undefined') App.playSoundEffect('coins');
+                    
+                    // 3-ступенчатая реалистичная вибрация: Удар -> Отскок -> Окончательное падение
+                    if (tg.HapticFeedback) {
+                        tg.HapticFeedback.impactOccurred('heavy'); // Удар
+                        setTimeout(() => tg.HapticFeedback.impactOccurred('medium'), wobbleDur * 0.4); // Отскок
+                        setTimeout(() => tg.HapticFeedback.impactOccurred('rigid'), wobbleDur * 0.9); // Окончательное падение
+                    }
+                    
+                    for(let i=0;i<100;i++) { App.createSparkle(); }
+                }, flightDur);
+                
+                setTimeout(() => finalizeRoll(rIdx, originalQuestion, t), rollDuration);
+            }
+
+            function finalizeRoll(rIdx, originalQuestion, t) {
+                let resT = "", resD = "", uiColor = "", snd = 'positive', subI = "", histDispTxt = "";
+                const isRu = GameState.lang === 'ru';
+                
+                if (rIdx === 0) {
+                    resT = isRu ? "ОРЁЛ" : "HEADS"; resD = ""; 
+                    uiColor = "#f1c40f"; subI = '<i class="fas fa-heart"></i>'; histDispTxt = resT; snd = 'safe_click';
+                } else if (rIdx === 1) {
+                    resT = isRu ? "РЕШКА" : "TAILS"; resD = ""; 
+                    uiColor = "#a29bfe"; subI = '<i class="fas fa-skull"></i>'; histDispTxt = resT; snd = 'negative';
+                } else if (rIdx === 2) {
+                    resT = isRu ? "РЕБРО!" : "EDGE!"; resD = ""; 
+                    uiColor = "#00f5d4"; subI = '<i class="fas fa-bolt"></i>'; histDispTxt = resT; snd = 'achievement';
+                }
+                
+                if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred(rIdx === 2 ? 'success' : (rIdx === 0 ? 'success' : 'warning'));
+
+                const rm = document.getElementById('res-main'); if(rm) rm.innerHTML = resT;
+                const resSub = document.getElementById('res-sub'); if(resSub) { resSub.innerHTML = subI; resSub.style.color = uiColor; resSub.style.textShadow = `0 0 25px ${uiColor}`; }
+                const rd = document.getElementById('res-desc'); if(rd) rd.innerHTML = resD;
+                
+                const rCont = document.getElementById('res-content');
+                if(rCont) { rCont.style.color = uiColor; rCont.style.textShadow = `0 0 15px ${uiColor}`; void rCont.offsetWidth; rCont.classList.add('visible'); }
+                
+                App.playSoundEffect('result', snd);
+
+                const item = document.createElement('div'); item.className = 'history-item';
+                const qMark = `<span style="color:#fff; font-weight:bold; text-shadow: 0 0 8px #fff, 0 0 15px var(--magic-color);">?</span>`;
+                
+                const subNamesCoin = { standard: t.smCoinStd, question: t.smCoinQst };
+                const mTag = `<span style="color:#aaa; font-size:9px;">[${subNamesCoin[GameState.subModes.coin].toUpperCase()}]</span>`;
+                item.innerHTML = `${qMark} ${GameState.isQuestionHidden?'---':originalQuestion} ${mTag}<br><span style="color:${uiColor};">➔ ${subI} ${histDispTxt}</span>`;
+                
+                const hlDice = document.getElementById('historyListDice'); if(hlDice) hlDice.prepend(item);
+                App.requestProfileSave();
+                
+                const rollBtn = document.getElementById('rollBtn');
+                if(rollBtn) { rollBtn.disabled = false; rollBtn.innerText = t.rollBtn; rollBtn.classList.remove('gold-text-active'); }
+                
+                setTimeout(() => { if(rollBtn && !rollBtn.disabled) { 
+                    const rs = document.getElementById('res-status');
+                    if(rs) { rs.innerText = GameState.isQuestionHidden ? t.idleNoQ : t.idle; rs.classList.add('visible'); }
+                } }, 3000);
+            }
+
+            return { init, mount, unmount, play };
+        })();
+
+        // ==============================================
+        // СИСТЕМА ИНЖЕКЦИИ (ЧИСТАЯ АРХИТЕКТУРА V17)
+        // ==============================================
+        (function injectCoinPlugin() {
+            try {
+                document.querySelectorAll('#submodes-coin, #coinStage, .coin-styles, .debug-coin-btn').forEach(el => el.remove());
+                
+                const style = document.createElement('style');
+                style.className = 'coin-styles';
+                style.innerHTML = `
+                    #coinStage { display: none; position: relative; width: 100%; height: 240px; justify-content: center; align-items: center; z-index: 50; perspective: 1200px; touch-action: none; transition: opacity 0.4s; margin: 2px 0 5px 0;}
+                    .coin-scene { width: 120px; height: 120px; position: relative; z-index: 60; transform-style: preserve-3d; }
+                    .coin { width: 100%; height: 100%; position: relative; transform-style: preserve-3d; }
+                    .coin-face { position: absolute; width: 100%; height: 100%; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 55px; color: #fff; backface-visibility: hidden; box-sizing: border-box; }
+                    .coin-edge { position: absolute; top:0; left:0; width: 100%; height: 100%; border-radius: 50%; background: #b8860b; box-sizing: border-box; }
+                    
+                    .coin-front { transform: translateZ(5px); background: radial-gradient(circle at 35% 35%, #ffd700 0%, #b8860b 80%); border: 4px solid #daa520; box-shadow: inset 0 0 15px rgba(0,0,0,0.3), inset 0 0 5px rgba(255,255,255,0.8); color: #fffacd; text-shadow: 1px 1px 2px rgba(0,0,0,0.5); }
+                    .coin-back { transform: rotateX(180deg) translateZ(5px); background: radial-gradient(circle at 35% 35%, #e0e0e0 0%, #888888 80%); border: 4px solid #a9a9a9; box-shadow: inset 0 0 15px rgba(0,0,0,0.4), inset 0 0 5px rgba(255,255,255,0.9); color: #f5f5f5; text-shadow: 1px 1px 2px rgba(0,0,0,0.5); }
+                    
+                    #submodes-coin .sub-mode-btn.active-sub { border-color: #f1c40f; color: #f1c40f; box-shadow: 0 0 10px rgba(241, 196, 15, 0.3); background: rgba(241, 196, 15, 0.1); }
+                    #submodes-coin .info-mode-btn { background: #f1c40f; color: #000; box-shadow: 0 0 5px rgba(241, 196, 15, 0.8); }
+                `;
+                document.head.appendChild(style);
+
+                const gameSelectors = document.querySelector('.game-selector-row');
+                if (gameSelectors) {
+                    const oldCoinBtn = document.getElementById('sel-game-coin');
+                    if (oldCoinBtn) oldCoinBtn.remove();
+                    
+                    const lockedBtns = document.querySelectorAll('.square-game-btn.locked');
+                    if (lockedBtns.length > 0) {
+                        const newBtn = document.createElement('button');
+                        newBtn.className = 'square-game-btn';
+                        newBtn.id = 'sel-game-coin';
+                        newBtn.onclick = () => App.previewGame('coin');
+                        newBtn.innerHTML = '<i class="fas fa-coins"></i><span id="sel-coin-txt">Грань</span>';
+                        lockedBtns[0].parentNode.replaceChild(newBtn, lockedBtns[0]);
+                    }
+                }
+
+                const dp = document.getElementById('debugPanel');
+                if (dp) {
+                    const btns = Array.from(dp.querySelectorAll('.debug-btn'));
+                    btns.forEach(b => { 
+                        if (!b.querySelector('.fa-trophy')) { b.classList.add('debug-dice-btn'); }
+                    });
+                    
+                    const b1 = document.createElement('button'); b1.className = 'debug-btn debug-coin-btn'; b1.style.display = 'none'; b1.onclick = () => App.askOracle(0); b1.innerHTML = '<i class="fas fa-heart"></i>';
+                    const b2 = document.createElement('button'); b2.className = 'debug-btn debug-coin-btn'; b2.style.display = 'none'; b2.onclick = () => App.askOracle(1); b2.innerHTML = '<i class="fas fa-skull"></i>';
+                    const b3 = document.createElement('button'); b3.className = 'debug-btn debug-coin-btn'; b3.style.display = 'none'; b3.onclick = () => App.askOracle(2); b3.innerHTML = '<i class="fas fa-bolt"></i>';
+                    
+                    const trophyBtn = btns.find(b => b.querySelector('.fa-trophy'));
+                    if (trophyBtn) {
+                        dp.insertBefore(b1, trophyBtn);
+                        dp.insertBefore(b2, trophyBtn);
+                        dp.insertBefore(b3, trophyBtn);
+                    }
+                }
+
+                const subModesContainer = document.getElementById('menuPreviewSubModes');
+                if (subModesContainer) {
+                    const coinSubModes = document.createElement('div');
+                    coinSubModes.id = 'submodes-coin';
+                    coinSubModes.style.cssText = 'display: none; flex-direction: column; gap: 8px; width: 100%;';
+                    coinSubModes.innerHTML = `
+                        <button class="sub-mode-btn active-sub" onclick="App.selectSubMode('coin', 'standard', event)" id="sm-coin-standard">
+                            <div class="float-corner-btn info-mode-btn" onclick="App.showSubModeRules(event, 'coin', 'standard')"><i class="fas fa-question"></i></div>
+                            <span id="sm-coin-standard-lbl">Бросок</span>
+                        </button>
+                        <button class="sub-mode-btn" onclick="App.selectSubMode('coin', 'question', event)" id="sm-coin-question">
+                            <div class="float-corner-btn info-mode-btn" onclick="App.showSubModeRules(event, 'coin', 'question')"><i class="fas fa-question"></i></div>
+                            <span id="sm-coin-question-lbl">Вопрос</span>
+                        </button>
+                    `;
+                    subModesContainer.appendChild(coinSubModes);
+                }
+
+                const mainStage = document.getElementById('mainStage');
+                if (mainStage) {
+                    const coinStage = document.createElement('div');
+                    coinStage.id = 'coinStage';
+                    let edgesHTML = '';
+                    for(let i = -4; i <= 4; i++) { edgesHTML += `<div class="coin-edge" style="transform: translateZ(${i}px);"></div>`; }
+                    coinStage.innerHTML = `
+                        <div class="coin-scene" id="coinScene">
+                            <div id="coinRotator" class="coin">
+                                ${edgesHTML}
+                                <div class="coin-face coin-front" id="coinFront"><i class="fas fa-heart"></i></div>
+                                <div class="coin-face coin-back" id="coinBack"><i class="fas fa-skull"></i></div>
+                            </div>
+                        </div>
+                    `;
+                    mainStage.parentNode.insertBefore(coinStage, document.getElementById('rouletteStage'));
+                }
+
+                GameState.subModes.coin = 'standard';
+                GameState.questionHiddenMap['coin_standard'] = true; 
+                GameState.questionHiddenMap['coin_question'] = false; 
+                
+                LANG_DATA.ru.menuCoin = "Грань Выбора"; LANG_DATA.en.menuCoin = "Edge of Choice";
+                LANG_DATA.ru.histCoinHead = "Броски монеты"; LANG_DATA.en.histCoinHead = "Coin Tosses";
+                LANG_DATA.ru.smCoinStd = "Бросок"; LANG_DATA.en.smCoinStd = "Toss";
+                LANG_DATA.ru.smCoinQst = "Вопрос"; LANG_DATA.en.smCoinQst = "Question";
+                
+                RULES_HTML['coin_standard'] = {
+                    ru: `<div class="rules-content"><div style="color: #f1c40f; font-weight: bold; font-size: 18px; border-bottom: 1px solid rgba(241, 196, 15, 0.3); padding-bottom: 8px; margin-bottom: 12px; text-align: center;">🪙 Бросок</div><div style="margin-bottom: 12px; font-style: italic; color: #ccc;">Просто брось монету на удачу. Никаких вопросов, чистая случайность.</div><ul style="padding-left: 22px; margin-top: 0; margin-bottom: 0; list-style-type: none;"><li style="margin-bottom: 8px;"><span style="margin-left: -22px; margin-right: 4px;">❤️</span> <b>Орёл:</b> Жизнь, удача, успех.</li><li style="margin-bottom: 8px;"><span style="margin-left: -22px; margin-right: 4px;">💀</span> <b>Решка:</b> Провал, смерть, отказ.</li><li style="margin-bottom: 8px;"><span style="margin-left: -22px; margin-right: 4px;">⚡</span> <b>Ребро:</b> Уникальный случай (шанс 2%).</li></ul></div>`,
+                    en: `<div class="rules-content"><div style="color: #f1c40f; font-weight: bold; font-size: 18px; border-bottom: 1px solid rgba(241, 196, 15, 0.3); padding-bottom: 8px; margin-bottom: 12px; text-align: center;">🪙 Toss</div><div style="margin-bottom: 12px; font-style: italic; color: #ccc;">Just flip the coin for luck. No questions asked.</div><ul style="padding-left: 22px; margin-top: 0; margin-bottom: 0; list-style-type: none;"><li style="margin-bottom: 8px;"><span style="margin-left: -22px; margin-right: 4px;">❤️</span> <b>Heads:</b> Life, luck, success.</li><li style="margin-bottom: 8px;"><span style="margin-left: -22px; margin-right: 4px;">💀</span> <b>Tails:</b> Failure, death, refusal.</li><li style="margin-bottom: 8px;"><span style="margin-left: -22px; margin-right: 4px;">⚡</span> <b>Edge:</b> Rare (2%).</li></ul></div>`
+                };
+
+                RULES_HTML['coin_question'] = {
+                    ru: `<div class="rules-content"><div style="color: #f1c40f; font-weight: bold; font-size: 18px; border-bottom: 1px solid rgba(241, 196, 15, 0.3); padding-bottom: 8px; margin-bottom: 12px; text-align: center;">🪙 Вопрос</div><div style="margin-bottom: 12px; font-style: italic; color: #ccc;">Сконцентрируйся, задай вопрос и подбрось монету, когда есть только два пути.</div><ul style="padding-left: 22px; margin-top: 0; margin-bottom: 0; list-style-type: none;"><li style="margin-bottom: 8px;"><span style="margin-left: -22px; margin-right: 4px;">❤️</span> <b>Орёл:</b> Положительный ответ, действие.</li><li style="margin-bottom: 8px;"><span style="margin-left: -22px; margin-right: 4px;">💀</span> <b>Решка:</b> Отрицательный ответ, ожидание.</li><li style="margin-bottom: 8px;"><span style="margin-left: -22px; margin-right: 4px;">⚡</span> <b>Ребро:</b> Уникальный случай (шанс 2%). Вселенная отказывается отвечать.</li></ul></div>`,
+                    en: `<div class="rules-content"><div style="color: #f1c40f; font-weight: bold; font-size: 18px; border-bottom: 1px solid rgba(241, 196, 15, 0.3); padding-bottom: 8px; margin-bottom: 12px; text-align: center;">🪙 Question</div><div style="margin-bottom: 12px; font-style: italic; color: #ccc;">Ask a question and flip the coin when there are only two paths.</div><ul style="padding-left: 22px; margin-top: 0; margin-bottom: 0; list-style-type: none;"><li style="margin-bottom: 8px;"><span style="margin-left: -22px; margin-right: 4px;">❤️</span> <b>Heads:</b> Positive, action.</li><li style="margin-bottom: 8px;"><span style="margin-left: -22px; margin-right: 4px;">💀</span> <b>Tails:</b> Negative, wait.</li><li style="margin-bottom: 8px;"><span style="margin-left: -22px; margin-right: 4px;">⚡</span> <b>Edge:</b> Rare (2%). Universe refuses to answer.</li></ul></div>`
+                };
+
+                App.previewGame = function(mode) {
+                    GameState.previewMode = mode;
+                    const t = LANG_DATA[GameState.lang];
+                    const card = document.getElementById('menuPreviewCard');
+                    
+                    document.querySelectorAll('.square-game-btn').forEach(b => b.classList.remove('active-preview'));
+                    
+                    const diceSub = document.getElementById('submodes-dice'); if (diceSub) diceSub.style.display = 'none';
+                    const roulSub = document.getElementById('submodes-roulette'); if (roulSub) roulSub.style.display = 'none';
+                    const coinSub = document.getElementById('submodes-coin'); if (coinSub) coinSub.style.display = 'none';
+                    
+                    if (mode === 'dice') {
+                        if (diceSub) diceSub.style.display = 'flex';
+                        card.style.borderColor = "var(--magic-color)";
+                        card.style.boxShadow = "0 0 10px rgba(162, 155, 254, 0.2)";
+                        card.style.color = "var(--magic-color)";
+                        document.getElementById('preview-card-icon').innerHTML = '<i class="fas fa-dice-d6"></i>';
+                        document.getElementById('preview-card-title').innerText = t.menuDice;
+                        const btn = document.getElementById('sel-game-dice'); if(btn) btn.classList.add('active-preview');
+                        
+                    } else if (mode === 'roulette') {
+                        if (roulSub) roulSub.style.display = 'flex';
+                        card.style.borderColor = "var(--angry-red)";
+                        card.style.boxShadow = "0 0 10px rgba(255, 102, 102, 0.2)";
+                        card.style.color = "var(--angry-red)";
+                        document.getElementById('preview-card-icon').innerHTML = '<svg viewBox="0 0 200 200" style="height: 45px; width: auto;" fill="currentColor"><path fill-rule="evenodd" d="M 100,4 A 96,96 0 1,1 100,196 A 96,96 0 1,1 100,4 Z M 100,86 A 14,14 0 1,0 100,114 A 14,14 0 1,0 100,86 Z M 100,6 A 22,22 0 1,0 100,50 A 22,22 0 1,0 100,6 Z M 162.35,42 A 22,22 0 1,0 162.35,86 A 22,22 0 1,0 162.35,42 Z M 162.35,114 A 22,22 0 1,0 162.35,158 A 22,22 0 1,0 162.35,114 Z M 100,150 A 22,22 0 1,0 100,194 A 22,22 0 1,0 100,150 Z M 37.65,114 A 22,22 0 1,0 37.65,158 A 22,22 0 1,0 37.65,114 Z M 37.65,42 A 22,22 0 1,0 37.65,86 A 22,22 0 1,0 37.65,42 Z"></path></svg>';
+                        document.getElementById('preview-card-title').innerText = t.menuRoulette;
+                        const btn = document.getElementById('sel-game-roulette'); if(btn) btn.classList.add('active-preview');
+                        
+                    } else if (mode === 'coin') {
+                        if (coinSub) coinSub.style.display = 'flex';
+                        card.style.borderColor = "#f1c40f";
+                        card.style.boxShadow = "0 0 10px rgba(241, 196, 15, 0.2)";
+                        card.style.color = "#f1c40f";
+                        document.getElementById('preview-card-icon').innerHTML = '<i class="fas fa-coins"></i>';
+                        document.getElementById('preview-card-title').innerText = LANG_DATA[GameState.lang].menuCoin;
+                        const btn = document.getElementById('sel-game-coin'); if(btn) btn.classList.add('active-preview');
+                    }
+                    
+                    App.updateSubModeHighlights();
+                    if (tg.HapticFeedback && tg.HapticFeedback.selectionChanged) tg.HapticFeedback.selectionChanged();
+                };
+
+                App.openMainMenu = function() {
+                    App.playSoundEffect('tick');
+                    if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
+                    document.getElementById('gameUI').classList.remove('game-ui-visible');
+
+                    App.previewGame(GameState.mode);
+
+                    setTimeout(() => {
+                        document.getElementById('mainMenuOverlay').style.display = 'flex';
+                        document.getElementById('mainMenuOverlay').classList.remove('menu-fade-out');
+                        App.updateSubModeHighlights();
+                        App.updateMenuBankUI();
+                    }, 500);
+                };
+
+                App.updateSubModeHighlights = function() {
+                    document.querySelectorAll('.sub-mode-btn').forEach(b => b.classList.remove('active-sub'));
+                    const dBtn = document.getElementById('sm-dice-' + GameState.subModes.dice); if(dBtn) dBtn.classList.add('active-sub');
+                    const rBtn = document.getElementById('sm-roulette-' + GameState.subModes.roulette); if(rBtn) rBtn.classList.add('active-sub');
+                    const cBtn = document.getElementById('sm-coin-' + GameState.subModes.coin); if(cBtn) cBtn.classList.add('active-sub');
+                };
+
+                const origSelectSubMode = App.selectSubMode;
+                App.selectSubMode = function(game, mode, e) {
+                    if(e) e.stopPropagation();
+                    GameState.subModes[game] = mode;
+                    
+                    if (game === 'roulette' && typeof RouletteGame !== 'undefined') {
+                        RouletteGame.loadCurrentSubState();
+                        RouletteGame.restoreDrumVisuals();
+                    }
+
+                    App.playSoundEffect('tick');
+                    if (tg.HapticFeedback) tg.HapticFeedback.selectionChanged();
+                    App.updateSubModeHighlights();
+
+                    if (document.getElementById('gameUI').classList.contains('game-ui-visible')) {
+                        if (GameState.mode === 'coin') {
+                            CoinGame.mount();
+                        } else {
+                            if (GameState.mode === 'dice') { if(typeof DiceGame !== 'undefined') { DiceGame.mount(); DiceGame.updateModeDisplay(); } }
+                            if (GameState.mode === 'roulette') { if(typeof RouletteGame !== 'undefined') RouletteGame.mount(); }
+                        }
+                    }
+                    App.requestProfileSave();
+                };
+
+                const origDiceMount = DiceGame.mount;
+                DiceGame.mount = function() {
+                    if (GameState.mode === 'coin') {
+                        DiceGame.unmount();
+                        if (typeof RouletteGame !== 'undefined') RouletteGame.unmount();
+                        CoinGame.mount();
+                    } else {
+                        CoinGame.unmount();
+                        origDiceMount();
+                    }
+                };
+
+                const origDiceUnmount = DiceGame.unmount;
+                DiceGame.unmount = function() { origDiceUnmount(); CoinGame.unmount(); };
+
+                App.askOracle = async function(forcedIdx = null) {
+                    if (GameState.mode === 'coin') { CoinGame.play(forcedIdx); }
+                    else if (GameState.mode === 'dice') { if(typeof DiceGame !== 'undefined') DiceGame.play(forcedIdx); }
+                    else { if(typeof RouletteGame !== 'undefined') RouletteGame.play(forcedIdx); }
+                };
+
+                const origChangeLang = App.changeLanguage;
+                App.changeLanguage = function(noSave) {
+                    origChangeLang(noSave);
+                    const t = LANG_DATA[GameState.lang];
+                    const scTxt = document.getElementById('sel-coin-txt'); if(scTxt) scTxt.innerText = GameState.lang === 'ru' ? "Грань" : "Edge";
+                    const smCS = document.getElementById('sm-coin-standard-lbl'); if(smCS) smCS.innerText = t.smCoinStd;
+                    const smCQ = document.getElementById('sm-coin-question-lbl'); if(smCQ) smCQ.innerText = t.smCoinQst;
+                    
+                    if (GameState.mode === 'coin') {
+                        document.getElementById('ui-title').innerText = t.menuCoin;
+                        const disp = document.getElementById('current-mode-display'); 
+                        if(disp) {
+                            const subNamesCoin = { standard: t.smCoinStd, question: t.smCoinQst };
+                            disp.innerText = subNamesCoin[GameState.subModes.coin].toUpperCase();
+                        }
+                        const stHist = document.getElementById('st-hist-head'); if(stHist) stHist.innerText = t.histCoinHead;
+                    }
+                };
+
+                const origLoadProfileData = App.loadProfileData;
+                App.loadProfileData = function(idx) {
+                    origLoadProfileData(idx);
+                    if (!GameState.subModes.coin) { GameState.subModes.coin = 'standard'; }
+                    if (GameState.questionHiddenMap['coin_standard'] === undefined) GameState.questionHiddenMap['coin_standard'] = true;
+                    if (GameState.questionHiddenMap['coin_question'] === undefined) GameState.questionHiddenMap['coin_question'] = false;
+                };
+
+                App.previewGame(GameState.mode);
+
+            } catch (err) {
+                console.error("Ошибка инжекта монеты:", err);
+                alert("Критическая ошибка загрузки монеты: " + err.message);
+            }
+        })();
+
+        // ==============================================
         // ЗАПУСК ЯДРА
-        if(typeof App !== 'undefined') App.init();
+        // ==============================================
+        try {
+            if(typeof App !== 'undefined') {
+                App.init();
+                CoinGame.init();
+            }
+        } catch (err) {
+            console.error("Ошибка старта:", err);
+            alert("Ошибка при запуске игры: " + err.message);
+        }
 
     </script>
 </body>
