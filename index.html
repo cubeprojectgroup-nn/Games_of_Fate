@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Игры Судьбы. v0.8.8.20</title>
+    <title>Игры Судьбы. v0.8.8.21</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
@@ -143,7 +143,8 @@
         .icon-btn.active-magic { color: #ffffff !important; text-shadow: 0 0 10px white; background: rgba(162, 155, 254, 0.3); }
 
         .header-wrapper { display: inline-flex; flex-direction: column; margin: 2px 0 5px 0; }
-        h1 { font-size: 32px; letter-spacing: 2px; margin: 0; padding: 0; color: var(--magic-color); text-shadow: 0 0 10px var(--magic-color); font-weight: bold; text-transform: uppercase; transition: opacity 0.2s ease; }
+        .header-wrapper { display: inline-flex; flex-direction: column; margin: 12px 0 5px 0; max-width: calc(100vw - 90px); }
+        h1 { font-size: clamp(20px, 7.5vw, 32px); letter-spacing: 2px; margin: 0; padding: 0; color: var(--magic-color); text-shadow: 0 0 10px var(--magic-color); font-weight: bold; text-transform: uppercase; transition: opacity 0.2s ease; white-space: nowrap; }
         
         .title-animating { animation: title-fade 0.2s ease-in-out; }
         @keyframes title-fade { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0; transform: scale(0.9); } }
@@ -153,7 +154,7 @@
         @keyframes popInFade { 0% { opacity: 0; } 100% { opacity: 1; } }
 
         .subtitle-row { display: flex; justify-content: space-between; width: 100%; margin-top: -2px; padding: 0 2px; box-sizing: border-box; }
-        .subtitle-row a, .subtitle-row span { font-size: 10px; color: rgba(162, 155, 254, 0.6); font-weight: bold; letter-spacing: 1px; text-transform: uppercase; text-decoration: none; }
+        .subtitle-row a, .subtitle-row span { font-size: clamp(8px, 2.3vw, 10px); color: rgba(162, 155, 254, 0.6); font-weight: bold; letter-spacing: 1px; text-transform: uppercase; text-decoration: none; }
 
         /* === БАНК МОД UI === */
         .input-section { width: 95%; max-width: 360px; position: relative; z-index: 110; transition: all 0.5s ease; max-height: 100px; opacity: 1; margin: 10px 0 0 0; overflow: hidden; display: flex; justify-content: center; align-items: center; gap: 4px;}
@@ -353,7 +354,7 @@
     <div id="stars" class="stars-layer stars-active bg1-stars"></div>
 
     <div id="mainMenuOverlay">
-        <div class="version">v0.8.8.20</div> <div class="menu-top-bar">
+        <div class="version">v0.8.8.21</div> <div class="menu-top-bar">
             <button class="menu-icon-btn" id="langSwitchBtn" onclick="App.toggleLanguage()"><i class="fas fa-globe"></i></button>
         </div>
         <div id="mainMenuTitle" class="menu-title-main">Игры Судьбы</div>
@@ -723,6 +724,16 @@
             roulette_survival: {
                 ru: `<div class="rules-content"><div style="color: var(--friendly-green); font-weight: bold; font-size: 18px; border-bottom: 1px solid rgba(204, 255, 204, 0.3); padding-bottom: 8px; margin-bottom: 12px; text-align: center;">🛡️ Выживание</div><div style="margin-bottom: 12px; font-style: italic; color: #ccc;">Проверь, как долго ты сможешь обманывать смерть!</div><ul style="padding-left: 22px; margin-top: 0; margin-bottom: 0; list-style-type: none;"><li style="margin-bottom: 8px;"><span style="margin-left: -22px; margin-right: 4px;">🔒</span> <b>Блокировка:</b> Как только ты выжил первый раз, количество пуль в барабане блокируется до самой смерти.</li><li style="margin-bottom: 8px;"><span style="margin-left: -22px; margin-right: 4px;">🏆</span> <b>Рейтинг:</b> Твой лучший стрик выживаний попадает в глобальную таблицу лидеров, которую видят все игроки!</li><li style="margin-bottom: 8px;"><span style="margin-left: -22px; margin-right: 4px;">☠️</span> <b>Риск:</b> Чем больше пуль ты загрузишь в начале, тем больше уважения в таблице лидеров.</li></ul></div>`,
                 en: `<div class="rules-content"><div style="color: var(--friendly-green); font-weight: bold; font-size: 18px; border-bottom: 1px solid rgba(204, 255, 204, 0.3); padding-bottom: 8px; margin-bottom: 12px; text-align: center;">🛡️ Survival</div><div style="margin-bottom: 12px; font-style: italic; color: #ccc;">See how long you can cheat death!</div><ul style="padding-left: 22px; margin-top: 0; margin-bottom: 0; list-style-type: none;"><li style="margin-bottom: 8px;"><span style="margin-left: -22px; margin-right: 4px;">🔒</span> <b>Lock:</b> After first survival, bullet count is locked until death.</li><li style="margin-bottom: 8px;"><span style="margin-left: -22px; margin-right: 4px;">🏆</span> <b>Rating:</b> Your best survival streak enters the global leaderboard for all to see!</li><li style="margin-bottom: 8px;"><span style="margin-left: -22px; margin-right: 4px;">☠️</span> <b>Risk:</b> Loading more bullets initially earns more respect on the board.</li></ul></div>`
+            }, // <-- ВАЖНО: Убедись, что тут стоит запятая!
+            
+            // НОВЫЕ ПРАВИЛА ДЛЯ МОНЕТЫ
+            coin_standard: {
+                ru: `<div class="rules-content"><div style="color: #cbd5e1; font-weight: bold; font-size: 18px; border-bottom: 1px solid rgba(255, 255, 255, 0.3); padding-bottom: 8px; margin-bottom: 12px; text-align: center;">🪙 Грань Выбора</div><div style="margin-bottom: 12px; font-style: italic; color: #ccc;">Брось монету, чтобы принять простое решение. Орел или решка — пусть решит случай!</div><ul style="padding-left: 22px; margin-top: 0; margin-bottom: 0; list-style-type: none;"><li style="margin-bottom: 8px;"><span style="margin-left: -22px; margin-right: 4px;">🪙</span> <b>Орёл / Решка:</b> Классический исход для любых споров.</li><li style="margin-bottom: 8px;"><span style="margin-left: -22px; margin-right: 4px;">⚡</span> <b>Ребро:</b> Крайне редкий случай (шанс 2%). Если монета встала на ребро — значит судьба дает тебе особый знак!</li></ul></div>`,
+                en: `<div class="rules-content"><div style="color: #cbd5e1; font-weight: bold; font-size: 18px; border-bottom: 1px solid rgba(255, 255, 255, 0.3); padding-bottom: 8px; margin-bottom: 12px; text-align: center;">🪙 Edge of Choice</div><div style="margin-bottom: 12px; font-style: italic; color: #ccc;">Toss a coin to make a simple decision. Heads or tails!</div><ul style="padding-left: 22px; margin-top: 0; margin-bottom: 0; list-style-type: none;"><li style="margin-bottom: 8px;"><span style="margin-left: -22px; margin-right: 4px;">🪙</span> <b>Heads / Tails:</b> The classic outcome for any dispute.</li><li style="margin-bottom: 8px;"><span style="margin-left: -22px; margin-right: 4px;">⚡</span> <b>Edge:</b> Extremely rare case (2% chance). If it lands on the edge, destiny is giving you a special sign!</li></ul></div>`
+            },
+            coin_question: {
+                ru: `<div class="rules-content"><div style="color: #cbd5e1; font-weight: bold; font-size: 18px; border-bottom: 1px solid rgba(255, 255, 255, 0.3); padding-bottom: 8px; margin-bottom: 12px; text-align: center;">❓ Монета: Вопрос</div><div style="margin-bottom: 12px; font-style: italic; color: #ccc;">Задай вопрос и подбрось монету для получения ответа.</div><ul style="padding-left: 22px; margin-top: 0; margin-bottom: 0; list-style-type: none;"><li style="margin-bottom: 8px;"><span style="margin-left: -22px; margin-right: 4px;">🔮</span> <b>Вопрос:</b> Введи свой вопрос в поле.</li><li style="margin-bottom: 8px;"><span style="margin-left: -22px; margin-right: 4px;">🪙</span> <b>Орёл / Решка:</b> Орёл означает положительный ответ, Решка — отрицательный.</li><li style="margin-bottom: 8px;"><span style="margin-left: -22px; margin-right: 4px;">⚡</span> <b>Ребро:</b> Если выпадает ребро, судьба отказывается давать прямой ответ прямо сейчас.</li></ul></div>`,
+                en: `<div class="rules-content"><div style="color: #cbd5e1; font-weight: bold; font-size: 18px; border-bottom: 1px solid rgba(255, 255, 255, 0.3); padding-bottom: 8px; margin-bottom: 12px; text-align: center;">❓ Coin: Question</div><div style="margin-bottom: 12px; font-style: italic; color: #ccc;">Ask a question and toss the coin to get an answer.</div><ul style="padding-left: 22px; margin-top: 0; margin-bottom: 0; list-style-type: none;"><li style="margin-bottom: 8px;"><span style="margin-left: -22px; margin-right: 4px;">🔮</span> <b>Question:</b> Enter your question in the field.</li><li style="margin-bottom: 8px;"><span style="margin-left: -22px; margin-right: 4px;">🪙</span> <b>Heads / Tails:</b> Heads means a positive answer, Tails means negative.</li><li style="margin-bottom: 8px;"><span style="margin-left: -22px; margin-right: 4px;">⚡</span> <b>Edge:</b> If it lands on the edge, fate refuses to give a direct answer right now.</li></ul></div>`
             }
         };
 
@@ -1510,7 +1521,7 @@
                         card.style.boxShadow = "0 0 10px rgba(255, 255, 255, 0.2)";
                         card.style.color = "#cbd5e1";
                     }
-                    const pcIcon = document.getElementById('preview-card-icon'); if(pcIcon) pcIcon.innerHTML = `<i class="fas fa-coins"></i>`;
+                    const pcIcon = document.getElementById('preview-card-icon'); if(pcIcon) pcIcon.innerHTML = `<svg viewBox="0 0 100 100" style="height: 45px; width: auto;" fill="none" stroke="currentColor" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="50" cy="42" rx="40" ry="16"/><ellipse cx="50" cy="42" rx="24" ry="9" stroke-width="6"/><path d="M 10 42 v 16 a 40 16 0 0 0 80 0 v -16"/><path d="M 26 55 v 16 M 38 57 v 16 M 50 58 v 16 M 62 57 v 16 M 74 55 v 16" stroke-width="4"/></svg>`;
                     const previewTitle = document.getElementById('preview-card-title'); if (previewTitle) previewTitle.innerText = t.menuCoin || "Грань Выбора";
                     if(sCoin) sCoin.classList.add('active-preview');
                     if(scSub) scSub.style.display = 'flex';
@@ -4435,7 +4446,7 @@
                     const lockedBtns = document.querySelectorAll('.square-game-btn.locked');
                     if (lockedBtns.length > 0) {
                         const newBtn = document.createElement('button'); newBtn.className = 'square-game-btn'; newBtn.id = 'sel-game-coin'; newBtn.onclick = () => App.previewGame('coin');
-                        newBtn.innerHTML = '<i class="fas fa-coins"></i><span id="sel-coin-txt">Грань</span>';
+                        newBtn.innerHTML = '<svg viewBox="0 0 100 100" style="height: 20px; width: auto; margin-bottom: 3px;" fill="none" stroke="currentColor" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="50" cy="42" rx="40" ry="16"/><ellipse cx="50" cy="42" rx="24" ry="9" stroke-width="6"/><path d="M 10 42 v 16 a 40 16 0 0 0 80 0 v -16"/><path d="M 26 55 v 16 M 38 57 v 16 M 50 58 v 16 M 62 57 v 16 M 74 55 v 16" stroke-width="4"/></svg><span id="sel-coin-txt">Грань</span>';
                         lockedBtns[0].parentNode.replaceChild(newBtn, lockedBtns[0]);
                     }
                 }
@@ -4469,6 +4480,7 @@
                 LANG_DATA.ru.smCoinStd = "Бросок"; LANG_DATA.en.smCoinStd = "Toss";
                 LANG_DATA.ru.smCoinQst = "Вопрос"; LANG_DATA.en.smCoinQst = "Question";
                 LANG_DATA.ru.histCoinHead = "Броски монеты"; LANG_DATA.en.histCoinHead = "Coin Tosses";
+				LANG_DATA.ru.menuCoin = "Грань Выбора"; LANG_DATA.en.menuCoin = "Edge of Choice";
             } catch (err) { console.error("Injection error:", err); }
         })();
 
