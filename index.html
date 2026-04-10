@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Игры Судьбы. v0.8.8.15</title>
+    <title>Игры Судьбы. v0.8.8.18</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
@@ -337,7 +337,7 @@
     <div id="stars" class="stars-layer stars-active bg1-stars"></div>
 
     <div id="mainMenuOverlay">
-        <div class="version">v0.8.8.15</div> <div class="menu-top-bar">
+        <div class="version">v0.8.8.18</div> <div class="menu-top-bar">
             <button class="menu-icon-btn" id="langSwitchBtn" onclick="App.toggleLanguage()"><i class="fas fa-globe"></i></button>
         </div>
         <div id="mainMenuTitle" class="menu-title-main">Игры Судьбы</div>
@@ -585,6 +585,7 @@
             <div id="historyListDice"></div>
             <div id="historyListRoulette" style="display: none;"></div>
             <div id="historyListSurvival" style="display: none;"></div>
+            <div id="historyListCoin" style="display: none;"></div>
         </div>
     </div> 
     
@@ -1003,7 +1004,7 @@
 		
 // --- КОНЕЦ ПЕРВОЙ ЧАСТИ ---
 // --- НАЧАЛО ВТОРОЙ ЧАСТИ ---
-        // ==============================================
+// ==============================================
         // ⚙️ МОДУЛЬ ЯДРА (CORE APP)
         // ==============================================
         const App = (function() {
@@ -1018,30 +1019,40 @@
                     GameState.profiles = JSON.parse(localStorage.getItem('gof_profiles')) || [];
                 } catch(e) { GameState.profiles = []; }
                 
-                if (GameState.profiles.length > 0) {
-                    GameState.activeProfileIdx = 0; 
+                let savedActiveIdx = localStorage.getItem('gof_active_profile');
+                if (savedActiveIdx !== null) {
+                    GameState.activeProfileIdx = parseInt(savedActiveIdx);
+                    if (GameState.activeProfileIdx >= GameState.profiles.length) GameState.activeProfileIdx = -1;
                 } else {
-                    GameState.activeProfileIdx = -1; 
+                    if (GameState.profiles.length > 0) {
+                        GameState.activeProfileIdx = 0; 
+                    } else {
+                        GameState.activeProfileIdx = -1; 
+                    }
                 }
 
                 document.getElementById('settingsOverlay').addEventListener('click', function(e) { if (e.target === this) toggleSettings(false); });
                 document.getElementById('rulesOverlay').addEventListener('click', function(e) { if (e.target === this) toggleRules(false); });
                 
                 const uInput = document.getElementById('userQuestion');
-                uInput.addEventListener('input', hideError);
-                uInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') uInput.blur(); });
+                if(uInput) {
+                    uInput.addEventListener('input', hideError);
+                    uInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') uInput.blur(); });
+                }
                 
                 const bInput = document.getElementById('betInput');
-                bInput.addEventListener('input', hideError);
-                bInput.addEventListener('keypress', (e) => { 
-                    if (e.key === 'Enter') {
-                        e.preventDefault();
-                        bInput.blur();
-                        if (GameState.mode === 'roulette' && GameState.subModes.roulette === 'bank') {
-                            RouletteGame.placeBet();
+                if(bInput) {
+                    bInput.addEventListener('input', hideError);
+                    bInput.addEventListener('keypress', (e) => { 
+                        if (e.key === 'Enter') {
+                            e.preventDefault();
+                            bInput.blur();
+                            if (GameState.mode === 'roulette' && GameState.subModes.roulette === 'bank') {
+                                if(typeof RouletteGame !== 'undefined') RouletteGame.placeBet();
+                            }
                         }
-                    }
-                });
+                    });
+                }
 
                 document.addEventListener('click', (e) => {
                     const tt = document.getElementById('achTooltip');
@@ -1060,12 +1071,13 @@
 
                 fillModeOptions(); 
                 fillBgOptions(); 
-                changeLanguage(); 
-                changeBackground(); 
+                changeLanguage(true); 
+                changeBackground(true); 
 
-                DiceGame.init();
-                RouletteGame.init();
-                Achievements.init();
+                if(typeof DiceGame !== 'undefined') DiceGame.init();
+                if(typeof RouletteGame !== 'undefined') RouletteGame.init();
+                if(typeof Achievements !== 'undefined') Achievements.init();
+                if(typeof CoinGame !== 'undefined') CoinGame.init();
 
                 loadProfileData(GameState.activeProfileIdx);
                 renderProfiles();
@@ -1077,32 +1089,44 @@
                 if (!s) return;
                 GameState.sound = s.sound !== false;
                 const sBtn = document.getElementById('soundBtn'); 
-                sBtn.classList.toggle('active-magic', !GameState.sound); 
-                sBtn.innerHTML = GameState.sound ? '<i class="fas fa-volume-up"></i>' : '<i class="fas fa-volume-mute"></i>'; 
+                if(sBtn) {
+                    sBtn.classList.toggle('active-magic', !GameState.sound); 
+                    sBtn.innerHTML = GameState.sound ? '<i class="fas fa-volume-up"></i>' : '<i class="fas fa-volume-mute"></i>'; 
+                }
 
                 setQuestionState(s.isQuestionHidden === true);
                 
                 GameState.isClassic = s.isClassic === true;
-                document.getElementById('cube').classList.toggle('classic-mode', GameState.isClassic);
-                document.getElementById('drumWrapper').classList.toggle('classic', GameState.isClassic);
+                const cubeEl = document.getElementById('cube'); if(cubeEl) cubeEl.classList.toggle('classic-mode', GameState.isClassic);
+                const drumWrapper = document.getElementById('drumWrapper'); if(drumWrapper) drumWrapper.classList.toggle('classic', GameState.isClassic);
                 document.body.classList.toggle('classic-mode-active', GameState.isClassic);
                 updateStyleBtnIcon();
 
-                if (s.bgTheme) document.getElementById('bgSelect').value = s.bgTheme;
+                if (s.bgTheme) {
+                    const bgSel = document.getElementById('bgSelect');
+                    if(bgSel) bgSel.value = s.bgTheme;
+                }
                 changeBackground(true);
 
-                if (s.sparkles !== undefined) document.getElementById('sparkleToggle').checked = s.sparkles;
+                if (s.sparkles !== undefined) {
+                    const spToggle = document.getElementById('sparkleToggle');
+                    if(spToggle) spToggle.checked = s.sparkles;
+                }
 
-                if (s.diceMode) document.getElementById('modeSelect').value = s.diceMode;
+                if (s.diceMode) {
+                    const mSel = document.getElementById('modeSelect');
+                    if(mSel) mSel.value = s.diceMode;
+                }
                 
                 if (s.subModes) {
                     GameState.subModes = s.subModes;
                 } else {
-                    GameState.subModes = { dice: 'standard', roulette: 'standard' };
+                    GameState.subModes = { dice: 'standard', roulette: 'standard', coin: 'standard' };
                 }
 
                 if (s.lang) {
-                    document.getElementById('langSelect').value = s.lang;
+                    const langSel = document.getElementById('langSelect');
+                    if(langSel) langSel.value = s.lang;
                     GameState.lang = s.lang;
                 }
                 changeLanguage(true);
@@ -1158,6 +1182,7 @@
                     name: (GameState.lang === 'ru' ? 'Игрок ' : 'Player ') + (newIdx + 1)
                 });
                 GameState.activeProfileIdx = newIdx;
+                localStorage.setItem('gof_active_profile', GameState.activeProfileIdx);
                 loadProfileData(newIdx);
                 renderProfiles();
                 showRenameModal({stopPropagation:()=>{}}, newIdx);
@@ -1170,6 +1195,7 @@
                 } else {
                     GameState.activeProfileIdx = idx;
                 }
+                localStorage.setItem('gof_active_profile', GameState.activeProfileIdx);
                 loadProfileData(GameState.activeProfileIdx);
                 renderProfiles();
                 updateMenuBankUI();
@@ -1189,9 +1215,11 @@
                         if (p.rStats.pool !== undefined) pool = p.rStats.pool;
                     }
                 } else {
-                    const stats = RouletteGame.getStats();
-                    bank = stats.bank;
-                    pool = stats.pool;
+                    if (typeof RouletteGame !== 'undefined') {
+                        const stats = RouletteGame.getStats();
+                        bank = stats.bank;
+                        pool = stats.pool;
+                    }
                 }
                 span.innerText = '$' + (bank + pool).toFixed(2);
             }
@@ -1199,14 +1227,14 @@
             function showDeleteConfirm(e, idx) {
                 e.stopPropagation();
                 GameState.profileToDelete = idx;
-                document.getElementById('renameProfileModal').style.display = 'none';
+                const renModal = document.getElementById('renameProfileModal'); if(renModal) renModal.style.display = 'none';
                 const popup = document.getElementById('deleteProfileConfirm');
-                popup.style.display = 'flex';
+                if(popup) popup.style.display = 'flex';
             }
 
             function confirmDeleteProfile(confirm) {
                 const popup = document.getElementById('deleteProfileConfirm');
-                popup.style.display = 'none';
+                if(popup) popup.style.display = 'none';
                 if (confirm && GameState.profileToDelete !== -1) {
                     GameState.profiles.splice(GameState.profileToDelete, 1);
                     
@@ -1218,6 +1246,7 @@
                     localStorage.setItem('gof_profiles', JSON.stringify(GameState.profiles));
 
                     GameState.activeProfileIdx = -1;
+                    localStorage.setItem('gof_active_profile', -1);
                     loadProfileData(-1);
                     renderProfiles();
                     updateMenuBankUI();
@@ -1230,20 +1259,20 @@
             function showRenameModal(e, idx) {
                 if (e) e.stopPropagation();
                 GameState.profileToRename = idx;
-                document.getElementById('deleteProfileConfirm').style.display = 'none';
+                const delPopup = document.getElementById('deleteProfileConfirm'); if(delPopup) delPopup.style.display = 'none';
                 const popup = document.getElementById('renameProfileModal');
                 const input = document.getElementById('renameProfileInput');
-                input.value = GameState.profiles[idx].name;
-                popup.style.display = 'flex';
-                setTimeout(() => input.focus(), 50); 
+                if(input) input.value = GameState.profiles[idx].name;
+                if(popup) popup.style.display = 'flex';
+                setTimeout(() => { if(input) input.focus(); }, 50); 
             }
 
             function confirmRenameProfile(confirm) {
                 const popup = document.getElementById('renameProfileModal');
                 const input = document.getElementById('renameProfileInput');
-                popup.style.display = 'none';
+                if(popup) popup.style.display = 'none';
                 if (confirm && GameState.profileToRename !== -1) {
-                    let newName = input.value.trim();
+                    let newName = input ? input.value.trim() : '';
                     if (newName.length > 0) {
                         GameState.profiles[GameState.profileToRename].name = newName;
                         localStorage.setItem('gof_profiles', JSON.stringify(GameState.profiles));
@@ -1258,23 +1287,25 @@
             function loadProfileData(idx) {
                 if (idx !== -1 && GameState.profiles[idx]) {
                     const p = GameState.profiles[idx];
-                    Achievements.load(p.unlocked, p.order);
-                    RouletteGame.loadStats(p.rStats);
-                    document.getElementById('historyListDice').innerHTML = p.historyDice || '';
-                    document.getElementById('historyListRoulette').innerHTML = p.historyRoulette || '';
+                    if(typeof Achievements !== 'undefined') Achievements.load(p.unlocked, p.order);
+                    if(typeof RouletteGame !== 'undefined') RouletteGame.loadStats(p.rStats);
+                    const hlDice = document.getElementById('historyListDice'); if(hlDice) hlDice.innerHTML = p.historyDice || '';
+                    const hlRoul = document.getElementById('historyListRoulette'); if(hlRoul) hlRoul.innerHTML = p.historyRoulette || '';
+                    const hlCoin = document.getElementById('historyListCoin'); if(hlCoin) hlCoin.innerHTML = p.historyCoin || '';
                     if (p.settings) applySettings(p.settings);
                 } else {
-                    Achievements.load({}, []);
-                    RouletteGame.loadStats(null);
-                    document.getElementById('historyListDice').innerHTML = '';
-                    document.getElementById('historyListRoulette').innerHTML = '';
-                    GameState.subModes = { dice: 'standard', roulette: 'standard' };
+                    if(typeof Achievements !== 'undefined') Achievements.load({}, []);
+                    if(typeof RouletteGame !== 'undefined') RouletteGame.loadStats(null);
+                    const hlDice = document.getElementById('historyListDice'); if(hlDice) hlDice.innerHTML = '';
+                    const hlRoul = document.getElementById('historyListRoulette'); if(hlRoul) hlRoul.innerHTML = '';
+                    const hlCoin = document.getElementById('historyListCoin'); if(hlCoin) hlCoin.innerHTML = '';
+                    GameState.subModes = { dice: 'standard', roulette: 'standard', coin: 'standard' };
                     updateSubModeHighlights();
                 }
                 updateHistoryView();
             }
 
-            function saveProfileData(unlocked, order, rStats, hDice, hRoul, settings) {
+            function saveProfileData(unlocked, order, rStats, hDice, hRoul, hCoin, settings) {
                 if (GameState.activeProfileIdx === -1) return; 
                 
                 if (!GameState.profiles[GameState.activeProfileIdx]) {
@@ -1287,6 +1318,7 @@
                 p.unlocked = unlocked; p.order = order; 
                 p.rStats = rStats; 
                 p.historyDice = hDice; 
+                p.historyCoin = hCoin;
                 
                 if (GameState.subModes.roulette !== 'survival') {
                     p.historyRoulette = hRoul;
@@ -1298,48 +1330,65 @@
             }
 
             function requestProfileSave() {
-                const hDice = document.getElementById('historyListDice').innerHTML;
-                const hRoul = document.getElementById('historyListRoulette').innerHTML;
+                const hd = document.getElementById('historyListDice');
+                const hDice = hd ? hd.innerHTML : '';
                 
+                const hr = document.getElementById('historyListRoulette');
+                const hRoul = hr ? hr.innerHTML : '';
+                
+                const hc = document.getElementById('historyListCoin');
+                const hCoin = hc ? hc.innerHTML : '';
+                
+                const mSel = document.getElementById('modeSelect');
+                const bgSel = document.getElementById('bgSelect');
+                const spTog = document.getElementById('sparkleToggle');
+
                 const settings = {
                     lang: GameState.lang,
                     sound: GameState.sound,
                     isQuestionHidden: GameState.isQuestionHidden,
                     questionHiddenMap: GameState.questionHiddenMap,
                     isClassic: GameState.isClassic,
-                    diceMode: document.getElementById('modeSelect').value,
-                    bgTheme: document.getElementById('bgSelect').value,
-                    sparkles: document.getElementById('sparkleToggle').checked,
+                    diceMode: mSel ? mSel.value : 'dots',
+                    bgTheme: bgSel ? bgSel.value : 'bg1',
+                    sparkles: spTog ? spTog.checked : true,
                     subModes: GameState.subModes
                 };
 
-                saveProfileData(Achievements.getUnlocked(), Achievements.getOrder(), RouletteGame.getStats(), hDice, hRoul, settings);
+                const unl = typeof Achievements !== 'undefined' ? Achievements.getUnlocked() : {};
+                const ord = typeof Achievements !== 'undefined' ? Achievements.getOrder() : [];
+                const rSt = typeof RouletteGame !== 'undefined' ? RouletteGame.getStats() : null;
+
+                saveProfileData(unl, ord, rSt, hDice, hRoul, hCoin, settings);
             }
 
             function handleSparkleToggle() {
                 clearTimeout(toggleTimer);
                 toggleTimer = setTimeout(() => { debugClicks = 0; }, 1500);
 
-                const isChecked = document.getElementById('sparkleToggle').checked;
+                const st = document.getElementById('sparkleToggle');
+                if(!st) return;
+                const isChecked = st.checked;
 
                 if (!isChecked) {
                     if (GameState.debugEnabled) {
                         GameState.debugEnabled = false;
-                        document.getElementById('st-debug-row').style.display = 'none';
-                        document.getElementById('debugPanel').style.display = 'none';
-                        document.getElementById('debugToggle').checked = false;
-                        if(GameState.mode === 'roulette') RouletteGame.reset();
+                        const dr = document.getElementById('st-debug-row'); if(dr) dr.style.display = 'none';
+                        const dp = document.getElementById('debugPanel'); if(dp) dp.style.display = 'none';
+                        const dt = document.getElementById('debugToggle'); if(dt) dt.checked = false;
+                        if(GameState.mode === 'roulette' && typeof RouletteGame !== 'undefined') RouletteGame.reset();
                     }
                     debugClicks++;
                 } else {
                     debugClicks++;
                     if (debugClicks >= 6 && !GameState.debugEnabled) {
                         GameState.debugEnabled = true;
-                        document.getElementById('st-debug-row').style.display = 'flex';
-                        document.getElementById('debugToggle').checked = true;
+                        const dr = document.getElementById('st-debug-row'); if(dr) dr.style.display = 'flex';
+                        const dt = document.getElementById('debugToggle'); if(dt) dt.checked = true;
                         
-                        if (document.getElementById('gameUI').classList.contains('game-ui-visible')) {
-                            document.getElementById('debugPanel').style.display = 'flex';
+                        const gui = document.getElementById('gameUI');
+                        if (gui && gui.classList.contains('game-ui-visible')) {
+                            const dp = document.getElementById('debugPanel'); if(dp) dp.style.display = 'flex';
                         }
                         
                         playSoundEffect('achievement');
@@ -1401,36 +1450,46 @@
                 const card = document.getElementById('menuPreviewCard');
                 const t = LANG_DATA[GameState.lang];
 
-                document.getElementById('sel-game-dice').classList.remove('active-preview');
-                document.getElementById('sel-game-roulette').classList.remove('active-preview');
-                document.getElementById('submodes-dice').style.display = 'none';
-                document.getElementById('submodes-roulette').style.display = 'none';
+                const sDice = document.getElementById('sel-game-dice'); if(sDice) sDice.classList.remove('active-preview');
+                const sRoul = document.getElementById('sel-game-roulette'); if(sRoul) sRoul.classList.remove('active-preview');
+                const sCoin = document.getElementById('sel-game-coin'); if(sCoin) sCoin.classList.remove('active-preview');
+                
+                const sdSub = document.getElementById('submodes-dice'); if(sdSub) sdSub.style.display = 'none';
+                const srSub = document.getElementById('submodes-roulette'); if(srSub) srSub.style.display = 'none';
+                const scSub = document.getElementById('submodes-coin'); if(scSub) scSub.style.display = 'none';
 
                 if (mode === 'dice') {
-                    card.style.borderColor = "var(--magic-color)";
-                    card.style.boxShadow = "0 0 10px rgba(162, 155, 254, 0.2)";
-                    card.style.color = "var(--magic-color)";
-                    document.getElementById('preview-card-icon').innerHTML = `<i class="fas fa-dice-d6"></i>`;
-                    
-                    const previewTitle = document.getElementById('preview-card-title');
-                    if (previewTitle) previewTitle.innerText = t.menuDice;
-                    
-                    document.getElementById('sel-game-dice').classList.add('active-preview');
-                    document.getElementById('submodes-dice').style.display = 'flex';
-                } else {
-                    card.style.borderColor = "var(--angry-red)";
-                    card.style.boxShadow = "0 0 10px rgba(255, 102, 102, 0.2)";
-                    card.style.color = "var(--angry-red)";
-                    document.getElementById('preview-card-icon').innerHTML = `<svg viewBox="0 0 200 200" style="height: 45px; width: auto;" fill="currentColor"><path fill-rule="evenodd" d="M 100,4 A 96,96 0 1,1 100,196 A 96,96 0 1,1 100,4 Z M 100,86 A 14,14 0 1,0 100,114 A 14,14 0 1,0 100,86 Z M 100,6 A 22,22 0 1,0 100,50 A 22,22 0 1,0 100,6 Z M 162.35,42 A 22,22 0 1,0 162.35,86 A 22,22 0 1,0 162.35,42 Z M 162.35,114 A 22,22 0 1,0 162.35,158 A 22,22 0 1,0 162.35,114 Z M 100,150 A 22,22 0 1,0 100,194 A 22,22 0 1,0 100,150 Z M 37.65,114 A 22,22 0 1,0 37.65,158 A 22,22 0 1,0 37.65,114 Z M 37.65,42 A 22,22 0 1,0 37.65,86 A 22,22 0 1,0 37.65,42 Z"></path></svg>`;
-                    
-                    const previewTitle = document.getElementById('preview-card-title');
-                    if (previewTitle) previewTitle.innerText = t.menuRoulette;
-                    
-                    document.getElementById('sel-game-roulette').classList.add('active-preview');
-                    document.getElementById('submodes-roulette').style.display = 'flex';
+                    if(card) {
+                        card.style.borderColor = "var(--magic-color)";
+                        card.style.boxShadow = "0 0 10px rgba(162, 155, 254, 0.2)";
+                        card.style.color = "var(--magic-color)";
+                    }
+                    const pcIcon = document.getElementById('preview-card-icon'); if(pcIcon) pcIcon.innerHTML = `<i class="fas fa-dice-d6"></i>`;
+                    const previewTitle = document.getElementById('preview-card-title'); if (previewTitle) previewTitle.innerText = t.menuDice;
+                    if(sDice) sDice.classList.add('active-preview');
+                    if(sdSub) sdSub.style.display = 'flex';
+                } else if (mode === 'roulette') {
+                    if(card) {
+                        card.style.borderColor = "var(--angry-red)";
+                        card.style.boxShadow = "0 0 10px rgba(255, 102, 102, 0.2)";
+                        card.style.color = "var(--angry-red)";
+                    }
+                    const pcIcon = document.getElementById('preview-card-icon'); if(pcIcon) pcIcon.innerHTML = `<svg viewBox="0 0 200 200" style="height: 45px; width: auto;" fill="currentColor"><path fill-rule="evenodd" d="M 100,4 A 96,96 0 1,1 100,196 A 96,96 0 1,1 100,4 Z M 100,86 A 14,14 0 1,0 100,114 A 14,14 0 1,0 100,86 Z M 100,6 A 22,22 0 1,0 100,50 A 22,22 0 1,0 100,6 Z M 162.35,42 A 22,22 0 1,0 162.35,86 A 22,22 0 1,0 162.35,42 Z M 162.35,114 A 22,22 0 1,0 162.35,158 A 22,22 0 1,0 162.35,114 Z M 100,150 A 22,22 0 1,0 100,194 A 22,22 0 1,0 100,150 Z M 37.65,114 A 22,22 0 1,0 37.65,158 A 22,22 0 1,0 37.65,114 Z M 37.65,42 A 22,22 0 1,0 37.65,86 A 22,22 0 1,0 37.65,42 Z"></path></svg>`;
+                    const previewTitle = document.getElementById('preview-card-title'); if (previewTitle) previewTitle.innerText = t.menuRoulette;
+                    if(sRoul) sRoul.classList.add('active-preview');
+                    if(srSub) srSub.style.display = 'flex';
+                } else if (mode === 'coin') {
+                    if(card) {
+                        card.style.borderColor = "#cbd5e1";
+                        card.style.boxShadow = "0 0 10px rgba(255, 255, 255, 0.2)";
+                        card.style.color = "#cbd5e1";
+                    }
+                    const pcIcon = document.getElementById('preview-card-icon'); if(pcIcon) pcIcon.innerHTML = `<i class="fas fa-coins"></i>`;
+                    const previewTitle = document.getElementById('preview-card-title'); if (previewTitle) previewTitle.innerText = t.menuCoin || "Грань Выбора";
+                    if(sCoin) sCoin.classList.add('active-preview');
+                    if(scSub) scSub.style.display = 'flex';
                 }
                 updateSubModeHighlights();
-                
                 if (tg.HapticFeedback && tg.HapticFeedback.selectionChanged) tg.HapticFeedback.selectionChanged();
             }
 
@@ -1438,13 +1497,17 @@
                 playSoundEffect('tick');
                 if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
 
-                document.getElementById('gameUI').classList.remove('game-ui-visible');
+                const gui = document.getElementById('gameUI');
+                if(gui) gui.classList.remove('game-ui-visible');
                 
                 previewGame(GameState.mode);
 
                 setTimeout(() => {
-                    document.getElementById('mainMenuOverlay').style.display = 'flex';
-                    document.getElementById('mainMenuOverlay').classList.remove('menu-fade-out');
+                    const mmo = document.getElementById('mainMenuOverlay');
+                    if(mmo) {
+                        mmo.style.display = 'flex';
+                        mmo.classList.remove('menu-fade-out');
+                    }
                     
                     updateSubModeHighlights();
                     updateMenuBankUI();
@@ -1459,20 +1522,25 @@
                 
                 const rBtn = document.getElementById('sm-roulette-' + GameState.subModes.roulette);
                 if(rBtn) rBtn.classList.add('active-sub');
+
+                const cBtn = document.getElementById('sm-coin-' + GameState.subModes.coin);
+                if(cBtn) cBtn.classList.add('active-sub');
             }
 
             function selectGameMode() {
                 playSoundEffect('tick');
                 if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
 
-                document.getElementById('mainMenuOverlay').classList.add('menu-fade-out');
+                const mmo = document.getElementById('mainMenuOverlay');
+                if(mmo) mmo.classList.add('menu-fade-out');
 
                 GameState.mode = GameState.previewMode || 'dice';
 
                 setTimeout(() => {
-                    document.getElementById('mainMenuOverlay').style.display = 'none';
+                    if(mmo) mmo.style.display = 'none';
                     mountActiveGame();
-                    document.getElementById('gameUI').classList.add('game-ui-visible');
+                    const gui = document.getElementById('gameUI');
+                    if(gui) gui.classList.add('game-ui-visible');
                 }, 500);
             }
             
@@ -1495,7 +1563,8 @@
                 
                 updateSubModeHighlights();
 
-                if (document.getElementById('gameUI').classList.contains('game-ui-visible')) {
+                const gui = document.getElementById('gameUI');
+                if (gui && gui.classList.contains('game-ui-visible')) {
                     mountActiveGame();
                 }
                 requestProfileSave();
@@ -1522,6 +1591,11 @@
                 let qhKey = GameState.mode + '_' + GameState.subModes[GameState.mode];
                 let targetHideState = GameState.questionHiddenMap[qhKey] !== undefined ? GameState.questionHiddenMap[qhKey] : GameState.isQuestionHidden;
                 
+                // Отключаем все старые экраны
+                if(typeof DiceGame !== 'undefined') DiceGame.unmount();
+                if(typeof RouletteGame !== 'undefined') RouletteGame.unmount();
+                if(typeof CoinGame !== 'undefined') CoinGame.unmount();
+
                 if (GameState.mode === 'roulette') {
                     if (titleEl) titleEl.innerText = t.titleRoulette;
                     
@@ -1557,7 +1631,6 @@
                         document.body.classList.remove('bank-mode-active');
                     }
                     
-                    if (typeof DiceGame !== 'undefined') DiceGame.unmount();
                     if (typeof RouletteGame !== 'undefined') RouletteGame.mount();
                     
                     if (GameState.subModes.roulette === 'bank') {
@@ -1568,6 +1641,26 @@
                         }
                     }
                     
+                } else if (GameState.mode === 'coin') {
+                    if (titleEl) titleEl.innerText = t.menuCoin || "Грань Выбора";
+                    
+                    const subNamesCoin = { standard: t.smCoinStd || "Бросок", question: t.smCoinQst || "Вопрос" };
+                    const disp = document.getElementById('current-mode-display');
+                    if (disp) {
+                        disp.innerText = subNamesCoin[GameState.subModes.coin].toUpperCase();
+                        disp.style.display = 'inline';
+                    }
+
+                    const stHistHead = document.getElementById('st-hist-head');
+                    if(stHistHead) stHistHead.innerText = t.histCoinHead || "Броски монеты";
+                    
+                    document.body.classList.remove('bank-mode-active');
+                    const tqBtn = document.getElementById('toggleQuestionBtn');
+                    if(tqBtn) tqBtn.style.display = 'flex';
+                    
+                    if (typeof CoinGame !== 'undefined') CoinGame.mount();
+                    setQuestionState(targetHideState, true);
+
                 } else {
                     if(titleEl) titleEl.innerText = t.title;
                     const stHistHead = document.getElementById('st-hist-head');
@@ -1577,7 +1670,6 @@
                     const tqBtn = document.getElementById('toggleQuestionBtn');
                     if(tqBtn) tqBtn.style.display = 'flex';
                     
-                    if(typeof RouletteGame !== 'undefined') RouletteGame.unmount();
                     if(typeof DiceGame !== 'undefined') {
                         DiceGame.mount();
                         DiceGame.updateModeDisplay(); 
@@ -1599,7 +1691,21 @@
             }
 
             function updateHistoryView() {
-                if (GameState.mode === 'roulette' && GameState.subModes.roulette === 'survival') {
+                const hlDice = document.getElementById('historyListDice');
+                const hlRoul = document.getElementById('historyListRoulette');
+                const hlSurv = document.getElementById('historyListSurvival');
+                const hlCoin = document.getElementById('historyListCoin');
+
+                // Сначала скрываем всё
+                if (hlDice) hlDice.style.display = 'none';
+                if (hlRoul) hlRoul.style.display = 'none';
+                if (hlSurv) hlSurv.style.display = 'none';
+                if (hlCoin) hlCoin.style.display = 'none';
+
+                // Показываем только актуальное
+                if (GameState.mode === 'coin') {
+                    if (hlCoin) hlCoin.style.display = 'block';
+                } else if (GameState.mode === 'roulette' && GameState.subModes.roulette === 'survival') {
                     const board = JSON.parse(localStorage.getItem('gof_global_leaderboard')) || [];
                     let html = '';
                     board.forEach((entry, i) => {
@@ -1610,19 +1716,11 @@
                     });
                     if (html === '') html = `<div class="history-item" style="opacity:0.5;">Пусто</div>`;
                     
-                    const hlSurv = document.getElementById('historyListSurvival');
                     if (hlSurv) {
                         hlSurv.innerHTML = html;
                         hlSurv.style.display = 'block';
                     }
-                    const hlRoul = document.getElementById('historyListRoulette');
-                    if (hlRoul) hlRoul.style.display = 'none';
-
                 } else if (GameState.mode === 'roulette') {
-                    const hlSurv = document.getElementById('historyListSurvival');
-                    if (hlSurv) hlSurv.style.display = 'none';
-                    
-                    const hlRoul = document.getElementById('historyListRoulette');
                     if (hlRoul) {
                         hlRoul.style.display = 'block';
                         if (GameState.activeProfileIdx !== -1 && GameState.profiles[GameState.activeProfileIdx]) {
@@ -1630,13 +1728,14 @@
                         }
                     }
                 } else {
-                    const hlSurv = document.getElementById('historyListSurvival');
-                    if (hlSurv) hlSurv.style.display = 'none';
+                    if (hlDice) hlDice.style.display = 'block';
                 }
             }
 
             async function askOracle(forcedIdx = null) {
-                if (GameState.mode === 'dice') {
+                if (GameState.mode === 'coin') {
+                    if(typeof CoinGame !== 'undefined') CoinGame.play(forcedIdx);
+                } else if (GameState.mode === 'dice') {
                     if(typeof DiceGame !== 'undefined') DiceGame.play(forcedIdx);
                 } else {
                     if(typeof RouletteGame !== 'undefined') RouletteGame.play(forcedIdx);
@@ -1841,7 +1940,11 @@
                 document.documentElement.lang = GameState.lang;
                 
                 const titleEl = document.getElementById('ui-title'); 
-                if(titleEl) titleEl.innerText = GameState.mode === 'roulette' ? t.titleRoulette : t.title;
+                if(titleEl) {
+                    if (GameState.mode === 'roulette') titleEl.innerText = t.titleRoulette;
+                    else if (GameState.mode === 'coin') titleEl.innerText = t.menuCoin || "Грань Выбора";
+                    else titleEl.innerText = t.title;
+                }
                 
                 const mTitle = document.getElementById('mainMenuTitle');
                 if(mTitle) mTitle.innerText = t.menuTitle;
@@ -1865,6 +1968,8 @@
                     if (GameState.subModes.roulette === 'survival') headTxt = t.histLeadHead;
                     else if (GameState.subModes.roulette === 'bank') headTxt = t.histBankHead;
                     else headTxt = t.histSurvHead;
+                } else if (GameState.mode === 'coin') {
+                    headTxt = t.histCoinHead || "Броски монеты";
                 }
                 const hHead = document.getElementById('st-hist-head');
                 if(hHead) hHead.innerText = headTxt;
@@ -1894,6 +1999,11 @@
                 const sDT = document.getElementById('sel-dice-txt'); if(sDT) sDT.innerText = t.smStd;
                 const sRT = document.getElementById('sel-roul-txt'); if(sRT) sRT.innerText = t.smRoulStd;
 
+                // Для Монеты
+                const scTxt = document.getElementById('sel-coin-txt'); if(scTxt) scTxt.innerText = GameState.lang === 'ru' ? "Грань" : "Edge";
+                const smCS = document.getElementById('sm-coin-standard-lbl'); if(smCS) smCS.innerText = t.smCoinStd || "Бросок";
+                const smCQ = document.getElementById('sm-coin-question-lbl'); if(smCQ) smCQ.innerText = t.smCoinQst || "Вопрос";
+
                 const rollBtn = document.getElementById('rollBtn');
                 if(rollBtn) rollBtn.innerText = t.rollBtn; 
                 
@@ -1914,11 +2024,17 @@
                 
                 if (GameState.mode === 'dice') {
                     if (typeof DiceGame !== 'undefined') DiceGame.updateModeDisplay();
-                } else {
+                } else if (GameState.mode === 'roulette') {
                     const subNames = { standard: t.smRoulStd, bank: t.smBank, survival: t.smSurv };
                     const disp = document.getElementById('current-mode-display');
                     if (disp) {
                         disp.innerText = subNames[GameState.subModes.roulette].toUpperCase();
+                    }
+                } else if (GameState.mode === 'coin') {
+                    const subNamesCoin = { standard: t.smCoinStd || "Бросок", question: t.smCoinQst || "Вопрос" };
+                    const disp = document.getElementById('current-mode-display');
+                    if (disp) {
+                        disp.innerText = subNamesCoin[GameState.subModes.coin].toUpperCase();
                     }
                 }
 
@@ -1974,11 +2090,10 @@
                 showError, hideError, triggerButtonError, playSoundEffect, createSparkle, askOracle, updateModeDisplay: () => { if(typeof DiceGame !== 'undefined') DiceGame.updateModeDisplay(); requestProfileSave(); }
             };
         })();
-
 // --- КОНЕЦ ВТОРОЙ ЧАСТИ ---
 // --- НАЧАЛО ТРЕТЬЕЙ ЧАСТИ ---
         // ==============================================
-        // 🎲 ПЛАГИН 1: КОСТЬ ИСТИНЫ
+        // 🎲 ПЛАГИН 1: КОСТЬ ИСТИНЫ (v34 - Colorized Alco & Clean Result)
         // ==============================================
         const DiceGame = (function() {
             let currentFaces = [];
@@ -1987,11 +2102,18 @@
             const traderIcons = ['<i class="fas fa-rocket"></i>', '<i class="fas fa-arrow-trend-down"></i>', '<i class="fas fa-chart-line"></i>', '<i class="fas fa-chart-area" style="transform: scaleY(-1)"></i>', '<i class="fas fa-arrows-left-right"></i>', '<i class="fas fa-skull"></i>'];
             const alcoIcons = ['<i class="fas fa-wine-glass-alt"></i>', '<i class="fas fa-beer-mug-empty"></i>', '<i class="fas fa-glass-martini-alt"></i>', '<i class="fas fa-whiskey-glass"></i>', '<i class="fas fa-vial"></i>', '<i class="fas fa-droplet"></i>'];
 
+            // Криптографический генератор случайных чисел для абсолютного рандома
+            function getCryptoRandom() {
+                const array = new Uint32Array(1);
+                window.crypto.getRandomValues(array);
+                return array[0] / 4294967295;
+            }
+
             function init() {
                 const stage = document.getElementById('mainStage');
                 if(!stage) return;
                 stage.addEventListener('mousedown', handlePointerDown); document.addEventListener('mousemove', handlePointerMove, {passive: false}); document.addEventListener('mouseup', handlePointerUp);
-                stage.addEventListener('touchstart', handlePointerDown, {passive: false}); document.addEventListener('touchmove', handlePointerMove, {passive: false}); document.addEventListener('touchmove', handlePointerMove, {passive: false}); document.addEventListener('touchend', handlePointerUp);
+                stage.addEventListener('touchstart', handlePointerDown, {passive: false}); document.addEventListener('touchmove', handlePointerMove, {passive: false}); document.addEventListener('touchend', handlePointerUp);
             }
 
             function mount() {
@@ -2020,7 +2142,13 @@
                 const sel = document.getElementById('modeSelect'); 
                 const disp = document.getElementById('current-mode-display');
                 
-                if(sel) document.body.classList.toggle('yesno-mode-active', sel.value === 'yesno');
+                if(sel) {
+                    document.body.classList.toggle('yesno-mode-active', sel.value === 'yesno');
+                    
+                    // Устанавливаем атрибут фильтрации истории для текущего режима
+                    const hlDice = document.getElementById('historyListDice');
+                    if (hlDice) hlDice.setAttribute('data-mode', sel.value);
+                }
                 
                 if (GameState.mode === 'dice' && sel && disp && sel.options[sel.selectedIndex]) { 
                     disp.innerText = sel.options[sel.selectedIndex].text.toUpperCase(); 
@@ -2038,11 +2166,35 @@
                 for(let i=1; i<=6; i++) {
                     const face = document.getElementById(`face${i}`);
                     if (!face) continue;
-                    face.style.textShadow = ""; face.style.color = GameState.isClassic ? "#000" : "#fff";
-                    if(mode === 'yesno') { face.innerHTML = ynOrder[i-1]; face.style.fontSize = "32px"; currentFaces.push(ynOrder[i-1]); }
-                    else if(mode === 'trader') { face.innerHTML = t.traderFaces[i-1]; face.style.fontSize = "22px"; currentFaces.push(t.traderFaces[i-1]); }
-                    else if(mode === 'alco') { face.innerHTML = t.alcoFaces[i-1]; face.style.fontSize = i===3 ? "16px" : "20px"; currentFaces.push(t.alcoFaces[i-1]); }
-                    else if(mode === 'numbers') { face.innerHTML = i; face.style.fontSize = "55px"; currentFaces.push(i); }
+                    
+                    // Сбрасываем жесткие стили
+                    face.style.textShadow = ""; 
+                    face.style.color = ""; 
+                    
+                    if(mode === 'yesno') { 
+                        face.innerHTML = ynOrder[i-1]; 
+                        face.style.fontSize = "32px"; 
+                        currentFaces.push(ynOrder[i-1]); 
+                    }
+                    else if(mode === 'trader') { 
+                        // Цвета для трейдерских эмодзи
+                        const trColors = ["#4ade80", "#f87171", "#4ade80", "#f87171", "#a78bfa", "#ef4444"];
+                        face.innerHTML = `<div style="color: ${trColors[i-1]} !important;">${traderIcons[i-1]}</div>`; 
+                        face.style.fontSize = "45px"; 
+                        currentFaces.push(t.traderFaces[i-1]); 
+                    }
+                    else if(mode === 'alco') { 
+                        // Цвета для алко-эмодзи
+                        const alcoColors = ["#ff5e62", "#ffbd69", "#d4fc79", "#f9f586", "#96fbc4", "#a29bfe"];
+                        face.innerHTML = `<div style="color: ${alcoColors[i-1]} !important;">${alcoIcons[i-1]}</div>`; 
+                        face.style.fontSize = "45px"; 
+                        currentFaces.push(t.alcoFaces[i-1]); 
+                    }
+                    else if(mode === 'numbers') { 
+                        face.innerHTML = i; 
+                        face.style.fontSize = "55px"; 
+                        currentFaces.push(i); 
+                    }
                     else if(mode === 'dots') {
                         const dp = { 1:[4], 2:[0,8], 3:[0,4,8], 4:[0,2,6,8], 5:[0,2,4,6,8], 6:[0,2,3,5,6,8] };
                         let d = '<div class="dot-container">'; for(let j=0; j<9; j++) d += dp[i].includes(j) ? '<div class="dot"></div>' : '<div></div>';
@@ -2054,9 +2206,12 @@
             function handlePointerDown(e) {
                 const rollBtn = document.getElementById('rollBtn');
                 if (!rollBtn || rollBtn.disabled || GameState.mode === 'roulette') return; 
+                
                 const now = Date.now();
-                if (now - lastTapTime < 400) { if (!rollBtn.disabled && typeof App !== 'undefined') App.askOracle(); return; }
-                lastTapTime = now; isDragging = true; cancelAnimationFrame(inertiaFrame); 
+                if (now - lastTapTime < 300) { if (!rollBtn.disabled && typeof App !== 'undefined') App.askOracle(); return; }
+                lastTapTime = now; 
+                
+                isDragging = true; cancelAnimationFrame(inertiaFrame); 
                 const cube = document.getElementById('cube'); if(cube) cube.style.transition = 'none'; 
                 const clientX = e.touches ? e.touches[0].clientX : e.clientX; const clientY = e.touches ? e.touches[0].clientY : e.clientY;
                 lastX = clientX; lastY = clientY; velX = 0; velY = 0; lastTick = rotX + rotY;
@@ -2121,44 +2276,75 @@
                 const rs = document.getElementById('res-status'); if(rs) rs.classList.remove('visible');
                 updateFaces();
                 
-                const rollDuration = 6000 + Math.random() * 2000;
-                const rIdx = forcedIdx !== null ? forcedIdx : Math.floor(Math.random() * 6);
+                const cryptoRand = getCryptoRandom();
+                const rIdx = forcedIdx !== null ? forcedIdx : Math.floor(cryptoRand * 6);
 
                 const targetRots = [{x:0,y:0},{x:90,y:0},{x:0,y:90},{x:0,y:-90},{x:-90,y:0},{x:0,y:180}];
-                const offX = (Math.random() * 40 - 20), offY = (Math.random() * 40 - 20);
-                const spins = 3600; const baseRotX = Math.round(rotX / 360) * 360; const baseRotY = Math.round(rotY / 360) * 360; const baseRotZ = Math.round(rotZ / 360) * 360; 
-                rotX = baseRotX + spins + targetRots[rIdx].x + offX; rotY = baseRotY + spins + targetRots[rIdx].y + offY; rotZ = baseRotZ; 
                 
-                const throwUpDur = 400; const fallDur = rollDuration - throwUpDur - 1000; 
+                const rollDuration = 2000 + Math.floor(getCryptoRandom() * 3000); 
+                const wobbleDur = 600; 
+                const flightDur = rollDuration - wobbleDur;
+
+                const offX = (getCryptoRandom() * 20 - 10), offY = (getCryptoRandom() * 20 - 10);
+                
+                const spinsX = 360 * (6 + Math.floor(getCryptoRandom() * 10)); 
+                const spinsY = 360 * (6 + Math.floor(getCryptoRandom() * 10)); 
+                const spinsZ = 360 * (3 + Math.floor(getCryptoRandom() * 5)); 
+
+                const baseRotX = Math.round(rotX / 360) * 360; 
+                const baseRotY = Math.round(rotY / 360) * 360; 
+                const baseRotZ = Math.round(rotZ / 360) * 360; 
+                
+                rotX = baseRotX + spinsX + targetRots[rIdx].x + offX; 
+                rotY = baseRotY + spinsY + targetRots[rIdx].y + offY; 
+                rotZ = baseRotZ + spinsZ; 
+
+                const overX = rotX + (getCryptoRandom() * 50 - 25);
+                const overY = rotY + (getCryptoRandom() * 50 - 25);
+                const overZ = rotZ + (getCryptoRandom() * 50 - 25);
+
                 const cubeScene = document.getElementById('cubeScene');
 
                 if(cubeScene) {
-                    cubeScene.style.transition = `transform ${throwUpDur / 1000}s cubic-bezier(0.2, 0.8, 0.2, 1)`;
-                    cubeScene.style.transform = "scale(1.8)"; 
+                    cubeScene.style.transition = `transform ${flightDur * 0.4 / 1000}s cubic-bezier(0.2, 0.8, 0.2, 1)`;
+                    cubeScene.style.transform = "scale(2.2)"; 
                     setTimeout(() => {
-                        cubeScene.style.transition = `transform ${fallDur / 1000}s cubic-bezier(0.6, 0, 0.9, 1)`;
+                        cubeScene.style.transition = `transform ${flightDur * 0.6 / 1000}s cubic-bezier(0.6, 0, 0.9, 1)`;
                         cubeScene.style.transform = "scale(1)";
-                    }, throwUpDur);
+                    }, flightDur * 0.4);
                 }
 
                 if(cube) {
-                    cube.style.transition = `transform ${rollDuration / 1000}s cubic-bezier(0.15, 0, 0.15, 1)`;
-                    cube.style.transform = `rotateX(${rotX}deg) rotateY(${rotY}deg) rotateZ(${rotZ}deg)`;
+                    cube.style.transition = `transform ${flightDur / 1000}s cubic-bezier(0.3, 0.1, 0.4, 1)`;
+                    cube.style.transform = `rotateX(${overX}deg) rotateY(${overY}deg) rotateZ(${overZ}deg)`;
                 }
                 
                 if (tg.HapticFeedback) {
-                    const startHapticTime = Date.now();
-                    const rollHaptics = () => {
-                        const elapsed = Date.now() - startHapticTime; if (elapsed >= rollDuration - 200) return; 
-                        const progress = elapsed / rollDuration;
-                        if (progress < 0.3) tg.HapticFeedback.impactOccurred('heavy'); else if (progress < 0.7) tg.HapticFeedback.impactOccurred('medium'); else tg.HapticFeedback.impactOccurred('light');
-                        setTimeout(rollHaptics, 50 + (progress * 250));
-                    }; rollHaptics();
+                    const startT = Date.now();
+                    const haptics = () => {
+                        const el = Date.now() - startT; 
+                        if (el >= flightDur - 100) return;
+                        tg.HapticFeedback.impactOccurred('light');
+                        setTimeout(haptics, 50 + (el/flightDur)*150); 
+                    }; haptics();
                 }
-                
+
                 setTimeout(() => {
+                    if(cube) {
+                        cube.style.transition = `transform ${wobbleDur / 1000}s cubic-bezier(0.34, 1.56, 0.64, 1)`; 
+                        cube.style.transform = `rotateX(${rotX}deg) rotateY(${rotY}deg) rotateZ(${rotZ}deg)`;
+                    }
+                    
+                    if(typeof App !== 'undefined') App.playSoundEffect('load'); 
+                    
+                    if (tg.HapticFeedback) {
+                        tg.HapticFeedback.impactOccurred('heavy'); 
+                        setTimeout(() => tg.HapticFeedback.impactOccurred('medium'), wobbleDur * 0.3); 
+                        setTimeout(() => tg.HapticFeedback.impactOccurred('rigid'), wobbleDur * 0.8); 
+                    }
+                    
                     for(let i=0;i<150;i++) { if(typeof App !== 'undefined') App.createSparkle(); }
-                }, rollDuration - 1000);
+                }, flightDur);
 
                 setTimeout(() => finalizeRoll(rIdx, originalQuestion, t), rollDuration);
             }
@@ -2169,6 +2355,7 @@
 
                 let isSuccess = (rIdx % 2 !== 0), uiColor = isSuccess ? "#ccffcc" : "#ff6666", snd = 'positive';
                 let resT = "", resD = "", subI = "", histDispTxt = "", mTag = "";
+                let displaySubI = ""; 
 
                 const resSub = document.getElementById('res-sub');
                 if(resSub) resSub.classList.remove('heart-pulse', 'skull-aura');
@@ -2179,22 +2366,36 @@
                     uiColor = (rIdx === 0 || rIdx === 2 || rIdx === 4) ? "#ccffcc" : "#ff6666"; 
                     if (rIdx === 4) uiColor = "#ffffff"; 
                     if (rIdx === 5) { uiColor = "#ff0000"; snd = 'scam'; } else snd = (rIdx === 0 || rIdx === 2 || rIdx === 4) ? 'positive' : 'negative'; 
-                    subI = traderIcons[rIdx]; resT = ""; resD = ""; histDispTxt = t.traderFaces[rIdx]; 
+                    
+                    subI = traderIcons[rIdx]; 
+                    resT = t.traderFaces[rIdx]; 
+                    resD = ""; 
+                    histDispTxt = t.traderFaces[rIdx]; 
+                    displaySubI = ""; 
                 } 
                 else if (dMode === 'alco') { 
-                    uiColor = ["#ff5e62", "#ffbd69", "#d4fc79", "#f9f586", "#96fbc4", "#a29bfe"][rIdx]; snd = (rIdx === 5) ? 'water' : 'alco'; subI = alcoIcons[rIdx]; resT = ""; resD = ""; histDispTxt = t.alcoFaces[rIdx]; 
+                    uiColor = ["#ff5e62", "#ffbd69", "#d4fc79", "#f9f586", "#96fbc4", "#a29bfe"][rIdx]; 
+                    snd = (rIdx === 5) ? 'water' : 'alco'; 
+                    
+                    subI = alcoIcons[rIdx]; 
+                    resT = t.alcoFaces[rIdx]; // Крупный текст действия
+                    resD = ""; 
+                    histDispTxt = t.alcoFaces[rIdx]; 
+                    displaySubI = ""; // Скрываем эмодзи в результате, оставляем только текст
                 } 
                 else if (dMode === 'yesno') { 
                     snd = isSuccess ? 'positive' : 'negative'; subI = isSuccess ? '<i class="fas fa-check"></i>' : '<i class="fas fa-times"></i>'; resT = resData[GameState.lang][rIdx].t; resD = resData[GameState.lang][rIdx].s; 
                     
                     const ynOrder = GameState.lang === 'ru' ? ["НЕТ", "ДА", "НЕТ", "ДА", "НЕТ", "ДА"] : ["NO", "YES", "NO", "YES", "NO", "YES"];
                     histDispTxt = ynOrder[rIdx]; 
+                    displaySubI = subI;
                     
                     histModeStrengthHistory += ` [<span style="color:#ffffff; font-weight:bold;">${resData[GameState.lang][rIdx].s}</span>]`; 
                 } else { 
                     snd = isSuccess ? 'positive' : 'negative'; resT = resData[GameState.lang][rIdx].t; resD = resData[GameState.lang][rIdx].s; 
                     histDispTxt = `${resData[GameState.lang][rIdx].t} (<span style="color:${uiColor};">${resData[GameState.lang][rIdx].s}</span>)`; 
                     histModeStrengthHistory += ` [<span style="color:#ffffff; font-weight:bold;">${currentFaces[rIdx]}</span>]`; 
+                    displaySubI = subI;
                 }
                 
                 mTag = ` <span style="color:#aaa; font-size:9px;">${histModeStrengthHistory}</span>`;
@@ -2204,7 +2405,8 @@
                 if (tg.HapticFeedback) { if (snd === 'scam') { tg.HapticFeedback.notificationOccurred('error'); } else if (snd === 'water') { [0,200,400].forEach(delay=>setTimeout(()=>tg.HapticFeedback.impactOccurred('medium'),delay)); } else { tg.HapticFeedback.impactOccurred('light'); } }
 
                 const rm = document.getElementById('res-main'); if(rm) rm.innerHTML = resT; 
-                if(resSub) { resSub.innerHTML = subI; resSub.style.color = uiColor; resSub.style.textShadow = `0 0 25px ${uiColor}`; }
+                // Выводим очищенный displaySubI в результат
+                if(resSub) { resSub.innerHTML = displaySubI; resSub.style.color = uiColor; resSub.style.textShadow = `0 0 25px ${uiColor}`; }
                 const rd = document.getElementById('res-desc'); if(rd) rd.innerHTML = resD;
                 
                 const rCont = document.getElementById('res-content');
@@ -2214,7 +2416,9 @@
                 }
                 if(typeof App !== 'undefined') App.playSoundEffect('result', snd);
 
-                const item = document.createElement('div'); item.className = 'history-item';
+                const item = document.createElement('div'); 
+                item.className = 'history-item hist-' + dMode; 
+                
                 const qMark = `<span style="color:#fff; font-weight:bold; text-shadow: 0 0 8px #fff, 0 0 15px var(--magic-color);">?</span>`;
                 item.innerHTML = `${qMark} ${GameState.isQuestionHidden?'---':originalQuestion}${mTag}<br><span style="color:${uiColor};">➔ ${subI} ${histDispTxt}</span>`;
                 
@@ -2235,10 +2439,89 @@
 
             return { init, mount, unmount, play, updateModeDisplay, isDragging: () => isDragging };
         })();
+
+        // ИНЖЕКТ КРАСИВЫХ СТИЛЕЙ ДЛЯ КУБИКА (С ФИЛЬТРАЦИЕЙ ИСТОРИИ И ЯДРОМ)
+        (function injectDiceStyles() {
+            const existingStyles = document.querySelectorAll('.dice-3d-styles');
+            existingStyles.forEach(el => el.remove());
+            
+            const style = document.createElement('style');
+            style.className = 'dice-3d-styles';
+            style.innerHTML = `
+                .face { 
+                    background: radial-gradient(circle at 30% 30%, #3e3863 0%, #151324 100%) !important;
+                    border: 3px solid #6c5ce7 !important;
+                    box-shadow: inset 0 0 20px rgba(0,0,0,0.9), inset 1px 1px 5px rgba(255,255,255,0.3), 0 0 15px rgba(108, 92, 231, 0.4) !important;
+                    border-radius: 15px !important;
+                    color: #ffffff !important;
+                    text-shadow: 2px 2px 4px rgba(0,0,0,0.8), -1px -1px 2px rgba(255,255,255,0.2) !important;
+                }
+                .cube.classic-mode .face {
+                    background: radial-gradient(circle at 30% 30%, #ffffff 0%, #e2e8f0 50%, #94a3b8 100%) !important;
+                    border: 3px solid #94a3b8 !important;
+                    box-shadow: inset 0 0 20px rgba(0,0,0,0.2), inset 2px 2px 10px rgba(255,255,255,1) !important;
+                    color: #1e293b !important;
+                    text-shadow: 2px 2px 3px rgba(0,0,0,0.4), -1px -1px 2px rgba(255,255,255,1) !important;
+                }
+                .dot {
+                    background: radial-gradient(circle at 30% 30%, #ffffff 0%, #a29bfe 100%) !important;
+                    box-shadow: inset 0 3px 6px rgba(0,0,0,0.8), inset 0 -1px 2px rgba(255,255,255,0.3), 0 2px 2px rgba(0,0,0,0.5) !important;
+                }
+                .cube.classic-mode .dot {
+                    background: radial-gradient(circle at 30% 30%, #475569 0%, #0f172a 100%) !important;
+                    box-shadow: inset 0 3px 6px rgba(0,0,0,0.9), inset 0 -1px 2px rgba(255,255,255,0.4), 0 2px 2px rgba(255,255,255,1) !important;
+                }
+
+                .cube-core {
+                    position: absolute;
+                    width: 100%; height: 100%;
+                    transform-style: preserve-3d;
+                }
+                .core-face {
+                    position: absolute;
+                    width: 116px; height: 116px;
+                    left: 2px; top: 2px;
+                    border-radius: 12px;
+                    background: #151324; 
+                    box-shadow: 0 0 8px #151324; 
+                    backface-visibility: hidden;
+                }
+                body.classic-mode-active .core-face {
+                    background: #ffffff; 
+                    box-shadow: 0 0 8px #ffffff;
+                }
+
+                #historyListDice[data-mode="dots"] .hist-numbers,
+                #historyListDice[data-mode="dots"] .hist-yesno,
+                #historyListDice[data-mode="dots"] .hist-trader,
+                #historyListDice[data-mode="dots"] .hist-alco { display: none !important; }
+
+                #historyListDice[data-mode="numbers"] .history-item:not(.hist-numbers) { display: none !important; }
+                #historyListDice[data-mode="yesno"] .history-item:not(.hist-yesno) { display: none !important; }
+                #historyListDice[data-mode="trader"] .history-item:not(.hist-trader) { display: none !important; }
+                #historyListDice[data-mode="alco"] .history-item:not(.hist-alco) { display: none !important; }
+            `;
+            document.head.appendChild(style);
+
+            const cube = document.getElementById('cube');
+            if (cube && !document.getElementById('cube-inner-core')) {
+                const coreHTML = `
+                    <div id="cube-inner-core" class="cube-core">
+                        <div class="core-face" style="transform: rotateY(0deg) translateZ(58px);"></div>
+                        <div class="core-face" style="transform: rotateY(180deg) translateZ(58px);"></div>
+                        <div class="core-face" style="transform: rotateY(90deg) translateZ(58px);"></div>
+                        <div class="core-face" style="transform: rotateY(-90deg) translateZ(58px);"></div>
+                        <div class="core-face" style="transform: rotateX(90deg) translateZ(58px);"></div>
+                        <div class="core-face" style="transform: rotateX(-90deg) translateZ(58px);"></div>
+                    </div>
+                `;
+                cube.insertAdjacentHTML('afterbegin', coreHTML);
+            }
+        })();
 // --- КОНЕЦ ТРЕТЬЕЙ ЧАСТИ ---
 // --- НАЧАЛО ЧЕТВЕРТОЙ ЧАСТИ ---
         // ==============================================
-        // 💀 ПЛАГИН 2: РОКОВАЯ ПУЛЯ
+        // 💀 ПЛАГИН 2: РОКОВАЯ ПУЛЯ (v30 - Perfect Visuals & Coin Draining Sound)
         // ==============================================
         const RouletteGame = (function() {
             const chamberMap = [4, 5, 0, 1, 2, 3]; 
@@ -2250,8 +2533,23 @@
                 survival: { loadedBullets: 0, chamberState: [false,false,false,false,false,false], stashState: [false,false,false,false,false], drumRotation: 0, survivalCount: 0, survivalInitialBullets: 0 }
             };
 
-            let isDragging = false, centerX = 0, centerY = 0, lastAngle = 0, vel = 0, inertiaFrame, lastTapTime = 0, lastMoveTime = 0, lastTickPlayTime = 0, lastTickedHole = 0;
-            let loadedBullets = 0, drumRotation = 0, chamberState = [false, false, false, false, false, false], stashState = [false, false, false, false, false], isSpinningDrum = false, survivalCount = 0; 
+            let isDragging = false;
+            let centerX = 0;
+            let centerY = 0;
+            let lastAngle = 0;
+            let vel = 0;
+            let inertiaFrame;
+            let lastTapTime = 0;
+            let lastMoveTime = 0;
+            let lastTickPlayTime = 0;
+            let lastTickedHole = 0;
+
+            let loadedBullets = 0;
+            let drumRotation = 0;
+            let chamberState = [false, false, false, false, false, false];
+            let stashState = [false, false, false, false, false];
+            let isSpinningDrum = false;
+            let survivalCount = 0; 
             
             let streak5Bullets = 0;
             let streakSlots135 = 0;
@@ -2268,13 +2566,38 @@
             let totalSurvivalsThisSession = 0;
             let totalDeathsThisSession = 0;
 
+            const drumTiltAngle = 35; 
+            const tiltCos = Math.cos(drumTiltAngle * Math.PI / 180);
+
+            // Кастомный звук "утекающих монет" (понижающийся тон)
+            function playCoinLossSound(pitchFactor = 1) {
+                if (typeof GameState === 'undefined' || !GameState.sound) return;
+                try {
+                    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                    if (ctx.state === 'suspended') ctx.resume();
+                    const osc = ctx.createOscillator(), g = ctx.createGain();
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(3000 * pitchFactor, ctx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(800 * pitchFactor, ctx.currentTime + 0.3);
+                    g.gain.setValueAtTime(0.1, ctx.currentTime);
+                    g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
+                    osc.connect(g); g.connect(ctx.destination);
+                    osc.start(); osc.stop(ctx.currentTime + 0.3);
+                } catch(e){}
+            }
+
             function init() {
                 const wrapper = document.getElementById('drumWrapper');
                 if(!wrapper) return;
-                wrapper.addEventListener('mousedown', handlePointerDown); document.addEventListener('mousemove', handlePointerMove, {passive: false}); document.addEventListener('mouseup', handlePointerUp);
-                wrapper.addEventListener('touchstart', handlePointerDown, {passive: false}); document.addEventListener('touchmove', handlePointerMove, {passive: false}); document.addEventListener('touchmove', handlePointerMove, {passive: false}); document.addEventListener('touchend', handlePointerUp);
+                
+                wrapper.addEventListener('mousedown', handlePointerDown); 
+                document.addEventListener('mousemove', handlePointerMove, {passive: false}); 
+                document.addEventListener('mouseup', handlePointerUp);
+                
+                wrapper.addEventListener('touchstart', handlePointerDown, {passive: false}); 
+                document.addEventListener('touchmove', handlePointerMove, {passive: false}); 
+                document.addEventListener('touchend', handlePointerUp);
 
-                // Динамический стиль для разделения истории режимов
                 if (!document.getElementById('roulette-history-styles')) {
                     const style = document.createElement('style');
                     style.id = 'roulette-history-styles';
@@ -2369,7 +2692,9 @@
             function getStats() {
                 saveCurrentSubState();
 
-                let p = GameState.activeProfileIdx !== -1 && GameState.profiles[GameState.activeProfileIdx] ? GameState.profiles[GameState.activeProfileIdx].rStats || {} : {};
+                let p = GameState.activeProfileIdx !== -1 && GameState.profiles[GameState.activeProfileIdx] 
+                        ? GameState.profiles[GameState.activeProfileIdx].rStats || {} 
+                        : {};
                 
                 let bankVal = 50.00;
                 let poolVal = 0.00;
@@ -2397,8 +2722,13 @@
 
             function loadStats(rStats) {
                 if (!rStats) {
-                    totalSurvivalsThisSession = 0; totalDeathsThisSession = 0; totalPlaysThisSession = 0;
-                    streak5Bullets = 0; streak1Bullet = 0; streakSlots135 = 0; deathStreak = 0;
+                    totalSurvivalsThisSession = 0; 
+                    totalDeathsThisSession = 0; 
+                    totalPlaysThisSession = 0;
+                    streak5Bullets = 0; 
+                    streak1Bullet = 0; 
+                    streakSlots135 = 0; 
+                    deathStreak = 0;
                     bestSurvivalStreak = 0;
                     subStates = {
                         standard: { loadedBullets: 0, chamberState: [false,false,false,false,false,false], stashState: [false,false,false,false,false], drumRotation: 0, survivalCount: 0, survivalInitialBullets: 0 },
@@ -2406,7 +2736,8 @@
                         survival: { loadedBullets: 0, chamberState: [false,false,false,false,false,false], stashState: [false,false,false,false,false], drumRotation: 0, survivalCount: 0, survivalInitialBullets: 0 }
                     };
                     if(GameState.activeProfileIdx === -1) {
-                        window.guestBank = 50.00; window.guestPool = 0.00;
+                        window.guestBank = 50.00; 
+                        window.guestPool = 0.00;
                     }
                 } else {
                     totalSurvivalsThisSession = rStats.survs || 0;
@@ -2440,7 +2771,6 @@
                 canCashout = getStats().pool > 0;
                 
                 loadCurrentSubState();
-                
                 updateGlobalCounters();
                 restoreDrumVisuals();
                 updateBankUI();
@@ -2449,9 +2779,15 @@
             function updateBankUI() {
                 if (GameState.subModes.roulette === 'bank') {
                     const stats = getStats();
-                    const bVal = document.getElementById('bankVal'); if(bVal) bVal.innerText = stats.bank.toFixed(2);
-                    const pVal = document.getElementById('poolVal'); if(pVal) pVal.innerText = stats.pool.toFixed(2);
-                    const bInp = document.getElementById('betInput'); if(bInp) bInp.value = '';
+                    const bVal = document.getElementById('bankVal'); 
+                    if(bVal) bVal.innerText = stats.bank.toFixed(2);
+                    
+                    const pVal = document.getElementById('poolVal'); 
+                    if(pVal) pVal.innerText = stats.pool.toFixed(2);
+                    
+                    const bInp = document.getElementById('betInput'); 
+                    if(bInp) bInp.value = '';
+                    
                     updateButtonStates();
                 }
             }
@@ -2464,6 +2800,7 @@
 
             function restoreDrumVisuals() {
                 let survLock = (GameState.subModes.roulette === 'survival' && survivalCount > 0);
+                
                 for (let i = 0; i < 5; i++) {
                     const el = document.getElementById(`stash-${i}`);
                     if (el) {
@@ -2474,11 +2811,18 @@
                         else el.classList.remove('disabled-srv');
                     }
                 }
+                
                 for (let i = 0; i < 6; i++) {
                     const ch = document.getElementById(`ch-${i}`);
+                    const chFloor = document.getElementById(`ch-floor-${i}`);
                     if (ch) {
-                        if (chamberState[i]) ch.classList.add('filled');
-                        else ch.classList.remove('filled');
+                        if (chamberState[i]) {
+                            ch.classList.add('filled');
+                            if(chFloor) chFloor.classList.add('filled');
+                        } else {
+                            ch.classList.remove('filled');
+                            if(chFloor) chFloor.classList.remove('filled');
+                        }
                         ch.classList.remove('fired'); 
                     }
                 }
@@ -2507,13 +2851,21 @@
             }
 
             function mount() {
-                const rs = document.getElementById('rouletteStage'); if(rs) rs.style.display = 'flex';
-                const bs = document.getElementById('bulletStash'); if(bs) bs.style.display = 'flex';
-                const rsb = document.getElementById('rouletteStatusBtn'); if(rsb) rsb.style.display = 'flex';
-                const rlb = document.getElementById('randomLoadBtn'); if(rlb) rlb.style.display = 'flex';
+                const rs = document.getElementById('rouletteStage'); 
+                if(rs) rs.style.display = 'flex';
+                
+                const bs = document.getElementById('bulletStash'); 
+                if(bs) bs.style.display = 'flex';
+                
+                const rsb = document.getElementById('rouletteStatusBtn'); 
+                if(rsb) rsb.style.display = 'flex';
+                
+                const rlb = document.getElementById('randomLoadBtn'); 
+                if(rlb) rlb.style.display = 'flex';
                 
                 const hlr = document.getElementById('historyListRoulette'); 
                 if (hlr && GameState.subModes.roulette !== 'survival') hlr.style.display = 'block';
+                
                 const hls = document.getElementById('historyListSurvival'); 
                 if (hls && GameState.subModes.roulette === 'survival') hls.style.display = 'block';
                 
@@ -2531,38 +2883,57 @@
 
             function handlePointerDown(e) {
                 if (isSpinningDrum || isWaitingResult || isBetting || GameState.mode !== 'roulette') return; 
-                
                 if (pendingDeathReset) reset();
                 
                 const rollBtn = document.getElementById('rollBtn');
                 const now = Date.now();
-                if (now - lastTapTime < 300) { if (rollBtn && !rollBtn.disabled && typeof App !== 'undefined') App.askOracle(); return; }
-                lastTapTime = now; isDragging = true; cancelAnimationFrame(inertiaFrame); 
+                if (now - lastTapTime < 300) { 
+                    if (rollBtn && !rollBtn.disabled && typeof App !== 'undefined') App.askOracle(); 
+                    return; 
+                }
+                lastTapTime = now; 
+                isDragging = true; 
+                cancelAnimationFrame(inertiaFrame); 
                 updateButtonStates(); 
                 
-                const dr = document.getElementById('drumRotator'); if(dr) dr.style.transition = 'none'; 
+                const dr = document.getElementById('drumRotator'); 
+                if(dr) dr.style.transition = 'none'; 
+                
                 document.querySelectorAll('.hole-num').forEach(n => n.style.transition = 'none');
                 
                 if(!dr) return;
                 const rect = dr.getBoundingClientRect();
-                centerX = rect.left + rect.width / 2; centerY = rect.top + rect.height / 2;
+                centerX = rect.left + rect.width / 2; 
+                centerY = rect.top + rect.height / 2;
                 
-                const clientX = e.touches ? e.touches[0].clientX : e.clientX; const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-                lastAngle = Math.atan2(clientY - centerY, clientX - centerX) * 180 / Math.PI;
-                vel = 0; lastTickedHole = Math.round((((drumRotation % 360) + 360) % 360) / 60) % 6;
+                const clientX = e.touches ? e.touches[0].clientX : e.clientX; 
+                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                
+                const adjustedY = (clientY - centerY) / tiltCos;
+                lastAngle = Math.atan2(adjustedY, clientX - centerX) * 180 / Math.PI;
+                
+                vel = 0; 
+                lastTickedHole = Math.round((((drumRotation % 360) + 360) % 360) / 60) % 6;
             }
 
             function handlePointerMove(e) {
-                if (!isDragging) return; e.preventDefault(); 
-                const clientX = e.touches ? e.touches[0].clientX : e.clientX; const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                if (!isDragging) return; 
+                e.preventDefault(); 
                 
-                let currentAngle = Math.atan2(clientY - centerY, clientX - centerX) * 180 / Math.PI;
+                const clientX = e.touches ? e.touches[0].clientX : e.clientX; 
+                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                
+                const adjustedY = (clientY - centerY) / tiltCos;
+                let currentAngle = Math.atan2(adjustedY, clientX - centerX) * 180 / Math.PI;
                 let deltaAngle = currentAngle - lastAngle;
                 
-                if (deltaAngle > 180) deltaAngle -= 360; if (deltaAngle < -180) deltaAngle += 360;
+                if (deltaAngle > 180) deltaAngle -= 360; 
+                if (deltaAngle < -180) deltaAngle += 360;
                 
                 drumRotation += deltaAngle; 
-                const dr = document.getElementById('drumRotator'); if(dr) dr.style.transform = `rotate(${drumRotation}deg)`; updateNumbers();
+                const dr = document.getElementById('drumRotator'); 
+                if(dr) dr.style.transform = `rotate(${drumRotation}deg)`; 
+                updateNumbers();
                 
                 let normAngle = ((drumRotation % 360) + 360) % 360;
                 let currentHole = Math.round(normAngle / 60) % 6;
@@ -2575,11 +2946,16 @@
                     }
                     lastTickedHole = currentHole;
                 }
-                vel = deltaAngle; lastMoveTime = Date.now(); lastAngle = currentAngle;
+                
+                vel = deltaAngle; 
+                lastMoveTime = Date.now(); 
+                lastAngle = currentAngle;
             }
 
             function handlePointerUp() {
-                if (!isDragging) return; isDragging = false; updateButtonStates();
+                if (!isDragging) return; 
+                isDragging = false; 
+                updateButtonStates();
                 if (Date.now() - lastMoveTime > 100) { vel = 0; }
                 applyInertia(); 
             }
@@ -2591,7 +2967,9 @@
                 }
                 
                 drumRotation += vel; 
-                const dr = document.getElementById('drumRotator'); if(dr) dr.style.transform = `rotate(${drumRotation}deg)`; updateNumbers();
+                const dr = document.getElementById('drumRotator'); 
+                if(dr) dr.style.transform = `rotate(${drumRotation}deg)`; 
+                updateNumbers();
                 
                 let normAngle = ((drumRotation % 360) + 360) % 360;
                 let currentHole = Math.round(normAngle / 60) % 6;
@@ -2604,6 +2982,7 @@
                     }
                     lastTickedHole = currentHole;
                 }
+                
                 vel *= 0.95; 
                 inertiaFrame = requestAnimationFrame(applyInertia);
             }
@@ -2622,13 +3001,19 @@
             }
 
             function animateDrum(targetAngle, duration, callback) {
-                const startAngle = drumRotation; const changeInAngle = targetAngle - startAngle; const startTime = performance.now();
-                const dr = document.getElementById('drumRotator'); if(dr) dr.style.transition = 'none'; 
+                const startAngle = drumRotation; 
+                const changeInAngle = targetAngle - startAngle; 
+                const startTime = performance.now();
+                
+                const dr = document.getElementById('drumRotator'); 
+                if(dr) dr.style.transition = 'none'; 
                 document.querySelectorAll('.hole-num').forEach(n => n.style.transition = 'none');
                 
                 function step(currentTime) {
-                    let elapsed = currentTime - startTime; if (elapsed > duration) elapsed = duration;
-                    let progress = elapsed / duration; let easeProgress = 1 - Math.pow(1 - progress, 3.5); 
+                    let elapsed = currentTime - startTime; 
+                    if (elapsed > duration) elapsed = duration;
+                    let progress = elapsed / duration; 
+                    let easeProgress = 1 - Math.pow(1 - progress, 3.5); 
                     
                     drumRotation = startAngle + changeInAngle * easeProgress;
                     if(dr) dr.style.transform = `rotate(${drumRotation}deg)`;
@@ -2645,9 +3030,13 @@
                         lastTickedHole = currentHole;
                     }
                     
-                    if (elapsed < duration) { requestAnimationFrame(step); } 
-                    else {
-                        drumRotation = targetAngle; if(dr) dr.style.transform = `rotate(${drumRotation}deg)`; updateNumbers();
+                    if (elapsed < duration) { 
+                        requestAnimationFrame(step); 
+                    } else {
+                        drumRotation = targetAngle; 
+                        if(dr) dr.style.transform = `rotate(${drumRotation}deg)`; 
+                        updateNumbers();
+                        
                         if (Math.abs(changeInAngle) > 1 && currentHole !== lastTickedHole) { 
                             if(typeof App !== 'undefined') App.playSoundEffect('tick'); 
                             if (tg.HapticFeedback) tg.HapticFeedback.selectionChanged(); 
@@ -2671,7 +3060,11 @@
                 if(Math.abs(drumRotation - targetRot) > 0.1) {
                     drumRotation = targetRot;
                     const dr = document.getElementById('drumRotator');
-                    if(dr) { dr.style.transition = 'none'; dr.style.transform = `rotate(${drumRotation}deg)`; updateNumbers(); }
+                    if(dr) { 
+                        dr.style.transition = 'none'; 
+                        dr.style.transform = `rotate(${drumRotation}deg)`; 
+                        updateNumbers(); 
+                    }
                 }
 
                 if(typeof App !== 'undefined') App.hideError(); 
@@ -2680,10 +3073,16 @@
                 const targetChamber = chamberMap[idx];
                 chamberState[targetChamber] = true;
                 stashState[idx] = true;
-                const chEl = document.getElementById(`ch-${targetChamber}`); if(chEl) chEl.classList.add('filled');
+                
+                const chEl = document.getElementById(`ch-${targetChamber}`); 
+                if(chEl) chEl.classList.add('filled');
+                
+                const chFloor = document.getElementById(`ch-floor-${targetChamber}`);
+                if(chFloor) chFloor.classList.add('filled');
                 
                 loadedBullets++;
                 updateButtonStates();
+                
                 if(typeof App !== 'undefined') App.playSoundEffect('load');
                 if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
                 if(typeof App !== 'undefined') App.requestProfileSave(); 
@@ -2700,7 +3099,11 @@
                 if(Math.abs(drumRotation - targetRot) > 0.1) {
                     drumRotation = targetRot;
                     const dr = document.getElementById('drumRotator');
-                    if(dr) { dr.style.transition = 'none'; dr.style.transform = `rotate(${drumRotation}deg)`; updateNumbers(); }
+                    if(dr) { 
+                        dr.style.transition = 'none'; 
+                        dr.style.transform = `rotate(${drumRotation}deg)`; 
+                        updateNumbers(); 
+                    }
                 }
                 
                 if(typeof App !== 'undefined') App.hideError(); 
@@ -2718,12 +3121,18 @@
                 for(let i=0; i<numToLoad; i++) {
                     const idx = emptySlots[i];
                     const el = document.getElementById(`stash-${idx}`);
-					if(el) {
+                    if(el) {
                         el.classList.add('loaded');
                         const targetChamber = chamberMap[idx];
                         chamberState[targetChamber] = true;
                         stashState[idx] = true;
-                        const chEl = document.getElementById(`ch-${targetChamber}`); if(chEl) chEl.classList.add('filled');
+                        
+                        const chEl = document.getElementById(`ch-${targetChamber}`); 
+                        if(chEl) chEl.classList.add('filled');
+                        
+                        const chFloor = document.getElementById(`ch-floor-${targetChamber}`);
+                        if(chFloor) chFloor.classList.add('filled');
+
                         loadedBullets++;
                     }
                 }
@@ -2735,18 +3144,48 @@
             }
 
             function reset() {
-                loadedBullets = 0; drumRotation = 0; chamberState = [false, false, false, false, false, false]; stashState = [false, false, false, false, false]; survivalCount = 0;
-                streak5Bullets = 0; streakSlots135 = 0; streak1Bullet = 0; survivalInitialBullets = 0;
+                loadedBullets = 0; 
+                drumRotation = 0; 
+                chamberState = [false, false, false, false, false, false]; 
+                stashState = [false, false, false, false, false]; 
+                survivalCount = 0;
+                streak5Bullets = 0; 
+                streakSlots135 = 0; 
+                streak1Bullet = 0; 
+                survivalInitialBullets = 0;
                 pendingDeathReset = false;
                 canCashout = false;
-                const sc = document.getElementById('survivalCounter'); if(sc) sc.classList.remove('visible');
-                const dr = document.getElementById('drumRotator'); if(dr) { dr.style.transition = 'none'; dr.style.transform = `rotate(0deg)`; } updateNumbers();
-                document.querySelectorAll('.stash-bullet').forEach(b => { b.classList.remove('loaded'); b.classList.remove('disabled-srv'); });
-                document.querySelectorAll('.chamber-slot').forEach(c => { c.classList.remove('filled'); c.classList.remove('fired'); c.classList.remove('heart-pulse'); c.classList.remove('skull-aura'); });
+                
+                const sc = document.getElementById('survivalCounter'); 
+                if(sc) sc.classList.remove('visible');
+                
+                const dr = document.getElementById('drumRotator'); 
+                if(dr) { 
+                    dr.style.transition = 'none'; 
+                    dr.style.transform = `rotate(0deg)`; 
+                } 
+                updateNumbers();
+                
+                document.querySelectorAll('.stash-bullet').forEach(b => { 
+                    b.classList.remove('loaded'); 
+                    b.classList.remove('disabled-srv'); 
+                });
+                document.querySelectorAll('.chamber-slot').forEach(c => { 
+                    c.classList.remove('filled'); 
+                    c.classList.remove('fired'); 
+                    c.classList.remove('heart-pulse'); 
+                    c.classList.remove('skull-aura'); 
+                });
+                document.querySelectorAll('.chamber-floor').forEach(c => c.classList.remove('filled'));
                 
                 const resSub = document.getElementById('res-sub');
-                if(resSub) { resSub.innerHTML = ''; resSub.className = 'answer-sub'; }
-                const rc = document.getElementById('res-content'); if(rc) rc.classList.remove('visible');
+                if(resSub) { 
+                    resSub.innerHTML = ''; 
+                    resSub.className = 'answer-sub'; 
+                }
+                
+                const rc = document.getElementById('res-content'); 
+                if(rc) rc.classList.remove('visible');
 
                 updateButtonStates();
                 if(typeof App !== 'undefined') App.requestProfileSave(); 
@@ -2758,12 +3197,16 @@
                 
                 if (pendingDeathReset) reset();
                 
-                isSpinningDrum = true; if(typeof App !== 'undefined') App.hideError();
+                isSpinningDrum = true; 
+                if(typeof App !== 'undefined') App.hideError();
                 updateButtonStates();
                 
                 const t = LANG_DATA[GameState.lang];
-                const rc = document.getElementById('res-content'); if(rc) rc.classList.remove('visible');
-                const rs = document.getElementById('res-status'); if(rs) rs.classList.remove('visible');
+                const rc = document.getElementById('res-content'); 
+                if(rc) rc.classList.remove('visible');
+                
+                const rs = document.getElementById('res-status'); 
+                if(rs) rs.classList.remove('visible');
                 
                 cancelAnimationFrame(inertiaFrame);
                 const survCounter = document.getElementById('survivalCounter');
@@ -2809,8 +3252,10 @@
                         
                         const bankValEl = document.getElementById('bankVal');
                         if(bankValEl) bankValEl.innerText = bank.toFixed(2);
+                        
                         const poolValEl = document.getElementById('poolVal');
                         if(poolValEl) poolValEl.innerText = pool.toFixed(2);
+                        
                         if(typeof App !== 'undefined') App.playSoundEffect('coins'); 
                         if(tg.HapticFeedback && amtLeft % 2 === 0) tg.HapticFeedback.impactOccurred('light');
                         
@@ -2820,13 +3265,16 @@
                             let finalPool = Math.round(pool * 100) / 100;
 
                             if (GameState.activeProfileIdx !== -1 && GameState.profiles[GameState.activeProfileIdx]) {
-                                if(!GameState.profiles[GameState.activeProfileIdx].rStats) GameState.profiles[GameState.activeProfileIdx].rStats = {};
+                                if(!GameState.profiles[GameState.activeProfileIdx].rStats) {
+                                    GameState.profiles[GameState.activeProfileIdx].rStats = {};
+                                }
                                 GameState.profiles[GameState.activeProfileIdx].rStats.bank = finalBank;
                                 GameState.profiles[GameState.activeProfileIdx].rStats.pool = finalPool;
                             } else {
                                 window.guestBank = finalBank;
                                 window.guestPool = finalPool;
                             }
+                            
                             if(bankValEl) bankValEl.innerText = finalBank.toFixed(2);
                             if(poolValEl) poolValEl.innerText = finalPool.toFixed(2);
                             resolve();
@@ -2843,6 +3291,7 @@
 
                 const bInput = document.getElementById('betInput');
                 if(!bInput) return;
+                
                 const betVal = parseFloat(bInput.value);
                 const t = LANG_DATA[GameState.lang];
                 const stats = getStats();
@@ -2855,12 +3304,20 @@
                     }
                     return;
                 }
+                
                 if (bInput.value !== "" && (isNaN(betVal) || betVal < 0.10)) {
-                    if(typeof App !== 'undefined') { App.triggerButtonError(); App.showError(t.errBank); }
+                    if(typeof App !== 'undefined') { 
+                        App.triggerButtonError(); 
+                        App.showError(t.errBank); 
+                    }
                     return;
                 }
+                
                 if (betVal > stats.bank) {
-                    if(typeof App !== 'undefined') { App.triggerButtonError(); App.showError(t.errNoMoney); }
+                    if(typeof App !== 'undefined') { 
+                        App.triggerButtonError(); 
+                        App.showError(t.errNoMoney); 
+                    }
                     return;
                 }
                 if (isNaN(betVal) || betVal < 0.10) return;
@@ -2889,6 +3346,7 @@
                 isBetting = true;
                 canCashout = false;
                 updateButtonStates();
+                
                 if(typeof App !== 'undefined') App.playSoundEffect('coins');
 
                 let bank = stats.bank;
@@ -2907,8 +3365,10 @@
 
                     const bankValEl = document.getElementById('bankVal');
                     if(bankValEl) bankValEl.innerText = bank.toFixed(2);
+                    
                     const poolValEl = document.getElementById('poolVal');
                     if(poolValEl) poolValEl.innerText = pool.toFixed(2);
+                    
                     if(typeof App !== 'undefined') App.playSoundEffect('coins');
                     if(tg.HapticFeedback && amtLeft % 2 === 0) tg.HapticFeedback.impactOccurred('light');
 
@@ -2940,7 +3400,6 @@
             }
 
             function play(forcedIdx = null) {
-                // Если это обычный бросок (null) — блокируем спам. Если дебаг-кнопка — пропускаем.
                 if (forcedIdx === null && (isSpinningDrum || isWaitingResult || isDragging || isBetting)) return;
 
                 if (pendingDeathReset) reset();
@@ -2949,14 +3408,20 @@
                 const mode = GameState.subModes.roulette;
                 
                 if (loadedBullets === 0 && forcedIdx === null) {
-                    if (typeof App !== 'undefined') { App.triggerButtonError(); App.showError(t.errBullet); }
+                    if (typeof App !== 'undefined') { 
+                        App.triggerButtonError(); 
+                        App.showError(t.errBullet); 
+                    }
                     return;
                 }
 
                 if (mode === 'bank') {
                     let pool = getStats().pool || 0;
                     if (pool <= 0 && forcedIdx === null) {
-                        if (typeof App !== 'undefined') { App.triggerButtonError(); App.showError(t.errBank); }
+                        if (typeof App !== 'undefined') { 
+                            App.triggerButtonError(); 
+                            App.showError(t.errBank); 
+                        }
                         return;
                     }
                 }
@@ -2965,7 +3430,10 @@
                 const q = uq ? uq.value.trim() : '';
                 
                 if (mode === 'standard' && !GameState.isQuestionHidden && !q && forcedIdx === null) {
-                    if (typeof App !== 'undefined') { App.triggerButtonError(); App.showError(t.error); }
+                    if (typeof App !== 'undefined') { 
+                        App.triggerButtonError(); 
+                        App.showError(t.error); 
+                    }
                     return;
                 }
 
@@ -2982,20 +3450,29 @@
                 }
 
                 const rollBtn = document.getElementById('rollBtn');
-                if(rollBtn) { rollBtn.innerText = t.waiting; rollBtn.classList.add('gold-text-active'); }
+                if(rollBtn) { 
+                    rollBtn.innerText = t.waiting; 
+                    rollBtn.classList.add('gold-text-active'); 
+                }
                 
                 const originalQuestion = q;
                 if (!GameState.isQuestionHidden && uq) uq.value = '';
 
                 let currentPoolForHist = getStats().pool || 0; 
 
-                const rc = document.getElementById('res-content'); if(rc) rc.classList.remove('visible'); 
-                const rs = document.getElementById('res-status'); if(rs) rs.classList.remove('visible');
-                const survCounter = document.getElementById('survivalCounter'); if(survCounter) survCounter.classList.remove('visible');
+                const rc = document.getElementById('res-content'); 
+                if(rc) rc.classList.remove('visible'); 
+                
+                const rs = document.getElementById('res-status'); 
+                if(rs) rs.classList.remove('visible');
+                
+                const survCounter = document.getElementById('survivalCounter'); 
+                if(survCounter) survCounter.classList.remove('visible');
 
                 const spinDur = 3800; 
                 const extraSpins = 1440; 
                 const currentSnap = Math.round(drumRotation / 60) * 60;
+                
                 let finalTargetRot; 
                 let topChamberIdx = 0; 
                 let isGunshotResult = false;
@@ -3003,17 +3480,26 @@
                 if (forcedIdx !== null) {
                     topChamberIdx = debugToChamberMap[forcedIdx];
                     let baseTargetAngle = (-topChamberIdx * 60);
-                    let normalizedBaseTargetAngle = (baseTargetAngle % 360); if (normalizedBaseTargetAngle < 0) normalizedBaseTargetAngle += 360;
-                    let currentSnapMod360 = (currentSnap % 360); if (currentSnapMod360 < 0) currentSnapMod360 += 360;
+                    let normalizedBaseTargetAngle = (baseTargetAngle % 360); 
+                    if (normalizedBaseTargetAngle < 0) normalizedBaseTargetAngle += 360;
+                    
+                    let currentSnapMod360 = (currentSnap % 360); 
+                    if (currentSnapMod360 < 0) currentSnapMod360 += 360;
+                    
                     let angleDiffToTargetNormalized = normalizedBaseTargetAngle - currentSnapMod360;
-                    if (angleDiffToTargetNormalized > 180) angleDiffToTargetNormalized -= 360; else if (angleDiffToTargetNormalized <= -180) angleDiffToTargetNormalized += 360;
+                    if (angleDiffToTargetNormalized > 180) angleDiffToTargetNormalized -= 360; 
+                    else if (angleDiffToTargetNormalized <= -180) angleDiffToTargetNormalized += 360;
+                    
                     finalTargetRot = currentSnap + extraSpins + angleDiffToTargetNormalized;
                     isGunshotResult = chamberState[topChamberIdx];
                 } else {
                     const randomSteps = Math.floor(Math.random() * 6);
                     finalTargetRot = currentSnap + extraSpins + (randomSteps * 60);
+                    
                     const steps = Math.round(finalTargetRot / 60);
-                    let normalizedSteps = steps % 6; if(normalizedSteps < 0) normalizedSteps += 6;
+                    let normalizedSteps = steps % 6; 
+                    if(normalizedSteps < 0) normalizedSteps += 6;
+                    
                     topChamberIdx = (6 - normalizedSteps) % 6; 
                     isGunshotResult = chamberState[topChamberIdx];
                 }
@@ -3032,6 +3518,7 @@
                 let uiColor = "", snd = "", mainSubI = "", histSubI = "", histDispTxt = "";
                 const resSub = document.getElementById('res-sub');
                 if (resSub) resSub.classList.remove('heart-pulse', 'skull-aura');
+                
                 isSpinningDrum = false; 
                 isWaitingResult = true;
                 updateButtonStates();
@@ -3053,11 +3540,13 @@
                     if (ch) ch.classList.add('fired');
                     if (resSub) resSub.classList.add('skull-aura'); 
                     
-                    uiColor = "#ff0000"; snd = 'gunshot'; 
+                    uiColor = "#ff0000"; 
+                    snd = 'gunshot'; 
                     mainSubI = '<i class="fas fa-skull-crossbones" style="font-size: 75px;"></i>'; 
                     histSubI = '<i class="fas fa-skull-crossbones"></i>';
                     
-                    document.body.classList.add('flash-red'); setTimeout(()=>document.body.classList.remove('flash-red'), 500); 
+                    document.body.classList.add('flash-red'); 
+                    setTimeout(()=>document.body.classList.remove('flash-red'), 500); 
                     
                     if (tg.HapticFeedback) { 
                         tg.HapticFeedback.notificationOccurred('error'); 
@@ -3067,14 +3556,21 @@
                     } 
                     
                     let capturedSurvCount = survivalCount;
-                    survivalCount = 0; streak5Bullets = 0; streakSlots135 = 0; streak1Bullet = 0; 
+                    survivalCount = 0; 
+                    streak5Bullets = 0; 
+                    streakSlots135 = 0; 
+                    streak1Bullet = 0; 
+                    
                     const sCounter = document.getElementById('survivalCounter');
                     if (sCounter) sCounter.classList.remove('visible');
                     
                     pendingDeathReset = true; 
 
                     if (mode === 'survival' && capturedSurvCount > 0) {
-                        let pName = (GameState.activeProfileIdx !== -1 && GameState.profiles[GameState.activeProfileIdx]) ? GameState.profiles[GameState.activeProfileIdx].name : (GameState.lang === 'ru' ? 'Гость' : 'Guest');
+                        let pName = (GameState.activeProfileIdx !== -1 && GameState.profiles[GameState.activeProfileIdx]) 
+                                    ? GameState.profiles[GameState.activeProfileIdx].name 
+                                    : (GameState.lang === 'ru' ? 'Гость' : 'Guest');
+                                    
                         let leaderboard = JSON.parse(localStorage.getItem('gof_global_leaderboard')) || [];
                         
                         let survTxt = (typeof App !== 'undefined') ? App.getPlural(capturedSurvCount, [t.survText1, t.survText2, t.survText5]) : '';
@@ -3099,12 +3595,40 @@
                     if (mode === 'bank') {
                         let stats = getStats();
                         let lostAmount = stats.pool;
-                        stats.pool = 0;
-                        if (GameState.activeProfileIdx !== -1) { GameState.profiles[GameState.activeProfileIdx].rStats.pool = 0; }
-                        else { window.guestPool = 0; }
-                        updateBankUI();
                         
                         histDispTxt = t.shotMsg + ` (-$${lostAmount.toFixed(2)})`;
+
+                        // v30 Задержка потери банка и драматичная анимация
+                        setTimeout(() => {
+                            let oldPool = lostAmount;
+                            let newPool = 0;
+                            stats.pool = newPool;
+                            
+                            if (GameState.activeProfileIdx !== -1) { 
+                                GameState.profiles[GameState.activeProfileIdx].rStats.pool = newPool; 
+                            } else { 
+                                window.guestPool = newPool; 
+                            }
+
+                            let dur = 1000, start = performance.now();
+                            let lastLossTime = 0;
+                            let currentPitch = 1.0; // Для звука убывания
+                            const pEl = document.getElementById('poolVal');
+                            
+                            function animLossPool(time) {
+                                let p = Math.min((time - start) / dur, 1);
+                                if (pEl) pEl.innerText = (oldPool + (newPool - oldPool) * p).toFixed(2);
+                                if (time - lastLossTime > 120) {
+                                    playCoinLossSound(currentPitch);
+                                    currentPitch = Math.max(0.3, currentPitch * 0.85); // Понижаем тон каждого "падающего" звука
+                                    lastLossTime = time;
+                                }
+                                if (p < 1) requestAnimationFrame(animLossPool);
+                                else updateBankUI();
+                            }
+                            requestAnimationFrame(animLossPool);
+                        }, 1500); // 1.5 секунды на осознание
+
                     } else {
                         histDispTxt = t.shotMsg;
                     }
@@ -3142,7 +3666,8 @@
 
                     if (resSub) resSub.classList.add('heart-pulse'); 
                     
-                    uiColor = "#ccffcc"; snd = 'safe_click'; 
+                    uiColor = "#ccffcc"; 
+                    snd = 'safe_click'; 
                     mainSubI = '<i class="fas fa-heart" style="font-size: 75px;"></i>';
                     histSubI = '<i class="fas fa-heart"></i>';
                     
@@ -3151,6 +3676,7 @@
                         setTimeout(() => tg.HapticFeedback.impactOccurred('medium'), 140);
                         setTimeout(() => tg.HapticFeedback.impactOccurred('medium'), 420);
                     } 
+                    
                     const counterEl = document.getElementById('survivalCounter'); 
                     if (counterEl) {
                         counterEl.innerText = '+' + survivalCount; 
@@ -3170,8 +3696,11 @@
                         let earnedAmount = newPool - oldPool;
                         
                         stats.pool = newPool;
-                        if (GameState.activeProfileIdx !== -1) { GameState.profiles[GameState.activeProfileIdx].rStats.pool = newPool; }
-                        else { window.guestPool = newPool; }
+                        if (GameState.activeProfileIdx !== -1) { 
+                            GameState.profiles[GameState.activeProfileIdx].rStats.pool = newPool; 
+                        } else { 
+                            window.guestPool = newPool; 
+                        }
                         canCashout = true;
                         
                         let dur = 1000, start = performance.now();
@@ -3195,13 +3724,17 @@
                     }
                 }
 
-                const rm = document.getElementById('res-main'); if (rm) rm.innerHTML = ""; 
+                const rm = document.getElementById('res-main'); 
+                if (rm) rm.innerHTML = ""; 
+                
                 if (resSub) {
                     resSub.innerHTML = mainSubI;
                     resSub.style.color = uiColor; 
                     resSub.style.textShadow = `0 0 25px ${uiColor}`;
                 }
-                const rd = document.getElementById('res-desc'); if (rd) rd.innerHTML = "";
+                
+                const rd = document.getElementById('res-desc'); 
+                if (rd) rd.innerHTML = "";
 
                 const rCont = document.getElementById('res-content');
                 if (rCont) {
@@ -3240,6 +3773,7 @@
                 const rollBtn = document.getElementById('rollBtn');
 
                 if (isGunshotResult) {
+                    // Увеличенный таймер для режима банка, чтобы успела пройти анимация сброса денег
                     setTimeout(() => {
                         if (pendingDeathReset) {
                             pendingDeathReset = false;
@@ -3257,7 +3791,7 @@
                             }
                             if(typeof App !== 'undefined') App.requestProfileSave(); 
                         }
-                    }, 2200); 
+                    }, mode === 'bank' ? 3500 : 2200); 
                 } else {
                     setTimeout(() => { 
                         isWaitingResult = false;
@@ -3276,13 +3810,233 @@
                 }
             }
 
-            return { init, mount, unmount, play, placeBet, loadBullet, loadRandomBullets, spinRandomly, reset, cashout, getStats: getStats, getGuestBank: () => window.guestBank, getGuestPool: () => window.guestPool, loadStats: loadStats, isDragging: () => isDragging, isSpinning: () => isSpinningDrum, isBusy: () => isSpinningDrum || isWaitingResult || isBetting, saveCurrentSubState, loadCurrentSubState, restoreDrumVisuals };
+            return { 
+                init, mount, unmount, play, placeBet, loadBullet, loadRandomBullets, 
+                spinRandomly, reset, cashout, getStats: getStats, 
+                getGuestBank: () => window.guestBank, getGuestPool: () => window.guestPool, 
+                loadStats: loadStats, isDragging: () => isDragging, isSpinning: () => isSpinningDrum, 
+                isBusy: () => isSpinningDrum || isWaitingResult || isBetting, 
+                saveCurrentSubState, loadCurrentSubState, restoreDrumVisuals 
+            };
         })();
 
+        // ==============================================
+        // ИНЖЕКЦИЯ 3D-МЕТАЛЛИЧЕСКОГО БАРАБАНА (v27 - Hollow Drum & Fixed Light Mode)
+        // ==============================================
+        (function injectRoulette3DPlugin() {
+            try {
+                document.querySelectorAll('.roulette-3d-styles').forEach(el => el.remove());
+
+                const style = document.createElement('style');
+                style.className = 'roulette-3d-styles';
+                style.innerHTML = `
+                    #rouletteStage { perspective: 1200px; }
+                    #drumWrapper { overflow: visible; }
+                    .drum-3d-scene {
+                        width: 192px; height: 192px;
+                        position: relative;
+                        transform-style: preserve-3d;
+                        transform: rotateX(35deg); 
+                        margin-top: 15px;
+                        z-index: 20;
+                        background: transparent !important;
+                        overflow: visible;
+                    }
+                    #drumRotator {
+                        width: 100%; height: 100%;
+                        position: absolute;
+                        transform-style: preserve-3d;
+                        cursor: grab;
+                        background: transparent !important;
+                    }
+                    #drumRotator:active { cursor: grabbing; }
+
+                    .drum-layer {
+                        position: absolute; top: 0; left: 0;
+                        width: 100%; height: 100%;
+                        pointer-events: none;
+                    }
+
+                    .drum-top-layer circle { fill: url(#drum-metal); stroke: #475569; stroke-width: 1.5; }
+                    
+                    body:not(.classic-mode-active) {
+                        --mid-layer-dark: #1e293b;
+                        --mid-layer-light: #0f172a;
+                    }
+                    body.classic-mode-active {
+                        --mid-layer-dark: #a1a1aa; 
+                        --mid-layer-light: #d1d5db; 
+                    }
+
+                    body.classic-mode-active .drum-top-layer circle { fill: url(#drum-metal-classic) !important; stroke: #ccc !important; }
+
+                    /* v27 Updates for Chamber Text visibility in light mode */
+                    .hole-num { fill: rgba(255,255,255,0.7); transition: fill 0.3s; }
+                    body.classic-mode-active .hole-num { fill: #1f2937 !important; /* Dark text for light mode */ }
+
+                    /* Chrome-стиль для пуль */
+                    .bullet-outer { fill: url(#bullet-chrome-highlight); stroke: #ccc; stroke-width: 1px; }
+                    
+                    /* v27 Bullet Inner uses default (gradient+stroke) in both modes now for consistency */
+                    .bullet-inner { fill: url(#bullet-primer-chrome-highlight) !important; stroke: #4a5568; stroke-width: 1px; }
+                    .chamber-slot.fired .bullet-inner { fill: url(#bullet-primer-fired) !important; stroke: #000; }
+
+                    /* ОБЪЕМНЫЙ КРАСНЫЙ В БЕЛОМ РЕЖИМЕ (Reduced gaps by thickening stroke to 1px) */
+                    body.classic-mode-active .bullet-outer { fill: url(#bullet-chrome-classic) !important; stroke: #991b1b; stroke-width: 1px; /* Thicker stroke to define edge and reduce perceived gaps */ }
+                    /* Removed old flattening rule for inner bullet to restore volume via shared style */
+                    body.classic-mode-active .chamber-slot.fired .bullet-inner { fill: var(--angry-red) !important; stroke: #991b1b; /* Ensure border exists when fired */ }
+
+                    /* ЛОКАЛЬНОЕ ДНО КАМОРЫ (Появляется только при загрузке пули) */
+                    .chamber-floor { fill: #000; opacity: 0; transition: opacity 0.3s; }
+                    body.classic-mode-active .chamber-floor { fill: #111; }
+                    .chamber-floor.filled { opacity: 1; }
+
+                    .stash-bullet path { fill: url(#bullet-chrome-highlight); }
+                    body.classic-mode-active .stash-bullet path { fill: url(#bullet-chrome-classic) !important; }
+
+                    .target-marker {
+                        position: absolute; left: 50%; top: -20px;
+                        transform: translateX(-50%) translateZ(30px);
+                        color: var(--angry-red); font-size: 32px;
+                        filter: drop-shadow(0 0 10px var(--angry-red));
+                        z-index: 60; pointer-events: none;
+                    }
+                `;
+                document.head.appendChild(style);
+
+                if (!document.getElementById('roulette-global-defs')) {
+                    const defsSvg = document.createElement('div');
+                    defsSvg.innerHTML = `
+                        <svg id="roulette-global-defs" width="0" height="0" style="position:absolute;">
+                            <defs>
+                                <mask id="main-drum-thru-mask" maskUnits="userSpaceOnUse" x="-100" y="-100" width="400" height="400">
+                                    <rect x="-100" y="-100" width="400" height="400" fill="white" />
+                                    <circle cx="100" cy="100" r="14" fill="black" />
+                                    <circle cx="100" cy="28" r="22" fill="black" />
+                                    <circle cx="162.35" cy="64" r="22" fill="black" />
+                                    <circle cx="162.35" cy="136" r="22" fill="black" />
+                                    <circle cx="100" cy="172" r="22" fill="black" />
+                                    <circle cx="37.65" cy="136" r="22" fill="black" />
+                                    <circle cx="37.65" cy="64" r="22" fill="black" />
+                                    <circle cx="208" cy="100" r="22" fill="black" /> 
+                                    <circle cx="154" cy="193.5" r="22" fill="black" /> 
+                                    <circle cx="46" cy="193.5" r="22" fill="black" /> 
+                                    <circle cx="-8" cy="100" r="22" fill="black" /> 
+                                    <circle cx="46" cy="6.5" r="22" fill="black" /> 
+                                    <circle cx="154" cy="6.5" r="22" fill="black" /> 
+                                </mask>
+                                
+                                <radialGradient id="drum-metal" cx="30%" cy="30%" r="70%">
+                                    <stop offset="0%" stop-color="#64748b"/>
+                                    <stop offset="50%" stop-color="#334155"/>
+                                    <stop offset="100%" stop-color="#0f172a"/>
+                                </radialGradient>
+                                <radialGradient id="drum-metal-classic" cx="30%" cy="30%" r="70%">
+                                    <stop offset="0%" stop-color="#ffffff"/>
+                                    <stop offset="60%" stop-color="#d1d5db"/>
+                                    <stop offset="100%" stop-color="#94a3b8"/> 
+                                </radialGradient>
+                                
+                                <radialGradient id="bullet-chrome-highlight" cx="35%" cy="35%" r="65%">
+                                    <stop offset="0%" stop-color="#ffffff"/>
+                                    <stop offset="50%" stop-color="#cbd5e1"/>
+                                    <stop offset="100%" stop-color="#475569"/>
+                                </radialGradient>
+                                
+                                <radialGradient id="bullet-chrome-classic" cx="35%" cy="35%" r="65%">
+                                    <stop offset="0%" stop-color="#fca5a5"/>
+                                    <stop offset="40%" stop-color="#ef4444"/>
+                                    <stop offset="80%" stop-color="#b91c1c"/>
+                                    <stop offset="100%" stop-color="#7f1d1d"/>
+                                </radialGradient>
+                                
+                                <radialGradient id="bullet-primer-chrome-highlight" cx="35%" cy="35%" r="65%">
+                                    <stop offset="0%" stop-color="#ffffff"/> 
+                                    <stop offset="50%" stop-color="#cbd5e1"/>
+                                    <stop offset="100%" stop-color="#64748b"/>
+                                </radialGradient>
+
+                                <radialGradient id="bullet-primer-fired" cx="50%" cy="50%" r="50%">
+                                    <stop offset="0%" stop-color="#334155"/>
+                                    <stop offset="100%" stop-color="#000000"/>
+                                </radialGradient>
+                            </defs>
+                        </svg>
+                    `;
+                    document.body.appendChild(defsSvg);
+                }
+
+                const cx = [100, 162.35, 162.35, 100, 37.65, 37.65];
+                const cy = [28, 64, 136, 172, 136, 64];
+
+                let layersHTML = ``;
+
+                // v26: СПЕЦИАЛЬНЫЙ СЛОЙ ДЛЯ ДНА КАМОРЫ (НА ГЛУБИНЕ Z=-12px)
+                // Этот слой абсолютно прозрачен, пока в камору не загружена пуля
+                let floorChambers = '';
+                for(let i=0; i<6; i++) {
+                    floorChambers += `<circle cx="${cx[i]}" cy="${cy[i]}" r="22" class="chamber-floor" id="ch-floor-${i}"/>`;
+                }
+                layersHTML += `<svg class="drum-layer" style="transform: translateZ(-12px)" viewBox="0 0 200 200">${floorChambers}</svg>`;
+
+                // СКВОЗНЫЕ СРЕДНИЕ СЛОИ
+                for(let i = 0; i < 15; i++) {
+                    let z = -28 + i * 2;
+                    let colorVarName = i % 2 === 0 ? '--mid-layer-dark' : '--mid-layer-light';
+                    layersHTML += `
+                        <svg class="drum-layer drum-mid-layer" style="transform: translateZ(${z}px); fill: var(${colorVarName});" viewBox="0 0 200 200">
+                            <circle cx="100" cy="100" r="96" mask="url(#main-drum-thru-mask)" />
+                        </svg>
+                    `;
+                }
+
+                // ВЕРХНИЙ СЛОЙ
+                layersHTML += `
+                    <svg class="drum-layer drum-top-layer" style="transform: translateZ(2px)" viewBox="0 0 200 200">
+                        <circle cx="100" cy="100" r="96" mask="url(#main-drum-thru-mask)" />
+                    </svg>
+                `;
+
+                const nums = [3, 4, 5, 6, 1, 2];
+                const ty = [34, 70, 142, 178, 142, 70];
+
+                let topContent = '';
+                for(let i=0; i<6; i++) {
+                    topContent += `
+                        <text x="${cx[i]}" y="${ty[i]}" font-size="18" text-anchor="middle" font-weight="bold" class="hole-num" style="transform-origin: ${cx[i]}px ${cy[i]}px;">${nums[i]}</text>
+                        <g class="chamber-slot" id="ch-${i}">
+                            <circle cx="${cx[i]}" cy="${cy[i]}" r="20" class="bullet-outer"/>
+                            <circle cx="${cx[i]}" cy="${cy[i]}" r="8" class="bullet-inner"/>
+                        </g>
+                    `;
+                }
+
+                layersHTML += `
+                    <svg class="bullets-svg drum-layer" style="transform: translateZ(3px)" viewBox="0 0 200 200">
+                        ${topContent}
+                    </svg>
+                `;
+
+                const wrapper = document.getElementById('drumWrapper');
+                if (wrapper) {
+                    wrapper.innerHTML = `
+                        <div class="target-marker"><i class="fas fa-caret-down"></i></div>
+                        <div class="drum-glow"></div>
+                        <div class="drum-3d-scene">
+                            <div id="drumRotator">
+                                ${layersHTML}
+                            </div>
+                        </div>
+                    `;
+                    wrapper.className = 'drum-wrapper'; 
+                }
+
+            } catch(e) { console.error("3D Drum Injection Error: ", e); }
+        })();
 // --- КОНЕЦ ЧЕТВЕРТОЙ ЧАСТИ ---
 // --- НАЧАЛО ПЯТОЙ ЧАСТИ ---
 // ==============================================
-        // 🪙 ПЛАГИН 3: ГРАНЬ ВЫБОРА (ИНЖЕКЦИЯ) v17 (Audio & Haptics)
+        // 🪙 ПЛАГИН 3: ГРАНЬ ВЫБОРА (ИНЖЕКЦИЯ) v46 (Clean Style Toggle)
         // ==============================================
         const CoinGame = (function() {
             let isDragging = false, lastX = 0, lastY = 0, velX = 0, velY = 0, inertiaFrame, lastMoveTime = 0, lastTapTime = 0;
@@ -3294,7 +4048,6 @@
                 return array[0] / 4294967295;
             }
 
-            // Локальный синтезатор звука летящей монеты
             function playCoinTossSound() {
                 if (!GameState.sound) return;
                 const ctx = new (window.AudioContext || window.webkitAudioContext)();
@@ -3306,13 +4059,8 @@
                     osc.connect(g); g.connect(ctx.destination);
                     osc.start(); osc.stop(ctx.currentTime + dur);
                 };
-                // Щелчок пальцем
                 playOsc(1200, 'square', 0.05, 0.3);
-                // Звенящий полет (два тона для эффекта металла)
-                setTimeout(() => {
-                    playOsc(4500, 'sine', 1.8, 0.15);
-                    playOsc(3800, 'triangle', 1.5, 0.1);
-                }, 20);
+                setTimeout(() => { playOsc(4500, 'sine', 1.8, 0.15); playOsc(3800, 'triangle', 1.5, 0.1); }, 20);
             }
 
             function init() {
@@ -3324,7 +4072,6 @@
 
             function mount() {
                 const st = document.getElementById('coinStage'); if(st) st.style.display = 'flex';
-                const hl = document.getElementById('historyListDice'); if(hl) hl.style.display = 'block'; 
                 
                 rotX = -35; rotY = 0; rotZ = 0;
                 const coin = document.getElementById('coinRotator'); 
@@ -3334,12 +4081,12 @@
                 }
 
                 const t = LANG_DATA[GameState.lang];
-                document.getElementById('ui-title').innerText = t.menuCoin;
-                const stHist = document.getElementById('st-hist-head'); if(stHist) stHist.innerText = t.histCoinHead;
+                document.getElementById('ui-title').innerText = t.menuCoin || "Грань Выбора";
+                const stHist = document.getElementById('st-hist-head'); if(stHist) stHist.innerText = t.histCoinHead || "Броски монеты";
                 
                 const disp = document.getElementById('current-mode-display');
                 if(disp) {
-                    const subNamesCoin = { standard: t.smCoinStd, question: t.smCoinQst };
+                    const subNamesCoin = { standard: t.smCoinStd || "Бросок", question: t.smCoinQst || "Вопрос" };
                     disp.innerText = subNamesCoin[GameState.subModes.coin].toUpperCase();
                     disp.style.display = 'inline';
                 }
@@ -3372,14 +4119,13 @@
                 const rs = document.getElementById('res-status');
                 if (rs) {
                     rs.classList.remove('visible');
-                    rs.innerText = isHidden ? t.idleNoQ : t.idle;
+                    rs.innerText = isHidden ? (t.idleNoQ || "ОЖИДАНИЕ...") : (t.idle || "ЖДУ ВОПРОС...");
                     setTimeout(() => rs.classList.add('visible'), 50);
                 }
             }
 
             function unmount() {
                 const st = document.getElementById('coinStage'); if(st) st.style.display = 'none';
-                
                 document.querySelectorAll('.debug-dice-btn').forEach(b => b.style.display = 'flex');
                 document.querySelectorAll('.debug-coin-btn').forEach(b => b.style.display = 'none');
             }
@@ -3387,15 +4133,9 @@
             function handlePointerDown(e) {
                 const rollBtn = document.getElementById('rollBtn');
                 if (!rollBtn || rollBtn.disabled || GameState.mode !== 'coin') return;
-
-                // Двойной тап для броска
                 const now = Date.now();
-                if (now - lastTapTime < 300) {
-                    if (typeof App !== 'undefined') App.askOracle();
-                    return;
-                }
+                if (now - lastTapTime < 300) { if (typeof App !== 'undefined') App.askOracle(); return; }
                 lastTapTime = now;
-
                 isDragging = true; cancelAnimationFrame(inertiaFrame);
                 const coin = document.getElementById('coinRotator'); if(coin) coin.style.transition = 'none';
                 const clientX = e.touches ? e.touches[0].clientX : e.clientX; const clientY = e.touches ? e.touches[0].clientY : e.clientY;
@@ -3428,46 +4168,34 @@
                 const uq = document.getElementById('userQuestion');
                 const q = uq ? uq.value.trim() : '';
                 const t = LANG_DATA[GameState.lang];
+                if (!GameState.isQuestionHidden && !q && forcedIdx === null) { App.triggerButtonError(); App.showError(t.error || "Введите вопрос!"); return; }
+                App.hideError(); isDragging = false; velX = 0; velY = 0; cancelAnimationFrame(inertiaFrame);
                 
-                if (!GameState.isQuestionHidden && !q && forcedIdx === null) {
-                    App.triggerButtonError(); App.showError(t.error); return;
-                }
-                
-                App.hideError(); isDragging = false; velX = 0; velY = 0;
-                cancelAnimationFrame(inertiaFrame);
-                const coin = document.getElementById('coinRotator'); if(coin) { coin.style.transition = 'none'; void coin.offsetWidth; }
+                const coin = document.getElementById('coinRotator'); 
+                if(coin) { coin.style.transition = 'none'; void coin.offsetWidth; }
                 
                 const originalQuestion = q; if (!GameState.isQuestionHidden && uq) uq.value = '';
                 
-                // Кастомный звук подброса монеты вместо глухого клика
                 playCoinTossSound();
-                
+
                 const rollBtn = document.getElementById('rollBtn');
-                if(rollBtn) { rollBtn.disabled = true; rollBtn.innerText = t.waiting; rollBtn.classList.add('gold-text-active'); }
+                if(rollBtn) { rollBtn.disabled = true; rollBtn.innerText = t.waiting || "БРОСАЮ..."; rollBtn.classList.add('gold-text-active'); }
                 
                 const rc = document.getElementById('res-content'); if(rc) rc.classList.remove('visible');
                 const rs = document.getElementById('res-status'); if(rs) rs.classList.remove('visible');
                 
                 const cryptoRand = getCryptoRandom();
                 let rIdx = forcedIdx !== null ? forcedIdx : (cryptoRand < 0.02 ? 2 : Math.floor(getCryptoRandom() * 2));
-                
                 const rollDuration = 2000 + Math.floor(getCryptoRandom() * 3500); 
-                const wobbleDur = 600; 
-                const flightDur = rollDuration - wobbleDur;
+                const wobbleDur = 600; const flightDur = rollDuration - wobbleDur;
                 
                 const spinsX = 360 * (15 + Math.floor(getCryptoRandom() * 15)); 
-                let targetRotX = 0;
-                if (rIdx === 0) targetRotX = 0; 
-                else if (rIdx === 1) targetRotX = 180; 
-                else if (rIdx === 2) targetRotX = 85; 
-                
+                let targetRotX = (rIdx === 0) ? 0 : (rIdx === 1 ? 180 : 85);
                 const baseRotX = Math.round(rotX / 360) * 360;
                 rotX = baseRotX + spinsX + targetRotX;
-                
                 const baseRotZ = Math.round(rotZ / 360) * 360;
                 rotZ = baseRotZ + (getCryptoRandom() * 1440 - 720); 
                 rotY = (rIdx === 2) ? 10 : 0; 
-
                 const overX = rotX + (rIdx === 2 ? 10 : 25);
                 const overY = rotY + (rIdx === 2 ? 5 : 15);
                 
@@ -3496,23 +4224,17 @@
                     }; haptics();
                 }
                 
-                // В момент касания земли
                 setTimeout(() => {
                     if(coin) {
                         coin.style.transition = `transform ${wobbleDur / 1000}s cubic-bezier(0.34, 1.56, 0.64, 1)`; 
                         coin.style.transform = `rotateX(${rotX}deg) rotateY(${rotY}deg) rotateZ(${rotZ}deg)`;
                     }
-                    
-                    // Звук удара об пол (используем звонкий звук монеток из ядра)
                     if(typeof App !== 'undefined') App.playSoundEffect('coins');
-                    
-                    // 3-ступенчатая реалистичная вибрация: Удар -> Отскок -> Окончательное падение
                     if (tg.HapticFeedback) {
-                        tg.HapticFeedback.impactOccurred('heavy'); // Удар
-                        setTimeout(() => tg.HapticFeedback.impactOccurred('medium'), wobbleDur * 0.4); // Отскок
-                        setTimeout(() => tg.HapticFeedback.impactOccurred('rigid'), wobbleDur * 0.9); // Окончательное падение
+                        tg.HapticFeedback.impactOccurred('heavy');
+                        setTimeout(() => tg.HapticFeedback.impactOccurred('medium'), wobbleDur * 0.4);
+                        setTimeout(() => tg.HapticFeedback.impactOccurred('rigid'), wobbleDur * 0.9);
                     }
-                    
                     for(let i=0;i<100;i++) { App.createSparkle(); }
                 }, flightDur);
                 
@@ -3524,22 +4246,22 @@
                 const isRu = GameState.lang === 'ru';
                 
                 if (rIdx === 0) {
-                    resT = isRu ? "ОРЁЛ" : "HEADS"; resD = ""; 
-                    uiColor = "#f1c40f"; subI = '<i class="fas fa-heart"></i>'; histDispTxt = resT; snd = 'safe_click';
+                    resT = isRu ? "ОРЁЛ" : "HEADS"; 
+                    uiColor = "#f1c40f"; subI = '<i class="fas fa-feather-pointed"></i>'; histDispTxt = resT; snd = 'safe_click';
                 } else if (rIdx === 1) {
-                    resT = isRu ? "РЕШКА" : "TAILS"; resD = ""; 
-                    uiColor = "#a29bfe"; subI = '<i class="fas fa-skull"></i>'; histDispTxt = resT; snd = 'negative';
+                    resT = isRu ? "РЕШКА" : "TAILS"; 
+                    uiColor = "#ff9f43"; subI = '<i class="fas fa-crown"></i>'; histDispTxt = resT; snd = 'negative';
                 } else if (rIdx === 2) {
-                    resT = isRu ? "РЕБРО!" : "EDGE!"; resD = ""; 
+                    resT = isRu ? "РЕБРО!" : "EDGE!"; 
                     uiColor = "#00f5d4"; subI = '<i class="fas fa-bolt"></i>'; histDispTxt = resT; snd = 'achievement';
                 }
                 
                 if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred(rIdx === 2 ? 'success' : (rIdx === 0 ? 'success' : 'warning'));
 
                 const rm = document.getElementById('res-main'); if(rm) rm.innerHTML = resT;
-                const resSub = document.getElementById('res-sub'); if(resSub) { resSub.innerHTML = subI; resSub.style.color = uiColor; resSub.style.textShadow = `0 0 25px ${uiColor}`; }
-                const rd = document.getElementById('res-desc'); if(rd) rd.innerHTML = resD;
-                
+                const resSub = document.getElementById('res-sub'); 
+                if(resSub) { resSub.innerHTML = ""; resSub.style.color = uiColor; }
+                const rd = document.getElementById('res-desc'); if(rd) rd.innerHTML = "";
                 const rCont = document.getElementById('res-content');
                 if(rCont) { rCont.style.color = uiColor; rCont.style.textShadow = `0 0 15px ${uiColor}`; void rCont.offsetWidth; rCont.classList.add('visible'); }
                 
@@ -3547,12 +4269,14 @@
 
                 const item = document.createElement('div'); item.className = 'history-item';
                 const qMark = `<span style="color:#fff; font-weight:bold; text-shadow: 0 0 8px #fff, 0 0 15px var(--magic-color);">?</span>`;
-                
-                const subNamesCoin = { standard: t.smCoinStd, question: t.smCoinQst };
+                const subNamesCoin = { standard: t.smCoinStd || "Бросок", question: t.smCoinQst || "Вопрос" };
                 const mTag = `<span style="color:#aaa; font-size:9px;">[${subNamesCoin[GameState.subModes.coin].toUpperCase()}]</span>`;
                 item.innerHTML = `${qMark} ${GameState.isQuestionHidden?'---':originalQuestion} ${mTag}<br><span style="color:${uiColor};">➔ ${subI} ${histDispTxt}</span>`;
                 
-                const hlDice = document.getElementById('historyListDice'); if(hlDice) hlDice.prepend(item);
+                // Если мы уже настроили контейнер истории монеты - пишем туда
+                const hlCoin = document.getElementById('historyListCoin') || document.getElementById('historyListDice'); 
+                if(hlCoin) hlCoin.prepend(item);
+                
                 App.requestProfileSave();
                 
                 const rollBtn = document.getElementById('rollBtn');
@@ -3567,41 +4291,69 @@
             return { init, mount, unmount, play };
         })();
 
-        // ==============================================
-        // СИСТЕМА ИНЖЕКЦИИ (ЧИСТАЯ АРХИТЕКТУРА V17)
-        // ==============================================
+        // ИНЖЕКЦИЯ КОНТЕНТА МОНЕТЫ (Только HTML, логика теперь безопасно в App)
         (function injectCoinPlugin() {
             try {
                 document.querySelectorAll('#submodes-coin, #coinStage, .coin-styles, .debug-coin-btn').forEach(el => el.remove());
-                
                 const style = document.createElement('style');
                 style.className = 'coin-styles';
                 style.innerHTML = `
                     #coinStage { display: none; position: relative; width: 100%; height: 240px; justify-content: center; align-items: center; z-index: 50; perspective: 1200px; touch-action: none; transition: opacity 0.4s; margin: 2px 0 5px 0;}
                     .coin-scene { width: 120px; height: 120px; position: relative; z-index: 60; transform-style: preserve-3d; }
-                    .coin { width: 100%; height: 100%; position: relative; transform-style: preserve-3d; }
-                    .coin-face { position: absolute; width: 100%; height: 100%; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 55px; color: #fff; backface-visibility: hidden; box-sizing: border-box; }
-                    .coin-edge { position: absolute; top:0; left:0; width: 100%; height: 100%; border-radius: 50%; background: #b8860b; box-sizing: border-box; }
+                    .coin { width: 100%; height: 100%; position: relative; transform-style: preserve-3d; transition: transform 0.1s; }
                     
-                    .coin-front { transform: translateZ(5px); background: radial-gradient(circle at 35% 35%, #ffd700 0%, #b8860b 80%); border: 4px solid #daa520; box-shadow: inset 0 0 15px rgba(0,0,0,0.3), inset 0 0 5px rgba(255,255,255,0.8); color: #fffacd; text-shadow: 1px 1px 2px rgba(0,0,0,0.5); }
-                    .coin-back { transform: rotateX(180deg) translateZ(5px); background: radial-gradient(circle at 35% 35%, #e0e0e0 0%, #888888 80%); border: 4px solid #a9a9a9; box-shadow: inset 0 0 15px rgba(0,0,0,0.4), inset 0 0 5px rgba(255,255,255,0.9); color: #f5f5f5; text-shadow: 1px 1px 2px rgba(0,0,0,0.5); }
+                    .coin { 
+                        --c-1: #ffffff; --c-2: #cbd5e1; --c-3: #94a3b8; --c-b: #cbd5e1;
+                        --i-f: linear-gradient(135deg, #ffd700 0%, #475569 100%); 
+                        --i-c: #ffd700;
+                    }
+
+                    /* МЕДНЫЙ РЕЖИМ (Светлая тема: активируется кнопкой стиля/цвета кубика!) */
+                    body.classic-mode-active .coin {
+                        --c-1: #f4a460; --c-2: #cd7f32; --c-3: #8b4513; --c-b: #d2691e;
+                        --i-f: linear-gradient(135deg, #ffd700 0%, #5d3a1a 100%);
+                        --i-c: #ff8c00;
+                    }
+
+                    .coin-face { 
+                        position: absolute; width: 100%; height: 100%; border-radius: 50%; 
+                        display: flex; align-items: center; justify-content: center; font-size: 55px; 
+                        backface-visibility: hidden; box-sizing: border-box; 
+                        background: radial-gradient(circle at 35% 35%, var(--c-1) 0%, var(--c-2) 45%, var(--c-3) 100%);
+                        border: 3px solid var(--c-b);
+                        box-shadow: inset 0 0 15px rgba(0,0,0,0.2), inset 0 0 5px rgba(255,255,255,1);
+                        transition: background 0.4s, border-color 0.4s;
+                    }
                     
-                    #submodes-coin .sub-mode-btn.active-sub { border-color: #f1c40f; color: #f1c40f; box-shadow: 0 0 10px rgba(241, 196, 15, 0.3); background: rgba(241, 196, 15, 0.1); }
-                    #submodes-coin .info-mode-btn { background: #f1c40f; color: #000; box-shadow: 0 0 5px rgba(241, 196, 15, 0.8); }
+                    .coin-edge { position: absolute; top:0; left:0; width: 100%; height: 100%; border-radius: 50%; background: var(--c-3); box-sizing: border-box; transition: background 0.4s; pointer-events: none; }
+                    .coin-rim-segment {
+                        position: absolute; left: 50%; top: 50%; width: 11.5px; height: 10px; margin-left: -5.75px; margin-top: -5px;
+                        background: repeating-linear-gradient(to right, var(--c-3) 0px, var(--c-2) 1px, var(--c-1) 2px, var(--c-3) 3px);
+                        box-sizing: border-box; transition: background 0.4s; pointer-events: none;
+                    }
+                    
+                    .coin-front { transform: translateZ(5px); }
+                    .coin-front i {
+                        filter: drop-shadow(2px 2px 1px rgba(0,0,0,0.6)) drop-shadow(-1px -1px 1px rgba(255,255,255,0.4));
+                        background: var(--i-f); -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+                        transition: background 0.4s, filter 0.3s; pointer-events: none;
+                    }
+                    .coin-back { transform: rotateX(180deg) translateZ(5px); }
+                    .coin-back i { 
+                        filter: drop-shadow(2px 2px 2px rgba(0,0,0,0.5)) drop-shadow(-1px -1px 1px rgba(255,255,255,0.9)); 
+                        color: var(--i-c); transition: color 0.4s; pointer-events: none; 
+                    }
+                    
+                    #submodes-coin .sub-mode-btn.active-sub { border-color: #cbd5e1; color: #fff; box-shadow: 0 0 10px rgba(255, 255, 255, 0.2); background: rgba(255, 255, 255, 0.1); }
+                    #submodes-coin .info-mode-btn { background: #cbd5e1; color: #000; box-shadow: 0 0 5px rgba(255, 255, 255, 0.5); }
                 `;
                 document.head.appendChild(style);
 
                 const gameSelectors = document.querySelector('.game-selector-row');
-                if (gameSelectors) {
-                    const oldCoinBtn = document.getElementById('sel-game-coin');
-                    if (oldCoinBtn) oldCoinBtn.remove();
-                    
+                if (gameSelectors && !document.getElementById('sel-game-coin')) {
                     const lockedBtns = document.querySelectorAll('.square-game-btn.locked');
                     if (lockedBtns.length > 0) {
-                        const newBtn = document.createElement('button');
-                        newBtn.className = 'square-game-btn';
-                        newBtn.id = 'sel-game-coin';
-                        newBtn.onclick = () => App.previewGame('coin');
+                        const newBtn = document.createElement('button'); newBtn.className = 'square-game-btn'; newBtn.id = 'sel-game-coin'; newBtn.onclick = () => App.previewGame('coin');
                         newBtn.innerHTML = '<i class="fas fa-coins"></i><span id="sel-coin-txt">Грань</span>';
                         lockedBtns[0].parentNode.replaceChild(newBtn, lockedBtns[0]);
                     }
@@ -3609,237 +4361,37 @@
 
                 const dp = document.getElementById('debugPanel');
                 if (dp) {
-                    const btns = Array.from(dp.querySelectorAll('.debug-btn'));
-                    btns.forEach(b => { 
-                        if (!b.querySelector('.fa-trophy')) { b.classList.add('debug-dice-btn'); }
-                    });
-                    
-                    const b1 = document.createElement('button'); b1.className = 'debug-btn debug-coin-btn'; b1.style.display = 'none'; b1.onclick = () => App.askOracle(0); b1.innerHTML = '<i class="fas fa-heart"></i>';
-                    const b2 = document.createElement('button'); b2.className = 'debug-btn debug-coin-btn'; b2.style.display = 'none'; b2.onclick = () => App.askOracle(1); b2.innerHTML = '<i class="fas fa-skull"></i>';
+                    const b1 = document.createElement('button'); b1.className = 'debug-btn debug-coin-btn'; b1.style.display = 'none'; b1.onclick = () => App.askOracle(0); b1.innerHTML = '<i class="fas fa-feather-pointed"></i>';
+                    const b2 = document.createElement('button'); b2.className = 'debug-btn debug-coin-btn'; b2.style.display = 'none'; b2.onclick = () => App.askOracle(1); b2.innerHTML = '<i class="fas fa-crown"></i>';
                     const b3 = document.createElement('button'); b3.className = 'debug-btn debug-coin-btn'; b3.style.display = 'none'; b3.onclick = () => App.askOracle(2); b3.innerHTML = '<i class="fas fa-bolt"></i>';
-                    
-                    const trophyBtn = btns.find(b => b.querySelector('.fa-trophy'));
-                    if (trophyBtn) {
-                        dp.insertBefore(b1, trophyBtn);
-                        dp.insertBefore(b2, trophyBtn);
-                        dp.insertBefore(b3, trophyBtn);
-                    }
+                    const trophyBtn = Array.from(dp.querySelectorAll('.debug-btn')).find(b => b.querySelector('.fa-trophy'));
+                    if (trophyBtn) { dp.insertBefore(b1, trophyBtn); dp.insertBefore(b2, trophyBtn); dp.insertBefore(b3, trophyBtn); }
                 }
 
-                const subModesContainer = document.getElementById('menuPreviewSubModes');
-                if (subModesContainer) {
-                    const coinSubModes = document.createElement('div');
-                    coinSubModes.id = 'submodes-coin';
-                    coinSubModes.style.cssText = 'display: none; flex-direction: column; gap: 8px; width: 100%;';
-                    coinSubModes.innerHTML = `
-                        <button class="sub-mode-btn active-sub" onclick="App.selectSubMode('coin', 'standard', event)" id="sm-coin-standard">
-                            <div class="float-corner-btn info-mode-btn" onclick="App.showSubModeRules(event, 'coin', 'standard')"><i class="fas fa-question"></i></div>
-                            <span id="sm-coin-standard-lbl">Бросок</span>
-                        </button>
-                        <button class="sub-mode-btn" onclick="App.selectSubMode('coin', 'question', event)" id="sm-coin-question">
-                            <div class="float-corner-btn info-mode-btn" onclick="App.showSubModeRules(event, 'coin', 'question')"><i class="fas fa-question"></i></div>
-                            <span id="sm-coin-question-lbl">Вопрос</span>
-                        </button>
-                    `;
-                    subModesContainer.appendChild(coinSubModes);
+                const smContainer = document.getElementById('menuPreviewSubModes');
+                if (smContainer && !document.getElementById('submodes-coin')) {
+                    const coinSub = document.createElement('div'); coinSub.id = 'submodes-coin'; coinSub.style.cssText = 'display: none; flex-direction: column; gap: 8px; width: 100%;';
+                    coinSub.innerHTML = `<button class="sub-mode-btn active-sub" onclick="App.selectSubMode('coin', 'standard', event)" id="sm-coin-standard"><div class="float-corner-btn info-mode-btn" onclick="App.showSubModeRules(event, 'coin', 'standard')"><i class="fas fa-question"></i></div><span id="sm-coin-standard-lbl">Бросок</span></button><button class="sub-mode-btn" onclick="App.selectSubMode('coin', 'question', event)" id="sm-coin-question"><div class="float-corner-btn info-mode-btn" onclick="App.showSubModeRules(event, 'coin', 'question')"><i class="fas fa-question"></i></div><span id="sm-coin-question-lbl">Вопрос</span></button>`;
+                    smContainer.appendChild(coinSub);
                 }
 
                 const mainStage = document.getElementById('mainStage');
-                if (mainStage) {
-                    const coinStage = document.createElement('div');
-                    coinStage.id = 'coinStage';
-                    let edgesHTML = '';
-                    for(let i = -4; i <= 4; i++) { edgesHTML += `<div class="coin-edge" style="transform: translateZ(${i}px);"></div>`; }
-                    coinStage.innerHTML = `
-                        <div class="coin-scene" id="coinScene">
-                            <div id="coinRotator" class="coin">
-                                ${edgesHTML}
-                                <div class="coin-face coin-front" id="coinFront"><i class="fas fa-heart"></i></div>
-                                <div class="coin-face coin-back" id="coinBack"><i class="fas fa-skull"></i></div>
-                            </div>
-                        </div>
-                    `;
+                if (mainStage && !document.getElementById('coinStage')) {
+                    let rimHTML = ''; for(let i = 0; i < 36; i++) { rimHTML += `<div class="coin-rim-segment" style="transform: rotateZ(${i*10}deg) translateY(-59.5px) rotateX(90deg);"></div>`; }
+                    let edgesHTML = ''; for(let i = -4; i <= 4; i+=2) { edgesHTML += `<div class="coin-edge" style="transform: translateZ(${i}px);"></div>`; }
+                    const coinStage = document.createElement('div'); coinStage.id = 'coinStage'; coinStage.className = 'stage'; coinStage.style.display = 'none';
+                    coinStage.innerHTML = `<div class="coin-scene" id="coinScene"><div id="coinRotator" class="coin">${edgesHTML}${rimHTML}<div class="coin-face coin-front" id="coinFront"><i class="fas fa-feather-pointed"></i></div><div class="coin-face coin-back" id="coinBack"><i class="fas fa-crown"></i></div></div></div>`;
                     mainStage.parentNode.insertBefore(coinStage, document.getElementById('rouletteStage'));
                 }
 
-                GameState.subModes.coin = 'standard';
-                GameState.questionHiddenMap['coin_standard'] = true; 
-                GameState.questionHiddenMap['coin_question'] = false; 
-                
-                LANG_DATA.ru.menuCoin = "Грань Выбора"; LANG_DATA.en.menuCoin = "Edge of Choice";
-                LANG_DATA.ru.histCoinHead = "Броски монеты"; LANG_DATA.en.histCoinHead = "Coin Tosses";
+                if (!GameState.subModes.coin) GameState.subModes.coin = 'standard';
                 LANG_DATA.ru.smCoinStd = "Бросок"; LANG_DATA.en.smCoinStd = "Toss";
                 LANG_DATA.ru.smCoinQst = "Вопрос"; LANG_DATA.en.smCoinQst = "Question";
-                
-                RULES_HTML['coin_standard'] = {
-                    ru: `<div class="rules-content"><div style="color: #f1c40f; font-weight: bold; font-size: 18px; border-bottom: 1px solid rgba(241, 196, 15, 0.3); padding-bottom: 8px; margin-bottom: 12px; text-align: center;">🪙 Бросок</div><div style="margin-bottom: 12px; font-style: italic; color: #ccc;">Просто брось монету на удачу. Никаких вопросов, чистая случайность.</div><ul style="padding-left: 22px; margin-top: 0; margin-bottom: 0; list-style-type: none;"><li style="margin-bottom: 8px;"><span style="margin-left: -22px; margin-right: 4px;">❤️</span> <b>Орёл:</b> Жизнь, удача, успех.</li><li style="margin-bottom: 8px;"><span style="margin-left: -22px; margin-right: 4px;">💀</span> <b>Решка:</b> Провал, смерть, отказ.</li><li style="margin-bottom: 8px;"><span style="margin-left: -22px; margin-right: 4px;">⚡</span> <b>Ребро:</b> Уникальный случай (шанс 2%).</li></ul></div>`,
-                    en: `<div class="rules-content"><div style="color: #f1c40f; font-weight: bold; font-size: 18px; border-bottom: 1px solid rgba(241, 196, 15, 0.3); padding-bottom: 8px; margin-bottom: 12px; text-align: center;">🪙 Toss</div><div style="margin-bottom: 12px; font-style: italic; color: #ccc;">Just flip the coin for luck. No questions asked.</div><ul style="padding-left: 22px; margin-top: 0; margin-bottom: 0; list-style-type: none;"><li style="margin-bottom: 8px;"><span style="margin-left: -22px; margin-right: 4px;">❤️</span> <b>Heads:</b> Life, luck, success.</li><li style="margin-bottom: 8px;"><span style="margin-left: -22px; margin-right: 4px;">💀</span> <b>Tails:</b> Failure, death, refusal.</li><li style="margin-bottom: 8px;"><span style="margin-left: -22px; margin-right: 4px;">⚡</span> <b>Edge:</b> Rare (2%).</li></ul></div>`
-                };
-
-                RULES_HTML['coin_question'] = {
-                    ru: `<div class="rules-content"><div style="color: #f1c40f; font-weight: bold; font-size: 18px; border-bottom: 1px solid rgba(241, 196, 15, 0.3); padding-bottom: 8px; margin-bottom: 12px; text-align: center;">🪙 Вопрос</div><div style="margin-bottom: 12px; font-style: italic; color: #ccc;">Сконцентрируйся, задай вопрос и подбрось монету, когда есть только два пути.</div><ul style="padding-left: 22px; margin-top: 0; margin-bottom: 0; list-style-type: none;"><li style="margin-bottom: 8px;"><span style="margin-left: -22px; margin-right: 4px;">❤️</span> <b>Орёл:</b> Положительный ответ, действие.</li><li style="margin-bottom: 8px;"><span style="margin-left: -22px; margin-right: 4px;">💀</span> <b>Решка:</b> Отрицательный ответ, ожидание.</li><li style="margin-bottom: 8px;"><span style="margin-left: -22px; margin-right: 4px;">⚡</span> <b>Ребро:</b> Уникальный случай (шанс 2%). Вселенная отказывается отвечать.</li></ul></div>`,
-                    en: `<div class="rules-content"><div style="color: #f1c40f; font-weight: bold; font-size: 18px; border-bottom: 1px solid rgba(241, 196, 15, 0.3); padding-bottom: 8px; margin-bottom: 12px; text-align: center;">🪙 Question</div><div style="margin-bottom: 12px; font-style: italic; color: #ccc;">Ask a question and flip the coin when there are only two paths.</div><ul style="padding-left: 22px; margin-top: 0; margin-bottom: 0; list-style-type: none;"><li style="margin-bottom: 8px;"><span style="margin-left: -22px; margin-right: 4px;">❤️</span> <b>Heads:</b> Positive, action.</li><li style="margin-bottom: 8px;"><span style="margin-left: -22px; margin-right: 4px;">💀</span> <b>Tails:</b> Negative, wait.</li><li style="margin-bottom: 8px;"><span style="margin-left: -22px; margin-right: 4px;">⚡</span> <b>Edge:</b> Rare (2%). Universe refuses to answer.</li></ul></div>`
-                };
-
-                App.previewGame = function(mode) {
-                    GameState.previewMode = mode;
-                    const t = LANG_DATA[GameState.lang];
-                    const card = document.getElementById('menuPreviewCard');
-                    
-                    document.querySelectorAll('.square-game-btn').forEach(b => b.classList.remove('active-preview'));
-                    
-                    const diceSub = document.getElementById('submodes-dice'); if (diceSub) diceSub.style.display = 'none';
-                    const roulSub = document.getElementById('submodes-roulette'); if (roulSub) roulSub.style.display = 'none';
-                    const coinSub = document.getElementById('submodes-coin'); if (coinSub) coinSub.style.display = 'none';
-                    
-                    if (mode === 'dice') {
-                        if (diceSub) diceSub.style.display = 'flex';
-                        card.style.borderColor = "var(--magic-color)";
-                        card.style.boxShadow = "0 0 10px rgba(162, 155, 254, 0.2)";
-                        card.style.color = "var(--magic-color)";
-                        document.getElementById('preview-card-icon').innerHTML = '<i class="fas fa-dice-d6"></i>';
-                        document.getElementById('preview-card-title').innerText = t.menuDice;
-                        const btn = document.getElementById('sel-game-dice'); if(btn) btn.classList.add('active-preview');
-                        
-                    } else if (mode === 'roulette') {
-                        if (roulSub) roulSub.style.display = 'flex';
-                        card.style.borderColor = "var(--angry-red)";
-                        card.style.boxShadow = "0 0 10px rgba(255, 102, 102, 0.2)";
-                        card.style.color = "var(--angry-red)";
-                        document.getElementById('preview-card-icon').innerHTML = '<svg viewBox="0 0 200 200" style="height: 45px; width: auto;" fill="currentColor"><path fill-rule="evenodd" d="M 100,4 A 96,96 0 1,1 100,196 A 96,96 0 1,1 100,4 Z M 100,86 A 14,14 0 1,0 100,114 A 14,14 0 1,0 100,86 Z M 100,6 A 22,22 0 1,0 100,50 A 22,22 0 1,0 100,6 Z M 162.35,42 A 22,22 0 1,0 162.35,86 A 22,22 0 1,0 162.35,42 Z M 162.35,114 A 22,22 0 1,0 162.35,158 A 22,22 0 1,0 162.35,114 Z M 100,150 A 22,22 0 1,0 100,194 A 22,22 0 1,0 100,150 Z M 37.65,114 A 22,22 0 1,0 37.65,158 A 22,22 0 1,0 37.65,114 Z M 37.65,42 A 22,22 0 1,0 37.65,86 A 22,22 0 1,0 37.65,42 Z"></path></svg>';
-                        document.getElementById('preview-card-title').innerText = t.menuRoulette;
-                        const btn = document.getElementById('sel-game-roulette'); if(btn) btn.classList.add('active-preview');
-                        
-                    } else if (mode === 'coin') {
-                        if (coinSub) coinSub.style.display = 'flex';
-                        card.style.borderColor = "#f1c40f";
-                        card.style.boxShadow = "0 0 10px rgba(241, 196, 15, 0.2)";
-                        card.style.color = "#f1c40f";
-                        document.getElementById('preview-card-icon').innerHTML = '<i class="fas fa-coins"></i>';
-                        document.getElementById('preview-card-title').innerText = LANG_DATA[GameState.lang].menuCoin;
-                        const btn = document.getElementById('sel-game-coin'); if(btn) btn.classList.add('active-preview');
-                    }
-                    
-                    App.updateSubModeHighlights();
-                    if (tg.HapticFeedback && tg.HapticFeedback.selectionChanged) tg.HapticFeedback.selectionChanged();
-                };
-
-                App.openMainMenu = function() {
-                    App.playSoundEffect('tick');
-                    if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
-                    document.getElementById('gameUI').classList.remove('game-ui-visible');
-
-                    App.previewGame(GameState.mode);
-
-                    setTimeout(() => {
-                        document.getElementById('mainMenuOverlay').style.display = 'flex';
-                        document.getElementById('mainMenuOverlay').classList.remove('menu-fade-out');
-                        App.updateSubModeHighlights();
-                        App.updateMenuBankUI();
-                    }, 500);
-                };
-
-                App.updateSubModeHighlights = function() {
-                    document.querySelectorAll('.sub-mode-btn').forEach(b => b.classList.remove('active-sub'));
-                    const dBtn = document.getElementById('sm-dice-' + GameState.subModes.dice); if(dBtn) dBtn.classList.add('active-sub');
-                    const rBtn = document.getElementById('sm-roulette-' + GameState.subModes.roulette); if(rBtn) rBtn.classList.add('active-sub');
-                    const cBtn = document.getElementById('sm-coin-' + GameState.subModes.coin); if(cBtn) cBtn.classList.add('active-sub');
-                };
-
-                const origSelectSubMode = App.selectSubMode;
-                App.selectSubMode = function(game, mode, e) {
-                    if(e) e.stopPropagation();
-                    GameState.subModes[game] = mode;
-                    
-                    if (game === 'roulette' && typeof RouletteGame !== 'undefined') {
-                        RouletteGame.loadCurrentSubState();
-                        RouletteGame.restoreDrumVisuals();
-                    }
-
-                    App.playSoundEffect('tick');
-                    if (tg.HapticFeedback) tg.HapticFeedback.selectionChanged();
-                    App.updateSubModeHighlights();
-
-                    if (document.getElementById('gameUI').classList.contains('game-ui-visible')) {
-                        if (GameState.mode === 'coin') {
-                            CoinGame.mount();
-                        } else {
-                            if (GameState.mode === 'dice') { if(typeof DiceGame !== 'undefined') { DiceGame.mount(); DiceGame.updateModeDisplay(); } }
-                            if (GameState.mode === 'roulette') { if(typeof RouletteGame !== 'undefined') RouletteGame.mount(); }
-                        }
-                    }
-                    App.requestProfileSave();
-                };
-
-                const origDiceMount = DiceGame.mount;
-                DiceGame.mount = function() {
-                    if (GameState.mode === 'coin') {
-                        DiceGame.unmount();
-                        if (typeof RouletteGame !== 'undefined') RouletteGame.unmount();
-                        CoinGame.mount();
-                    } else {
-                        CoinGame.unmount();
-                        origDiceMount();
-                    }
-                };
-
-                const origDiceUnmount = DiceGame.unmount;
-                DiceGame.unmount = function() { origDiceUnmount(); CoinGame.unmount(); };
-
-                App.askOracle = async function(forcedIdx = null) {
-                    if (GameState.mode === 'coin') { CoinGame.play(forcedIdx); }
-                    else if (GameState.mode === 'dice') { if(typeof DiceGame !== 'undefined') DiceGame.play(forcedIdx); }
-                    else { if(typeof RouletteGame !== 'undefined') RouletteGame.play(forcedIdx); }
-                };
-
-                const origChangeLang = App.changeLanguage;
-                App.changeLanguage = function(noSave) {
-                    origChangeLang(noSave);
-                    const t = LANG_DATA[GameState.lang];
-                    const scTxt = document.getElementById('sel-coin-txt'); if(scTxt) scTxt.innerText = GameState.lang === 'ru' ? "Грань" : "Edge";
-                    const smCS = document.getElementById('sm-coin-standard-lbl'); if(smCS) smCS.innerText = t.smCoinStd;
-                    const smCQ = document.getElementById('sm-coin-question-lbl'); if(smCQ) smCQ.innerText = t.smCoinQst;
-                    
-                    if (GameState.mode === 'coin') {
-                        document.getElementById('ui-title').innerText = t.menuCoin;
-                        const disp = document.getElementById('current-mode-display'); 
-                        if(disp) {
-                            const subNamesCoin = { standard: t.smCoinStd, question: t.smCoinQst };
-                            disp.innerText = subNamesCoin[GameState.subModes.coin].toUpperCase();
-                        }
-                        const stHist = document.getElementById('st-hist-head'); if(stHist) stHist.innerText = t.histCoinHead;
-                    }
-                };
-
-                const origLoadProfileData = App.loadProfileData;
-                App.loadProfileData = function(idx) {
-                    origLoadProfileData(idx);
-                    if (!GameState.subModes.coin) { GameState.subModes.coin = 'standard'; }
-                    if (GameState.questionHiddenMap['coin_standard'] === undefined) GameState.questionHiddenMap['coin_standard'] = true;
-                    if (GameState.questionHiddenMap['coin_question'] === undefined) GameState.questionHiddenMap['coin_question'] = false;
-                };
-
-                App.previewGame(GameState.mode);
-
-            } catch (err) {
-                console.error("Ошибка инжекта монеты:", err);
-                alert("Критическая ошибка загрузки монеты: " + err.message);
-            }
+                LANG_DATA.ru.histCoinHead = "Броски монеты"; LANG_DATA.en.histCoinHead = "Coin Tosses";
+            } catch (err) { console.error("Injection error:", err); }
         })();
 
-        // ==============================================
-        // ЗАПУСК ЯДРА
-        // ==============================================
-        try {
-            if(typeof App !== 'undefined') {
-                App.init();
-                CoinGame.init();
-            }
-        } catch (err) {
-            console.error("Ошибка старта:", err);
-            alert("Ошибка при запуске игры: " + err.message);
-        }
-
+        try { if(typeof App !== 'undefined') { App.init(); CoinGame.init(); } } catch (err) { console.error("Start error:", err); }
     </script>
 </body>
 </html>
