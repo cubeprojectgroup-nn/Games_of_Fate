@@ -1692,11 +1692,19 @@
                     if(stHistHead) stHistHead.innerText = t.histCoinHead || "Броски монеты";
                     
                     document.body.classList.remove('bank-mode-active');
+                    
+                    // Жестко прячем кнопку переключения во всех режимах монеты
                     const tqBtn = document.getElementById('toggleQuestionBtn');
-                    if(tqBtn) tqBtn.style.display = 'flex';
+                    if(tqBtn) tqBtn.style.display = 'none';
                     
                     if (typeof CoinGame !== 'undefined') CoinGame.mount();
-                    setQuestionState(targetHideState, true);
+                    
+                    // Сами управляем полем ввода в зависимости от режима
+                    if (GameState.subModes.coin === 'standard') {
+                        setQuestionState(true, true);
+                    } else {
+                        setQuestionState(false, true);
+                    }
 
                 } else {
                     if(titleEl) titleEl.innerText = t.title;
@@ -4159,7 +4167,7 @@
 
             function mount() {
                 const st = document.getElementById('coinStage'); if(st) st.style.display = 'flex';
-                document.body.classList.add('is-coin-game-active'); // Активируем фильтр UI
+                document.body.classList.add('is-coin-game-active'); 
 				
                 rotX = -35; rotY = 0; rotZ = 0;
                 const coin = document.getElementById('coinRotator'); 
@@ -4178,25 +4186,6 @@
                     disp.innerText = subNamesCoin[GameState.subModes.coin].toUpperCase();
                     disp.style.display = 'inline';
                 }
-                
-                document.body.classList.remove('bank-mode-active');
-                const tqBtn = document.getElementById('toggleQuestionBtn');
-                if(tqBtn) tqBtn.style.display = 'flex';
-                
-                const qhKey = 'coin_' + GameState.subModes.coin;
-                const isHidden = GameState.questionHiddenMap[qhKey] !== undefined ? GameState.questionHiddenMap[qhKey] : GameState.isQuestionHidden;
-                GameState.isQuestionHidden = isHidden;
-                
-                const w = document.getElementById('inputWrapper');
-                if (w) {
-                    if (isHidden) w.classList.add('hidden');
-                    else w.classList.remove('hidden');
-                }
-                
-                if (tqBtn) {
-                    tqBtn.classList.toggle('active-magic', isHidden); 
-                    tqBtn.innerHTML = isHidden ? '<i class="fas fa-comment-slash"></i>' : '<i class="fas fa-question-circle"></i>'; 
-                }
 
                 document.querySelectorAll('.debug-dice-btn').forEach(b => b.style.display = 'none');
                 document.querySelectorAll('.debug-coin-btn').forEach(b => b.style.display = 'flex');
@@ -4207,7 +4196,7 @@
                 const rs = document.getElementById('res-status');
                 if (rs) {
                     rs.classList.remove('visible');
-                    rs.innerText = isHidden ? (t.idleNoQ || "ОЖИДАНИЕ...") : (t.idle || "ЖДУ ВОПРОС...");
+                    rs.innerText = GameState.isQuestionHidden ? (t.idleNoQ || "ОЖИДАНИЕ...") : (t.idle || "ЖДУ ВОПРОС...");
                     setTimeout(() => rs.classList.add('visible'), 50);
                 }
             }
