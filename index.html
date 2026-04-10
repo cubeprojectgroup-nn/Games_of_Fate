@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Игры Судьбы. v0.8.8.18</title>
+    <title>Игры Судьбы. v0.8.8.20</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
@@ -16,7 +16,23 @@
             --glass: rgba(255, 255, 255, 0.1);
             --bg-text: #111b27;
         }
+		
+		/* === ЗАПРЕТ ВЫДЕЛЕНИЯ ИНТЕРФЕЙСА === */
+		body {
+			-webkit-user-select: none; /* Safari */
+			-moz-user-select: none;    /* Firefox */
+			-ms-user-select: none;     /* IE10+/Edge */
+			user-select: none;         /* Стандарт */
+		}
 
+		/* Обязательно возвращаем выделение для полей ввода, чтобы работал курсор */
+		input, textarea {
+			-webkit-user-select: auto;
+			-moz-user-select: auto;
+			-ms-user-select: auto;
+			user-select: auto;
+		}
+		
         body.classic-mode-active { --bg-text: #ffffff; }
 
         body {
@@ -337,7 +353,7 @@
     <div id="stars" class="stars-layer stars-active bg1-stars"></div>
 
     <div id="mainMenuOverlay">
-        <div class="version">v0.8.8.18</div> <div class="menu-top-bar">
+        <div class="version">v0.8.8.20</div> <div class="menu-top-bar">
             <button class="menu-icon-btn" id="langSwitchBtn" onclick="App.toggleLanguage()"><i class="fas fa-globe"></i></button>
         </div>
         <div id="mainMenuTitle" class="menu-title-main">Игры Судьбы</div>
@@ -421,20 +437,16 @@
         <button class="menu-icon-btn" id="gameSettingsBtn" onclick="App.toggleSettings(true)" style="position: absolute; top: 10px; right: 10px; z-index: 500; opacity: 0.8;"><i class="fas fa-cog"></i></button>
         <button class="menu-icon-btn" id="homeBtn" onclick="App.openMainMenu()" style="position: absolute; top: 10px; left: 10px; z-index: 500; opacity: 0.8;"><i class="fas fa-home"></i></button>
 
-        <div class="top-bar">
-            <button class="icon-btn" id="toggleQuestionBtn" onclick="App.toggleQuestionField()"><i class="fas fa-question-circle"></i></button>
-            <button class="icon-btn" id="cubeBtn" onclick="App.toggleCubeStyle()"><i class="fas fa-dice-d6"></i></button>
-            <button class="icon-btn" id="soundBtn" onclick="App.toggleSound()"><i class="fas fa-volume-up"></i></button>
-            <button class="icon-btn" onclick="App.toggleRules(true)">
-                <svg viewBox="0 0 24 24" style="height: 18px; width: auto; transform: translateY(1px);" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM7 7h10v2H7V7zm0 4h10v2H7v-2zm0 4h7v2H7v-2z"/></svg>
-            </button>
-        </div>
-
         <div class="header-wrapper">
             <h1 id="ui-title">Кость Истины</h1>
             <div class="subtitle-row">
                 <a href="https://t.me/Antis_Corpus">t.me/Antis_Corpus</a>
-                <span id="current-mode-display">ТОЧКИ</span>
+                
+                <div onclick="App.toggleRules(true)" style="display: flex; align-items: center; gap: 5px; cursor: pointer; color: rgba(162, 155, 254, 0.6); transition: color 0.3s;" onmouseover="this.style.color='var(--magic-color)'" onmouseout="this.style.color='rgba(162, 155, 254, 0.6)'">
+                    <i class="fas fa-file-alt" style="font-size: 11px; color: var(--magic-color); text-shadow: 0 0 8px var(--magic-color);"></i>
+                    <span id="current-mode-display" style="pointer-events: none; color: inherit; transition: color 0.3s;">ТОЧКИ</span>
+                </div>
+
             </div>
         </div>
 
@@ -539,6 +551,8 @@
         </div>
 
         <div class="action-row">
+            <button class="icon-btn" id="toggleQuestionBtn" onclick="App.toggleQuestionField()"><i class="fas fa-question-circle"></i></button>
+
             <button id="rouletteStatusBtn" class="btn-mini-roll" onclick="RouletteGame.spinRandomly()">
                 <svg viewBox="0 0 200 200" style="width: 100%; height: 100%; overflow: visible;">
                     <defs>
@@ -562,7 +576,9 @@
                     <circle cx="100" cy="100" r="96" mask="url(#mini-drum-mask)" fill="currentColor"/>
                 </svg>
             </button>
+            
             <button class="btn-roll" id="rollBtn" onclick="App.askOracle()">Испытать судьбу</button>
+            
             <button id="randomLoadBtn" class="btn-mini-roll" onclick="RouletteGame.loadRandomBullets()">
                 <svg viewBox="0 0 100 180" style="width: 16px; height: auto;" fill="currentColor">
                     <path d="M 20,70 Q 50,-10 80,70 L 80,155 Q 80,170 50,170 Q 20,170 20,155 Z"/>
@@ -594,6 +610,16 @@
             <h2 id="st-title-h2" style="margin-top:0; color:var(--magic-color)">Настройки</h2>
             <div class="setting-item" id="st-mode-row"><span id="st-label-mode">Грани кости</span><select class="st-select" id="modeSelect" onchange="App.updateModeDisplay()"></select></div>
             <div class="setting-item"><span id="st-label-bg">Фон</span><select class="st-select" id="bgSelect" onchange="App.changeBackground()"></select></div>
+            
+            <div class="setting-item">
+                <span id="st-label-sound">Звук</span>
+                <button id="soundToggleBtn" onclick="App.toggleSound()" style="background: rgba(0,0,0,0.5); border: 1px solid var(--magic-color); color: var(--magic-color); border-radius: 10px; padding: 4px 12px; font-family: inherit; font-size: 14px; font-weight: bold; cursor: pointer; transition: 0.3s; min-width: 65px; text-align: center;">ВКЛ</button>
+            </div>
+            <div class="setting-item">
+                <span id="st-label-cube">Стиль отображения</span>
+                <div id="cubeToggleIcon" onclick="App.toggleCubeStyle()" style="cursor: pointer; font-size: 20px; color: var(--magic-color); transition: 0.3s; padding: 0 10px;"><i class="fas fa-desktop"></i></div>
+            </div>
+            
             <div class="setting-item"><span id="st-label-sparkles">Магические искры</span><label class="switch"><input type="checkbox" id="sparkleToggle" checked onchange="App.handleSparkleToggle()"><span class="slider"></span></label></div>
             <div class="setting-item" id="st-debug-row" style="display: none;"><span id="st-label-debug">Сила Оракула</span><label class="switch"><input type="checkbox" id="debugToggle" onchange="App.toggleDebug()"><span class="slider"></span></label></div>
             <div class="setting-item"><span id="st-label-lang">Язык</span><select class="st-select" id="langSelect" onchange="App.changeLanguage()"><option value="ru">Русский</option><option value="en">English</option></select></div>
@@ -1830,10 +1856,25 @@
             
             function toggleSound() { 
                 GameState.sound = !GameState.sound; 
-                const btn = document.getElementById('soundBtn'); 
-                if(!btn) return;
-                btn.classList.toggle('active-magic', !GameState.sound); 
-                btn.innerHTML = GameState.sound ? '<i class="fas fa-volume-up"></i>' : '<i class="fas fa-volume-mute"></i>'; 
+                const btn = document.getElementById('soundToggleBtn');
+                if (btn) {
+                    const t = GameState.lang === 'ru' ? {on: 'ВКЛ', off: 'ВЫКЛ'} : {on: 'ON', off: 'OFF'};
+                    if (GameState.sound) {
+                        btn.innerText = t.on;
+                        btn.style.color = 'var(--magic-color)';
+                        btn.style.borderColor = 'var(--magic-color)';
+                        btn.style.textShadow = 'none';
+                        btn.style.boxShadow = 'none';
+                        btn.style.background = 'rgba(0,0,0,0.5)';
+                    } else {
+                        btn.innerText = t.off;
+                        btn.style.color = '#ffffff';
+                        btn.style.borderColor = '#ffffff';
+                        btn.style.textShadow = '0 0 8px #ffffff';
+                        btn.style.boxShadow = '0 0 8px rgba(255,255,255,0.4)';
+                        btn.style.background = 'rgba(255,255,255,0.1)';
+                    }
+                }
                 if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light'); 
                 requestProfileSave();
             }
@@ -1851,12 +1892,23 @@
                 
                 if (GameState.mode === 'dice' && typeof DiceGame !== 'undefined') DiceGame.updateModeDisplay();
 
-                updateStyleBtnIcon();
-                
                 const bgSel = document.getElementById('bgSelect');
                 if(bgSel) {
                     bgSel.value = GameState.isClassic ? 'bg5' : 'bg1';
                     changeBackground(true);
+                }
+
+                const icon = document.getElementById('cubeToggleIcon');
+                if (icon) {
+                    if (GameState.isClassic) {
+                        icon.style.color = '#ffffff';
+                        icon.style.textShadow = '0 0 12px #ffffff';
+                        icon.style.transform = 'scale(1.1)';
+                    } else {
+                        icon.style.color = 'var(--magic-color)';
+                        icon.style.textShadow = 'none';
+                        icon.style.transform = 'scale(1)';
+                    }
                 }
 
                 if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
@@ -1914,6 +1966,43 @@
                 if(mr) mr.style.display = GameState.mode === 'roulette' ? 'none' : 'flex'; 
                 const dr = document.getElementById('st-debug-row');
                 if(dr) dr.style.display = GameState.debugEnabled ? 'flex' : 'none';
+                
+                // Синхронизируем UI при открытии меню
+                if (show) {
+                    const btn = document.getElementById('soundToggleBtn');
+                    if (btn) {
+                        const t = GameState.lang === 'ru' ? {on: 'ВКЛ', off: 'ВЫКЛ'} : {on: 'ON', off: 'OFF'};
+                        if (GameState.sound) {
+                            btn.innerText = t.on;
+                            btn.style.color = 'var(--magic-color)';
+                            btn.style.borderColor = 'var(--magic-color)';
+                            btn.style.textShadow = 'none';
+                            btn.style.boxShadow = 'none';
+                            btn.style.background = 'rgba(0,0,0,0.5)';
+                        } else {
+                            btn.innerText = t.off;
+                            btn.style.color = '#ffffff';
+                            btn.style.borderColor = '#ffffff';
+                            btn.style.textShadow = '0 0 8px #ffffff';
+                            btn.style.boxShadow = '0 0 8px rgba(255,255,255,0.4)';
+                            btn.style.background = 'rgba(255,255,255,0.1)';
+                        }
+                    }
+
+                    const icon = document.getElementById('cubeToggleIcon');
+                    if (icon) {
+                        if (GameState.isClassic) {
+                            icon.style.color = '#ffffff';
+                            icon.style.textShadow = '0 0 12px #ffffff';
+                            icon.style.transform = 'scale(1.1)';
+                        } else {
+                            icon.style.color = 'var(--magic-color)';
+                            icon.style.textShadow = 'none';
+                            icon.style.transform = 'scale(1)';
+                        }
+                    }
+                }
+                
                 if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light'); 
             }
 
@@ -1939,11 +2028,14 @@
                 const t = LANG_DATA[GameState.lang]; 
                 document.documentElement.lang = GameState.lang;
                 
-                const titleEl = document.getElementById('ui-title'); 
-                if(titleEl) {
-                    if (GameState.mode === 'roulette') titleEl.innerText = t.titleRoulette;
-                    else if (GameState.mode === 'coin') titleEl.innerText = t.menuCoin || "Грань Выбора";
-                    else titleEl.innerText = t.title;
+                const titleEl = document.getElementById('ui-title');
+				const lSnd = document.getElementById('st-label-sound'); if(lSnd) lSnd.innerText = GameState.lang === 'ru' ? 'Звук' : 'Sound';
+                const lCub = document.getElementById('st-label-cube'); if(lCub) lCub.innerText = GameState.lang === 'ru' ? 'Стиль отображения' : 'Display Style';
+
+                const sndBtn = document.getElementById('soundToggleBtn');
+                if (sndBtn) {
+                    const tSnd = GameState.lang === 'ru' ? {on: 'ВКЛ', off: 'ВЫКЛ'} : {on: 'ON', off: 'OFF'};
+                    sndBtn.innerText = GameState.sound ? tSnd.on : tSnd.off;
                 }
                 
                 const mTitle = document.getElementById('mainMenuTitle');
@@ -2444,77 +2536,59 @@
         (function injectDiceStyles() {
             const existingStyles = document.querySelectorAll('.dice-3d-styles');
             existingStyles.forEach(el => el.remove());
-            
             const style = document.createElement('style');
             style.className = 'dice-3d-styles';
             style.innerHTML = `
                 .face { 
-                    background: radial-gradient(circle at 30% 30%, #3e3863 0%, #151324 100%) !important;
-                    border: 3px solid #6c5ce7 !important;
-                    box-shadow: inset 0 0 20px rgba(0,0,0,0.9), inset 1px 1px 5px rgba(255,255,255,0.3), 0 0 15px rgba(108, 92, 231, 0.4) !important;
-                    border-radius: 15px !important;
-                    color: #ffffff !important;
-                    text-shadow: 2px 2px 4px rgba(0,0,0,0.8), -1px -1px 2px rgba(255,255,255,0.2) !important;
+                    background: radial-gradient(circle at 30% 30%, #3e3863 0%, #151324 100%) !important; 
+                    border: 2px solid #6c5ce7 !important; /* Утончили линии с 3px до 2px */
+                    box-sizing: border-box !important; /* Линии растут внутрь, не ломая 3D-геометрию */
+                    box-shadow: inset 0 0 15px rgba(0,0,0,0.9), inset 1px 1px 3px rgba(255,255,255,0.3) !important; 
+                    border-radius: 12px !important; 
+                    color: #ffffff !important; 
+                    text-shadow: 2px 2px 4px rgba(0,0,0,0.8), -1px -1px 2px rgba(255,255,255,0.2) !important; 
+                    
+                    /* ЖЕСТКО ЗАДАЕМ ПОЗИЦИОНИРОВАНИЕ ГРАНЕЙ, ЧТОБЫ ОНИ НЕ ПРОПАДАЛИ */
+                    position: absolute !important;
+                    width: 100% !important; 
+                    height: 100% !important;
+                    backface-visibility: hidden !important;
                 }
-                .cube.classic-mode .face {
-                    background: radial-gradient(circle at 30% 30%, #ffffff 0%, #e2e8f0 50%, #94a3b8 100%) !important;
-                    border: 3px solid #94a3b8 !important;
-                    box-shadow: inset 0 0 20px rgba(0,0,0,0.2), inset 2px 2px 10px rgba(255,255,255,1) !important;
-                    color: #1e293b !important;
-                    text-shadow: 2px 2px 3px rgba(0,0,0,0.4), -1px -1px 2px rgba(255,255,255,1) !important;
+                
+                /* ПРИНУДИТЕЛЬНЫЕ ОСИ ДЛЯ ВСЕХ 6 ГРАНЕЙ */
+                #face1 { transform: rotateY(0deg) translateZ(60px) !important; }
+                #face2 { transform: rotateY(90deg) translateZ(60px) !important; }
+                #face3 { transform: rotateY(180deg) translateZ(60px) !important; }
+                #face4 { transform: rotateY(-90deg) translateZ(60px) !important; }
+                #face5 { transform: rotateX(90deg) translateZ(60px) !important; }
+                #face6 { transform: rotateX(-90deg) translateZ(60px) !important; }
+                
+                .cube.classic-mode .face { 
+                    background: radial-gradient(circle at 30% 30%, #ffffff 0%, #e2e8f0 50%, #94a3b8 100%) !important; 
+                    border: 2px solid #94a3b8 !important; 
+                    box-shadow: inset 0 0 15px rgba(0,0,0,0.2), inset 1px 1px 5px rgba(255,255,255,1) !important; 
+                    color: #1e293b !important; 
+                    text-shadow: 1px 1px 2px rgba(0,0,0,0.3) !important; 
                 }
-                .dot {
-                    background: radial-gradient(circle at 30% 30%, #ffffff 0%, #a29bfe 100%) !important;
-                    box-shadow: inset 0 3px 6px rgba(0,0,0,0.8), inset 0 -1px 2px rgba(255,255,255,0.3), 0 2px 2px rgba(0,0,0,0.5) !important;
-                }
-                .cube.classic-mode .dot {
-                    background: radial-gradient(circle at 30% 30%, #475569 0%, #0f172a 100%) !important;
-                    box-shadow: inset 0 3px 6px rgba(0,0,0,0.9), inset 0 -1px 2px rgba(255,255,255,0.4), 0 2px 2px rgba(255,255,255,1) !important;
-                }
+                .dot { background: radial-gradient(circle at 30% 30%, #ffffff 0%, #a29bfe 100%) !important; box-shadow: inset 0 3px 6px rgba(0,0,0,0.8), inset 0 -1px 2px rgba(255,255,255,0.3), 0 2px 2px rgba(0,0,0,0.5) !important; }
+                .cube.classic-mode .dot { background: radial-gradient(circle at 30% 30%, #475569 0%, #0f172a 100%) !important; box-shadow: inset 0 3px 6px rgba(0,0,0,0.9), inset 0 -1px 2px rgba(255,255,255,0.4), 0 2px 2px rgba(255,255,255,1) !important; }
+                
+                .cube-core { position: absolute; width: 100%; height: 100%; transform-style: preserve-3d; }
+                .core-face { position: absolute; width: 116px; height: 116px; left: 2px; top: 2px; border-radius: 12px; background: #151324; box-shadow: 0 0 8px #151324; backface-visibility: hidden; }
+                body.classic-mode-active .core-face { background: #ffffff; box-shadow: 0 0 8px #ffffff; }
 
-                .cube-core {
-                    position: absolute;
-                    width: 100%; height: 100%;
-                    transform-style: preserve-3d;
-                }
-                .core-face {
-                    position: absolute;
-                    width: 116px; height: 116px;
-                    left: 2px; top: 2px;
-                    border-radius: 12px;
-                    background: #151324; 
-                    box-shadow: 0 0 8px #151324; 
-                    backface-visibility: hidden;
-                }
-                body.classic-mode-active .core-face {
-                    background: #ffffff; 
-                    box-shadow: 0 0 8px #ffffff;
-                }
-
-                #historyListDice[data-mode="dots"] .hist-numbers,
-                #historyListDice[data-mode="dots"] .hist-yesno,
-                #historyListDice[data-mode="dots"] .hist-trader,
-                #historyListDice[data-mode="dots"] .hist-alco { display: none !important; }
-
+                /* ФИЛЬТРАЦИЯ ИСТОРИИ */
+                #historyListDice[data-mode="dots"] .history-item:is(.hist-numbers, .hist-yesno, .hist-trader, .hist-alco, .hist-coin) { display: none !important; }
                 #historyListDice[data-mode="numbers"] .history-item:not(.hist-numbers) { display: none !important; }
                 #historyListDice[data-mode="yesno"] .history-item:not(.hist-yesno) { display: none !important; }
                 #historyListDice[data-mode="trader"] .history-item:not(.hist-trader) { display: none !important; }
                 #historyListDice[data-mode="alco"] .history-item:not(.hist-alco) { display: none !important; }
+                #historyListDice[data-mode="coin"] .history-item:not(.hist-coin) { display: none !important; }
             `;
             document.head.appendChild(style);
-
             const cube = document.getElementById('cube');
             if (cube && !document.getElementById('cube-inner-core')) {
-                const coreHTML = `
-                    <div id="cube-inner-core" class="cube-core">
-                        <div class="core-face" style="transform: rotateY(0deg) translateZ(58px);"></div>
-                        <div class="core-face" style="transform: rotateY(180deg) translateZ(58px);"></div>
-                        <div class="core-face" style="transform: rotateY(90deg) translateZ(58px);"></div>
-                        <div class="core-face" style="transform: rotateY(-90deg) translateZ(58px);"></div>
-                        <div class="core-face" style="transform: rotateX(90deg) translateZ(58px);"></div>
-                        <div class="core-face" style="transform: rotateX(-90deg) translateZ(58px);"></div>
-                    </div>
-                `;
+                const coreHTML = `<div id="cube-inner-core" class="cube-core"><div class="core-face" style="transform: rotateY(0deg) translateZ(58px);"></div><div class="core-face" style="transform: rotateY(180deg) translateZ(58px);"></div><div class="core-face" style="transform: rotateY(90deg) translateZ(58px);"></div><div class="core-face" style="transform: rotateY(-90deg) translateZ(58px);"></div><div class="core-face" style="transform: rotateX(90deg) translateZ(58px);"></div><div class="core-face" style="transform: rotateX(-90deg) translateZ(58px);"></div></div>`;
                 cube.insertAdjacentHTML('afterbegin', coreHTML);
             }
         })();
@@ -3637,7 +3711,10 @@
                     survivalCount++; 
                     deathStreak = 0; 
                     totalSurvivalsThisSession++;
-                    updateGlobalCounters();
+                    
+                    if (survivalCount > bestSurvivalStreak) bestSurvivalStreak = survivalCount; // Сначала обновляем рекорд
+                    
+                    updateGlobalCounters(); // А уже потом рисуем его в интерфейсе
 
                     if (survivalCount === 1 && !Achievements.has('first_surv')) { Achievements.unlock('first_surv'); }
 
@@ -3684,8 +3761,7 @@
                         void counterEl.offsetWidth; 
                         counterEl.classList.add('visible');
                     }
-
-                    if (survivalCount > bestSurvivalStreak) bestSurvivalStreak = survivalCount;
+                    
 
                     if (mode === 'bank') {
                         let stats = getStats();
@@ -4072,7 +4148,8 @@
 
             function mount() {
                 const st = document.getElementById('coinStage'); if(st) st.style.display = 'flex';
-                
+                document.body.classList.add('is-coin-game-active'); // Активируем фильтр UI
+				
                 rotX = -35; rotY = 0; rotZ = 0;
                 const coin = document.getElementById('coinRotator'); 
                 if(coin) {
@@ -4126,6 +4203,7 @@
 
             function unmount() {
                 const st = document.getElementById('coinStage'); if(st) st.style.display = 'none';
+				document.body.classList.remove('is-coin-game-active'); // Выключаем фильтр UI
                 document.querySelectorAll('.debug-dice-btn').forEach(b => b.style.display = 'flex');
                 document.querySelectorAll('.debug-coin-btn').forEach(b => b.style.display = 'none');
             }
@@ -4346,6 +4424,9 @@
                     
                     #submodes-coin .sub-mode-btn.active-sub { border-color: #cbd5e1; color: #fff; box-shadow: 0 0 10px rgba(255, 255, 255, 0.2); background: rgba(255, 255, 255, 0.1); }
                     #submodes-coin .info-mode-btn { background: #cbd5e1; color: #000; box-shadow: 0 0 5px rgba(255, 255, 255, 0.5); }
+					/* СКРЫВАЕМ ЛИШНИЕ КНОПКИ В СЕКРЕТНОМ МЕНЮ ДЛЯ РЕЖИМА МОНЕТЫ */
+                    body.is-coin-game-active #debugPanel .debug-btn { display: none !important; }
+                    body.is-coin-game-active #debugPanel .debug-coin-btn { display: flex !important; }
                 `;
                 document.head.appendChild(style);
 
