@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Игры Судьбы. v0.8.8.21</title>
+    <title>Игры Судьбы. v0.8.8.22</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
@@ -354,7 +354,7 @@
     <div id="stars" class="stars-layer stars-active bg1-stars"></div>
 
     <div id="mainMenuOverlay">
-        <div class="version">v0.8.8.21</div> <div class="menu-top-bar">
+        <div class="version">v0.8.8.22</div> <div class="menu-top-bar">
             <button class="menu-icon-btn" id="langSwitchBtn" onclick="App.toggleLanguage()"><i class="fas fa-globe"></i></button>
         </div>
         <div id="mainMenuTitle" class="menu-title-main">Игры Судьбы</div>
@@ -653,7 +653,9 @@
             previewMode: 'dice',
             subModes: {
                 dice: 'standard',
-                roulette: 'standard'
+                roulette: 'standard',
+                coin: 'standard',
+                flower: 'standard'
             },
             errorTimeout: null,
             debugEnabled: false,
@@ -734,7 +736,12 @@
             coin_question: {
                 ru: `<div class="rules-content"><div style="color: #cbd5e1; font-weight: bold; font-size: 18px; border-bottom: 1px solid rgba(255, 255, 255, 0.3); padding-bottom: 8px; margin-bottom: 12px; text-align: center;">❓ Монета: Вопрос</div><div style="margin-bottom: 12px; font-style: italic; color: #ccc;">Задай вопрос и подбрось монету для получения ответа.</div><ul style="padding-left: 22px; margin-top: 0; margin-bottom: 0; list-style-type: none;"><li style="margin-bottom: 8px;"><span style="margin-left: -22px; margin-right: 4px;">🔮</span> <b>Вопрос:</b> Введи свой вопрос в поле.</li><li style="margin-bottom: 8px;"><span style="margin-left: -22px; margin-right: 4px;">🪙</span> <b>Орёл / Решка:</b> Орёл означает положительный ответ, Решка — отрицательный.</li><li style="margin-bottom: 8px;"><span style="margin-left: -22px; margin-right: 4px;">⚡</span> <b>Ребро:</b> Если выпадает ребро, судьба отказывается давать прямой ответ прямо сейчас.</li></ul></div>`,
                 en: `<div class="rules-content"><div style="color: #cbd5e1; font-weight: bold; font-size: 18px; border-bottom: 1px solid rgba(255, 255, 255, 0.3); padding-bottom: 8px; margin-bottom: 12px; text-align: center;">❓ Coin: Question</div><div style="margin-bottom: 12px; font-style: italic; color: #ccc;">Ask a question and toss the coin to get an answer.</div><ul style="padding-left: 22px; margin-top: 0; margin-bottom: 0; list-style-type: none;"><li style="margin-bottom: 8px;"><span style="margin-left: -22px; margin-right: 4px;">🔮</span> <b>Question:</b> Enter your question in the field.</li><li style="margin-bottom: 8px;"><span style="margin-left: -22px; margin-right: 4px;">🪙</span> <b>Heads / Tails:</b> Heads means a positive answer, Tails means negative.</li><li style="margin-bottom: 8px;"><span style="margin-left: -22px; margin-right: 4px;">⚡</span> <b>Edge:</b> If it lands on the edge, fate refuses to give a direct answer right now.</li></ul></div>`
+            },
+			flower_standard: {
+                ru: `<div class="rules-content"><div style="color: #facc15; font-weight: bold; font-size: 18px; border-bottom: 1px solid rgba(250, 204, 21, 0.3); padding-bottom: 8px; margin-bottom: 12px; text-align: center;">🌼 Ромашка Судьбы</div><div style="margin-bottom: 12px; font-style: italic; color: #ccc;">Задай вопрос и отрывай лепестки. Последний лепесток скажет правду!</div><ul style="padding-left: 22px; margin-top: 0; margin-bottom: 0; list-style-type: none;"><li style="margin-bottom: 8px;"><span style="margin-left: -22px; margin-right: 4px;">🌸</span> <b>Гадание:</b> Нажми "Испытать судьбу", чтобы закрутить цветок. Затем отрывай лепестки по одному (смахивай вверх или просто кликай).</li><li style="margin-bottom: 8px;"><span style="margin-left: -22px; margin-right: 4px;">🎨</span> <b>Стиль:</b> В настройках можно переключить "Стиль отображения", чтобы ромашка стала кибер-голубой!</li></ul></div>`,
+                en: `<div class="rules-content"><div style="color: #facc15; font-weight: bold; font-size: 18px; border-bottom: 1px solid rgba(250, 204, 21, 0.3); padding-bottom: 8px; margin-bottom: 12px; text-align: center;">🌼 Daisy of Fate</div><div style="margin-bottom: 12px; font-style: italic; color: #ccc;">Ask a question and tear the petals. The last one tells the truth!</div><ul style="padding-left: 22px; margin-top: 0; margin-bottom: 0; list-style-type: none;"><li style="margin-bottom: 8px;"><span style="margin-left: -22px; margin-right: 4px;">🌸</span> <b>Divination:</b> Press "Try your fate" to spin the flower. Then tear the petals one by one.</li><li style="margin-bottom: 8px;"><span style="margin-left: -22px; margin-right: 4px;">🎨</span> <b>Style:</b> Toggle "Display Style" in settings for a cyber-blue daisy!</li></ul></div>`
             }
+			
         };
 
         const traderIcons = ['<i class="fas fa-rocket"></i>', '<i class="fas fa-arrow-trend-down"></i>', '<i class="fas fa-chart-line"></i>', '<i class="fas fa-chart-area" style="transform: scaleY(-1)"></i>', '<i class="fas fa-arrows-left-right"></i>', '<i class="fas fa-skull"></i>'];
@@ -1490,41 +1497,38 @@
                 const sDice = document.getElementById('sel-game-dice'); if(sDice) sDice.classList.remove('active-preview');
                 const sRoul = document.getElementById('sel-game-roulette'); if(sRoul) sRoul.classList.remove('active-preview');
                 const sCoin = document.getElementById('sel-game-coin'); if(sCoin) sCoin.classList.remove('active-preview');
+                const sFlower = document.getElementById('sel-game-flower'); if(sFlower) sFlower.classList.remove('active-preview');
                 
                 const sdSub = document.getElementById('submodes-dice'); if(sdSub) sdSub.style.display = 'none';
                 const srSub = document.getElementById('submodes-roulette'); if(srSub) srSub.style.display = 'none';
                 const scSub = document.getElementById('submodes-coin'); if(scSub) scSub.style.display = 'none';
+                const sfSub = document.getElementById('submodes-flower'); if(sfSub) sfSub.style.display = 'none'; // Добавили ромашку
 
                 if (mode === 'dice') {
-                    if(card) {
-                        card.style.borderColor = "var(--magic-color)";
-                        card.style.boxShadow = "0 0 10px rgba(162, 155, 254, 0.2)";
-                        card.style.color = "var(--magic-color)";
-                    }
+                    if(card) { card.style.borderColor = "var(--magic-color)"; card.style.boxShadow = "0 0 10px rgba(162, 155, 254, 0.2)"; card.style.color = "var(--magic-color)"; }
                     const pcIcon = document.getElementById('preview-card-icon'); if(pcIcon) pcIcon.innerHTML = `<i class="fas fa-dice-d6"></i>`;
                     const previewTitle = document.getElementById('preview-card-title'); if (previewTitle) previewTitle.innerText = t.menuDice;
                     if(sDice) sDice.classList.add('active-preview');
                     if(sdSub) sdSub.style.display = 'flex';
                 } else if (mode === 'roulette') {
-                    if(card) {
-                        card.style.borderColor = "var(--angry-red)";
-                        card.style.boxShadow = "0 0 10px rgba(255, 102, 102, 0.2)";
-                        card.style.color = "var(--angry-red)";
-                    }
+                    if(card) { card.style.borderColor = "var(--angry-red)"; card.style.boxShadow = "0 0 10px rgba(255, 102, 102, 0.2)"; card.style.color = "var(--angry-red)"; }
                     const pcIcon = document.getElementById('preview-card-icon'); if(pcIcon) pcIcon.innerHTML = `<svg viewBox="0 0 200 200" style="height: 45px; width: auto;" fill="currentColor"><path fill-rule="evenodd" d="M 100,4 A 96,96 0 1,1 100,196 A 96,96 0 1,1 100,4 Z M 100,86 A 14,14 0 1,0 100,114 A 14,14 0 1,0 100,86 Z M 100,6 A 22,22 0 1,0 100,50 A 22,22 0 1,0 100,6 Z M 162.35,42 A 22,22 0 1,0 162.35,86 A 22,22 0 1,0 162.35,42 Z M 162.35,114 A 22,22 0 1,0 162.35,158 A 22,22 0 1,0 162.35,114 Z M 100,150 A 22,22 0 1,0 100,194 A 22,22 0 1,0 100,150 Z M 37.65,114 A 22,22 0 1,0 37.65,158 A 22,22 0 1,0 37.65,114 Z M 37.65,42 A 22,22 0 1,0 37.65,86 A 22,22 0 1,0 37.65,42 Z"></path></svg>`;
                     const previewTitle = document.getElementById('preview-card-title'); if (previewTitle) previewTitle.innerText = t.menuRoulette;
                     if(sRoul) sRoul.classList.add('active-preview');
                     if(srSub) srSub.style.display = 'flex';
                 } else if (mode === 'coin') {
-                    if(card) {
-                        card.style.borderColor = "#cbd5e1";
-                        card.style.boxShadow = "0 0 10px rgba(255, 255, 255, 0.2)";
-                        card.style.color = "#cbd5e1";
-                    }
+                    if(card) { card.style.borderColor = "#cbd5e1"; card.style.boxShadow = "0 0 10px rgba(255, 255, 255, 0.2)"; card.style.color = "#cbd5e1"; }
                     const pcIcon = document.getElementById('preview-card-icon'); if(pcIcon) pcIcon.innerHTML = `<svg viewBox="0 0 100 100" style="height: 45px; width: auto;" fill="none" stroke="currentColor" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="50" cy="42" rx="40" ry="16"/><ellipse cx="50" cy="42" rx="24" ry="9" stroke-width="6"/><path d="M 10 42 v 16 a 40 16 0 0 0 80 0 v -16"/><path d="M 26 55 v 16 M 38 57 v 16 M 50 58 v 16 M 62 57 v 16 M 74 55 v 16" stroke-width="4"/></svg>`;
                     const previewTitle = document.getElementById('preview-card-title'); if (previewTitle) previewTitle.innerText = t.menuCoin || "Грань Выбора";
                     if(sCoin) sCoin.classList.add('active-preview');
                     if(scSub) scSub.style.display = 'flex';
+                } else if (mode === 'flower') {
+                    if(card) { card.style.borderColor = "#facc15"; card.style.boxShadow = "0 0 10px rgba(250, 204, 21, 0.2)"; card.style.color = "#facc15"; }
+                    const pcIcon = document.getElementById('preview-card-icon'); 
+                    if(pcIcon) pcIcon.innerHTML = `<svg viewBox="0 0 100 100" style="height: 45px; width: auto;" fill="none" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"><path d="M50 15 Q60 30 50 50 Q40 30 50 15 M50 85 Q60 70 50 50 Q40 70 50 85 M15 50 Q30 60 50 50 Q30 40 15 50 M85 50 Q70 60 50 50 Q70 40 85 50 M25 25 Q40 35 50 50 Q35 40 25 25 M75 75 Q60 65 50 50 Q65 60 75 75 M25 75 Q40 65 50 50 Q35 60 25 75 M75 25 Q60 35 50 50 Q65 40 75 25"/><circle cx="50" cy="50" r="10" fill="currentColor"/></svg>`;
+                    const previewTitle = document.getElementById('preview-card-title'); if (previewTitle) previewTitle.innerText = t.menuFlower || "Ромашка Судьбы";
+                    if(sFlower) sFlower.classList.add('active-preview');
+                    if(sfSub) sfSub.style.display = 'flex'; // Включаем кнопку подрежима!
                 }
                 updateSubModeHighlights();
                 if (tg.HapticFeedback && tg.HapticFeedback.selectionChanged) tg.HapticFeedback.selectionChanged();
@@ -1552,6 +1556,10 @@
             }
 
             function updateSubModeHighlights() {
+                // Подстраховка для старых сохранений
+                if (!GameState.subModes.coin) GameState.subModes.coin = 'standard';
+                if (!GameState.subModes.flower) GameState.subModes.flower = 'standard';
+
                 document.querySelectorAll('.sub-mode-btn').forEach(b => b.classList.remove('active-sub'));
                 
                 const dBtn = document.getElementById('sm-dice-' + GameState.subModes.dice);
@@ -1562,6 +1570,9 @@
 
                 const cBtn = document.getElementById('sm-coin-' + GameState.subModes.coin);
                 if(cBtn) cBtn.classList.add('active-sub');
+
+                const fBtn = document.getElementById('sm-flower-' + GameState.subModes.flower);
+                if(fBtn) fBtn.classList.add('active-sub');
             }
 
             function selectGameMode() {
@@ -1625,86 +1636,80 @@
                 const titleEl = document.getElementById('ui-title');
                 const t = LANG_DATA[GameState.lang];
                 
+                // === НАЧАЛО ВСТАВКИ: ПРИНУДИТЕЛЬНЫЙ СБРОС КНОПКИ ===
+                const rollBtn = document.getElementById('rollBtn');
+                if (rollBtn) {
+                    rollBtn.innerText = t.rollBtn;
+                    rollBtn.disabled = false;
+                    rollBtn.classList.remove('gold-text-active');
+                }
+                // === КОНЕЦ ВСТАВКИ ===
+                
                 let qhKey = GameState.mode + '_' + GameState.subModes[GameState.mode];
                 let targetHideState = GameState.questionHiddenMap[qhKey] !== undefined ? GameState.questionHiddenMap[qhKey] : GameState.isQuestionHidden;
-                
-                // Отключаем все старые экраны
+                              
                 if(typeof DiceGame !== 'undefined') DiceGame.unmount();
                 if(typeof RouletteGame !== 'undefined') RouletteGame.unmount();
                 if(typeof CoinGame !== 'undefined') CoinGame.unmount();
+                if(typeof FlowerGame !== 'undefined') FlowerGame.unmount();
 
                 if (GameState.mode === 'roulette') {
                     if (titleEl) titleEl.innerText = t.titleRoulette;
-                    
                     const subNames = { standard: t.smRoulStd, bank: t.smBank, survival: t.smSurv };
                     const disp = document.getElementById('current-mode-display');
-                    if (disp) {
-                        disp.innerText = subNames[GameState.subModes.roulette].toUpperCase();
-                        disp.style.display = 'inline';
-                    }
+                    if (disp) { disp.innerText = subNames[GameState.subModes.roulette].toUpperCase(); disp.style.display = 'inline'; }
                     
                     let headTxt = t.histSurvHead;
                     const tqBtn = document.getElementById('toggleQuestionBtn');
                     
                     if (GameState.subModes.roulette === 'survival') {
-                        headTxt = t.histLeadHead;
-                        if(tqBtn) tqBtn.style.display = 'none';
-                        setQuestionState(true, true);
+                        headTxt = t.histLeadHead; if(tqBtn) tqBtn.style.display = 'none'; setQuestionState(true, true);
                     } else if (GameState.subModes.roulette === 'bank') {
-                        headTxt = t.histBankHead;
-                        if(tqBtn) tqBtn.style.display = 'none';
-                        setQuestionState(false, true);
+                        headTxt = t.histBankHead; if(tqBtn) tqBtn.style.display = 'none'; setQuestionState(false, true);
                     } else {
-                        if(tqBtn) tqBtn.style.display = 'flex';
-                        setQuestionState(targetHideState, true);
+                        if(tqBtn) tqBtn.style.display = 'flex'; setQuestionState(targetHideState, true);
                     }
                     
                     const stHistHead = document.getElementById('st-hist-head');
                     if(stHistHead) stHistHead.innerText = headTxt;
-                    
-                    if (GameState.subModes.roulette === 'bank') {
-                        document.body.classList.add('bank-mode-active');
-                    } else {
-                        document.body.classList.remove('bank-mode-active');
-                    }
+                    if (GameState.subModes.roulette === 'bank') document.body.classList.add('bank-mode-active');
+                    else document.body.classList.remove('bank-mode-active');
                     
                     if (typeof RouletteGame !== 'undefined') RouletteGame.mount();
-                    
                     if (GameState.subModes.roulette === 'bank') {
-                        const resStatus = document.getElementById('res-status');
-                        const resCont = document.getElementById('res-content');
-                        if(resStatus && resCont && !resCont.classList.contains('visible')) {
-                            resStatus.innerText = t.idleBet;
-                        }
+                        const resStatus = document.getElementById('res-status'); const resCont = document.getElementById('res-content');
+                        if(resStatus && resCont && !resCont.classList.contains('visible')) resStatus.innerText = t.idleBet;
                     }
                     
                 } else if (GameState.mode === 'coin') {
                     if (titleEl) titleEl.innerText = t.menuCoin || "Грань Выбора";
-                    
                     const subNamesCoin = { standard: t.smCoinStd || "Бросок", question: t.smCoinQst || "Вопрос" };
                     const disp = document.getElementById('current-mode-display');
-                    if (disp) {
-                        disp.innerText = subNamesCoin[GameState.subModes.coin].toUpperCase();
-                        disp.style.display = 'inline';
-                    }
+                    if (disp) { disp.innerText = subNamesCoin[GameState.subModes.coin].toUpperCase(); disp.style.display = 'inline'; }
 
                     const stHistHead = document.getElementById('st-hist-head');
                     if(stHistHead) stHistHead.innerText = t.histCoinHead || "Броски монеты";
                     
                     document.body.classList.remove('bank-mode-active');
-                    
-                    // Жестко прячем кнопку переключения во всех режимах монеты
                     const tqBtn = document.getElementById('toggleQuestionBtn');
                     if(tqBtn) tqBtn.style.display = 'none';
-                    
                     if (typeof CoinGame !== 'undefined') CoinGame.mount();
+                    if (GameState.subModes.coin === 'standard') setQuestionState(true, true);
+                    else setQuestionState(false, true);
+
+                } else if (GameState.mode === 'flower') {
+                    if (titleEl) titleEl.innerText = t.menuFlower || "Ромашка Судьбы";
+                    const disp = document.getElementById('current-mode-display');
+                    if (disp) { disp.innerText = (t.smFlowerStd || "Гадание").toUpperCase(); disp.style.display = 'inline'; }
+
+                    const stHistHead = document.getElementById('st-hist-head');
+                    if(stHistHead) stHistHead.innerText = t.histFlowerHead || "История лепестков";
                     
-                    // Сами управляем полем ввода в зависимости от режима
-                    if (GameState.subModes.coin === 'standard') {
-                        setQuestionState(true, true);
-                    } else {
-                        setQuestionState(false, true);
-                    }
+                    document.body.classList.remove('bank-mode-active');
+                    const tqBtn = document.getElementById('toggleQuestionBtn');
+                    if(tqBtn) tqBtn.style.display = 'flex';
+                    if (typeof FlowerGame !== 'undefined') FlowerGame.mount();
+                    setQuestionState(targetHideState, true);
 
                 } else {
                     if(titleEl) titleEl.innerText = t.title;
@@ -1715,14 +1720,10 @@
                     const tqBtn = document.getElementById('toggleQuestionBtn');
                     if(tqBtn) tqBtn.style.display = 'flex';
                     
-                    if(typeof DiceGame !== 'undefined') {
-                        DiceGame.mount();
-                        DiceGame.updateModeDisplay(); 
-                    }
+                    if(typeof DiceGame !== 'undefined') { DiceGame.mount(); DiceGame.updateModeDisplay(); }
                     setQuestionState(targetHideState, true); 
                 }
-                updateStyleBtnIcon();
-                updateHistoryView();
+                updateStyleBtnIcon(); updateHistoryView();
             }
 
             function getPlural(n, forms) {
@@ -1740,15 +1741,17 @@
                 const hlRoul = document.getElementById('historyListRoulette');
                 const hlSurv = document.getElementById('historyListSurvival');
                 const hlCoin = document.getElementById('historyListCoin');
+                const hlFlower = document.getElementById('historyListFlower'); // <--- NEW
 
-                // Сначала скрываем всё
                 if (hlDice) hlDice.style.display = 'none';
                 if (hlRoul) hlRoul.style.display = 'none';
                 if (hlSurv) hlSurv.style.display = 'none';
                 if (hlCoin) hlCoin.style.display = 'none';
+                if (hlFlower) hlFlower.style.display = 'none'; // <--- NEW
 
-                // Показываем только актуальное
-                if (GameState.mode === 'coin') {
+                if (GameState.mode === 'flower') {
+                    if (hlFlower) hlFlower.style.display = 'block';
+                } else if (GameState.mode === 'coin') {
                     if (hlCoin) hlCoin.style.display = 'block';
                 } else if (GameState.mode === 'roulette' && GameState.subModes.roulette === 'survival') {
                     const board = JSON.parse(localStorage.getItem('gof_global_leaderboard')) || [];
@@ -1760,11 +1763,7 @@
                         html += `<div class="history-item" style="color: ${color}; font-weight: bold; font-size: 14px;">${icon}${i+1}. ${entry.name}: ${finalScore}</div>`;
                     });
                     if (html === '') html = `<div class="history-item" style="opacity:0.5;">Пусто</div>`;
-                    
-                    if (hlSurv) {
-                        hlSurv.innerHTML = html;
-                        hlSurv.style.display = 'block';
-                    }
+                    if (hlSurv) { hlSurv.innerHTML = html; hlSurv.style.display = 'block'; }
                 } else if (GameState.mode === 'roulette') {
                     if (hlRoul) {
                         hlRoul.style.display = 'block';
@@ -1778,7 +1777,9 @@
             }
 
             async function askOracle(forcedIdx = null) {
-                if (GameState.mode === 'coin') {
+                if (GameState.mode === 'flower') {
+                    if(typeof FlowerGame !== 'undefined') FlowerGame.play(forcedIdx);
+                } else if (GameState.mode === 'coin') {
                     if(typeof CoinGame !== 'undefined') CoinGame.play(forcedIdx);
                 } else if (GameState.mode === 'dice') {
                     if(typeof DiceGame !== 'undefined') DiceGame.play(forcedIdx);
@@ -2197,8 +2198,15 @@
             }
 
             return {
-                init, selectProfile, createNewProfile, loadProfileData, requestProfileSave, showDeleteConfirm, confirmDeleteProfile, showRenameModal, confirmRenameProfile, handleSparkleToggle, selectGameMode, selectSubMode, showSubModeRules, openMainMenu, updateSubModeHighlights, updateMenuBankUI, toggleQuestionField, toggleCubeStyle, toggleSound, toggleSettings, toggleRules, changeLanguage, changeBackground, toggleDebug, toggleLanguage, updateHistoryView, previewGame, getPlural,
-                showError, hideError, triggerButtonError, playSoundEffect, createSparkle, askOracle, updateModeDisplay: () => { if(typeof DiceGame !== 'undefined') DiceGame.updateModeDisplay(); requestProfileSave(); }
+                init, selectProfile, createNewProfile, loadProfileData, requestProfileSave, 
+                showDeleteConfirm, confirmDeleteProfile, showRenameModal, confirmRenameProfile, 
+                handleSparkleToggle, selectGameMode, selectSubMode, showSubModeRules, 
+                openMainMenu, updateSubModeHighlights, updateMenuBankUI, toggleQuestionField, 
+                toggleCubeStyle, toggleSound, toggleSettings, toggleRules, changeLanguage, 
+                changeBackground, toggleDebug, toggleLanguage, updateHistoryView, previewGame, 
+                getPlural, showError, hideError, triggerButtonError, playSoundEffect, 
+                createSparkle, askOracle, setQuestionState, // <--- ДОБАВЬ ЭТО СЛОВО
+                updateModeDisplay: () => { if(typeof DiceGame !== 'undefined') DiceGame.updateModeDisplay(); requestProfileSave(); }
             };
         })();
 // --- КОНЕЦ ВТОРОЙ ЧАСТИ ---
@@ -4472,8 +4480,489 @@
 				LANG_DATA.ru.menuCoin = "Грань Выбора"; LANG_DATA.en.menuCoin = "Edge of Choice";
             } catch (err) { console.error("Injection error:", err); }
         })();
+		
+// --- КОНЕЦ ПЯТОЙ ЧАСТИ ---
+// --- НАЧАЛО ШЕСТОЙ ЧАСТИ ---
+// ==============================================
+// 🌼 ПЛАГИН 4: РОМАШКА (ИНТЕРАКТИВНЫЙ ОРАКУЛ) v4.7
+// ==============================================
+const FlowerGame = (function() {
+    let totalPetals = 0;
+    let tornCount = 0;
+    let isGameActive = false;
+    let isSpinning = false;
+    let originalQuestion = "";
+    let lastFlowerTap = 0;
+    
+    let draggedPetal = null;
+    let flowerCenterX = 0;
+    let flowerCenterY = 0;
+    let baseAngle = 0;
 
-        try { if(typeof App !== 'undefined') { App.init(); CoinGame.init(); } } catch (err) { console.error("Start error:", err); }
-    </script>
-</body>
-</html>
+    function getCryptoRandom() {
+        const array = new Uint32Array(1);
+        window.crypto.getRandomValues(array);
+        return array[0] / 4294967295;
+    }
+
+    function init() {
+        const stage = document.getElementById('flowerStage');
+        if(!stage) return;
+        
+        document.addEventListener('mousemove', handlePointerMove, {passive: false}); 
+        document.addEventListener('mouseup', handlePointerUp);
+        document.addEventListener('touchmove', handlePointerMove, {passive: false}); 
+        document.addEventListener('touchend', handlePointerUp);
+        
+        const core = document.getElementById('flowerCore');
+        if(core) core.addEventListener('click', handleFlowerClick);
+
+        const uq = document.getElementById('userQuestion');
+        if(uq) {
+            uq.addEventListener('keydown', (e) => {
+                if (GameState.mode === 'flower' && e.key === 'Enter') {
+                    e.preventDefault();
+                    if (!isGameActive && !isSpinning) {
+                        uq.blur();
+                        play();
+                    }
+                }
+            });
+        }
+    }
+
+    function handleFlowerClick(e) {
+        const now = Date.now();
+        if (now - lastFlowerTap < 300) {
+            const container = document.getElementById('flowerPetalsContainer');
+            const isEmpty = container && container.children.length === 0;
+            if (!isSpinning && (!isGameActive || isEmpty)) {
+                play();
+            }
+        } else {
+            if (!isGameActive && !isSpinning) {
+                const uq = document.getElementById('userQuestion');
+                if (!GameState.isQuestionHidden && (!uq || !uq.value.trim())) {
+                    if(typeof App !== 'undefined') { App.triggerButtonError(); App.showError(LANG_DATA[GameState.lang].error); }
+                }
+            }
+        }
+        lastFlowerTap = now;
+    }
+
+    function mount() {
+        const st = document.getElementById('flowerStage'); if(st) st.style.display = 'flex';
+        document.body.classList.add('is-flower-game-active');
+        const t = LANG_DATA[GameState.lang];
+        
+        if (document.getElementById('ui-title')) document.getElementById('ui-title').innerText = t.menuFlower || "Ромашка Судьбы";
+        
+        const disp = document.getElementById('current-mode-display');
+        if (disp) {
+            disp.innerText = (t.smFlowerStd || "Гадание").toUpperCase();
+            disp.style.display = 'inline';
+        }
+        
+        if(typeof App !== 'undefined' && typeof App.setQuestionState === 'function') {
+            const qhKey = 'flower_standard';
+            const isHidden = GameState.questionHiddenMap[qhKey] !== undefined ? GameState.questionHiddenMap[qhKey] : GameState.isQuestionHidden;
+            App.setQuestionState(isHidden, true);
+        }
+
+        if(typeof App !== 'undefined') App.hideError();
+        
+        const cont = document.getElementById('flowerPetalsContainer');
+        if (cont && cont.children.length === 0) renderPetals(12, true);
+
+        // ВОССТАНОВЛЕНИЕ СОСТОЯНИЯ КНОПКИ И НАДПИСЕЙ ПРИ ВОЗВРАТЕ
+        const rollBtn = document.getElementById('rollBtn');
+        const rs = document.getElementById('res-status');
+        const rc = document.getElementById('res-content');
+
+        if (isGameActive) {
+            if (rollBtn) {
+                rollBtn.innerText = t.flowerTear || "ОТРЫВАЙ ЛЕПЕСТКИ";
+                rollBtn.disabled = false;
+                rollBtn.classList.remove('gold-text-active');
+            }
+            if (rs) rs.classList.remove('visible'); // Прячем надпись "Судьба ждет..." во время игры
+        } else {
+            if (rollBtn) {
+                rollBtn.innerText = t.rollBtn || "ИСПЫТАТЬ СУДЬБУ";
+                rollBtn.disabled = false;
+                rollBtn.classList.remove('gold-text-active');
+            }
+            if (rs && rc && !rc.classList.contains('visible')) {
+                rs.classList.add('visible');
+            }
+        }
+        
+        updateFlowerUIState();
+    }
+
+    function unmount() {
+        const st = document.getElementById('flowerStage'); if(st) st.style.display = 'none';
+        document.body.classList.remove('is-flower-game-active');
+        
+        // Убрали сброс переменных прогресса, игра "ждет" тебя
+        const tqBtn = document.getElementById('toggleQuestionBtn');
+        if(tqBtn) { 
+            tqBtn.disabled = false; 
+            tqBtn.style.opacity = "1"; 
+            tqBtn.style.pointerEvents = "auto";
+        }
+
+        const rs = document.getElementById('res-status'); if(rs) rs.classList.remove('visible');
+        const rc = document.getElementById('res-content'); if(rc) rc.classList.remove('visible');
+    }
+
+    function updateFlowerUIState() {
+        const tqBtn = document.getElementById('toggleQuestionBtn');
+        const uq = document.getElementById('userQuestion');
+        const shouldLock = isSpinning || (isGameActive && tornCount > 0);
+        
+        if(tqBtn) {
+            if (shouldLock) {
+                tqBtn.disabled = true;
+                tqBtn.style.opacity = "0.3";
+                tqBtn.style.pointerEvents = "none";
+            } else {
+                tqBtn.disabled = false;
+                tqBtn.style.opacity = "1";
+                tqBtn.style.pointerEvents = "auto";
+            }
+        }
+        if(uq) uq.disabled = (isSpinning || isGameActive);
+    }
+
+    function renderPetals(count, animate = false) {
+        const container = document.getElementById('flowerPetalsContainer');
+        if (!container) return;
+        container.innerHTML = '';
+        
+        const angleStep = 360 / count;
+        for (let i = 0; i < count; i++) {
+            const petal = document.createElement('div');
+            petal.className = 'flower-petal';
+            const angle = i * angleStep;
+            petal.dataset.angle = angle;
+            
+            if (animate) {
+                petal.style.transform = `rotate(${angle}deg) scale(0)`;
+                petal.style.opacity = '0';
+                setTimeout(() => {
+                    petal.style.transition = 'transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s ease';
+                    petal.style.transform = `rotate(${angle}deg) scale(1)`;
+                    petal.style.opacity = '1';
+                }, i * 35);
+            } else {
+                petal.style.transform = `rotate(${angle}deg)`;
+            }
+
+            petal.addEventListener('mousedown', handlePointerDown);
+            petal.addEventListener('touchstart', handlePointerDown, {passive: false});
+            container.appendChild(petal);
+        }
+    }
+
+    function play(forcedCount = null) {
+        const container = document.getElementById('flowerPetalsContainer');
+        const isEmpty = container && container.children.length === 0;
+
+        if (isEmpty && !isSpinning) {
+            const rc = document.getElementById('res-content'); if(rc) rc.classList.remove('visible');
+            const uq = document.getElementById('userQuestion');
+            if(uq) uq.value = ''; 
+            tornCount = 0;
+            updateFlowerUIState();
+            renderPetals(12, true);
+            if(tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
+            return;
+        }
+
+        const uq = document.getElementById('userQuestion');
+        const q = uq ? uq.value.trim() : '';
+        const t = LANG_DATA[GameState.lang];
+        
+        if (!GameState.isQuestionHidden && !q && forcedCount === null) { 
+            if(typeof App !== 'undefined') { App.triggerButtonError(); App.showError(t.error); }
+            return; 
+        }
+
+        if(isSpinning || isGameActive) return;
+        
+        if(typeof App !== 'undefined') App.hideError(); 
+        isGameActive = true;
+        isSpinning = true;
+        tornCount = 0;
+        originalQuestion = q; 
+        
+        updateFlowerUIState();
+
+        const rollBtn = document.getElementById('rollBtn');
+        if(rollBtn) { rollBtn.disabled = true; rollBtn.innerText = t.waiting; rollBtn.classList.add('gold-text-active'); }
+        
+        const rs = document.getElementById('res-status'); if(rs) rs.classList.remove('visible');
+        const rc = document.getElementById('res-content'); if(rc) rc.classList.remove('visible');
+
+        totalPetals = forcedCount !== null ? forcedCount : Math.floor(getCryptoRandom() * 8) + 11;
+        const rotator = document.getElementById('flowerRotator');
+        
+        if (rotator) {
+            if(typeof App !== 'undefined') App.playSoundEffect('load');
+            rotator.style.transition = 'none';
+            rotator.style.transform = 'rotate(0deg)';
+            void rotator.offsetWidth; 
+
+            const spins = 360 * (4 + Math.floor(getCryptoRandom() * 2));
+            rotator.style.transition = 'transform 2.5s cubic-bezier(0.45, 0.05, 0.55, 0.95)';
+            rotator.style.transform = `rotate(${spins}deg)`;
+
+            setTimeout(() => { renderPetals(totalPetals); }, 1000);
+
+            setTimeout(() => {
+                isSpinning = false;
+                if(rollBtn) { 
+                    rollBtn.innerText = t.flowerTear || "ОТРЫВАЙ ЛЕПЕСТКИ"; 
+                    rollBtn.classList.remove('gold-text-active'); 
+                }
+                if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+            }, 2600);
+        }
+    }
+
+    function handlePointerDown(e) {
+        if (isSpinning) return;
+        e.preventDefault();
+        draggedPetal = e.target;
+        baseAngle = parseFloat(draggedPetal.dataset.angle);
+        const core = document.getElementById('flowerCore');
+        if (core) {
+            const rect = core.getBoundingClientRect();
+            flowerCenterX = rect.left + rect.width / 2;
+            flowerCenterY = rect.top + rect.height / 2;
+        }
+        draggedPetal.style.transition = 'none';
+        draggedPetal.style.zIndex = 10;
+        if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+    }
+
+    function handlePointerMove(e) {
+        if (!draggedPetal) return;
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+        const dist = Math.sqrt(Math.pow(clientX - flowerCenterX, 2) + Math.pow(clientY - flowerCenterY, 2));
+        const baseRadius = 37.5;
+        let pull = dist - baseRadius; 
+        if (pull > 0) {
+            if (!isGameActive) pull = Math.min(15, pull * 0.3);
+            const scaleY = Math.min(1.4, 1 + (pull * 0.012));
+            const transY = -(pull * 0.85); 
+            draggedPetal.style.transform = `rotate(${baseAngle}deg) translateY(${transY}px) scaleY(${scaleY})`;
+            if (isGameActive && pull > 42) { 
+                tearPetal(draggedPetal); 
+                draggedPetal = null; 
+            }
+        }
+    }
+
+    function handlePointerUp() {
+        if (draggedPetal) {
+            draggedPetal.style.transition = 'transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
+            draggedPetal.style.transform = `rotate(${baseAngle}deg) translateY(0px) scaleY(1)`;
+            if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+            draggedPetal = null;
+        }
+    }
+
+    function tearPetal(petal) {
+        tornCount++;
+        updateFlowerUIState(); 
+        const flyAngle = baseAngle + (Math.random() * 40 - 20);
+        petal.style.transition = 'transform 0.6s ease-out, opacity 0.5s ease-out';
+        petal.style.transform = `rotate(${flyAngle}deg) translateY(-450px) scaleY(1.3)`;
+        petal.style.opacity = 0;
+        const rotator = document.getElementById('flowerRotator');
+        if(rotator) {
+            const rad = baseAngle * Math.PI / 180;
+            const moveX = Math.sin(rad) * 15; const moveY = -Math.cos(rad) * 15;
+            rotator.style.transition = 'none';
+            rotator.style.transform += ` translate(${moveX}px, ${moveY}px)`;
+            setTimeout(() => {
+                const currentRot = rotator.style.transform.match(/rotate\((.+?)deg\)/);
+                rotator.style.transition = 'transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
+                rotator.style.transform = currentRot ? `rotate(${currentRot[1]}deg)` : 'rotate(0deg)';
+            }, 50);
+        }
+        if(typeof App !== 'undefined') App.playSoundEffect('tick');
+        if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('heavy');
+        setTimeout(() => { if (petal.parentNode) petal.remove(); }, 600);
+        const isYes = (tornCount % 2 !== 0);
+        showIntermediateResult(isYes);
+        if (tornCount >= totalPetals) { isGameActive = false; setTimeout(() => finalizeGame(isYes), 500); }
+    }
+
+    function showIntermediateResult(isYes) {
+        const tempRes = document.getElementById('flowerTempRes');
+        if (!tempRes) return;
+        const t = LANG_DATA[GameState.lang];
+        const ynText = isYes ? (t.yn ? t.yn[1] : "ДА") : (t.yn ? t.yn[0] : "НЕТ");
+        const uiColor = isYes ? "var(--friendly-green)" : "var(--angry-red)";
+        tempRes.innerText = ynText + "...";
+        tempRes.style.color = uiColor;
+        tempRes.style.textShadow = `0 0 15px ${uiColor}`;
+        tempRes.style.transition = 'none';
+        tempRes.style.transform = 'translate(-50%, 15px) scale(0.8)';
+        tempRes.style.opacity = 0;
+        void tempRes.offsetWidth;
+        tempRes.style.transition = 'transform 0.2s ease-out, opacity 0.2s ease-out';
+        tempRes.style.transform = 'translate(-50%, 0) scale(1.2)';
+        tempRes.style.opacity = 1;
+    }
+
+    function finalizeGame(isYes) {
+        const t = LANG_DATA[GameState.lang];
+        const uiColor = isYes ? "var(--friendly-green)" : "var(--angry-red)";
+        const finalAns = isYes ? (t.yn ? t.yn[1] : "ДА!") : (t.yn ? t.yn[0] : "НЕТ!");
+        const subI = isYes ? '<i class="fas fa-check"></i>' : '<i class="fas fa-times"></i>';
+        const tempRes = document.getElementById('flowerTempRes');
+        if(tempRes) tempRes.style.opacity = 0;
+        const rm = document.getElementById('res-main'); if(rm) rm.innerHTML = finalAns;
+        const resSub = document.getElementById('res-sub'); 
+        if(resSub) { resSub.innerHTML = subI; resSub.style.color = uiColor; resSub.style.textShadow = `0 0 25px ${uiColor}`; }
+        const rCont = document.getElementById('res-content');
+        if(rCont) { rCont.style.color = uiColor; rCont.style.textShadow = `0 0 15px ${uiColor}`; void rCont.offsetWidth; rCont.classList.add('visible'); }
+        if(typeof App !== 'undefined') App.playSoundEffect('result', isYes ? 'positive' : 'negative');
+        if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred(isYes ? 'success' : 'error');
+        const item = document.createElement('div'); item.className = 'history-item';
+        item.innerHTML = `<span style="color:#fff; font-weight:bold; text-shadow: 0 0 8px #fff, 0 0 15px var(--magic-color);">?</span> ${GameState.isQuestionHidden ? '---' : originalQuestion} <span style="color:#aaa; font-size:9px;">[ЦВЕТОК]</span><br><span style="color:${uiColor};">➔ ${subI} ${finalAns}</span>`;
+        const hl = document.getElementById('historyListFlower') || document.getElementById('historyListDice');
+        if(hl) hl.prepend(item);
+        if(typeof App !== 'undefined') App.requestProfileSave();
+        const rollBtn = document.getElementById('rollBtn');
+        if(rollBtn) { rollBtn.disabled = false; rollBtn.innerText = t.rollBtn; }
+        setTimeout(() => { if(rollBtn && !rollBtn.disabled) { 
+            const rs = document.getElementById('res-status'); if(rs) rs.classList.add('visible');
+            updateFlowerUIState(); 
+        } }, 3000);
+    }
+
+    return { init, mount, unmount, play };
+})();
+
+(function injectFlowerPlugin() {
+    try {
+        document.querySelectorAll('.flower-styles, #flowerStage').forEach(el => el.remove());
+        const style = document.createElement('style');
+        style.className = 'flower-styles';
+        style.innerHTML = `
+            #flowerStage { display: none; position: relative; width: 100%; height: 260px; justify-content: center; align-items: center; z-index: 50; touch-action: none; transition: opacity 0.4s; margin: 15px 0 5px 0;}
+            #flowerRotator { position: relative; width: 200px; height: 200px; display: flex; justify-content: center; align-items: center; }
+            
+            /* БАЗОВЫЙ ЦВЕТОК: БЕЛО-ЖЕЛТЫЙ */
+            #flowerCore { position: absolute; top: 50%; left: 50%; width: 75px; height: 75px; margin-top: -37.5px; margin-left: -37.5px; background: radial-gradient(circle at 30% 30%, #fff700, #ffaa00); border-radius: 50%; z-index: 100; box-shadow: inset -5px -5px 15px rgba(200, 100, 0, 0.5), 0 5px 20px rgba(0,0,0,0.4); border: 3px solid #e69500; cursor: pointer; transition: background 0.5s, box-shadow 0.5s; }
+            .flower-petal { position: absolute; top: 50%; left: 50%; width: 34px; height: 110px; margin-top: -110px; margin-left: -17px; background: linear-gradient(to bottom, #ffffff 0%, #f8fafc 70%, #e2e8f0 100%); border-radius: 50% 50% 20% 20% / 60% 60% 10% 10%; transform-origin: 50% 100%; box-shadow: inset -2px -5px 10px rgba(0,0,0,0.05), 0 3px 8px rgba(0,0,0,0.05); border: 1px solid rgba(0,0,0,0.05); cursor: grab; touch-action: none; z-index: 10; transition: transform 0.1s ease-out, background 0.5s; }
+            
+            /* КИБЕР-ЦВЕТОК: ГОЛУБОЙ */
+            #flowerStage.cyber-flower .flower-petal { 
+                background: linear-gradient(to bottom, #7dd3fc 0%, var(--magic-color, #0ea5e9) 60%, #1e40af 100%) !important; 
+                border: 2px solid var(--magic-color, #a78bfa) !important; 
+                box-shadow: 0 0 15px var(--magic-color, rgba(14, 165, 233, 0.7)), inset 0 0 10px rgba(255, 255, 255, 0.3) !important;
+            }
+            #flowerStage.cyber-flower #flowerCore {
+                background: radial-gradient(circle at 30% 30%, #ffcc00, #ff6600) !important;
+                border-color: #ff9900 !important;
+                box-shadow: 0 0 25px rgba(255, 102, 0, 0.8), inset 0 0 15px rgba(255, 255, 255, 0.4) !important;
+            }
+
+            #flowerTempRes { position: absolute; bottom: -50px; left: 50%; transform: translateX(-50%); font-weight: 900; font-size: 32px; text-transform: uppercase; letter-spacing: 2px; z-index: 150; pointer-events: none; }
+            
+            /* МЕНЮ И КНОПКИ */
+            #submodes-flower { display: none; width: 100%; flex-direction: column; gap: 8px; }
+            .active-sub { border: 2px solid #facc15 !important; }
+            #submodes-flower.cyber-flower .active-sub { border-color: var(--magic-color, #0ea5e9) !important; box-shadow: 0 0 15px var(--magic-color, rgba(14,165,233,0.5)) !important; }
+            
+            /* СТИЛИ ДЛЯ КНОПКИ ИНФОРМАЦИИ РОМАШКИ */
+            #submodes-flower .info-mode-btn { background: #facc15; color: #000; box-shadow: 0 0 5px rgba(250, 204, 21, 0.8); }
+            #submodes-flower.cyber-flower .info-mode-btn { background: var(--magic-color, #0ea5e9); color: #fff; box-shadow: 0 0 5px var(--magic-color, rgba(14,165,233,0.8)); }
+        `;
+        document.head.appendChild(style);
+        
+        const mainStage = document.getElementById('mainStage');
+        if (mainStage) {
+            const flowerStage = document.createElement('div'); flowerStage.id = 'flowerStage'; flowerStage.className = 'stage';
+            flowerStage.innerHTML = `<div id="flowerRotator"><div id="flowerPetalsContainer" style="position:absolute; width:100%; height:100%;"></div><div id="flowerCore"></div></div><div id="flowerTempRes"></div>`;
+            mainStage.parentNode.insertBefore(flowerStage, document.getElementById('rouletteStage'));
+        }
+
+        // БЕЗОПАСНАЯ ИНЪЕКЦИЯ СЛОТОВ (ЗАМЕНА OUTERHTML НА REPLACECHILD)
+        const gameSelectors = document.querySelector('.game-selector-row');
+        if (gameSelectors && !document.getElementById('sel-game-flower')) {
+            const lockedBtns = document.querySelectorAll('.square-game-btn.locked');
+            if (lockedBtns.length > 0) {
+                const newBtn = document.createElement('button');
+                newBtn.className = 'square-game-btn';
+                newBtn.id = 'sel-game-flower';
+                newBtn.onclick = () => App.previewGame('flower');
+                newBtn.innerHTML = `
+                    <svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" style="height: 20px; width: auto; margin-bottom: 3px;">
+                        <path d="M50 15 Q60 30 50 50 Q40 30 50 15 M50 85 Q60 70 50 50 Q40 70 50 85 M15 50 Q30 60 50 50 Q30 40 15 50 M85 50 Q70 60 50 50 Q70 40 85 50 M25 25 Q40 35 50 50 Q35 40 25 25 M75 75 Q60 65 50 50 Q65 60 75 75 M25 75 Q40 65 50 50 Q35 60 25 75 M75 25 Q60 35 50 50 Q65 40 75 25"/>
+                        <circle cx="50" cy="50" r="10" fill="currentColor"/>
+                    </svg>
+                    <span id="sel-flower-txt">Цветок</span>
+                `;
+                // Надежно заменяем первый найденный замок на ромашку
+                lockedBtns[0].parentNode.replaceChild(newBtn, lockedBtns[0]);
+            }
+        }
+
+        const smContainer = document.getElementById('menuPreviewSubModes');
+        if (smContainer && !document.getElementById('submodes-flower')) {
+            const flowerSub = document.createElement('div'); flowerSub.id = 'submodes-flower';
+            flowerSub.style.cssText = 'display: none; flex-direction: column; gap: 8px; width: 100%;';
+            
+            // ВЕРНОЕ РАСПОЛОЖЕНИЕ КНОПКИ ВОПРОСА (КАК В КОСТИ)
+            flowerSub.innerHTML = `
+                <button class="sub-mode-btn active-sub" onclick="App.selectSubMode('flower', 'standard', event)" id="sm-flower-standard">
+                    <div class="float-corner-btn info-mode-btn" onclick="App.showSubModeRules(event, 'flower', 'standard')"><i class="fas fa-question"></i></div>
+                    <span id="sm-flower-standard-lbl">Гадание</span>
+                </button>
+            `;
+            smContainer.appendChild(flowerSub);
+        }
+        
+        const histBlock = document.getElementById('historyBlock');
+        if (histBlock && !document.getElementById('historyListFlower')) {
+            const hl = document.createElement('div'); hl.id = 'historyListFlower'; hl.style.display = 'none';
+            histBlock.appendChild(hl);
+        }
+        
+        LANG_DATA.ru.menuFlower = "Ромашка Судьбы"; LANG_DATA.en.menuFlower = "Daisy of Fate";
+        LANG_DATA.ru.smFlowerStd = "Гадание"; LANG_DATA.en.smFlowerStd = "Divination";
+        LANG_DATA.ru.flowerTear = "ОТРЫВАЙ ЛЕПЕСТКИ"; LANG_DATA.en.flowerTear = "TEAR PETALS";
+
+        // ЛОГИКА СМЕНЫ ЦВЕТА (ПРИВЯЗКА К СТИЛЮ ОТОБРАЖЕНИЯ)
+        setInterval(() => {
+            const stage = document.getElementById('flowerStage');
+            const subMenu = document.getElementById('submodes-flower');
+            if(!stage) return;
+            
+            // Проверяем включен ли классический стиль в настройках
+            const isCyber = document.body.classList.contains('classic-mode-active');
+            
+            if (isCyber) {
+                stage.classList.add('cyber-flower');
+                if(subMenu) subMenu.classList.add('cyber-flower');
+            } else {
+                stage.classList.remove('cyber-flower');
+                if(subMenu) subMenu.classList.remove('cyber-flower');
+            }
+        }, 500);
+
+        FlowerGame.init();
+    } catch (err) { console.error("Flower error:", err); }
+})();
+// --- КОНЕЦ ШЕСТОЙ ЧАСТИ ---
+
+try { if(typeof App !== 'undefined') { App.init(); if(typeof CoinGame !== 'undefined') CoinGame.init(); if(typeof FlowerGame !== 'undefined') FlowerGame.init(); } } catch (err) { console.error("Start error:", err); }
+</script></body></html>
