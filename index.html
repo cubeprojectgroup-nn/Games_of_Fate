@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Игры Судьбы. v0.8.8.24</title>
+    <title>Игры Судьбы. v0.8.8.25</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
@@ -354,7 +354,7 @@
     <div id="stars" class="stars-layer stars-active bg1-stars"></div>
 
     <div id="mainMenuOverlay">
-        <div class="version">v0.8.8.24</div> <div class="menu-top-bar">
+        <div class="version">v0.8.8.25</div> <div class="menu-top-bar">
             <button class="menu-icon-btn" id="langSwitchBtn" onclick="App.toggleLanguage()"><i class="fas fa-globe"></i></button>
         </div>
         <div id="mainMenuTitle" class="menu-title-main">Игры Судьбы</div>
@@ -1140,7 +1140,6 @@
 
                 setQuestionState(s.isQuestionHidden === true);
                 
-                // ИСПРАВЛЕНИЕ: Восстанавливаем точную карту видимости вопросов для профиля!
                 if (s.questionHiddenMap) {
                     GameState.questionHiddenMap = s.questionHiddenMap;
                 }
@@ -1337,10 +1336,8 @@
                 const uq = document.getElementById('userQuestion');
                 if (uq) uq.value = '';
 
-                // ИСПРАВЛЕНИЕ: Жестко сбрасываем Лепестки при смене профиля, 
-                // чтобы чужое гадание не переносилось на нового игрока!
-                if (typeof FlowerGame !== 'undefined' && typeof FlowerGame.reset === 'function') {
-                    FlowerGame.reset();
+                if (typeof FlowerGame !== 'undefined' && typeof FlowerGame.resetAll === 'function') {
+                    FlowerGame.resetAll();
                 }
 
                 if (idx !== -1 && GameState.profiles[idx]) {
@@ -1488,9 +1485,10 @@
                 const rs = document.getElementById('res-status');
                 if(rs) rs.classList.remove('visible'); 
                 
-                let idleText = GameState.isQuestionHidden ? LANG_DATA[GameState.lang].idleNoQ : LANG_DATA[GameState.lang].idle;
+                const t = LANG_DATA[GameState.lang];
+                let idleText = GameState.isQuestionHidden ? (t.idleNoQ || (GameState.lang === 'en' ? "WAITING..." : "ОЖИДАНИЕ...")) : (t.idle || (GameState.lang === 'en' ? "ORACLE AWAITS..." : "ОРАКУЛ ЖДЕТ..."));
                 if (!GameState.isQuestionHidden && GameState.mode === 'roulette' && GameState.subModes.roulette === 'bank') {
-                    idleText = LANG_DATA[GameState.lang].idleBet;
+                    idleText = t.idleBet;
                 }
                 if(rs) rs.innerText = idleText;
                 
@@ -1622,12 +1620,18 @@
                 if (game === 'roulette' && typeof RouletteGame !== 'undefined') {
                     RouletteGame.saveCurrentSubState();
                 }
+                if (game === 'flower' && typeof FlowerGame !== 'undefined' && typeof FlowerGame.saveCurrentSubState === 'function') {
+                    FlowerGame.saveCurrentSubState();
+                }
 
                 GameState.subModes[game] = mode;
 
                 if (game === 'roulette' && typeof RouletteGame !== 'undefined') {
                     RouletteGame.loadCurrentSubState();
                     RouletteGame.restoreDrumVisuals();
+                }
+                if (game === 'flower' && typeof FlowerGame !== 'undefined' && typeof FlowerGame.loadCurrentSubState === 'function') {
+                    FlowerGame.loadCurrentSubState();
                 }
 
                 playSoundEffect('tick');
@@ -1722,10 +1726,14 @@
                 } else if (GameState.mode === 'flower') {
                     if (titleEl) titleEl.innerText = t.menuFlower || "Лепестки";
                     const disp = document.getElementById('current-mode-display');
-                    if (disp) { disp.innerText = (t.smFlowerStd || "Жребий").toUpperCase(); disp.style.display = 'inline'; }
+                    if (disp) { 
+                        const smNames = { standard: t.smFlowerStd || "Жребий", intuition: t.smFlowerInt || "Интуиция" };
+                        disp.innerText = (smNames[GameState.subModes.flower] || "Жребий").toUpperCase(); 
+                        disp.style.display = 'inline'; 
+                    }
 
                     const stHistHead = document.getElementById('st-hist-head');
-                    if(stHistHead) stHistHead.innerText = t.histFlowerHead || "История лепестков";
+                    if(stHistHead) stHistHead.innerText = t.histFlowerHead || (GameState.lang === 'ru' ? "История лепестков" : "Petals History");
                     
                     document.body.classList.remove('bank-mode-active');
                     const tqBtn = document.getElementById('toggleQuestionBtn');
@@ -2104,7 +2112,7 @@
                 } else if (GameState.mode === 'coin') {
                     headTxt = t.histCoinHead || "Броски монеты";
                 } else if (GameState.mode === 'flower') {
-                    headTxt = t.histFlowerHead || "История лепестков";
+                    headTxt = t.histFlowerHead || (GameState.lang === 'ru' ? "История лепестков" : "Petals History");
                 }
                 const hHead = document.getElementById('st-hist-head');
                 if(hHead) hHead.innerText = headTxt;
@@ -2138,13 +2146,14 @@
                 const smCS = document.getElementById('sm-coin-standard-lbl'); if(smCS) smCS.innerText = t.smCoinStd || "Бросок";
                 const smCQ = document.getElementById('sm-coin-question-lbl'); if(smCQ) smCQ.innerText = t.smCoinQst || "Вопрос";
 
-                const sfTxt = document.getElementById('sel-flower-txt'); if(sfTxt) sfTxt.innerText = t.menuFlower || "Лепестки";
-                const smFS = document.getElementById('sm-flower-standard-lbl'); if(smFS) smFS.innerText = t.smFlowerStd || "Жребий";
+                const sfTxt = document.getElementById('sel-flower-txt'); if(sfTxt) sfTxt.innerText = t.menuFlower || (GameState.lang === 'ru' ? "Лепестки" : "Petals");
+                const smFS = document.getElementById('sm-flower-standard-lbl'); if(smFS) smFS.innerText = t.smFlowerStd || (GameState.lang === 'ru' ? "Жребий" : "Draw");
+                const smFInt = document.getElementById('sm-flower-intuition-lbl'); if(smFInt) smFInt.innerText = t.smFlowerInt || (GameState.lang === 'ru' ? "Интуиция" : "Intuition");
 
                 const rollBtn = document.getElementById('rollBtn');
                 if(rollBtn) {
                     if (GameState.mode === 'flower' && typeof FlowerGame !== 'undefined' && FlowerGame.isGameActive && FlowerGame.isGameActive()) {
-                        rollBtn.innerText = t.flowerTear || "ОТРЫВАЙ ЛЕПЕСТКИ";
+                        // Текст восстановится в restoreUI() у FlowerGame, здесь не трогаем
                     } else {
                         rollBtn.innerText = t.rollBtn; 
                     }
@@ -2152,7 +2161,7 @@
                 
                 const resC = document.getElementById('res-content');
                 if(resC && !resC.classList.contains('visible')) {
-                    let idleText = GameState.isQuestionHidden ? t.idleNoQ : t.idle;
+                    let idleText = GameState.isQuestionHidden ? (t.idleNoQ || (GameState.lang === 'en' ? "WAITING..." : "ОЖИДАНИЕ...")) : (t.idle || (GameState.lang === 'en' ? "ORACLE AWAITS..." : "ОРАКУЛ ЖДЕТ..."));
                     if (!GameState.isQuestionHidden && GameState.mode === 'roulette' && GameState.subModes.roulette === 'bank') idleText = t.idleBet;
                     const resS = document.getElementById('res-status');
                     if(resS) resS.innerText = idleText;
@@ -2180,9 +2189,11 @@
                         disp.innerText = subNamesCoin[GameState.subModes.coin].toUpperCase();
                     }
                 } else if (GameState.mode === 'flower') {
+                    if (titleEl) titleEl.innerText = t.menuFlower || (GameState.lang === 'ru' ? "Лепестки" : "Petals");
                     const disp = document.getElementById('current-mode-display');
                     if (disp) {
-                        disp.innerText = (t.smFlowerStd || "Жребий").toUpperCase();
+                        const smNames = { standard: t.smFlowerStd || (GameState.lang === 'ru' ? "Жребий" : "Draw"), intuition: t.smFlowerInt || (GameState.lang === 'ru' ? "Интуиция" : "Intuition") };
+                        disp.innerText = (smNames[GameState.subModes.flower] || (GameState.lang === 'ru' ? "Жребий" : "Draw")).toUpperCase();
                     }
                 }
 
@@ -4520,17 +4531,33 @@
 // --- КОНЕЦ ПЯТОЙ ЧАСТИ ---
 // --- НАЧАЛО ШЕСТОЙ ЧАСТИ ---
 // ==============================================
-// 🌼 ПЛАГИН 4: ЛЕПЕСТКИ (ИНТЕРАКТИВНЫЙ ОРАКУЛ) v5.5
+// 🌼 ПЛАГИН 4: ЛЕПЕСТКИ (ИНТЕРАКТИВНЫЙ ОРАКУЛ) v6.5 (SMOOTH ANIMATION & TRANSLATION)
 // ==============================================
 const FlowerGame = (function() {
+    function getEmptyState() {
+        return {
+            totalPetals: 0, tornCount: 0, isGameActive: false, isSpinning: false, originalQuestion: "",
+            tornIndices: [], rotatorTransform: "rotate(0deg)",
+            targetStubs: 0, stubIndices: [], selectedStubCount: null, currentStubs: 0, currentOptions: []
+        };
+    }
+
+    let subStates = { standard: getEmptyState(), intuition: getEmptyState() };
+
     let totalPetals = 0;
     let tornCount = 0;
     let isGameActive = false;
     let isSpinning = false;
     let originalQuestion = "";
+    let tornIndices = [];
+    let targetStubs = 0;
+    let stubIndices = [];
+    let selectedStubCount = null;
+    let currentStubs = 0;
+    let currentOptions = [];
+
     let lastFlowerTap = 0;
     let currentSessionId = 0; 
-    
     let draggedPetal = null;
     let flowerCenterX = 0;
     let flowerCenterY = 0;
@@ -4571,11 +4598,7 @@ const FlowerGame = (function() {
     function handleFlowerClick(e) {
         const now = Date.now();
         if (now - lastFlowerTap < 300) {
-            const container = document.getElementById('flowerPetalsContainer');
-            const isEmpty = container && container.children.length === 0;
-            if (!isSpinning && (!isGameActive || isEmpty)) {
-                play();
-            }
+            play();
         } else {
             if (!isGameActive && !isSpinning) {
                 const uq = document.getElementById('userQuestion');
@@ -4587,20 +4610,22 @@ const FlowerGame = (function() {
         lastFlowerTap = now;
     }
 
-    function reset() {
-        currentSessionId++; 
-        isGameActive = false;
-        isSpinning = false;
+    function resetToIdle(animate = true) {
         tornCount = 0;
         totalPetals = 0;
-        originalQuestion = "";
-        
+        tornIndices = [];
+        targetStubs = 0;
+        stubIndices = [];
+        selectedStubCount = null;
+        currentStubs = 0;
+        currentOptions = [];
+
         const container = document.getElementById('flowerPetalsContainer');
         if (container) {
             container.innerHTML = '';
-            renderPetals(12, false);
+            renderPetals(12, animate);
         }
-        
+
         const t = LANG_DATA[GameState.lang];
         const rollBtn = document.getElementById('rollBtn');
         if (rollBtn) {
@@ -4608,17 +4633,134 @@ const FlowerGame = (function() {
             rollBtn.disabled = false;
             rollBtn.classList.remove('gold-text-active');
         }
-        
-        const rs = document.getElementById('res-status'); 
-        if (rs) rs.classList.add('visible'); 
-        
-        const rc = document.getElementById('res-content'); 
+
+        const rs = document.getElementById('res-status');
+        if (rs) {
+            rs.innerText = GameState.isQuestionHidden ? (t.idleNoQ || (GameState.lang === 'en' ? "WAITING..." : "ОЖИДАНИЕ...")) : (t.idle || (GameState.lang === 'en' ? "ORACLE AWAITS..." : "ОРАКУЛ ЖДЕТ..."));
+            rs.classList.add('visible');
+        }
+
+        const rc = document.getElementById('res-content');
         if (rc) rc.classList.remove('visible');
+
+        const tempRes = document.getElementById('flowerTempRes');
+        if (tempRes) tempRes.style.opacity = 0;
+
+        const selector = document.getElementById('flowerNumberSelector');
+        if (selector) {
+            selector.classList.remove('visible');
+            selector.innerHTML = '';
+        }
+
+        updateFlowerUIState();
+    }
+
+    function saveCurrentSubState() {
+        const mode = GameState.subModes.flower;
+        if (!subStates[mode]) return;
+        const rotator = document.getElementById('flowerRotator');
+        subStates[mode] = {
+            totalPetals, tornCount, isGameActive, isSpinning, originalQuestion,
+            tornIndices: [...tornIndices],
+            rotatorTransform: rotator ? rotator.style.transform : "rotate(0deg)",
+            targetStubs, stubIndices: [...stubIndices], selectedStubCount, currentStubs,
+            currentOptions: [...currentOptions]
+        };
+    }
+
+    function loadCurrentSubState() {
+        const mode = GameState.subModes.flower;
+        if (!subStates[mode]) return;
+        const s = subStates[mode];
+        
+        totalPetals = s.totalPetals; tornCount = s.tornCount; isGameActive = s.isGameActive;
+        isSpinning = s.isSpinning; originalQuestion = s.originalQuestion;
+        tornIndices = [...s.tornIndices];
+        targetStubs = s.targetStubs; stubIndices = [...s.stubIndices];
+        selectedStubCount = s.selectedStubCount; currentStubs = s.currentStubs;
+        currentOptions = [...s.currentOptions];
+
+        if (!isGameActive && tornCount > 0 && tornCount >= totalPetals) {
+            resetToIdle(false);
+            return;
+        }
+
+        const rotator = document.getElementById('flowerRotator');
+        if (rotator) {
+            rotator.style.transition = 'none';
+            rotator.style.transform = s.rotatorTransform || 'rotate(0deg)';
+        }
         
         const tempRes = document.getElementById('flowerTempRes');
         if (tempRes) tempRes.style.opacity = 0;
         
+        renderPetals(totalPetals || 12, false);
+        restoreUI();
+    }
+
+    function restoreUI() {
+        const t = LANG_DATA[GameState.lang];
+        const rollBtn = document.getElementById('rollBtn');
+        const rs = document.getElementById('res-status');
+        const rc = document.getElementById('res-content');
+        const selector = document.getElementById('flowerNumberSelector');
+
+        if (isGameActive) {
+            if (rollBtn) {
+                if (GameState.subModes.flower === 'intuition' && selectedStubCount === null) {
+                    rollBtn.innerText = t.flowerChoose || "ВЫБЕРИ ЧИСЛО";
+                    if (selector) {
+                        selector.innerHTML = '';
+                        currentOptions.forEach(num => {
+                            const btn = document.createElement('div');
+                            btn.className = 'flower-guess-btn';
+                            btn.innerText = num;
+                            btn.onclick = () => selectStubCount(num, btn);
+                            selector.appendChild(btn);
+                        });
+                        selector.classList.add('visible');
+                    }
+                } else {
+                    rollBtn.innerText = t.flowerTear || "ОТРЫВАЙ ЛЕПЕСТКИ";
+                    if (GameState.subModes.flower === 'intuition' && selector && tornCount < totalPetals) {
+                        selector.innerHTML = '';
+                        currentOptions.forEach(num => {
+                            const btn = document.createElement('div');
+                            btn.className = 'flower-guess-btn';
+                            if (selectedStubCount === num) btn.classList.add('selected');
+                            else btn.classList.add('disabled');
+                            btn.innerText = num;
+                            btn.onclick = () => selectStubCount(num, btn);
+                            selector.appendChild(btn);
+                        });
+                        selector.classList.add('visible');
+                    } else if (selector) {
+                        selector.classList.remove('visible');
+                    }
+                }
+                rollBtn.disabled = false;
+                rollBtn.classList.remove('gold-text-active');
+            }
+            if (rs) rs.classList.remove('visible'); 
+            if (rc) rc.classList.remove('visible');
+        } else {
+            if (rollBtn) {
+                rollBtn.innerText = t.rollBtn || "ИСПЫТАТЬ СУДЬБУ";
+                rollBtn.disabled = false;
+                rollBtn.classList.remove('gold-text-active');
+            }
+            if (selector) selector.classList.remove('visible');
+            if (rs && rc && !rc.classList.contains('visible')) {
+                rs.classList.add('visible');
+            }
+        }
         updateFlowerUIState();
+    }
+
+    function resetAll() {
+        subStates = { standard: getEmptyState(), intuition: getEmptyState() };
+        currentSessionId++;
+        loadCurrentSubState();
     }
 
     function mount() {
@@ -4626,16 +4768,17 @@ const FlowerGame = (function() {
         document.body.classList.add('is-flower-game-active');
         const t = LANG_DATA[GameState.lang];
         
-        if (document.getElementById('ui-title')) document.getElementById('ui-title').innerText = t.menuFlower || "Лепестки";
+        if (document.getElementById('ui-title')) document.getElementById('ui-title').innerText = t.menuFlower || (GameState.lang === 'ru' ? "Лепестки" : "Petals");
         
         const disp = document.getElementById('current-mode-display');
         if (disp) {
-            disp.innerText = (t.smFlowerStd || "Жребий").toUpperCase();
+            const smNames = { standard: t.smFlowerStd || (GameState.lang === 'ru' ? "Жребий" : "Draw"), intuition: t.smFlowerInt || (GameState.lang === 'ru' ? "Интуиция" : "Intuition") };
+            disp.innerText = (smNames[GameState.subModes.flower] || (GameState.lang === 'ru' ? "Жребий" : "Draw")).toUpperCase();
             disp.style.display = 'inline';
         }
         
         if(typeof App !== 'undefined' && typeof App.setQuestionState === 'function') {
-            const qhKey = 'flower_standard';
+            const qhKey = 'flower_' + GameState.subModes.flower;
             const isHidden = GameState.questionHiddenMap[qhKey] !== undefined ? GameState.questionHiddenMap[qhKey] : GameState.isQuestionHidden;
             App.setQuestionState(isHidden, true);
         }
@@ -4645,29 +4788,7 @@ const FlowerGame = (function() {
         const cont = document.getElementById('flowerPetalsContainer');
         if (cont && cont.children.length === 0) renderPetals(12, true);
 
-        const rollBtn = document.getElementById('rollBtn');
-        const rs = document.getElementById('res-status');
-        const rc = document.getElementById('res-content');
-
-        if (isGameActive) {
-            if (rollBtn) {
-                rollBtn.innerText = t.flowerTear || "ОТРЫВАЙ ЛЕПЕСТКИ";
-                rollBtn.disabled = false;
-                rollBtn.classList.remove('gold-text-active');
-            }
-            if (rs) rs.classList.remove('visible'); 
-        } else {
-            if (rollBtn) {
-                rollBtn.innerText = t.rollBtn || "ИСПЫТАТЬ СУДЬБУ";
-                rollBtn.disabled = false;
-                rollBtn.classList.remove('gold-text-active');
-            }
-            if (rs && rc && !rc.classList.contains('visible')) {
-                rs.classList.add('visible');
-            }
-        }
-        
-        updateFlowerUIState();
+        restoreUI();
     }
 
     function unmount() {
@@ -4683,6 +4804,7 @@ const FlowerGame = (function() {
 
         const rs = document.getElementById('res-status'); if(rs) rs.classList.remove('visible');
         const rc = document.getElementById('res-content'); if(rc) rc.classList.remove('visible');
+        const selector = document.getElementById('flowerNumberSelector'); if(selector) selector.classList.remove('visible');
     }
 
     function updateFlowerUIState() {
@@ -4711,10 +4833,24 @@ const FlowerGame = (function() {
         
         const angleStep = 360 / count;
         for (let i = 0; i < count; i++) {
+            if (tornIndices.includes(i)) {
+                if (GameState.subModes.flower === 'intuition' && stubIndices.includes(i)) {
+                    const stub = document.createElement('div');
+                    stub.className = 'flower-petal-stub';
+                    const stubHeight = 60 + ((i * 123) % 40); 
+                    stub.style.height = `${stubHeight}px`;
+                    stub.style.marginTop = `-${stubHeight}px`;
+                    stub.style.transform = `rotate(${i * angleStep}deg)`;
+                    container.appendChild(stub);
+                }
+                continue;
+            }
+
             const petal = document.createElement('div');
             petal.className = 'flower-petal';
             const angle = i * angleStep;
             petal.dataset.angle = angle;
+            petal.dataset.index = i; 
             
             if (animate) {
                 petal.style.transform = `rotate(${angle}deg) scale(0)`;
@@ -4734,19 +4870,39 @@ const FlowerGame = (function() {
         }
     }
 
+    function selectStubCount(num, btn) {
+        if (selectedStubCount !== null) return;
+        selectedStubCount = num;
+        btn.classList.add('selected');
+        
+        const allBtns = document.querySelectorAll('.flower-guess-btn');
+        allBtns.forEach(b => {
+            if (b !== btn) b.classList.add('disabled');
+        });
+        
+        if (tg.HapticFeedback) tg.HapticFeedback.selectionChanged();
+        if (typeof App !== 'undefined') App.playSoundEffect('tick');
+
+        const rollBtn = document.getElementById('rollBtn');
+        if (rollBtn) {
+            rollBtn.innerText = LANG_DATA[GameState.lang].flowerTear || "ОТРЫВАЙ ЛЕПЕСТКИ";
+        }
+    }
+
     function play(forcedCount = null) {
+        if (isSpinning || isGameActive) return;
+
         const container = document.getElementById('flowerPetalsContainer');
         const isEmpty = container && container.children.length === 0;
 
-        if (isEmpty && !isSpinning) {
-            const rc = document.getElementById('res-content'); if(rc) rc.classList.remove('visible');
+        if (isEmpty || (tornCount > 0 && tornCount >= totalPetals)) {
             const uq = document.getElementById('userQuestion');
-            if(uq) uq.value = ''; 
-            tornCount = 0;
-            updateFlowerUIState();
-            renderPetals(12, true);
+            if(uq && !GameState.isQuestionHidden) uq.value = '';
+            
+            currentSessionId++;
+            resetToIdle(true);
             if(tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
-            return;
+            return; 
         }
 
         const uq = document.getElementById('userQuestion');
@@ -4757,14 +4913,35 @@ const FlowerGame = (function() {
             if(typeof App !== 'undefined') { App.triggerButtonError(); App.showError(t.error); }
             return; 
         }
-
-        if(isSpinning || isGameActive) return;
         
         if(typeof App !== 'undefined') App.hideError(); 
+        
         isGameActive = true;
         isSpinning = true;
         tornCount = 0;
+        tornIndices = [];
         originalQuestion = q; 
+        
+        selectedStubCount = null;
+        currentStubs = 0;
+        stubIndices = [];
+        const isIntuition = GameState.subModes.flower === 'intuition';
+        totalPetals = forcedCount !== null ? forcedCount : Math.floor(getCryptoRandom() * 8) + 11;
+        
+        if (isIntuition) {
+            targetStubs = Math.floor(getCryptoRandom() * 6); 
+            while(stubIndices.length < targetStubs) {
+                let r = Math.floor(Math.random() * totalPetals);
+                if(!stubIndices.includes(r)) stubIndices.push(r);
+            }
+            
+            currentOptions = [targetStubs];
+            while(currentOptions.length < 5) {
+                let r = Math.floor(Math.random() * 9); 
+                if(!currentOptions.includes(r)) currentOptions.push(r);
+            }
+            currentOptions.sort((a,b) => a - b);
+        }
         
         updateFlowerUIState();
         
@@ -4776,17 +4953,22 @@ const FlowerGame = (function() {
         
         const rs = document.getElementById('res-status'); if(rs) rs.classList.remove('visible');
         const rc = document.getElementById('res-content'); if(rc) rc.classList.remove('visible');
+        const selector = document.getElementById('flowerNumberSelector'); if(selector) selector.classList.remove('visible');
 
-        totalPetals = forcedCount !== null ? forcedCount : Math.floor(getCryptoRandom() * 8) + 11;
         const rotator = document.getElementById('flowerRotator');
         
         if (rotator) {
             if(typeof App !== 'undefined') App.playSoundEffect('load');
             rotator.style.transition = 'none';
-            rotator.style.transform = 'rotate(0deg)';
-            void rotator.offsetWidth; 
-
-            const spins = 360 * (4 + Math.floor(getCryptoRandom() * 2));
+            
+            const currentRotRaw = rotator.style.transform || 'rotate(0deg)';
+            let baseSpin = 0;
+            const match = currentRotRaw.match(/rotate\(([-0-9.]+)deg\)/);
+            if (match && match[1]) {
+                baseSpin = parseFloat(match[1]) % 360;
+            }
+            
+            const spins = baseSpin + 360 * (4 + Math.floor(getCryptoRandom() * 2));
             rotator.style.transition = 'transform 2.5s cubic-bezier(0.45, 0.05, 0.55, 0.95)';
             rotator.style.transform = `rotate(${spins}deg)`;
 
@@ -4798,10 +4980,32 @@ const FlowerGame = (function() {
             setTimeout(() => {
                 if (session !== currentSessionId) return;
                 isSpinning = false;
-                if(rollBtn) { 
-                    rollBtn.innerText = t.flowerTear || "ОТРЫВАЙ ЛЕПЕСТКИ"; 
-                    rollBtn.classList.remove('gold-text-active'); 
+                
+                if (isIntuition) {
+                    if (selector) {
+                        selector.innerHTML = '';
+                        currentOptions.forEach(num => {
+                            const btn = document.createElement('div');
+                            btn.className = 'flower-guess-btn';
+                            btn.innerText = num;
+                            btn.onclick = () => selectStubCount(num, btn);
+                            selector.appendChild(btn);
+                        });
+                        selector.classList.add('visible');
+                    }
+                    if(rollBtn) { 
+                        rollBtn.innerText = t.flowerChoose || "ВЫБЕРИ ЧИСЛО"; 
+                        rollBtn.classList.remove('gold-text-active'); 
+                        rollBtn.disabled = false; 
+                    }
+                } else {
+                    if(rollBtn) { 
+                        rollBtn.innerText = t.flowerTear || "ОТРЫВАЙ ЛЕПЕСТКИ"; 
+                        rollBtn.classList.remove('gold-text-active'); 
+                        rollBtn.disabled = false;
+                    }
                 }
+                
                 if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
             }, 2600);
         }
@@ -4809,6 +5013,17 @@ const FlowerGame = (function() {
 
     function handlePointerDown(e) {
         if (isSpinning) return;
+        
+        if (GameState.subModes.flower === 'intuition' && selectedStubCount === null) {
+            const sel = document.getElementById('flowerNumberSelector');
+            if(sel) {
+                sel.style.transform = 'translateX(-50%) scale(1.1)';
+                if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('warning');
+                setTimeout(() => sel.style.transform = 'translateX(-50%) scale(1)', 200);
+            }
+            return; 
+        }
+
         e.preventDefault();
         draggedPetal = e.target;
         baseAngle = parseFloat(draggedPetal.dataset.angle);
@@ -4863,7 +5078,22 @@ const FlowerGame = (function() {
 
     function tearPetal(petal) {
         tornCount++;
+        const pIndex = parseInt(petal.dataset.index);
+        tornIndices.push(pIndex);
         updateFlowerUIState(); 
+        
+        if (GameState.subModes.flower === 'intuition' && stubIndices.includes(pIndex)) {
+            currentStubs++;
+            const stub = document.createElement('div');
+            stub.className = 'flower-petal-stub';
+            const stubHeight = 60 + ((pIndex * 123) % 40); 
+            stub.style.height = `${stubHeight}px`;
+            stub.style.marginTop = `-${stubHeight}px`;
+            stub.style.transform = `rotate(${baseAngle}deg)`;
+            const container = document.getElementById('flowerPetalsContainer');
+            if (container) container.appendChild(stub);
+        }
+
         const flyAngle = baseAngle + (Math.random() * 40 - 20);
         petal.style.transition = 'transform 0.6s ease-out, opacity 0.5s ease-out';
         petal.style.transform = `rotate(${flyAngle}deg) translateY(-450px) scaleY(1.05)`;
@@ -4890,6 +5120,7 @@ const FlowerGame = (function() {
             if (session !== currentSessionId) return;
             if (petal.parentNode) petal.remove(); 
         }, 600);
+        
         const isYes = (tornCount % 2 !== 0);
         showIntermediateResult(isYes);
         
@@ -4909,10 +5140,19 @@ const FlowerGame = (function() {
         const rs = document.getElementById('res-status'); 
         if (rs) rs.classList.remove('visible');
 
-        const t = LANG_DATA[GameState.lang];
-        const ynText = isYes ? (t.yn ? t.yn[1] : "ДА") : (t.yn ? t.yn[0] : "НЕТ");
-        const uiColor = isYes ? "var(--friendly-green)" : "var(--angry-red)";
-        tempRes.innerText = ynText + "...";
+        let uiColor, ynText;
+        if (GameState.subModes.flower === 'intuition') {
+            ynText = currentStubs.toString();
+            uiColor = "var(--magic-color)";
+        } else {
+            const t = LANG_DATA[GameState.lang];
+            ynText = isYes ? (t.yn ? t.yn[1] : "ДА") : (t.yn ? t.yn[0] : "НЕТ");
+            uiColor = isYes ? "var(--friendly-green)" : "var(--angry-red)";
+        }
+
+        tempRes.innerText = ynText;
+        if (GameState.subModes.flower !== 'intuition') tempRes.innerText += "...";
+        
         tempRes.style.color = uiColor;
         tempRes.style.textShadow = `0 0 15px ${uiColor}`;
         tempRes.style.transition = 'none';
@@ -4929,51 +5169,130 @@ const FlowerGame = (function() {
         if (!GameState.isQuestionHidden && uq) uq.value = '';
 
         const t = LANG_DATA[GameState.lang];
-        const uiColor = isYes ? "var(--friendly-green)" : "var(--angry-red)";
-        const finalAns = isYes ? (t.yn ? t.yn[1] : "ДА!") : (t.yn ? t.yn[0] : "НЕТ!");
-        const subI = isYes ? '<i class="fas fa-check"></i>' : '<i class="fas fa-times"></i>';
+        const isRu = GameState.lang === 'ru';
+        
+        let uiColor, finalAns, subI, resDescTxt, histDispTxt;
+
+        if (GameState.subModes.flower === 'intuition') {
+            const isWin = selectedStubCount === targetStubs;
+            uiColor = isWin ? "var(--friendly-green)" : "var(--angry-red)";
+            finalAns = isWin ? (t.intCorrect || "УГАДАЛ!") : (t.intWrong || "ОШИБКА!");
+            subI = isWin ? '<i class="fas fa-check"></i>' : '<i class="fas fa-times"></i>';
+            resDescTxt = isWin ? `${t.intTorn || "Надорвано:"} ${targetStubs}` : `${t.intWas || "Было"} ${targetStubs}, ${t.intNot || "а не"} ${selectedStubCount}`;
+            histDispTxt = `${finalAns} (${targetStubs})`;
+        } else {
+            uiColor = isYes ? "var(--friendly-green)" : "var(--angry-red)";
+            finalAns = isYes ? (t.yn ? t.yn[1] : "ДА!") : (t.yn ? t.yn[0] : "НЕТ!");
+            subI = isYes ? '<i class="fas fa-check"></i>' : '<i class="fas fa-times"></i>';
+            resDescTxt = "";
+            histDispTxt = finalAns;
+        }
+
         const tempRes = document.getElementById('flowerTempRes');
         if(tempRes) tempRes.style.opacity = 0;
+        
         const rm = document.getElementById('res-main'); if(rm) rm.innerHTML = finalAns;
+        const rd = document.getElementById('res-desc'); if(rd) rd.innerHTML = resDescTxt;
         const resSub = document.getElementById('res-sub'); 
         if(resSub) { resSub.innerHTML = subI; resSub.style.color = uiColor; resSub.style.textShadow = `0 0 25px ${uiColor}`; }
+        
         const rCont = document.getElementById('res-content');
         if(rCont) { rCont.style.color = uiColor; rCont.style.textShadow = `0 0 15px ${uiColor}`; void rCont.offsetWidth; rCont.classList.add('visible'); }
-        if(typeof App !== 'undefined') App.playSoundEffect('result', isYes ? 'positive' : 'negative');
-        if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred(isYes ? 'success' : 'error');
-        const item = document.createElement('div'); item.className = 'history-item';
-        item.innerHTML = `<span style="color:#fff; font-weight:bold; text-shadow: 0 0 8px #fff, 0 0 15px var(--magic-color);">?</span> ${GameState.isQuestionHidden ? '---' : originalQuestion} <span style="color:#aaa; font-size:9px;">[${t.menuFlower.toUpperCase()}]</span><br><span style="color:${uiColor};">➔ ${subI} ${finalAns}</span>`;
+        
+        if(typeof App !== 'undefined') App.playSoundEffect('result', uiColor === "var(--friendly-green)" ? 'positive' : 'negative');
+        if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred(uiColor === "var(--friendly-green)" ? 'success' : 'error');
+        
+        const item = document.createElement('div'); 
+        item.className = 'history-item hist-' + GameState.subModes.flower;
+        
+        const smName = GameState.subModes.flower === 'intuition' ? (t.smFlowerInt || "Интуиция") : (t.smFlowerStd || "Жребий");
+        item.innerHTML = `<span style="color:#fff; font-weight:bold; text-shadow: 0 0 8px #fff, 0 0 15px var(--magic-color);">?</span> ${GameState.isQuestionHidden ? '---' : originalQuestion} <span style="color:#aaa; font-size:9px;">[${smName.toUpperCase()}]</span><br><span style="color:${uiColor};">➔ ${subI} ${histDispTxt}</span>`;
+        
         const hl = document.getElementById('historyListFlower') || document.getElementById('historyListDice');
         if(hl) hl.prepend(item);
         if(typeof App !== 'undefined') App.requestProfileSave();
+        
         const rollBtn = document.getElementById('rollBtn');
+        const selector = document.getElementById('flowerNumberSelector');
+        if (selector) selector.classList.remove('visible');
+
+        if(rollBtn) {
+            rollBtn.innerText = t.flowerDone || "СУДЬБА РЕШИЛА"; 
+        }
         
         setTimeout(() => { 
             if (session !== currentSessionId) return;
-            if(rollBtn && !rollBtn.disabled) { 
-                rollBtn.disabled = false; 
-                rollBtn.innerText = t.rollBtn; 
-                updateFlowerUIState(); 
-            } 
+            resetToIdle(true);
         }, 3000);
     }
 
-    return { init, mount, unmount, play, reset, isGameActive: () => isGameActive };
+    function getState() {
+        return { tornCount, totalPetals, isGameActive, targetStubs, selectedStubCount };
+    }
+
+    return { init, mount, unmount, play, resetAll, selectStubCount, saveCurrentSubState, loadCurrentSubState, isGameActive: () => isGameActive, getState };
 })();
 
 (function injectFlowerPlugin() {
     try {
+        if (typeof RULES_HTML !== 'undefined') {
+            RULES_HTML.flower_standard = {
+                ru: `<div class="rules-content"><div style="color: #facc15; font-weight: bold; font-size: 18px; border-bottom: 1px solid rgba(250, 204, 21, 0.3); padding-bottom: 8px; margin-bottom: 12px; text-align: center;">🌼 Лепестки: Жребий</div><div style="margin-bottom: 12px; font-style: italic; color: #ccc;">Задай вопрос и отрывай лепестки. Последний скажет правду!</div><ul style="padding-left: 22px; margin-top: 0; margin-bottom: 0; list-style-type: none;"><li style="margin-bottom: 8px;"><span style="margin-left: -22px; margin-right: 4px;">🌸</span> <b>Жребий:</b> Нажми "Испытать судьбу", чтобы закрутить цветок. Затем отрывай лепестки.</li><li style="margin-bottom: 8px;"><span style="margin-left: -22px; margin-right: 4px;">🎨</span> <b>Стиль:</b> В настройках можно переключить "Стиль отображения", чтобы цветок стал кибер-голубым!</li></ul></div>`,
+                en: `<div class="rules-content"><div style="color: #facc15; font-weight: bold; font-size: 18px; border-bottom: 1px solid rgba(250, 204, 21, 0.3); padding-bottom: 8px; margin-bottom: 12px; text-align: center;">🌼 Petals: Draw</div><div style="margin-bottom: 12px; font-style: italic; color: #ccc;">Ask a question and tear the petals. The last one tells the truth!</div><ul style="padding-left: 22px; margin-top: 0; margin-bottom: 0; list-style-type: none;"><li style="margin-bottom: 8px;"><span style="margin-left: -22px; margin-right: 4px;">🌸</span> <b>Draw:</b> Press "Try your fate" to spin the flower. Then tear the petals.</li><li style="margin-bottom: 8px;"><span style="margin-left: -22px; margin-right: 4px;">🎨</span> <b>Style:</b> Toggle "Display Style" in settings for a cyber-blue flower!</li></ul></div>`
+            };
+            RULES_HTML.flower_intuition = {
+                ru: `<div class="rules-content"><div style="color: #facc15; font-weight: bold; font-size: 18px; border-bottom: 1px solid rgba(250, 204, 21, 0.3); padding-bottom: 8px; margin-bottom: 12px; text-align: center;">👁️ Интуиция</div><div style="margin-bottom: 12px; font-style: italic; color: #ccc;">Проверь свое чутье! Угадай, сколько лепестков надорвутся при отрыве.</div><ul style="padding-left: 22px; margin-top: 0; margin-bottom: 0; list-style-type: none;"><li style="margin-bottom: 8px;"><span style="margin-left: -22px; margin-right: 4px;">🔢</span> <b>Прогноз:</b> Выбери число от 0 до 8 перед тем, как отрывать.</li><li style="margin-bottom: 8px;"><span style="margin-left: -22px; margin-right: 4px;">🥀</span> <b>Отрыв:</b> Некоторые лепестки оторвутся не полностью. Посчитай остатки!</li><li style="margin-bottom: 8px;"><span style="margin-left: -22px; margin-right: 4px;">🏆</span> <b>Победа:</b> Если твой прогноз совпал с реальностью — ты победил.</li></ul></div>`,
+                en: `<div class="rules-content"><div style="color: #facc15; font-weight: bold; font-size: 18px; border-bottom: 1px solid rgba(250, 204, 21, 0.3); padding-bottom: 8px; margin-bottom: 12px; text-align: center;">👁️ Intuition</div><div style="margin-bottom: 12px; font-style: italic; color: #ccc;">Test your sixth sense! Guess how many petals will tear partially.</div><ul style="padding-left: 22px; margin-top: 0; margin-bottom: 0; list-style-type: none;"><li style="margin-bottom: 8px;"><span style="margin-left: -22px; margin-right: 4px;">🔢</span> <b>Forecast:</b> Choose a number before tearing.</li><li style="margin-bottom: 8px;"><span style="margin-left: -22px; margin-right: 4px;">🥀</span> <b>Tear:</b> Some petals will leave a stub. Count them!</li><li style="margin-bottom: 8px;"><span style="margin-left: -22px; margin-right: 4px;">🏆</span> <b>Win:</b> If your prediction matches the stubs — you win.</li></ul></div>`
+            };
+        }
+        LANG_DATA.ru.menuFlower = "Лепестки";
+        LANG_DATA.en.menuFlower = "Petals";
+        LANG_DATA.ru.smFlowerStd = "Жребий";
+        LANG_DATA.en.smFlowerStd = "Draw";
+        LANG_DATA.ru.histFlowerHead = "История лепестков";
+        LANG_DATA.en.histFlowerHead = "Petals History";
+        LANG_DATA.ru.smFlowerInt = "Интуиция";
+        LANG_DATA.en.smFlowerInt = "Intuition";
+        LANG_DATA.ru.flowerChoose = "ВЫБЕРИ ЧИСЛО";
+        LANG_DATA.en.flowerChoose = "CHOOSE A NUMBER";
+        LANG_DATA.ru.flowerDone = "СУДЬБА РЕШИЛА";
+        LANG_DATA.en.flowerDone = "FATE DECIDED";
+        
+        LANG_DATA.ru.intCorrect = "УГАДАЛ!";
+        LANG_DATA.en.intCorrect = "CORRECT!";
+        LANG_DATA.ru.intWrong = "ОШИБКА!";
+        LANG_DATA.en.intWrong = "WRONG!";
+        LANG_DATA.ru.intTorn = "Надорвано:";
+        LANG_DATA.en.intTorn = "Torn:";
+        LANG_DATA.ru.intWas = "Было";
+        LANG_DATA.en.intWas = "Was";
+        LANG_DATA.ru.intNot = "а не";
+        LANG_DATA.en.intNot = "not";
+
         document.querySelectorAll('.flower-styles, #flowerStage').forEach(el => el.remove());
         const style = document.createElement('style');
         style.className = 'flower-styles';
         style.innerHTML = `
-            #flowerStage { display: none; position: relative; width: 100%; height: 260px; justify-content: center; align-items: center; z-index: 50; touch-action: none; transition: opacity 0.4s; margin: 15px 0 5px 0;}
+            #flowerStage { display: none; position: relative; width: 100%; height: 260px; justify-content: center; align-items: center; z-index: 50; touch-action: none; transition: opacity 0.4s; margin: 15px 0 80px 0;}
             #flowerRotator { position: relative; width: 200px; height: 200px; display: flex; justify-content: center; align-items: center; }
             
             /* БАЗОВЫЙ ЦВЕТОК: БЕЛО-ЖЕЛТЫЙ */
             #flowerCore { position: absolute; top: 50%; left: 50%; width: 75px; height: 75px; margin-top: -37.5px; margin-left: -37.5px; background: radial-gradient(circle at 30% 30%, #fff700, #ffaa00); border-radius: 50%; z-index: 100; box-shadow: inset -5px -5px 15px rgba(200, 100, 0, 0.5), 0 5px 20px rgba(0,0,0,0.4); border: 3px solid #e69500; cursor: pointer; transition: background 0.5s, box-shadow 0.5s; }
             .flower-petal { position: absolute; top: 50%; left: 50%; width: 34px; height: 110px; margin-top: -110px; margin-left: -17px; background: linear-gradient(to bottom, #ffffff 0%, #f8fafc 70%, #e2e8f0 100%); border-radius: 50% 50% 20% 20% / 60% 60% 10% 10%; transform-origin: 50% 100%; box-shadow: inset -2px -5px 10px rgba(0,0,0,0.05), 0 3px 8px rgba(0,0,0,0.05); border: 1px solid rgba(0,0,0,0.05); cursor: grab; touch-action: none; z-index: 10; transition: transform 0.1s ease-out, background 0.5s; }
             
+            /* НАДОРВАННЫЙ ОСТАТОК ЛЕПЕСТКА (СТАБ) */
+            .flower-petal-stub {
+                position: absolute; top: 50%; left: 50%; width: 34px; 
+                background: linear-gradient(to bottom, #e2e8f0 0%, #cbd5e1 100%);
+                border-radius: 10% 10% 20% 20% / 10% 10% 10% 10%;
+                transform-origin: 50% 100%;
+                box-shadow: inset -2px -5px 10px rgba(0,0,0,0.05), 0 3px 8px rgba(0,0,0,0.05);
+                border: 1px solid rgba(0,0,0,0.05);
+                border-bottom: none;
+                z-index: 9;
+                clip-path: polygon(0% 100%, 100% 100%, 100% 30%, 80% 10%, 65% 25%, 45% 5%, 25% 20%, 0% 15%);
+            }
+
             /* КИБЕР-ЦВЕТОК: ГОЛУБОЙ */
             #flowerStage.cyber-flower .flower-petal { 
                 background: linear-gradient(to bottom, #7dd3fc 0%, var(--magic-color, #0ea5e9) 60%, #1e40af 100%) !important; 
@@ -4985,8 +5304,21 @@ const FlowerGame = (function() {
                 border-color: #ff9900 !important;
                 box-shadow: 0 0 25px rgba(255, 102, 0, 0.8), inset 0 0 15px rgba(255, 255, 255, 0.4) !important;
             }
+            #flowerStage.cyber-flower .flower-petal-stub {
+                background: linear-gradient(to bottom, var(--magic-color, #0ea5e9) 0%, #1e40af 100%) !important;
+                border: 2px solid var(--magic-color, #a78bfa) !important;
+                border-bottom: none !important;
+                box-shadow: inset 0 0 10px rgba(255, 255, 255, 0.3) !important;
+            }
 
-            #flowerTempRes { position: absolute; bottom: -50px; left: 50%; transform: translateX(-50%); font-weight: 900; font-size: 32px; text-transform: uppercase; letter-spacing: 2px; z-index: 150; pointer-events: none; }
+            #flowerTempRes { position: absolute; bottom: -20px; left: 50%; transform: translateX(-50%); font-weight: 900; font-size: 32px; text-transform: uppercase; letter-spacing: 2px; z-index: 150; pointer-events: none; }
+            
+            #flowerNumberSelector {
+                position: absolute; bottom: -75px; left: 50%; transform: translateX(-50%);
+                display: flex; gap: 8px; z-index: 150;
+                opacity: 0; transition: opacity 0.3s, transform 0.2s; pointer-events: none;
+            }
+            #flowerNumberSelector.visible { opacity: 1; pointer-events: auto; }
             
             /* МЕНЮ И КНОПКИ */
             #submodes-flower { display: none; width: 100%; position: relative; flex-direction: column; gap: 8px; }
@@ -4998,17 +5330,36 @@ const FlowerGame = (function() {
             #submodes-flower.cyber-flower .info-mode-btn { background: var(--magic-color, #0ea5e9); color: #fff; box-shadow: 0 0 5px var(--magic-color, rgba(14,165,233,0.8)); text-shadow: none; }
 
             /* УБИРАЕМ СИНЕЕ ВЫДЕЛЕНИЕ ПРИ ТАПЕ НА МОБИЛЬНЫХ УСТРОЙСТВАХ */
-            #flowerStage, #flowerCore, .flower-petal, .info-mode-btn, .sub-mode-btn {
+            #flowerStage, #flowerCore, .flower-petal, .info-mode-btn, .sub-mode-btn, .flower-guess-btn {
                 -webkit-tap-highlight-color: transparent !important;
                 outline: none !important;
             }
+            
+            .flower-guess-btn {
+                width: 42px; height: 42px; border-radius: 8px;
+                background: rgba(5,8,15,0.9); border: 2px solid var(--magic-color);
+                color: white; font-size: 20px; font-weight: bold; text-shadow: none;
+                cursor: pointer; transition: 0.3s; display: flex; align-items: center; justify-content: center;
+                box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            }
+            .flower-guess-btn.selected {
+                background: var(--magic-color); color: #000; box-shadow: 0 0 15px var(--magic-color); transform: scale(1.1);
+            }
+            .flower-guess-btn.disabled { opacity: 0.3; pointer-events: none; filter: grayscale(1); }
+            
+            #flowerStage.cyber-flower .flower-guess-btn { border-color: var(--magic-color, #0ea5e9); }
+            #flowerStage.cyber-flower .flower-guess-btn.selected { background: var(--magic-color, #0ea5e9); box-shadow: 0 0 15px var(--magic-color, #0ea5e9); }
+            
+            /* ФИЛЬТРАЦИЯ ИСТОРИИ ДЛЯ РОМАШКИ */
+            #historyListFlower[data-mode="standard"] .hist-intuition { display: none !important; }
+            #historyListFlower[data-mode="intuition"] .hist-standard { display: none !important; }
         `;
         document.head.appendChild(style);
         
         const mainStage = document.getElementById('mainStage');
         if (mainStage) {
             const flowerStage = document.createElement('div'); flowerStage.id = 'flowerStage'; flowerStage.className = 'stage';
-            flowerStage.innerHTML = `<div id="flowerRotator"><div id="flowerPetalsContainer" style="position:absolute; width:100%; height:100%;"></div><div id="flowerCore"></div></div><div id="flowerTempRes"></div>`;
+            flowerStage.innerHTML = `<div id="flowerRotator"><div id="flowerPetalsContainer" style="position:absolute; width:100%; height:100%;"></div><div id="flowerCore"></div></div><div id="flowerTempRes"></div><div id="flowerNumberSelector"></div>`;
             mainStage.parentNode.insertBefore(flowerStage, document.getElementById('rouletteStage'));
         }
 
@@ -5026,7 +5377,7 @@ const FlowerGame = (function() {
                         <path d="M50 15 Q60 30 50 50 Q40 30 50 15 M50 85 Q60 70 50 50 Q40 70 50 85 M15 50 Q30 60 50 50 Q30 40 15 50 M85 50 Q70 60 50 50 Q70 40 85 50 M25 25 Q40 35 50 50 Q35 40 25 25 M75 75 Q60 65 50 50 Q65 60 75 75 M25 75 Q40 65 50 50 Q35 60 25 75 M75 25 Q60 35 50 50 Q65 40 75 25"/>
                         <circle cx="50" cy="50" r="10" fill="currentColor"/>
                     </svg>
-                    <span id="sel-flower-txt">Лепестки</span>
+                    <span id="sel-flower-txt">${LANG_DATA[GameState.lang]?.menuFlower || "Лепестки"}</span>
                 `;
                 lockedBtns[0].parentNode.replaceChild(newBtn, lockedBtns[0]);
             }
@@ -5036,10 +5387,15 @@ const FlowerGame = (function() {
         if (smContainer && !document.getElementById('submodes-flower')) {
             const flowerSub = document.createElement('div'); flowerSub.id = 'submodes-flower';
             
+            // ВЕРНУЛИ КЛАССИЧЕСКУЮ HTML-СТРУКТУРУ ДЛЯ КНОПОК
             flowerSub.innerHTML = `
                 <button class="sub-mode-btn active-sub" onclick="App.selectSubMode('flower', 'standard', event)" id="sm-flower-standard">
                     <div class="float-corner-btn info-mode-btn" onclick="App.showSubModeRules(event, 'flower', 'standard')"><i class="fas fa-question"></i></div>
-                    <span id="sm-flower-standard-lbl">Жребий</span>
+                    <span id="sm-flower-standard-lbl">${LANG_DATA[GameState.lang]?.smFlowerStd || "Жребий"}</span>
+                </button>
+                <button class="sub-mode-btn" onclick="App.selectSubMode('flower', 'intuition', event)" id="sm-flower-intuition">
+                    <div class="float-corner-btn info-mode-btn" onclick="App.showSubModeRules(event, 'flower', 'intuition')"><i class="fas fa-question"></i></div>
+                    <span id="sm-flower-intuition-lbl">${LANG_DATA[GameState.lang]?.smFlowerInt || "Интуиция"}</span>
                 </button>
             `;
             smContainer.appendChild(flowerSub);
@@ -5050,10 +5406,6 @@ const FlowerGame = (function() {
             const hl = document.createElement('div'); hl.id = 'historyListFlower'; hl.style.display = 'none';
             histBlock.appendChild(hl);
         }
-        
-        LANG_DATA.ru.menuFlower = "Лепестки"; LANG_DATA.en.menuFlower = "Petals";
-        LANG_DATA.ru.smFlowerStd = "Жребий"; LANG_DATA.en.smFlowerStd = "Draw";
-        LANG_DATA.ru.flowerTear = "ОТРЫВАЙ ЛЕПЕСТКИ"; LANG_DATA.en.flowerTear = "TEAR PETALS";
 
         setInterval(() => {
             const stage = document.getElementById('flowerStage');
@@ -5069,6 +5421,47 @@ const FlowerGame = (function() {
                 stage.classList.remove('cyber-flower');
                 if(subMenu) subMenu.classList.remove('cyber-flower');
             }
+            
+            const t = LANG_DATA[GameState.lang];
+            const stdLbl = document.getElementById('sm-flower-standard-lbl');
+            if (stdLbl) stdLbl.innerText = t.smFlowerStd || "Жребий";
+            
+            const intLbl = document.getElementById('sm-flower-intuition-lbl');
+            if (intLbl) intLbl.innerText = t.smFlowerInt || "Интуиция";
+            
+            const hl = document.getElementById('historyListFlower');
+            if (hl && GameState.subModes && GameState.subModes.flower) {
+                hl.setAttribute('data-mode', GameState.subModes.flower);
+            }
+
+            // ДИНАМИЧЕСКИЙ ПЕРЕВОД ЭКРАНА РЕЗУЛЬТАТА ДЛЯ ЛЕПЕСТКОВ
+            const fState = typeof FlowerGame !== 'undefined' ? FlowerGame.getState() : null;
+            if (fState && !fState.isGameActive && fState.tornCount >= fState.totalPetals && fState.totalPetals > 0) {
+                const rm = document.getElementById('res-main');
+                const rd = document.getElementById('res-desc');
+                if (GameState.subModes.flower === 'intuition') {
+                    const isWin = fState.selectedStubCount === fState.targetStubs;
+                    if (rm) rm.innerHTML = isWin ? (t.intCorrect || "УГАДАЛ!") : (t.intWrong || "ОШИБКА!");
+                    if (rd) rd.innerHTML = isWin ? `${t.intTorn || "Надорвано:"} ${fState.targetStubs}` : `${t.intWas || "Было"} ${fState.targetStubs}, ${t.intNot || "а не"} ${fState.selectedStubCount}`;
+                } else {
+                    const isYes = (fState.tornCount % 2 !== 0);
+                    if (rm) rm.innerHTML = isYes ? (t.yn ? t.yn[1] : "ДА!") : (t.yn ? t.yn[0] : "НЕТ!");
+                }
+            }
+			// ДИНАМИЧЕСКИЙ ПЕРЕВОД КНОПКИ ВО ВРЕМЯ ИГРЫ
+            if (fState && fState.isGameActive) {
+                const rollBtn = document.getElementById('rollBtn');
+                if (rollBtn) {
+                    if (rollBtn.disabled) {
+                        rollBtn.innerText = t.waiting || (GameState.lang === 'ru' ? "ОРАКУЛ ЖДЕТ..." : "WAITING...");
+                    } else if (GameState.subModes.flower === 'intuition' && fState.selectedStubCount === null) {
+                        rollBtn.innerText = t.flowerChoose || (GameState.lang === 'ru' ? "ВЫБЕРИ ЧИСЛО" : "CHOOSE A NUMBER");
+                    } else {
+                        rollBtn.innerText = t.flowerTear || (GameState.lang === 'ru' ? "ОТРЫВАЙ ЛЕПЕСТКИ" : "TEAR PETALS");
+                    }
+                }
+            }  
+			
         }, 500);
 
         FlowerGame.init();
