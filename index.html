@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Игры Судьбы. v0.8.8.23</title>
+    <title>Игры Судьбы. v0.8.8.24</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
@@ -354,7 +354,7 @@
     <div id="stars" class="stars-layer stars-active bg1-stars"></div>
 
     <div id="mainMenuOverlay">
-        <div class="version">v0.8.8.23</div> <div class="menu-top-bar">
+        <div class="version">v0.8.8.24</div> <div class="menu-top-bar">
             <button class="menu-icon-btn" id="langSwitchBtn" onclick="App.toggleLanguage()"><i class="fas fa-globe"></i></button>
         </div>
         <div id="mainMenuTitle" class="menu-title-main">Игры Судьбы</div>
@@ -4484,7 +4484,7 @@
 // --- КОНЕЦ ПЯТОЙ ЧАСТИ ---
 // --- НАЧАЛО ШЕСТОЙ ЧАСТИ ---
 // ==============================================
-// 🌼 ПЛАГИН 4: РОМАШКА (ИНТЕРАКТИВНЫЙ ОРАКУЛ) v5.1
+// 🌼 ПЛАГИН 4: ЛЕПЕСТКИ (ИНТЕРАКТИВНЫЙ ОРАКУЛ) v5.2
 // ==============================================
 const FlowerGame = (function() {
     let totalPetals = 0;
@@ -4555,11 +4555,11 @@ const FlowerGame = (function() {
         document.body.classList.add('is-flower-game-active');
         const t = LANG_DATA[GameState.lang];
         
-        if (document.getElementById('ui-title')) document.getElementById('ui-title').innerText = t.menuFlower || "Ромашка Судьбы";
+        if (document.getElementById('ui-title')) document.getElementById('ui-title').innerText = t.menuFlower || "Лепестки";
         
         const disp = document.getElementById('current-mode-display');
         if (disp) {
-            disp.innerText = (t.smFlowerStd || "Гадание").toUpperCase();
+            disp.innerText = (t.smFlowerStd || "Жребий").toUpperCase();
             disp.style.display = 'inline';
         }
         
@@ -4574,6 +4574,7 @@ const FlowerGame = (function() {
         const cont = document.getElementById('flowerPetalsContainer');
         if (cont && cont.children.length === 0) renderPetals(12, true);
 
+        // ВОССТАНОВЛЕНИЕ СОСТОЯНИЯ КНОПКИ ПРИ ВОЗВРАТЕ
         const rollBtn = document.getElementById('rollBtn');
         const rs = document.getElementById('res-status');
         const rc = document.getElementById('res-content');
@@ -4843,7 +4844,7 @@ const FlowerGame = (function() {
         if(typeof App !== 'undefined') App.playSoundEffect('result', isYes ? 'positive' : 'negative');
         if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred(isYes ? 'success' : 'error');
         const item = document.createElement('div'); item.className = 'history-item';
-        item.innerHTML = `<span style="color:#fff; font-weight:bold; text-shadow: 0 0 8px #fff, 0 0 15px var(--magic-color);">?</span> ${GameState.isQuestionHidden ? '---' : originalQuestion} <span style="color:#aaa; font-size:9px;">[ЦВЕТОК]</span><br><span style="color:${uiColor};">➔ ${subI} ${finalAns}</span>`;
+        item.innerHTML = `<span style="color:#fff; font-weight:bold; text-shadow: 0 0 8px #fff, 0 0 15px var(--magic-color);">?</span> ${GameState.isQuestionHidden ? '---' : originalQuestion} <span style="color:#aaa; font-size:9px;">[${t.menuFlower.toUpperCase()}]</span><br><span style="color:${uiColor};">➔ ${subI} ${finalAns}</span>`;
         const hl = document.getElementById('historyListFlower') || document.getElementById('historyListDice');
         if(hl) hl.prepend(item);
         if(typeof App !== 'undefined') App.requestProfileSave();
@@ -4885,7 +4886,7 @@ const FlowerGame = (function() {
 
             #flowerTempRes { position: absolute; bottom: -50px; left: 50%; transform: translateX(-50%); font-weight: 900; font-size: 32px; text-transform: uppercase; letter-spacing: 2px; z-index: 150; pointer-events: none; }
             
-            /* МЕНЮ И КНОПКИ (v5.1) */
+            /* МЕНЮ И КНОПКИ */
             #submodes-flower { display: none; width: 100%; position: relative; flex-direction: column; gap: 8px; }
             .active-sub { border: 2px solid #facc15 !important; }
             #submodes-flower.cyber-flower .active-sub { border-color: var(--magic-color, #0ea5e9) !important; box-shadow: 0 0 15px var(--magic-color, rgba(14,165,233,0.5)) !important; }
@@ -4899,12 +4900,6 @@ const FlowerGame = (function() {
                 -webkit-tap-highlight-color: transparent !important;
                 outline: none !important;
             }
-            
-            /* МАСШТАБИРОВАНИЕ ЗАГОЛОВКА СПЕЦИАЛЬНО ДЛЯ РОМАШКИ */
-            body.is-flower-game-active #ui-title {
-                font-size: clamp(14px, 5.5vw, 32px) !important;
-                letter-spacing: 1px !important;
-            }
         `;
         document.head.appendChild(style);
         
@@ -4915,7 +4910,7 @@ const FlowerGame = (function() {
             mainStage.parentNode.insertBefore(flowerStage, document.getElementById('rouletteStage'));
         }
 
-        // БЕЗОПАСНАЯ ИНЪЕКЦИЯ СЛОТОВ
+        // БЕЗОПАСНАЯ ИНЪЕКЦИЯ СЛОТОВ С ОБНОВЛЕННЫМ ТЕКСТОМ "Лепестки"
         const gameSelectors = document.querySelector('.game-selector-row');
         if (gameSelectors && !document.getElementById('sel-game-flower')) {
             const lockedBtns = document.querySelectorAll('.square-game-btn.locked');
@@ -4929,7 +4924,7 @@ const FlowerGame = (function() {
                         <path d="M50 15 Q60 30 50 50 Q40 30 50 15 M50 85 Q60 70 50 50 Q40 70 50 85 M15 50 Q30 60 50 50 Q30 40 15 50 M85 50 Q70 60 50 50 Q70 40 85 50 M25 25 Q40 35 50 50 Q35 40 25 25 M75 75 Q60 65 50 50 Q65 60 75 75 M25 75 Q40 65 50 50 Q35 60 25 75 M75 25 Q60 35 50 50 Q65 40 75 25"/>
                         <circle cx="50" cy="50" r="10" fill="currentColor"/>
                     </svg>
-                    <span id="sel-flower-txt">Цветок</span>
+                    <span id="sel-flower-txt">Лепестки</span>
                 `;
                 lockedBtns[0].parentNode.replaceChild(newBtn, lockedBtns[0]);
             }
@@ -4939,11 +4934,11 @@ const FlowerGame = (function() {
         if (smContainer && !document.getElementById('submodes-flower')) {
             const flowerSub = document.createElement('div'); flowerSub.id = 'submodes-flower';
             
-            // ВЕРНУЛИ СТАНДАРТНУЮ СТРУКТУРУ КНОПКИ! (v5.1)
+            // ОБНОВЛЕННЫЙ ТЕКСТ ПОДРЕЖИМА "Жребий"
             flowerSub.innerHTML = `
                 <button class="sub-mode-btn active-sub" onclick="App.selectSubMode('flower', 'standard', event)" id="sm-flower-standard">
                     <div class="float-corner-btn info-mode-btn" onclick="App.showSubModeRules(event, 'flower', 'standard')"><i class="fas fa-question"></i></div>
-                    <span id="sm-flower-standard-lbl">Гадание</span>
+                    <span id="sm-flower-standard-lbl">Жребий</span>
                 </button>
             `;
             smContainer.appendChild(flowerSub);
@@ -4955,8 +4950,9 @@ const FlowerGame = (function() {
             histBlock.appendChild(hl);
         }
         
-        LANG_DATA.ru.menuFlower = "Ромашка Судьбы"; LANG_DATA.en.menuFlower = "Daisy of Fate";
-        LANG_DATA.ru.smFlowerStd = "Гадание"; LANG_DATA.en.smFlowerStd = "Divination";
+        // ОБНОВЛЕННЫЕ ДАННЫЕ ДЛЯ ЯЗЫКОВ
+        LANG_DATA.ru.menuFlower = "Лепестки"; LANG_DATA.en.menuFlower = "Petals";
+        LANG_DATA.ru.smFlowerStd = "Жребий"; LANG_DATA.en.smFlowerStd = "Draw";
         LANG_DATA.ru.flowerTear = "ОТРЫВАЙ ЛЕПЕСТКИ"; LANG_DATA.en.flowerTear = "TEAR PETALS";
 
         setInterval(() => {
