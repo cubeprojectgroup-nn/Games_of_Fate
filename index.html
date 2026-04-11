@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Игры Судьбы. v0.8.8.25</title>
+    <title>Игры Судьбы. v0.8.8.28</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
@@ -354,7 +354,7 @@
     <div id="stars" class="stars-layer stars-active bg1-stars"></div>
 
     <div id="mainMenuOverlay">
-        <div class="version">v0.8.8.25</div> <div class="menu-top-bar">
+        <div class="version">v0.8.8.28</div> <div class="menu-top-bar">
             <button class="menu-icon-btn" id="langSwitchBtn" onclick="App.toggleLanguage()"><i class="fas fa-globe"></i></button>
         </div>
         <div id="mainMenuTitle" class="menu-title-main">Игры Судьбы</div>
@@ -644,6 +644,7 @@
             lang: (tg.initDataUnsafe?.user?.language_code || navigator.language || 'ru').toLowerCase().startsWith('ru') ? 'ru' : 'en',
             sound: true,
             isQuestionHidden: false,
+			questionDrafts: {}, // <--- ВОТ ЭТУ СТРОЧКУ ДОБАВИТЬ
             questionHiddenMap: {
                 'dice_standard': false, 'dice_bet': false, 'dice_casino': false,
                 'roulette_standard': true, 'roulette_bank': false, 'roulette_survival': true
@@ -1080,20 +1081,18 @@
                 
                 const uInput = document.getElementById('userQuestion');
                 if(uInput) {
-                    uInput.addEventListener('input', hideError);
-                    uInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') uInput.blur(); });
-                }
-                
-                const bInput = document.getElementById('betInput');
-                if(bInput) {
-                    bInput.addEventListener('input', hideError);
-                    bInput.addEventListener('keypress', (e) => { 
+                    uInput.addEventListener('input', (e) => {
+                        hideError();
+                        // Запоминаем вопрос в фоне для текущего режима
+                        let qhKey = GameState.mode + '_' + GameState.subModes[GameState.mode];
+                        GameState.questionDrafts[qhKey] = e.target.value;
+                    });
+                    uInput.addEventListener('keypress', (e) => { 
+                        // Запуск игры по клавише Enter
                         if (e.key === 'Enter') {
-                            e.preventDefault();
-                            bInput.blur();
-                            if (GameState.mode === 'roulette' && GameState.subModes.roulette === 'bank') {
-                                if(typeof RouletteGame !== 'undefined') RouletteGame.placeBet();
-                            }
+                            e.preventDefault(); uInput.blur();
+                            const rollBtn = document.getElementById('rollBtn');
+                            if (rollBtn && !rollBtn.disabled && typeof App !== 'undefined') App.askOracle(); 
                         }
                     });
                 }
@@ -1122,6 +1121,7 @@
                 if(typeof RouletteGame !== 'undefined') RouletteGame.init();
                 if(typeof Achievements !== 'undefined') Achievements.init();
                 if(typeof CoinGame !== 'undefined') CoinGame.init();
+                if(typeof RPSGame !== 'undefined') RPSGame.init();
 
                 loadProfileData(GameState.activeProfileIdx);
                 renderProfiles();
@@ -1169,7 +1169,7 @@
                 if (s.subModes) {
                     GameState.subModes = s.subModes;
                 } else {
-                    GameState.subModes = { dice: 'standard', roulette: 'standard', coin: 'standard', flower: 'standard' };
+                    GameState.subModes = { dice: 'standard', roulette: 'standard', coin: 'standard', flower: 'standard', rps: 'standard' };
                 }
 
                 if (s.lang) {
@@ -1334,10 +1334,14 @@
 
             function loadProfileData(idx) {
                 const uq = document.getElementById('userQuestion');
+				GameState.questionDrafts = {};
                 if (uq) uq.value = '';
 
                 if (typeof FlowerGame !== 'undefined' && typeof FlowerGame.resetAll === 'function') {
                     FlowerGame.resetAll();
+                }
+                if (typeof RPSGame !== 'undefined' && typeof RPSGame.resetAll === 'function') {
+                    RPSGame.resetAll();
                 }
 
                 if (idx !== -1 && GameState.profiles[idx]) {
@@ -1348,6 +1352,7 @@
                     const hlRoul = document.getElementById('historyListRoulette'); if(hlRoul) hlRoul.innerHTML = p.historyRoulette || '';
                     const hlCoin = document.getElementById('historyListCoin'); if(hlCoin) hlCoin.innerHTML = p.historyCoin || '';
                     const hlFlower = document.getElementById('historyListFlower'); if(hlFlower) hlFlower.innerHTML = p.historyFlower || '';
+                    const hlRPS = document.getElementById('historyListRPS'); if(hlRPS) hlRPS.innerHTML = p.historyRPS || '';
                     if (p.settings) applySettings(p.settings);
                 } else {
                     if(typeof Achievements !== 'undefined') Achievements.load({}, []);
@@ -1356,13 +1361,14 @@
                     const hlRoul = document.getElementById('historyListRoulette'); if(hlRoul) hlRoul.innerHTML = '';
                     const hlCoin = document.getElementById('historyListCoin'); if(hlCoin) hlCoin.innerHTML = '';
                     const hlFlower = document.getElementById('historyListFlower'); if(hlFlower) hlFlower.innerHTML = '';
-                    GameState.subModes = { dice: 'standard', roulette: 'standard', coin: 'standard', flower: 'standard' };
+                    const hlRPS = document.getElementById('historyListRPS'); if(hlRPS) hlRPS.innerHTML = '';
+                    GameState.subModes = { dice: 'standard', roulette: 'standard', coin: 'standard', flower: 'standard', rps: 'standard' };
                     updateSubModeHighlights();
                 }
                 updateHistoryView();
             }
 
-            function saveProfileData(unlocked, order, rStats, hDice, hRoul, hCoin, hFlower, settings) {
+            function saveProfileData(unlocked, order, rStats, hDice, hRoul, hCoin, hFlower, hRPS, settings) {
                 if (GameState.activeProfileIdx === -1) return; 
                 
                 if (!GameState.profiles[GameState.activeProfileIdx]) {
@@ -1377,6 +1383,7 @@
                 p.historyDice = hDice; 
                 p.historyCoin = hCoin;
                 p.historyFlower = hFlower; 
+                p.historyRPS = hRPS;
                 
                 if (GameState.subModes.roulette !== 'survival') {
                     p.historyRoulette = hRoul;
@@ -1399,6 +1406,9 @@
                 
                 const hf = document.getElementById('historyListFlower');
                 const hFlower = hf ? hf.innerHTML : '';
+
+                const hrps = document.getElementById('historyListRPS');
+                const hRPS = hrps ? hrps.innerHTML : '';
                 
                 const mSel = document.getElementById('modeSelect');
                 const bgSel = document.getElementById('bgSelect');
@@ -1420,7 +1430,7 @@
                 const ord = typeof Achievements !== 'undefined' ? Achievements.getOrder() : [];
                 const rSt = typeof RouletteGame !== 'undefined' ? RouletteGame.getStats() : null;
 
-                saveProfileData(unl, ord, rSt, hDice, hRoul, hCoin, hFlower, settings);
+                saveProfileData(unl, ord, rSt, hDice, hRoul, hCoin, hFlower, hRPS, settings);
             }
 
             function handleSparkleToggle() {
@@ -1496,8 +1506,9 @@
                     const statusEl = document.getElementById('res-status');
                     const rc = document.getElementById('res-content');
                     let isFlowerActive = GameState.mode === 'flower' && typeof FlowerGame !== 'undefined' && FlowerGame.isGameActive();
+                    let isRPSActive = GameState.mode === 'rps' && typeof RPSGame !== 'undefined' && RPSGame.isGameActive();
                     
-                    if(statusEl && (!rc || !rc.classList.contains('visible')) && !isFlowerActive) {
+                    if(statusEl && (!rc || !rc.classList.contains('visible')) && !isFlowerActive && !isRPSActive) {
                         statusEl.classList.add('visible');
                     }
                 }, 50); 
@@ -1521,11 +1532,13 @@
                 const sRoul = document.getElementById('sel-game-roulette'); if(sRoul) sRoul.classList.remove('active-preview');
                 const sCoin = document.getElementById('sel-game-coin'); if(sCoin) sCoin.classList.remove('active-preview');
                 const sFlower = document.getElementById('sel-game-flower'); if(sFlower) sFlower.classList.remove('active-preview');
+                const sRPS = document.getElementById('sel-game-rps'); if(sRPS) sRPS.classList.remove('active-preview');
                 
                 const sdSub = document.getElementById('submodes-dice'); if(sdSub) sdSub.style.display = 'none';
                 const srSub = document.getElementById('submodes-roulette'); if(srSub) srSub.style.display = 'none';
                 const scSub = document.getElementById('submodes-coin'); if(scSub) scSub.style.display = 'none';
                 const sfSub = document.getElementById('submodes-flower'); if(sfSub) sfSub.style.display = 'none';
+                const srpsSub = document.getElementById('submodes-rps'); if(srpsSub) srpsSub.style.display = 'none';
 
                 if (mode === 'dice') {
                     if(card) { card.style.borderColor = "var(--magic-color)"; card.style.boxShadow = "0 0 10px rgba(162, 155, 254, 0.2)"; card.style.color = "var(--magic-color)"; }
@@ -1552,6 +1565,13 @@
                     const previewTitle = document.getElementById('preview-card-title'); if (previewTitle) previewTitle.innerText = t.menuFlower || "Лепестки";
                     if(sFlower) sFlower.classList.add('active-preview');
                     if(sfSub) sfSub.style.display = 'flex'; 
+                } else if (mode === 'rps') {
+                    if(card) { card.style.borderColor = "#ff9f43"; card.style.boxShadow = "0 0 10px rgba(255, 159, 67, 0.2)"; card.style.color = "#ff9f43"; }
+                    const pcIcon = document.getElementById('preview-card-icon'); 
+                    if(pcIcon) pcIcon.innerHTML = `<div style="font-size: 45px; line-height: 1; filter: drop-shadow(0 0 10px rgba(255,159,67,0.5));">✌️</div>`;
+                    const previewTitle = document.getElementById('preview-card-title'); if (previewTitle) previewTitle.innerText = t.menuRPS || "К-Н-Б";
+                    if(sRPS) sRPS.classList.add('active-preview');
+                    if(srpsSub) srpsSub.style.display = 'flex'; 
                 }
                 updateSubModeHighlights();
                 if (tg.HapticFeedback && tg.HapticFeedback.selectionChanged) tg.HapticFeedback.selectionChanged();
@@ -1581,6 +1601,7 @@
             function updateSubModeHighlights() {
                 if (!GameState.subModes.coin) GameState.subModes.coin = 'standard';
                 if (!GameState.subModes.flower) GameState.subModes.flower = 'standard';
+                if (!GameState.subModes.rps) GameState.subModes.rps = 'standard';
 
                 document.querySelectorAll('.sub-mode-btn').forEach(b => b.classList.remove('active-sub'));
                 
@@ -1595,6 +1616,9 @@
 
                 const fBtn = document.getElementById('sm-flower-' + GameState.subModes.flower);
                 if(fBtn) fBtn.classList.add('active-sub');
+                
+                const rpsBtn = document.getElementById('sm-rps-' + GameState.subModes.rps);
+                if(rpsBtn) rpsBtn.classList.add('active-sub');
             }
 
             function selectGameMode() {
@@ -1623,6 +1647,9 @@
                 if (game === 'flower' && typeof FlowerGame !== 'undefined' && typeof FlowerGame.saveCurrentSubState === 'function') {
                     FlowerGame.saveCurrentSubState();
                 }
+                if (game === 'rps' && typeof RPSGame !== 'undefined' && typeof RPSGame.saveCurrentSubState === 'function') {
+                    RPSGame.saveCurrentSubState();
+                }
 
                 GameState.subModes[game] = mode;
 
@@ -1632,6 +1659,9 @@
                 }
                 if (game === 'flower' && typeof FlowerGame !== 'undefined' && typeof FlowerGame.loadCurrentSubState === 'function') {
                     FlowerGame.loadCurrentSubState();
+                }
+                if (game === 'rps' && typeof RPSGame !== 'undefined' && typeof RPSGame.loadCurrentSubState === 'function') {
+                    RPSGame.loadCurrentSubState();
                 }
 
                 playSoundEffect('tick');
@@ -1674,10 +1704,14 @@
                 let qhKey = GameState.mode + '_' + GameState.subModes[GameState.mode];
                 let targetHideState = GameState.questionHiddenMap[qhKey] !== undefined ? GameState.questionHiddenMap[qhKey] : GameState.isQuestionHidden;
                 
+                // ВОТ ЭТИ ДВЕ СТРОЧКИ: Восстанавливаем черновик
+                const uInput = document.getElementById('userQuestion');
+                if (uInput) uInput.value = GameState.questionDrafts[qhKey] || '';
                 if(typeof DiceGame !== 'undefined') DiceGame.unmount();
                 if(typeof RouletteGame !== 'undefined') RouletteGame.unmount();
                 if(typeof CoinGame !== 'undefined') CoinGame.unmount();
                 if(typeof FlowerGame !== 'undefined') FlowerGame.unmount();
+                if(typeof RPSGame !== 'undefined') RPSGame.unmount();
 
                 if (GameState.mode === 'roulette') {
                     if (titleEl) titleEl.innerText = t.titleRoulette;
@@ -1733,13 +1767,31 @@
                     }
 
                     const stHistHead = document.getElementById('st-hist-head');
-                    if(stHistHead) stHistHead.innerText = t.histFlowerHead || (GameState.lang === 'ru' ? "История лепестков" : "Petals History");
+                    if(stHistHead) stHistHead.innerText = t.histFlowerHead || "История лепестков";
                     
                     document.body.classList.remove('bank-mode-active');
                     const tqBtn = document.getElementById('toggleQuestionBtn');
                     if(tqBtn) tqBtn.style.display = 'flex';
                     if (typeof FlowerGame !== 'undefined') FlowerGame.mount();
                     setQuestionState(targetHideState, true);
+
+                } else if (GameState.mode === 'rps') {
+                    if (titleEl) titleEl.innerText = t.menuRPS || "К-Н-Б";
+                    const disp = document.getElementById('current-mode-display');
+                    if (disp) { 
+                        const smNames = { standard: t.smRPSStd || (GameState.lang === 'ru' ? "С Компьютером" : "VS PC") };
+                        disp.innerText = (smNames[GameState.subModes.rps] || "С КОМПЬЮТЕРОМ").toUpperCase(); 
+                        disp.style.display = 'inline'; 
+                    }
+
+                    const stHistHead = document.getElementById('st-hist-head');
+                    if(stHistHead) stHistHead.innerText = t.histRPSHead || (GameState.lang === 'ru' ? "История К-Н-Б" : "RPS History");
+                    
+                    document.body.classList.remove('bank-mode-active');
+                    const tqBtn = document.getElementById('toggleQuestionBtn');
+                    if(tqBtn) tqBtn.style.display = 'none'; 
+                    if (typeof RPSGame !== 'undefined') RPSGame.mount();
+                    setQuestionState(true, true); 
 
                 } else {
                     if(titleEl) titleEl.innerText = t.title;
@@ -1772,14 +1824,18 @@
                 const hlSurv = document.getElementById('historyListSurvival');
                 const hlCoin = document.getElementById('historyListCoin');
                 const hlFlower = document.getElementById('historyListFlower');
+                const hlRPS = document.getElementById('historyListRPS');
 
                 if (hlDice) hlDice.style.display = 'none';
                 if (hlRoul) hlRoul.style.display = 'none';
                 if (hlSurv) hlSurv.style.display = 'none';
                 if (hlCoin) hlCoin.style.display = 'none';
                 if (hlFlower) hlFlower.style.display = 'none';
+                if (hlRPS) hlRPS.style.display = 'none';
 
-                if (GameState.mode === 'flower') {
+                if (GameState.mode === 'rps') {
+                    if (hlRPS) hlRPS.style.display = 'block';
+                } else if (GameState.mode === 'flower') {
                     if (hlFlower) hlFlower.style.display = 'block';
                 } else if (GameState.mode === 'coin') {
                     if (hlCoin) hlCoin.style.display = 'block';
@@ -1807,7 +1863,9 @@
             }
 
             async function askOracle(forcedIdx = null) {
-                if (GameState.mode === 'flower') {
+                if (GameState.mode === 'rps') {
+                    if(typeof RPSGame !== 'undefined') RPSGame.play(forcedIdx);
+                } else if (GameState.mode === 'flower') {
                     if(typeof FlowerGame !== 'undefined') FlowerGame.play(forcedIdx);
                 } else if (GameState.mode === 'coin') {
                     if(typeof CoinGame !== 'undefined') CoinGame.play(forcedIdx);
@@ -2112,7 +2170,9 @@
                 } else if (GameState.mode === 'coin') {
                     headTxt = t.histCoinHead || "Броски монеты";
                 } else if (GameState.mode === 'flower') {
-                    headTxt = t.histFlowerHead || (GameState.lang === 'ru' ? "История лепестков" : "Petals History");
+                    headTxt = t.histFlowerHead || "История лепестков";
+                } else if (GameState.mode === 'rps') {
+                    headTxt = t.histRPSHead || "История К-Н-Б";
                 }
                 const hHead = document.getElementById('st-hist-head');
                 if(hHead) hHead.innerText = headTxt;
@@ -2146,14 +2206,17 @@
                 const smCS = document.getElementById('sm-coin-standard-lbl'); if(smCS) smCS.innerText = t.smCoinStd || "Бросок";
                 const smCQ = document.getElementById('sm-coin-question-lbl'); if(smCQ) smCQ.innerText = t.smCoinQst || "Вопрос";
 
-                const sfTxt = document.getElementById('sel-flower-txt'); if(sfTxt) sfTxt.innerText = t.menuFlower || (GameState.lang === 'ru' ? "Лепестки" : "Petals");
-                const smFS = document.getElementById('sm-flower-standard-lbl'); if(smFS) smFS.innerText = t.smFlowerStd || (GameState.lang === 'ru' ? "Жребий" : "Draw");
-                const smFInt = document.getElementById('sm-flower-intuition-lbl'); if(smFInt) smFInt.innerText = t.smFlowerInt || (GameState.lang === 'ru' ? "Интуиция" : "Intuition");
+                const sfTxt = document.getElementById('sel-flower-txt'); if(sfTxt) sfTxt.innerText = t.menuFlower || "Лепестки";
+                const smFS = document.getElementById('sm-flower-standard-lbl'); if(smFS) smFS.innerText = t.smFlowerStd || "Жребий";
+                const smFInt = document.getElementById('sm-flower-intuition-lbl'); if(smFInt) smFInt.innerText = t.smFlowerInt || "Интуиция";
+
+                const srpsTxt = document.getElementById('sel-rps-txt'); if(srpsTxt) srpsTxt.innerText = t.menuRPS || "К-Н-Б";
+                const smRpsS = document.getElementById('sm-rps-standard-lbl'); if(smRpsS) smRpsS.innerText = t.smRPSStd || "С Компьютером";
 
                 const rollBtn = document.getElementById('rollBtn');
                 if(rollBtn) {
                     if (GameState.mode === 'flower' && typeof FlowerGame !== 'undefined' && FlowerGame.isGameActive && FlowerGame.isGameActive()) {
-                        // Текст восстановится в restoreUI() у FlowerGame, здесь не трогаем
+                    } else if (GameState.mode === 'rps' && typeof RPSGame !== 'undefined') {
                     } else {
                         rollBtn.innerText = t.rollBtn; 
                     }
@@ -2161,7 +2224,7 @@
                 
                 const resC = document.getElementById('res-content');
                 if(resC && !resC.classList.contains('visible')) {
-                    let idleText = GameState.isQuestionHidden ? (t.idleNoQ || (GameState.lang === 'en' ? "WAITING..." : "ОЖИДАНИЕ...")) : (t.idle || (GameState.lang === 'en' ? "ORACLE AWAITS..." : "ОРАКУЛ ЖДЕТ..."));
+                    let idleText = GameState.isQuestionHidden ? t.idleNoQ : t.idle;
                     if (!GameState.isQuestionHidden && GameState.mode === 'roulette' && GameState.subModes.roulette === 'bank') idleText = t.idleBet;
                     const resS = document.getElementById('res-status');
                     if(resS) resS.innerText = idleText;
@@ -2189,11 +2252,16 @@
                         disp.innerText = subNamesCoin[GameState.subModes.coin].toUpperCase();
                     }
                 } else if (GameState.mode === 'flower') {
-                    if (titleEl) titleEl.innerText = t.menuFlower || (GameState.lang === 'ru' ? "Лепестки" : "Petals");
                     const disp = document.getElementById('current-mode-display');
                     if (disp) {
-                        const smNames = { standard: t.smFlowerStd || (GameState.lang === 'ru' ? "Жребий" : "Draw"), intuition: t.smFlowerInt || (GameState.lang === 'ru' ? "Интуиция" : "Intuition") };
-                        disp.innerText = (smNames[GameState.subModes.flower] || (GameState.lang === 'ru' ? "Жребий" : "Draw")).toUpperCase();
+                        const smNames = { standard: t.smFlowerStd || "Жребий", intuition: t.smFlowerInt || "Интуиция" };
+                        disp.innerText = (smNames[GameState.subModes.flower] || "Жребий").toUpperCase();
+                    }
+                } else if (GameState.mode === 'rps') {
+                    const disp = document.getElementById('current-mode-display');
+                    if (disp) {
+                        const smNames = { standard: t.smRPSStd || "С Компьютером" };
+                        disp.innerText = (smNames[GameState.subModes.rps] || "С КОМПЬЮТЕРОМ").toUpperCase();
                     }
                 }
 
@@ -2244,7 +2312,16 @@
                 setTimeout(() => { if(s.parentNode) s.remove() }, dur * 1000); 
             }
 
+			// Новая функция стирания
+            function clearQuestionDraft() {
+                const uq = document.getElementById('userQuestion');
+                if (!GameState.isQuestionHidden && uq) uq.value = '';
+                let qhKey = GameState.mode + '_' + GameState.subModes[GameState.mode];
+                GameState.questionDrafts[qhKey] = '';
+            }
+
             return {
+                clearQuestionDraft, // <--- ДОБАВИТЬ СЮДА
                 init, selectProfile, createNewProfile, loadProfileData, requestProfileSave, 
                 showDeleteConfirm, confirmDeleteProfile, showRenameModal, confirmRenameProfile, 
                 handleSparkleToggle, selectGameMode, selectSubMode, showSubModeRules, 
@@ -2263,12 +2340,11 @@
         // ==============================================
         const DiceGame = (function() {
             let currentFaces = [];
-            let isDragging = false, lastX = 0, lastY = 0, velX = 0, velY = 0, inertiaFrame, lastTapTime = 0, lastMoveTime = 0, lastTick = 0;
+            let isDragging = false, startX = 0, startY = 0, lastX = 0, lastY = 0, velX = 0, velY = 0, inertiaFrame, lastDownTime = 0, lastMoveTime = 0, lastTick = 0;
             let rotX = -20, rotY = 20, rotZ = 0; 
             const traderIcons = ['<i class="fas fa-rocket"></i>', '<i class="fas fa-arrow-trend-down"></i>', '<i class="fas fa-chart-line"></i>', '<i class="fas fa-chart-area" style="transform: scaleY(-1)"></i>', '<i class="fas fa-arrows-left-right"></i>', '<i class="fas fa-skull"></i>'];
             const alcoIcons = ['<i class="fas fa-wine-glass-alt"></i>', '<i class="fas fa-beer-mug-empty"></i>', '<i class="fas fa-glass-martini-alt"></i>', '<i class="fas fa-whiskey-glass"></i>', '<i class="fas fa-vial"></i>', '<i class="fas fa-droplet"></i>'];
 
-            // Криптографический генератор случайных чисел для абсолютного рандома
             function getCryptoRandom() {
                 const array = new Uint32Array(1);
                 window.crypto.getRandomValues(array);
@@ -2310,8 +2386,6 @@
                 
                 if(sel) {
                     document.body.classList.toggle('yesno-mode-active', sel.value === 'yesno');
-                    
-                    // Устанавливаем атрибут фильтрации истории для текущего режима
                     const hlDice = document.getElementById('historyListDice');
                     if (hlDice) hlDice.setAttribute('data-mode', sel.value);
                 }
@@ -2333,7 +2407,6 @@
                     const face = document.getElementById(`face${i}`);
                     if (!face) continue;
                     
-                    // Сбрасываем жесткие стили
                     face.style.textShadow = ""; 
                     face.style.color = ""; 
                     
@@ -2343,14 +2416,12 @@
                         currentFaces.push(ynOrder[i-1]); 
                     }
                     else if(mode === 'trader') { 
-                        // Цвета для трейдерских эмодзи
                         const trColors = ["#4ade80", "#f87171", "#4ade80", "#f87171", "#a78bfa", "#ef4444"];
                         face.innerHTML = `<div style="color: ${trColors[i-1]} !important;">${traderIcons[i-1]}</div>`; 
                         face.style.fontSize = "45px"; 
                         currentFaces.push(t.traderFaces[i-1]); 
                     }
                     else if(mode === 'alco') { 
-                        // Цвета для алко-эмодзи
                         const alcoColors = ["#ff5e62", "#ffbd69", "#d4fc79", "#f9f586", "#96fbc4", "#a29bfe"];
                         face.innerHTML = `<div style="color: ${alcoColors[i-1]} !important;">${alcoIcons[i-1]}</div>`; 
                         face.style.fontSize = "45px"; 
@@ -2373,13 +2444,12 @@
                 const rollBtn = document.getElementById('rollBtn');
                 if (!rollBtn || rollBtn.disabled || GameState.mode === 'roulette') return; 
                 
-                const now = Date.now();
-                if (now - lastTapTime < 300) { if (!rollBtn.disabled && typeof App !== 'undefined') App.askOracle(); return; }
-                lastTapTime = now; 
+                lastDownTime = Date.now(); // <-- Добавили таймер касания
                 
                 isDragging = true; cancelAnimationFrame(inertiaFrame); 
                 const cube = document.getElementById('cube'); if(cube) cube.style.transition = 'none'; 
                 const clientX = e.touches ? e.touches[0].clientX : e.clientX; const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                startX = clientX; startY = clientY; // <-- Запоминаем старт
                 lastX = clientX; lastY = clientY; velX = 0; velY = 0; lastTick = rotX + rotY;
             }
 
@@ -2401,6 +2471,15 @@
 
             function handlePointerUp() {
                 if (!isDragging) return; isDragging = false;
+                
+                // Если клик был быстрым и палец не двигался - запускаем игру!
+                const now = Date.now();
+                if (now - lastDownTime < 250 && Math.abs(lastX - startX) < 10 && Math.abs(lastY - startY) < 10) {
+                    const rollBtn = document.getElementById('rollBtn');
+                    if (rollBtn && !rollBtn.disabled && typeof App !== 'undefined') App.askOracle();
+                    return; 
+                }
+
                 if (Date.now() - lastMoveTime > 100) { velX = 0; velY = 0; }
                 applyInertia(); 
             }
@@ -2431,7 +2510,7 @@
                 if(cube) { cube.style.transition = 'none'; void cube.offsetWidth; }
                 
                 const originalQuestion = q; 
-                if (!GameState.isQuestionHidden && uq) uq.value = ''; 
+                // ИСПРАВЛЕНИЕ: Вопрос больше не стирается здесь!
 
                 if(typeof App !== 'undefined') App.playSoundEffect('click'); 
 
@@ -2445,14 +2524,16 @@
                 const cryptoRand = getCryptoRandom();
                 const rIdx = forcedIdx !== null ? forcedIdx : Math.floor(cryptoRand * 6);
 
-                const targetRots = [{x:0,y:0},{x:90,y:0},{x:0,y:90},{x:0,y:-90},{x:-90,y:0},{x:0,y:180}];
+                const targetRots = [
+                    {x: 0, y: 0}, {x: 0, y: -90}, {x: 0, y: 180},  
+                    {x: 0, y: 90}, {x: -90, y: 0}, {x: 90, y: 0}    
+                ];
                 
                 const rollDuration = 2000 + Math.floor(getCryptoRandom() * 3000); 
                 const wobbleDur = 600; 
                 const flightDur = rollDuration - wobbleDur;
 
                 const offX = (getCryptoRandom() * 20 - 10), offY = (getCryptoRandom() * 20 - 10);
-                
                 const spinsX = 360 * (6 + Math.floor(getCryptoRandom() * 10)); 
                 const spinsY = 360 * (6 + Math.floor(getCryptoRandom() * 10)); 
                 const spinsZ = 360 * (3 + Math.floor(getCryptoRandom() * 5)); 
@@ -2500,15 +2581,12 @@
                         cube.style.transition = `transform ${wobbleDur / 1000}s cubic-bezier(0.34, 1.56, 0.64, 1)`; 
                         cube.style.transform = `rotateX(${rotX}deg) rotateY(${rotY}deg) rotateZ(${rotZ}deg)`;
                     }
-                    
                     if(typeof App !== 'undefined') App.playSoundEffect('load'); 
-                    
                     if (tg.HapticFeedback) {
                         tg.HapticFeedback.impactOccurred('heavy'); 
                         setTimeout(() => tg.HapticFeedback.impactOccurred('medium'), wobbleDur * 0.3); 
                         setTimeout(() => tg.HapticFeedback.impactOccurred('rigid'), wobbleDur * 0.8); 
                     }
-                    
                     for(let i=0;i<150;i++) { if(typeof App !== 'undefined') App.createSparkle(); }
                 }, flightDur);
 
@@ -2544,10 +2622,10 @@
                     snd = (rIdx === 5) ? 'water' : 'alco'; 
                     
                     subI = alcoIcons[rIdx]; 
-                    resT = t.alcoFaces[rIdx]; // Крупный текст действия
+                    resT = t.alcoFaces[rIdx]; 
                     resD = ""; 
                     histDispTxt = t.alcoFaces[rIdx]; 
-                    displaySubI = ""; // Скрываем эмодзи в результате, оставляем только текст
+                    displaySubI = ""; 
                 } 
                 else if (dMode === 'yesno') { 
                     snd = isSuccess ? 'positive' : 'negative'; subI = isSuccess ? '<i class="fas fa-check"></i>' : '<i class="fas fa-times"></i>'; resT = resData[GameState.lang][rIdx].t; resD = resData[GameState.lang][rIdx].s; 
@@ -2571,7 +2649,6 @@
                 if (tg.HapticFeedback) { if (snd === 'scam') { tg.HapticFeedback.notificationOccurred('error'); } else if (snd === 'water') { [0,200,400].forEach(delay=>setTimeout(()=>tg.HapticFeedback.impactOccurred('medium'),delay)); } else { tg.HapticFeedback.impactOccurred('light'); } }
 
                 const rm = document.getElementById('res-main'); if(rm) rm.innerHTML = resT; 
-                // Выводим очищенный displaySubI в результат
                 if(resSub) { resSub.innerHTML = displaySubI; resSub.style.color = uiColor; resSub.style.textShadow = `0 0 25px ${uiColor}`; }
                 const rd = document.getElementById('res-desc'); if(rd) rd.innerHTML = resD;
                 
@@ -2591,7 +2668,12 @@
                 const hlDice = document.getElementById('historyListDice');
                 if(hlDice) hlDice.prepend(item);
                 if(typeof App !== 'undefined') App.requestProfileSave(); 
-                
+
+                // ВОТ ЭТИ ДВЕ СТРОЧКИ СТИРАЮТ ВОПРОС ПОСЛЕ АНИМАЦИИ:
+                const uq = document.getElementById('userQuestion');
+                if (!GameState.isQuestionHidden && uq) uq.value = '';
+                if (typeof App !== 'undefined' && typeof App.clearQuestionDraft === 'function') App.clearQuestionDraft();
+
                 const rollBtn = document.getElementById('rollBtn');
                 if(rollBtn) {
                     rollBtn.disabled = false; rollBtn.innerText = t.rollBtn; rollBtn.classList.remove('gold-text-active');
@@ -2615,21 +2697,19 @@
             style.innerHTML = `
                 .face { 
                     background: radial-gradient(circle at 30% 30%, #3e3863 0%, #151324 100%) !important; 
-                    border: 2px solid #6c5ce7 !important; /* Утончили линии с 3px до 2px */
-                    box-sizing: border-box !important; /* Линии растут внутрь, не ломая 3D-геометрию */
+                    border: 2px solid #6c5ce7 !important; 
+                    box-sizing: border-box !important; 
                     box-shadow: inset 0 0 15px rgba(0,0,0,0.9), inset 1px 1px 3px rgba(255,255,255,0.3) !important; 
                     border-radius: 12px !important; 
                     color: #ffffff !important; 
                     text-shadow: 2px 2px 4px rgba(0,0,0,0.8), -1px -1px 2px rgba(255,255,255,0.2) !important; 
                     
-                    /* ЖЕСТКО ЗАДАЕМ ПОЗИЦИОНИРОВАНИЕ ГРАНЕЙ, ЧТОБЫ ОНИ НЕ ПРОПАДАЛИ */
                     position: absolute !important;
                     width: 100% !important; 
                     height: 100% !important;
                     backface-visibility: hidden !important;
                 }
                 
-                /* ПРИНУДИТЕЛЬНЫЕ ОСИ ДЛЯ ВСЕХ 6 ГРАНЕЙ */
                 #face1 { transform: rotateY(0deg) translateZ(60px) !important; }
                 #face2 { transform: rotateY(90deg) translateZ(60px) !important; }
                 #face3 { transform: rotateY(180deg) translateZ(60px) !important; }
@@ -2684,10 +2764,10 @@
             let isDragging = false;
             let centerX = 0;
             let centerY = 0;
+            let startX = 0, startY = 0, lastX = 0, lastY = 0, lastDownTime = 0; // Для умного клика
             let lastAngle = 0;
             let vel = 0;
             let inertiaFrame;
-            let lastTapTime = 0;
             let lastMoveTime = 0;
             let lastTickPlayTime = 0;
             let lastTickedHole = 0;
@@ -2754,6 +2834,19 @@
                         #historyListRoulette[data-mode="bank"] .hist-standard { display: none !important; }
                     `;
                     document.head.appendChild(style);
+			// Добавь это в RouletteGame -> init()
+				const betInput = document.getElementById('betInput');
+				if (betInput) {
+				betInput.addEventListener('keydown', (e) => {
+				if (e.key === 'Enter') {
+				e.preventDefault(); // Предотвращаем лишние действия браузера
+				// Вызываем функцию совершения ставки
+				if (typeof RouletteGame !== 'undefined' && RouletteGame.placeBet) {
+                RouletteGame.placeBet();
+            }
+        }
+    });
+}
                 }
             }
 
@@ -3033,13 +3126,7 @@
                 if (isSpinningDrum || isWaitingResult || isBetting || GameState.mode !== 'roulette') return; 
                 if (pendingDeathReset) reset();
                 
-                const rollBtn = document.getElementById('rollBtn');
-                const now = Date.now();
-                if (now - lastTapTime < 300) { 
-                    if (rollBtn && !rollBtn.disabled && typeof App !== 'undefined') App.askOracle(); 
-                    return; 
-                }
-                lastTapTime = now; 
+                lastDownTime = Date.now(); 
                 isDragging = true; 
                 cancelAnimationFrame(inertiaFrame); 
                 updateButtonStates(); 
@@ -3056,6 +3143,8 @@
                 
                 const clientX = e.touches ? e.touches[0].clientX : e.clientX; 
                 const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                startX = clientX; startY = clientY;
+                lastX = clientX; lastY = clientY;
                 
                 const adjustedY = (clientY - centerY) / tiltCos;
                 lastAngle = Math.atan2(adjustedY, clientX - centerX) * 180 / Math.PI;
@@ -3070,6 +3159,7 @@
                 
                 const clientX = e.touches ? e.touches[0].clientX : e.clientX; 
                 const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                lastX = clientX; lastY = clientY;
                 
                 const adjustedY = (clientY - centerY) / tiltCos;
                 let currentAngle = Math.atan2(adjustedY, clientX - centerX) * 180 / Math.PI;
@@ -3104,6 +3194,15 @@
                 if (!isDragging) return; 
                 isDragging = false; 
                 updateButtonStates();
+                
+                const now = Date.now();
+                // Запуск по одному клику!
+                if (now - lastDownTime < 250 && Math.abs(lastX - startX) < 10 && Math.abs(lastY - startY) < 10) {
+                    const rollBtn = document.getElementById('rollBtn');
+                    if (rollBtn && !rollBtn.disabled && typeof App !== 'undefined') App.askOracle();
+                    return; 
+                }
+
                 if (Date.now() - lastMoveTime > 100) { vel = 0; }
                 applyInertia(); 
             }
@@ -3604,7 +3703,7 @@
                 }
                 
                 const originalQuestion = q;
-                if (!GameState.isQuestionHidden && uq) uq.value = '';
+                // ИСПРАВЛЕНИЕ: Вопрос больше не стирается здесь!
 
                 let currentPoolForHist = getStats().pool || 0; 
 
@@ -3918,7 +4017,10 @@
                     if (hlr) hlr.prepend(item);
                 }
 
-                if(typeof App !== 'undefined') App.requestProfileSave(); 
+                if(typeof App !== 'undefined') {
+                    App.clearQuestionDraft();
+                    App.requestProfileSave(); 
+                }
 
                 const rollBtn = document.getElementById('rollBtn');
 
@@ -4189,7 +4291,7 @@
         // 🪙 ПЛАГИН 3: ГРАНЬ ВЫБОРА (ИНЖЕКЦИЯ) v46 (Clean Style Toggle)
         // ==============================================
         const CoinGame = (function() {
-            let isDragging = false, lastX = 0, lastY = 0, velX = 0, velY = 0, inertiaFrame, lastMoveTime = 0, lastTapTime = 0;
+            let isDragging = false, startX = 0, startY = 0, lastX = 0, lastY = 0, velX = 0, velY = 0, inertiaFrame, lastMoveTime = 0, lastDownTime = 0;
             let rotX = -35, rotY = 0, rotZ = 0;
 
             function getCryptoRandom() {
@@ -4266,12 +4368,12 @@
             function handlePointerDown(e) {
                 const rollBtn = document.getElementById('rollBtn');
                 if (!rollBtn || rollBtn.disabled || GameState.mode !== 'coin') return;
-                const now = Date.now();
-                if (now - lastTapTime < 300) { if (typeof App !== 'undefined') App.askOracle(); return; }
-                lastTapTime = now;
+                
+                lastDownTime = Date.now();
                 isDragging = true; cancelAnimationFrame(inertiaFrame);
                 const coin = document.getElementById('coinRotator'); if(coin) coin.style.transition = 'none';
                 const clientX = e.touches ? e.touches[0].clientX : e.clientX; const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                startX = clientX; startY = clientY;
                 lastX = clientX; lastY = clientY; velX = 0; velY = 0;
             }
 
@@ -4286,6 +4388,15 @@
 
             function handlePointerUp() {
                 if (!isDragging) return; isDragging = false;
+                
+                const now = Date.now();
+                // Запуск по одному клику!
+                if (now - lastDownTime < 250 && Math.abs(lastX - startX) < 10 && Math.abs(lastY - startY) < 10) {
+                    const rollBtn = document.getElementById('rollBtn');
+                    if (rollBtn && !rollBtn.disabled && typeof App !== 'undefined') App.askOracle();
+                    return; 
+                }
+
                 if (Date.now() - lastMoveTime > 100) { velX = 0; velY = 0; }
                 applyInertia();
             }
@@ -4307,7 +4418,8 @@
                 const coin = document.getElementById('coinRotator'); 
                 if(coin) { coin.style.transition = 'none'; void coin.offsetWidth; }
                 
-                const originalQuestion = q; if (!GameState.isQuestionHidden && uq) uq.value = '';
+                const originalQuestion = q;
+                // ИСПРАВЛЕНИЕ: Вопрос больше не стирается здесь!
                 
                 playCoinTossSound();
 
@@ -4410,6 +4522,7 @@
                 const hlCoin = document.getElementById('historyListCoin') || document.getElementById('historyListDice'); 
                 if(hlCoin) hlCoin.prepend(item);
                 
+                if(typeof App !== 'undefined') App.clearQuestionDraft();
                 App.requestProfileSave();
                 
                 const rollBtn = document.getElementById('rollBtn');
@@ -4596,18 +4709,18 @@ const FlowerGame = (function() {
     }
 
     function handleFlowerClick(e) {
-        const now = Date.now();
-        if (now - lastFlowerTap < 300) {
-            play();
-        } else {
-            if (!isGameActive && !isSpinning) {
-                const uq = document.getElementById('userQuestion');
-                if (!GameState.isQuestionHidden && (!uq || !uq.value.trim())) {
-                    if(typeof App !== 'undefined') { App.triggerButtonError(); App.showError(LANG_DATA[GameState.lang].error); }
-                }
+        if (isSpinning || isGameActive) return;
+
+        const uq = document.getElementById('userQuestion');
+        if (!GameState.isQuestionHidden && (!uq || !uq.value.trim())) {
+            if(typeof App !== 'undefined') { 
+                App.triggerButtonError(); 
+                App.showError(LANG_DATA[GameState.lang].error); 
             }
+            return;
         }
-        lastFlowerTap = now;
+        
+        play();
     }
 
     function resetToIdle(animate = true) {
@@ -5014,7 +5127,9 @@ const FlowerGame = (function() {
     function handlePointerDown(e) {
         if (isSpinning) return;
         
-        if (GameState.subModes.flower === 'intuition' && selectedStubCount === null) {
+        // ИСПРАВЛЕНИЕ: Блокируем лепестки только если игра УЖЕ НАЧАЛАСЬ, но число еще не выбрано.
+        // До начала игры (или после восстановления) теребить лепестки разрешено!
+        if (isGameActive && GameState.subModes.flower === 'intuition' && selectedStubCount === null) {
             const sel = document.getElementById('flowerNumberSelector');
             if(sel) {
                 sel.style.transform = 'translateX(-50%) scale(1.1)';
@@ -5165,8 +5280,7 @@ const FlowerGame = (function() {
     }
 
     function finalizeGame(isYes, session) {
-        const uq = document.getElementById('userQuestion');
-        if (!GameState.isQuestionHidden && uq) uq.value = '';
+        if (typeof App !== 'undefined') App.clearQuestionDraft();
 
         const t = LANG_DATA[GameState.lang];
         const isRu = GameState.lang === 'ru';
@@ -5468,6 +5582,949 @@ const FlowerGame = (function() {
     } catch (err) { console.error("Flower error:", err); }
 })();
 // --- КОНЕЦ ШЕСТОЙ ЧАСТИ ---
+// --- НАЧАЛО СЕДЬМОЙ ЧАСТИ ---
+// ==============================================
+// ✊✌️✋ ПЛАГИН 5: КАМЕНЬ НОЖНИЦЫ БУМАГА (v2.1 - INTUITIVE PvP LOCKS)
+// ==============================================
+const RPSGame = (function() {
+    function getEmptyState() {
+        return { isGameActive: false, playerMove: null, pcMove: null, pvpState: 0, p1Move: null, p2Move: null };
+    }
 
+    let subStates = { standard: getEmptyState(), pvp: getEmptyState() };
+    
+    let isGameActive = false;
+    let isSpinning = false;
+    let playerMove = null;
+    let pcMove = null;
+    
+    // Переменные для PvP (0: P1 ждет, 1: P1 выбирает, 2: P2 ждет, 3: P2 выбирает, 4: Готовы, 5: Анимация, 6: Результат)
+    let pvpState = 0; 
+    let p1Move = null;
+    let p2Move = null;
+    
+    let currentSessionId = 0;
+
+    const gestures = {
+        rock: { icon: '✊', name: { ru: 'Камень', en: 'Rock' } },
+        scissors: { icon: '✌️', name: { ru: 'Ножницы', en: 'Scissors' } },
+        paper: { icon: '✋', name: { ru: 'Бумага', en: 'Paper' } }
+    };
+
+    function getCryptoRandom() {
+        const array = new Uint32Array(1);
+        window.crypto.getRandomValues(array);
+        return array[0] / 4294967295;
+    }
+
+    function init() {}
+
+    function saveCurrentSubState() {
+        const mode = GameState.subModes.rps || 'standard';
+        if (!subStates[mode]) subStates[mode] = getEmptyState();
+        subStates[mode] = { isGameActive, playerMove, pcMove, pvpState, p1Move, p2Move };
+    }
+
+    function loadCurrentSubState() {
+        const mode = GameState.subModes.rps || 'standard';
+        if (!subStates[mode]) subStates[mode] = getEmptyState();
+        const s = subStates[mode];
+        isGameActive = s.isGameActive;
+        playerMove = s.playerMove;
+        pcMove = s.pcMove;
+        pvpState = s.pvpState || 0;
+        p1Move = s.p1Move || null;
+        p2Move = s.p2Move || null;
+
+        restoreUI();
+    }
+
+    function resetAll() {
+        subStates = { standard: getEmptyState(), pvp: getEmptyState() };
+        currentSessionId++;
+        loadCurrentSubState();
+    }
+
+    function mount() {
+        const st = document.getElementById('rpsStage'); if(st) st.style.display = 'flex';
+        document.body.classList.add('is-rps-game-active');
+        const t = LANG_DATA[GameState.lang];
+        
+        if (document.getElementById('ui-title')) document.getElementById('ui-title').innerText = t.menuRPS || "К-Н-Б";
+        
+        const disp = document.getElementById('current-mode-display');
+        if (disp) {
+            const smNames = { standard: t.smRPSStd || "С Компьютером", pvp: t.smRPSPvP || "Два Игрока" };
+            disp.innerText = (smNames[GameState.subModes.rps] || "С КОМПЬЮТЕРОМ").toUpperCase();
+            disp.style.display = 'inline';
+        }
+        
+        if(typeof App !== 'undefined') App.hideError();
+        
+        restoreUI();
+    }
+
+    function unmount() {
+        const st = document.getElementById('rpsStage'); if(st) st.style.display = 'none';
+        document.body.classList.remove('is-rps-game-active');
+        
+        const rs = document.getElementById('res-status'); if(rs) rs.classList.remove('visible');
+        const rc = document.getElementById('res-content'); if(rc) rc.classList.remove('visible');
+    }
+
+    function clearHandsFormatting() {
+        const leftHand = document.getElementById('rps-left-hand');
+        const rightHand = document.getElementById('rps-right-hand');
+        if (leftHand) leftHand.className = 'rps-hand';
+        if (rightHand) rightHand.className = 'rps-hand right-hand';
+    }
+
+    function restoreUI() {
+        const t = LANG_DATA[GameState.lang];
+        const mode = GameState.subModes.rps;
+        
+        const rollBtn = document.getElementById('rollBtn');
+        const rs = document.getElementById('res-status');
+        const rc = document.getElementById('res-content');
+        
+        const selCont = document.getElementById('rps-selection-container');
+        const arenaCont = document.getElementById('rps-arena-container');
+        const animText = document.getElementById('rps-animation-text');
+        const leftHand = document.getElementById('rps-left-hand');
+        const rightHand = document.getElementById('rps-right-hand');
+
+        // === ОТОБРАЖЕНИЕ ДЛЯ РЕЖИМА PvP ===
+        if (mode === 'pvp') {
+            if (animText) animText.style.opacity = 0;
+            
+            if (pvpState === 0) { 
+                if (selCont) selCont.style.display = 'none';
+                if (arenaCont) { 
+                    arenaCont.style.display = 'flex'; 
+                    clearHandsFormatting(); 
+                    leftHand.innerText = '🔓'; rightHand.innerText = '🔓'; 
+                    leftHand.classList.add('active-lock');
+                    rightHand.classList.add('idle-lock'); 
+                }
+                if (rollBtn) { rollBtn.innerText = t.rpsP1Turn; rollBtn.disabled = false; rollBtn.classList.remove('gold-text-active'); }
+                if (rs) { rs.innerText = t.rpsPrepare; rs.classList.add('visible'); }
+                if (rc) rc.classList.remove('visible');
+            } 
+            else if (pvpState === 1) { 
+                if (selCont) selCont.style.display = 'flex';
+                if (arenaCont) arenaCont.style.display = 'none';
+                if (rollBtn) { rollBtn.innerText = t.rpsChoose; rollBtn.disabled = true; rollBtn.classList.remove('gold-text-active'); }
+                if (rs) { rs.innerText = t.rpsSecret; rs.classList.add('visible'); }
+                if (rc) rc.classList.remove('visible');
+            } 
+            else if (pvpState === 2) { 
+                if (selCont) selCont.style.display = 'none';
+                if (arenaCont) { 
+                    arenaCont.style.display = 'flex'; 
+                    clearHandsFormatting(); 
+                    leftHand.innerText = '🔒'; rightHand.innerText = '🔓'; 
+                    leftHand.classList.add('locked-lock');
+                    rightHand.classList.add('active-lock'); 
+                }
+                if (rollBtn) { rollBtn.innerText = t.rpsP2Turn; rollBtn.disabled = false; rollBtn.classList.remove('gold-text-active'); }
+                if (rs) { rs.innerText = t.rpsPrepare; rs.classList.add('visible'); }
+                if (rc) rc.classList.remove('visible');
+            } 
+            else if (pvpState === 3) { 
+                if (selCont) selCont.style.display = 'flex';
+                if (arenaCont) arenaCont.style.display = 'none';
+                if (rollBtn) { rollBtn.innerText = t.rpsChoose; rollBtn.disabled = true; rollBtn.classList.remove('gold-text-active'); }
+                if (rs) { rs.innerText = t.rpsSecret; rs.classList.add('visible'); }
+                if (rc) rc.classList.remove('visible');
+            } 
+            else if (pvpState === 4) { 
+                if (selCont) selCont.style.display = 'none';
+                if (arenaCont) { arenaCont.style.display = 'flex'; clearHandsFormatting(); leftHand.innerText = '⚔️'; rightHand.innerText = '⚔️'; }
+                if (rollBtn) { rollBtn.innerText = t.rpsFightBtn; rollBtn.disabled = false; rollBtn.classList.add('gold-text-active'); }
+                if (rs) { rs.innerText = t.rpsReady; rs.classList.add('visible'); }
+                if (rc) rc.classList.remove('visible');
+            } 
+            else if (pvpState === 5) {
+                // Идет анимация (не трогаем UI)
+            } 
+            else if (pvpState === 6) { 
+                if (selCont) selCont.style.display = 'none';
+                if (arenaCont) {
+                    arenaCont.style.display = 'flex';
+                    clearHandsFormatting();
+                    leftHand.innerText = gestures[p1Move].icon;
+                    rightHand.innerText = gestures[p2Move].icon;
+                    
+                    let result = 0;
+                    if (p1Move === p2Move) result = 0;
+                    else if ((p1Move === 'rock' && p2Move === 'scissors') || (p1Move === 'scissors' && p2Move === 'paper') || (p1Move === 'paper' && p2Move === 'rock')) result = 1;
+                    else result = -1;
+
+                    if (result === 1) { leftHand.classList.add('winner'); rightHand.classList.add('loser'); } 
+                    else if (result === -1) { leftHand.classList.add('loser'); rightHand.classList.add('winner-p2'); } 
+                    else { leftHand.classList.add('draw'); rightHand.classList.add('draw'); }
+                }
+                if (rollBtn) { rollBtn.innerText = t.rpsReplay || "СЫГРАТЬ ЕЩЕ"; rollBtn.disabled = false; rollBtn.classList.remove('gold-text-active'); }
+                if (rs) rs.classList.remove('visible'); 
+                if (rc) rc.classList.add('visible'); 
+            }
+            return;
+        }
+
+        // === ОТОБРАЖЕНИЕ ДЛЯ СТАНДАРТНОГО РЕЖИМА ===
+        if (isGameActive && !isSpinning) {
+            if (selCont) selCont.style.display = 'none';
+            if (arenaCont) {
+                arenaCont.style.display = 'flex';
+                clearHandsFormatting();
+                leftHand.innerText = gestures[playerMove].icon;
+                rightHand.innerText = gestures[pcMove].icon;
+                
+                let result = 0;
+                if (playerMove === pcMove) result = 0;
+                else if ((playerMove === 'rock' && pcMove === 'scissors') || (playerMove === 'scissors' && pcMove === 'paper') || (playerMove === 'paper' && pcMove === 'rock')) result = 1;
+                else result = -1;
+
+                if (result === 1) { leftHand.classList.add('winner'); rightHand.classList.add('loser'); } 
+                else if (result === -1) { leftHand.classList.add('loser'); rightHand.classList.add('winner'); } 
+                else { leftHand.classList.add('draw'); rightHand.classList.add('draw'); }
+            }
+            if (animText) animText.style.opacity = 0;
+
+            if (rollBtn) {
+                rollBtn.innerText = t.rpsReplay || "СЫГРАТЬ ЕЩЕ";
+                rollBtn.disabled = false;
+                rollBtn.classList.remove('gold-text-active'); 
+            }
+            if (rs) rs.classList.remove('visible'); 
+            if (rc) rc.classList.add('visible'); 
+        } else if (!isSpinning) {
+            if (selCont) selCont.style.display = 'flex';
+            if (arenaCont) arenaCont.style.display = 'none';
+            if (animText) animText.style.opacity = 0;
+
+            if (rollBtn) {
+                rollBtn.innerText = t.rpsChoose || "ВЫБЕРИ ЖЕСТ";
+                rollBtn.disabled = true;
+                rollBtn.classList.remove('gold-text-active');
+            }
+            
+            if (rs) {
+                rs.innerText = t.rpsIdle || "ВЫБЕРИ ОРУЖИЕ...";
+                rs.classList.add('visible');
+            }
+            if (rc) rc.classList.remove('visible');
+        }
+    }
+
+    // Обработчик клика по конкретной руке/замку
+    function handClick(player, e) {
+        if(e) e.stopPropagation();
+        if (isSpinning) return;
+        const mode = GameState.subModes.rps;
+
+        if (mode === 'pvp') {
+            if (pvpState === 0 && player === 1) play();
+            else if (pvpState === 2 && player === 2) play();
+            else if (pvpState === 6) play(); 
+        } else {
+            if (isGameActive) play(); 
+        }
+    }
+
+    // Обработчик клика по пустой области арены (для сброса)
+    function arenaClick() {
+        if (isSpinning) return;
+        const mode = GameState.subModes.rps;
+        if (mode === 'pvp' && pvpState === 6) play();
+        else if (mode === 'standard' && isGameActive) play();
+    }
+
+    function selectMove(move) {
+        if (isSpinning) return;
+        const mode = GameState.subModes.rps;
+
+        if (mode === 'pvp') {
+            if (pvpState === 1) {
+                p1Move = move;
+                pvpState = 2; // Передаем ход Игроку 2
+                restoreUI();
+                if (typeof App !== 'undefined') App.playSoundEffect('tick');
+                if (tg.HapticFeedback) tg.HapticFeedback.selectionChanged();
+            } else if (pvpState === 3) {
+                p2Move = move;
+                pvpState = 4; // Оба выбрали, готовы к бою
+                restoreUI();
+                if (typeof App !== 'undefined') App.playSoundEffect('tick');
+                if (tg.HapticFeedback) tg.HapticFeedback.selectionChanged();
+            }
+            return;
+        }
+
+        // Обычный режим
+        if (isGameActive) {
+            isGameActive = false;
+            playerMove = null;
+            pcMove = null;
+            restoreUI();
+            if (typeof App !== 'undefined') App.playSoundEffect('tick');
+            if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+            return;
+        }
+
+        playerMove = move;
+        if (tg.HapticFeedback) tg.HapticFeedback.selectionChanged();
+        if (typeof App !== 'undefined') App.playSoundEffect('click');
+        
+        play();
+    }
+
+    function play() {
+        if (isSpinning) return;
+        const mode = GameState.subModes.rps;
+
+        if (mode === 'pvp') {
+            if (pvpState === 0) { pvpState = 1; restoreUI(); if(typeof App !== 'undefined') App.playSoundEffect('tick'); return; }
+            if (pvpState === 2) { pvpState = 3; restoreUI(); if(typeof App !== 'undefined') App.playSoundEffect('tick'); return; }
+            if (pvpState === 6) { pvpState = 0; p1Move = null; p2Move = null; restoreUI(); if(typeof App !== 'undefined') App.playSoundEffect('tick'); return; }
+            
+            if (pvpState === 4) {
+                pvpState = 5; // Запуск анимации боя
+            } else {
+                return; // Ждем выбора жеста
+            }
+        } else {
+            // Обычный режим
+            if (isGameActive) {
+                isGameActive = false;
+                playerMove = null;
+                pcMove = null;
+                restoreUI();
+                if (typeof App !== 'undefined') App.playSoundEffect('tick');
+                return;
+            }
+
+            if (!playerMove) {
+                if(typeof App !== 'undefined') { App.triggerButtonError(); App.showError(LANG_DATA[GameState.lang].error); }
+                return;
+            }
+        }
+        
+        if(typeof App !== 'undefined') App.hideError(); 
+        
+        isSpinning = true;
+        currentSessionId++;
+        const session = currentSessionId;
+
+        const t = LANG_DATA[GameState.lang];
+        const rollBtn = document.getElementById('rollBtn');
+        if(rollBtn) { rollBtn.disabled = true; rollBtn.innerText = t.waiting; rollBtn.classList.add('gold-text-active'); }
+        
+        const rs = document.getElementById('res-status'); if(rs) rs.classList.remove('visible');
+        const rc = document.getElementById('res-content'); if(rc) rc.classList.remove('visible');
+        
+        const selCont = document.getElementById('rps-selection-container');
+        const arenaCont = document.getElementById('rps-arena-container');
+        const animText = document.getElementById('rps-animation-text');
+        const leftHand = document.getElementById('rps-left-hand');
+        const rightHand = document.getElementById('rps-right-hand');
+
+        if(selCont) selCont.style.display = 'none';
+        if(arenaCont) arenaCont.style.display = 'flex';
+        
+        clearHandsFormatting();
+        leftHand.innerText = '✊';
+        rightHand.innerText = '✊';
+        leftHand.classList.add('bouncing');
+        rightHand.classList.add('bouncing');
+        
+        if (animText) {
+            animText.style.opacity = 1;
+            animText.style.fontSize = "28px";
+        }
+
+        const isRu = GameState.lang === 'ru';
+        const sequenceText = isRu ? ["КАМЕНЬ...", "НОЖНИЦЫ...", "БУМАГА...", "⚔️"] : ["ROCK...", "PAPER...", "SCISSORS...", "⚔️"];
+        const sequenceEmoji = isRu ? ['✊', '✌️', '✋'] : ['✊', '✋', '✌️'];
+        let step = 0;
+
+        function nextAnimStep() {
+            if (session !== currentSessionId) return;
+
+            if (step < 3) {
+                if (animText) {
+                    animText.style.fontSize = "28px";
+                    animText.innerText = sequenceText[step];
+                    animText.style.animation = 'none';
+                    void animText.offsetWidth; 
+                    animText.style.animation = 'rps-text-pop 0.6s ease-out';
+                }
+                
+                leftHand.innerText = sequenceEmoji[step];
+                rightHand.innerText = sequenceEmoji[step];
+                
+                if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+                if (typeof App !== 'undefined') App.playSoundEffect('tick');
+                
+                step++;
+                setTimeout(nextAnimStep, 600); 
+            } else {
+                if (animText) {
+                    animText.style.fontSize = "45px"; 
+                    animText.innerText = sequenceText[3];
+                    animText.style.animation = 'none';
+                    void animText.offsetWidth;
+                    animText.style.animation = 'rps-text-pop 0.6s ease-out';
+                    
+                    setTimeout(() => {
+                        if (currentSessionId === session && animText) animText.style.opacity = 0;
+                    }, 1200);
+                }
+                finalizeGame(session);
+            }
+        }
+
+        nextAnimStep();
+    }
+
+    function finalizeGame(session) {
+        if (session !== currentSessionId) return;
+        
+        isSpinning = false;
+        const mode = GameState.subModes.rps;
+        const t = LANG_DATA[GameState.lang];
+        const isRu = GameState.lang === 'ru';
+        
+        const leftHand = document.getElementById('rps-left-hand');
+        const rightHand = document.getElementById('rps-right-hand');
+        
+        if (leftHand) leftHand.classList.remove('bouncing');
+        if (rightHand) rightHand.classList.remove('bouncing');
+
+        let m1, m2, smName;
+
+        if (mode === 'pvp') {
+            pvpState = 6;
+            m1 = p1Move;
+            m2 = p2Move;
+            smName = t.smRPSPvP || (isRu ? "Два Игрока" : "PvP");
+        } else {
+            isGameActive = true;
+            const choices = ['rock', 'scissors', 'paper'];
+            pcMove = choices[Math.floor(getCryptoRandom() * 3)];
+            m1 = playerMove;
+            m2 = pcMove;
+            smName = t.smRPSStd || (isRu ? "С Компьютером" : "VS PC");
+        }
+
+        if (leftHand) leftHand.innerText = gestures[m1].icon;
+        if (rightHand) rightHand.innerText = gestures[m2].icon;
+
+        let result = 0;
+        if (m1 === m2) {
+            result = 0;
+        } else if (
+            (m1 === 'rock' && m2 === 'scissors') ||
+            (m1 === 'scissors' && m2 === 'paper') ||
+            (m1 === 'paper' && m2 === 'rock')
+        ) {
+            result = 1;
+        } else {
+            result = -1;
+        }
+
+        let uiColor, finalAns, subI;
+
+        if (result === 1) {
+            uiColor = "var(--friendly-green)";
+            finalAns = mode === 'pvp' ? (t.rpsP1Win || (isRu ? "ПОБЕДИЛ ИГРОК 1!" : "PLAYER 1 WINS!")) : (isRu ? "ПОБЕДА!" : "YOU WIN!");
+            subI = '<i class="fas fa-crown"></i>';
+            if (leftHand) leftHand.classList.add('winner');
+            if (rightHand) rightHand.classList.add('loser');
+        } else if (result === -1) {
+            uiColor = mode === 'pvp' ? "var(--magic-color)" : "var(--angry-red)";
+            finalAns = mode === 'pvp' ? (t.rpsP2Win || (isRu ? "ПОБЕДИЛ ИГРОК 2!" : "PLAYER 2 WINS!")) : (isRu ? "ПОРАЖЕНИЕ!" : "YOU LOSE!");
+            subI = mode === 'pvp' ? '<i class="fas fa-crown"></i>' : '<i class="fas fa-skull"></i>';
+            if (leftHand) leftHand.classList.add('loser');
+            if (rightHand) rightHand.classList.add(mode === 'pvp' ? 'winner-p2' : 'winner');
+        } else {
+            uiColor = "#cbd5e1";
+            finalAns = isRu ? "НИЧЬЯ!" : "DRAW!";
+            subI = '<i class="fas fa-equals"></i>';
+            if (leftHand) leftHand.classList.add('draw');
+            if (rightHand) rightHand.classList.add('draw');
+        }
+
+        const rm = document.getElementById('res-main'); if(rm) rm.innerHTML = finalAns;
+        const rd = document.getElementById('res-desc'); 
+        if(rd) rd.innerHTML = `${gestures[m1].name[GameState.lang]} vs ${gestures[m2].name[GameState.lang]}`;
+        const resSub = document.getElementById('res-sub'); 
+        if(resSub) { resSub.innerHTML = subI; resSub.style.color = uiColor; resSub.style.textShadow = `0 0 25px ${uiColor}`; }
+        
+        const rCont = document.getElementById('res-content');
+        if(rCont) { rCont.style.color = uiColor; rCont.style.textShadow = `0 0 15px ${uiColor}`; void rCont.offsetWidth; rCont.classList.add('visible'); }
+        
+        if(typeof App !== 'undefined') {
+            if (mode === 'pvp') {
+                App.playSoundEffect('result', result === 0 ? 'safe_click' : 'positive');
+            } else {
+                App.playSoundEffect('result', result === 1 ? 'positive' : (result === -1 ? 'negative' : 'safe_click'));
+            }
+        }
+        
+        if (tg.HapticFeedback) {
+            if (mode === 'pvp') {
+                tg.HapticFeedback.notificationOccurred(result === 0 ? 'warning' : 'success');
+            } else {
+                tg.HapticFeedback.notificationOccurred(result === 1 ? 'success' : (result === -1 ? 'error' : 'warning'));
+            }
+        }
+        
+        const item = document.createElement('div'); 
+        item.className = `history-item hist-${mode}`;
+        
+        item.innerHTML = `<span style="color:#fff; font-weight:bold; text-shadow: 0 0 8px #fff, 0 0 15px var(--magic-color);">?</span> ${gestures[m1].icon} vs ${gestures[m2].icon} <span style="color:#aaa; font-size:9px;">[${smName.toUpperCase()}]</span><br><span style="color:${uiColor};">➔ ${subI} ${finalAns}</span>`;
+        
+        const hl = document.getElementById('historyListRPS');
+        if(hl) hl.prepend(item);
+        if(typeof App !== 'undefined') App.requestProfileSave();
+        
+        const rollBtn = document.getElementById('rollBtn');
+        if(rollBtn) {
+            rollBtn.innerText = t.rpsReplay || (isRu ? "СЫГРАТЬ ЕЩЕ" : "PLAY AGAIN");
+            rollBtn.disabled = false;
+            rollBtn.classList.remove('gold-text-active');
+        }
+    }
+
+    function isGameActiveState() {
+        return isGameActive || pvpState > 0;
+    }
+
+    return { init, mount, unmount, play, resetAll, saveCurrentSubState, loadCurrentSubState, selectMove, handClick, arenaClick, isGameActive: isGameActiveState };
+})();
+
+(function injectRPSPlugin() {
+    try {
+        if (typeof RULES_HTML !== 'undefined') {
+            RULES_HTML.rps_standard = {
+                ru: `<div class="rules-content"><div style="color: #ff9f43; font-weight: bold; font-size: 18px; border-bottom: 1px solid rgba(255, 159, 67, 0.3); padding-bottom: 8px; margin-bottom: 12px; text-align: center;">✊✌️✋ Камень, Ножницы, Бумага</div><div style="margin-bottom: 12px; font-style: italic; color: #ccc;">Классическая битва умов! Брось вызов искусственному интеллекту.</div><ul style="padding-left: 22px; margin-top: 0; margin-bottom: 0; list-style-type: none;"><li style="margin-bottom: 8px;"><span style="margin-left: -22px; margin-right: 4px;">✊</span> <b>Камень</b> тупит ножницы.</li><li style="margin-bottom: 8px;"><span style="margin-left: -22px; margin-right: 4px;">✌️</span> <b>Ножницы</b> режут бумагу.</li><li style="margin-bottom: 8px;"><span style="margin-left: -22px; margin-right: 4px;">✋</span> <b>Бумага</b> накрывает камень.</li><li style="margin-bottom: 8px; margin-top: 12px;"><span style="margin-left: -22px; margin-right: 4px;">🎯</span> <b>Как играть:</b> Выбери один из трех жестов на экране, чтобы сразу начать анимацию раунда.</li></ul></div>`,
+                en: `<div class="rules-content"><div style="color: #ff9f43; font-weight: bold; font-size: 18px; border-bottom: 1px solid rgba(255, 159, 67, 0.3); padding-bottom: 8px; margin-bottom: 12px; text-align: center;">✊✌️✋ Rock, Paper, Scissors</div><div style="margin-bottom: 12px; font-style: italic; color: #ccc;">A classic battle of wits! Challenge the AI.</div><ul style="padding-left: 22px; margin-top: 0; margin-bottom: 0; list-style-type: none;"><li style="margin-bottom: 8px;"><span style="margin-left: -22px; margin-right: 4px;">✊</span> <b>Rock</b> blunts scissors.</li><li style="margin-bottom: 8px;"><span style="margin-left: -22px; margin-right: 4px;">✌️</span> <b>Scissors</b> cut paper.</li><li style="margin-bottom: 8px;"><span style="margin-left: -22px; margin-right: 4px;">✋</span> <b>Paper</b> covers rock.</li><li style="margin-bottom: 8px; margin-top: 12px;"><span style="margin-left: -22px; margin-right: 4px;">🎯</span> <b>How to play:</b> Select one of the three gestures on the screen to instantly start the round animation.</li></ul></div>`
+            };
+            RULES_HTML.rps_pvp = {
+                ru: `<div class="rules-content"><div style="color: #ff9f43; font-weight: bold; font-size: 18px; border-bottom: 1px solid rgba(255, 159, 67, 0.3); padding-bottom: 8px; margin-bottom: 12px; text-align: center;">⚔️ Режим 2 Игрока (PvP)</div><div style="margin-bottom: 12px; font-style: italic; color: #ccc;">Сыграй с другом на одном устройстве по очереди (Hotseat)!</div><ul style="padding-left: 22px; margin-top: 0; margin-bottom: 0; list-style-type: none;"><li style="margin-bottom: 8px;"><span style="margin-left: -22px; margin-right: 4px;">1️⃣</span> <b>Игрок 1:</b> Нажми на замок, выбери жест скрытно от оппонента.</li><li style="margin-bottom: 8px;"><span style="margin-left: -22px; margin-right: 4px;">2️⃣</span> <b>Передача:</b> Передай телефон Игроку 2. Твой выбор надежно скрыт за замком 🔒.</li><li style="margin-bottom: 8px;"><span style="margin-left: -22px; margin-right: 4px;">3️⃣</span> <b>Игрок 2:</b> Нажми на замок и выбери свой ответный жест.</li><li style="margin-bottom: 8px; margin-top: 12px;"><span style="margin-left: -22px; margin-right: 4px;">🔥</span> <b>Финал:</b> Нажмите «В БОЙ!», чтобы увидеть эпичное столкновение!</li></ul></div>`,
+                en: `<div class="rules-content"><div style="color: #ff9f43; font-weight: bold; font-size: 18px; border-bottom: 1px solid rgba(255, 159, 67, 0.3); padding-bottom: 8px; margin-bottom: 12px; text-align: center;">⚔️ 2 Players Mode (PvP)</div><div style="margin-bottom: 12px; font-style: italic; color: #ccc;">Play against a friend on one device (Hotseat)!</div><ul style="padding-left: 22px; margin-top: 0; margin-bottom: 0; list-style-type: none;"><li style="margin-bottom: 8px;"><span style="margin-left: -22px; margin-right: 4px;">1️⃣</span> <b>Player 1:</b> Press the lock, select your gesture secretly.</li><li style="margin-bottom: 8px;"><span style="margin-left: -22px; margin-right: 4px;">2️⃣</span> <b>Pass:</b> Hand the phone to Player 2. Your choice is locked 🔒.</li><li style="margin-bottom: 8px;"><span style="margin-left: -22px; margin-right: 4px;">3️⃣</span> <b>Player 2:</b> Press the lock and select your countering gesture.</li><li style="margin-bottom: 8px; margin-top: 12px;"><span style="margin-left: -22px; margin-right: 4px;">🔥</span> <b>Finale:</b> Tap "FIGHT!" to see the epic clash!</li></ul></div>`
+            };
+        }
+        LANG_DATA.ru.menuRPS = "К-Н-Б";
+        LANG_DATA.en.menuRPS = "RPS";
+        LANG_DATA.ru.smRPSStd = "С Компьютером";
+        LANG_DATA.en.smRPSStd = "VS PC";
+        LANG_DATA.ru.smRPSPvP = "Два Игрока";
+        LANG_DATA.en.smRPSPvP = "PvP";
+        
+        LANG_DATA.ru.histRPSHead = "История К-Н-Б";
+        LANG_DATA.en.histRPSHead = "RPS History";
+        
+        LANG_DATA.ru.rpsChoose = "ВЫБЕРИ ЖЕСТ";
+        LANG_DATA.en.rpsChoose = "CHOOSE A GESTURE";
+        LANG_DATA.ru.rpsIdle = "ВЫБЕРИ ОРУЖИЕ...";
+        LANG_DATA.en.rpsIdle = "CHOOSE YOUR WEAPON...";
+        LANG_DATA.ru.rpsReplay = "СЫГРАТЬ ЕЩЕ";
+        LANG_DATA.en.rpsReplay = "PLAY AGAIN";
+        
+        LANG_DATA.ru.rpsPrepare = "ГОТОВЬТЕСЬ К БИТВЕ! ⚔️";
+        LANG_DATA.en.rpsPrepare = "PREPARE FOR BATTLE! ⚔️";
+        LANG_DATA.ru.rpsP1Turn = "ИГРОК 1 - ТВОЙ ХОД!";
+        LANG_DATA.en.rpsP1Turn = "PLAYER 1 - YOUR TURN!";
+        LANG_DATA.ru.rpsP2Turn = "ИГРОК 2 - ТВОЙ ХОД!";
+        LANG_DATA.en.rpsP2Turn = "PLAYER 2 - YOUR TURN!";
+        LANG_DATA.ru.rpsSecret = "СЕКРЕТНЫЙ ВЫБОР 🔒";
+        LANG_DATA.en.rpsSecret = "SECRET CHOICE 🔒";
+        LANG_DATA.ru.rpsReady = "К БОЮ ГОТОВЫ! ⚡";
+        LANG_DATA.en.rpsReady = "READY TO FIGHT! ⚡";
+        LANG_DATA.ru.rpsFightBtn = "В БОЙ! 🔥";
+        LANG_DATA.en.rpsFightBtn = "FIGHT! 🔥";
+        LANG_DATA.ru.rpsP1Win = "ПОБЕДИЛ ИГРОК 1!";
+        LANG_DATA.en.rpsP1Win = "PLAYER 1 WINS!";
+        LANG_DATA.ru.rpsP2Win = "ПОБЕДИЛ ИГРОК 2!";
+        LANG_DATA.en.rpsP2Win = "PLAYER 2 WINS!";
+
+        document.querySelectorAll('.rps-styles, #rpsStage').forEach(el => el.remove());
+        const style = document.createElement('style');
+        style.className = 'rps-styles';
+        style.innerHTML = `
+            #rpsStage { display: none; position: relative; width: 100%; height: 260px; justify-content: center; align-items: center; z-index: 50; touch-action: none; transition: opacity 0.4s; margin: 15px 0 80px 0;}
+            
+            #rps-selection-container { display: flex; justify-content: center; gap: 20px; width: 100%; }
+            
+            .rps-choice-btn {
+                background: transparent; border: none; width: 75px; height: 75px; font-size: 55px;
+                display: flex; justify-content: center; align-items: center; cursor: pointer; 
+                transition: transform 0.2s, filter 0.2s; -webkit-tap-highlight-color: transparent !important; outline: none !important;
+                filter: grayscale(1) brightness(1.5) drop-shadow(0 0 8px rgba(255,255,255,0.15));
+            }
+            .rps-choice-btn:active { transform: scale(0.85); }
+            .rps-choice-btn:hover { filter: grayscale(1) brightness(1.5) drop-shadow(0 0 20px var(--magic-color)); transform: scale(1.1); }
+            
+            #rps-arena-container { display: none; justify-content: space-between; align-items: center; width: 85%; max-width: 350px; position: absolute; -webkit-tap-highlight-color: transparent; }
+            .rps-hand { font-size: 80px; filter: grayscale(1) brightness(1.5) drop-shadow(0 0 15px rgba(255,255,255,0.2)); transition: transform 0.3s, filter 0.3s, opacity 0.3s; }
+            .rps-hand.right-hand { transform: scaleX(-1); }
+            
+            /* Состояния замков в PvP (БЕЛЫЕ ПО УМОЛЧАНИЮ) */
+            .rps-hand.active-lock {
+                cursor: pointer; filter: grayscale(1) brightness(1.5) drop-shadow(0 0 15px var(--magic-color)) !important; opacity: 1 !important; transform: scale(1.15);
+            }
+            .rps-hand.active-lock:hover { transform: scale(1.25); }
+            .rps-hand.right-hand.active-lock { transform: scaleX(-1) scale(1.15); }
+            .rps-hand.right-hand.active-lock:hover { transform: scaleX(-1) scale(1.25); }
+            
+            .rps-hand.idle-lock { opacity: 0.4 !important; pointer-events: none; filter: grayscale(1) !important; transform: scale(0.9); }
+            .rps-hand.right-hand.idle-lock { transform: scaleX(-1) scale(0.9); }
+            
+            .rps-hand.locked-lock { opacity: 0.15 !important; pointer-events: none; filter: grayscale(1) brightness(0.5) !important; transform: scale(0.9); }
+            .rps-hand.right-hand.locked-lock { transform: scaleX(-1) scale(0.9); }
+
+            /* Подсветка результатов (Белые по умолчанию) */
+            .rps-hand.winner { filter: grayscale(1) brightness(1.5) drop-shadow(0 0 30px var(--friendly-green)); transform: scale(1.15); z-index: 10; }
+            .rps-hand.right-hand.winner { transform: scaleX(-1) scale(1.15); }
+            
+            .rps-hand.winner-p2 { filter: grayscale(1) brightness(1.5) drop-shadow(0 0 30px var(--magic-color)); transform: scaleX(-1) scale(1.15); z-index: 10; }
+            
+            .rps-hand.loser { filter: grayscale(1) brightness(1.5) drop-shadow(0 0 5px rgba(255, 102, 102, 0.4)); opacity: 0.6; transform: scale(0.9); }
+            .rps-hand.right-hand.loser { transform: scaleX(-1) scale(0.9); }
+            .rps-hand.draw { filter: grayscale(1) brightness(1.5) drop-shadow(0 0 15px #cbd5e1); }
+
+            /* === ЖЕЛТЫЕ ЭМОДЖИ ПРИ АКТИВНОМ СТИЛЕ ОТОБРАЖЕНИЯ === */
+            body.classic-mode-active .rps-choice-btn { filter: drop-shadow(0 0 8px rgba(255,255,255,0.15)); }
+            body.classic-mode-active .rps-choice-btn:hover { filter: drop-shadow(0 0 20px var(--magic-color)); transform: scale(1.1); }
+            body.classic-mode-active .rps-hand { filter: drop-shadow(0 0 15px rgba(255,255,255,0.2)); }
+            
+            /* Желтые замки и руки в PvP */
+            body.classic-mode-active .rps-hand.active-lock { filter: drop-shadow(0 0 15px var(--magic-color)) !important; }
+            body.classic-mode-active .rps-hand.winner { filter: drop-shadow(0 0 30px var(--friendly-green)); }
+            body.classic-mode-active .rps-hand.winner-p2 { filter: drop-shadow(0 0 30px var(--magic-color)); }
+            body.classic-mode-active .rps-hand.loser { filter: drop-shadow(0 0 5px rgba(255, 102, 102, 0.4)); }
+            body.classic-mode-active .rps-hand.draw { filter: drop-shadow(0 0 15px #cbd5e1); }
+            
+            /* Анимация тряски кулаков */
+            @keyframes rps-bounce {
+                0% { transform: translateY(0); }
+                30% { transform: translateY(-20px); }
+                100% { transform: translateY(0); }
+            }
+            @keyframes rps-bounce-right {
+                0% { transform: scaleX(-1) translateY(0); }
+                30% { transform: scaleX(-1) translateY(-20px); }
+                100% { transform: scaleX(-1) translateY(0); }
+            }
+            .rps-hand.bouncing { animation: rps-bounce 0.6s infinite ease-out; }
+            .rps-hand.right-hand.bouncing { animation: rps-bounce-right 0.6s infinite ease-out; }
+
+            /* Текст анимации */
+            #rps-animation-text {
+                position: absolute; top: -40px; left: 50%; transform: translateX(-50%);
+                font-size: 28px; font-weight: 900; color: #ff9f43; text-shadow: 0 0 15px rgba(255,159,67,0.8);
+                text-transform: uppercase; opacity: 0; transition: opacity 0.2s, font-size 0.2s; white-space: nowrap;
+            }
+            @keyframes rps-text-pop {
+                0% { transform: translateX(-50%) scale(0.5); opacity: 0; }
+                50% { transform: translateX(-50%) scale(1.2); opacity: 1; }
+                100% { transform: translateX(-50%) scale(1); opacity: 1; }
+            }
+            
+            /* МЕНЮ И КНОПКИ */
+            #submodes-rps { display: none; width: 100%; position: relative; flex-direction: column; gap: 8px; }
+            #submodes-rps .active-sub { border: 2px solid #ff9f43 !important; }
+            #submodes-rps .info-mode-btn { background: #ff9f43; color: #000; box-shadow: 0 0 5px rgba(255,159,67,0.8); text-shadow: none; }
+            
+            #historyListRPS { display: none; }
+            #historyListRPS[data-mode="standard"] .hist-pvp { display: none !important; }
+            #historyListRPS[data-mode="pvp"] .hist-standard { display: none !important; }
+        `;
+        document.head.appendChild(style);
+        
+        const mainStage = document.getElementById('mainStage');
+        if (mainStage) {
+            const rpsStage = document.createElement('div'); rpsStage.id = 'rpsStage'; rpsStage.className = 'stage';
+            rpsStage.innerHTML = `
+                <div id="rps-animation-text"></div>
+                <div id="rps-selection-container">
+                    <button class="rps-choice-btn" onclick="RPSGame.selectMove('rock')">✊</button>
+                    <button class="rps-choice-btn" onclick="RPSGame.selectMove('scissors')">✌️</button>
+                    <button class="rps-choice-btn" onclick="RPSGame.selectMove('paper')">✋</button>
+                </div>
+                <div id="rps-arena-container" onclick="RPSGame.arenaClick()">
+                    <div id="rps-left-hand" class="rps-hand" onclick="RPSGame.handClick(1, event)">✊</div>
+                    <div id="rps-right-hand" class="rps-hand right-hand" onclick="RPSGame.handClick(2, event)">✊</div>
+                </div>
+            `;
+            mainStage.parentNode.insertBefore(rpsStage, document.getElementById('rouletteStage'));
+        }
+
+        // БЕЗОПАСНАЯ ИНЪЕКЦИЯ СЛОТОВ
+        const gameSelectors = document.querySelector('.game-selector-row');
+        if (gameSelectors && !document.getElementById('sel-game-rps')) {
+            const lockedBtns = document.querySelectorAll('.square-game-btn.locked');
+            if (lockedBtns.length > 0) {
+                const newBtn = document.createElement('button');
+                newBtn.className = 'square-game-btn';
+                newBtn.id = 'sel-game-rps';
+                newBtn.onclick = () => App.previewGame('rps');
+                newBtn.innerHTML = `
+                    <i class="fas fa-hand-peace" style="font-size: 20px; margin-bottom: 3px;"></i>
+                    <span id="sel-rps-txt">${LANG_DATA[GameState.lang]?.menuRPS || "К-Н-Б"}</span>
+                `;
+                lockedBtns[0].parentNode.replaceChild(newBtn, lockedBtns[0]);
+            }
+        }
+
+        const smContainer = document.getElementById('menuPreviewSubModes');
+        if (smContainer && !document.getElementById('submodes-rps')) {
+            const rpsSub = document.createElement('div'); rpsSub.id = 'submodes-rps';
+            
+            rpsSub.innerHTML = `
+                <button class="sub-mode-btn active-sub" onclick="App.selectSubMode('rps', 'standard', event)" id="sm-rps-standard">
+                    <div class="float-corner-btn info-mode-btn" onclick="App.showSubModeRules(event, 'rps', 'standard')"><i class="fas fa-question"></i></div>
+                    <span id="sm-rps-standard-lbl">${LANG_DATA[GameState.lang]?.smRPSStd || "С Компьютером"}</span>
+                </button>
+                <button class="sub-mode-btn" onclick="App.selectSubMode('rps', 'pvp', event)" id="sm-rps-pvp">
+                    <div class="float-corner-btn info-mode-btn" onclick="App.showSubModeRules(event, 'rps', 'pvp')"><i class="fas fa-question"></i></div>
+                    <span id="sm-rps-pvp-lbl">${LANG_DATA[GameState.lang]?.smRPSPvP || "Два Игрока"}</span>
+                </button>
+            `;
+            smContainer.appendChild(rpsSub);
+        }
+        
+        const histBlock = document.getElementById('historyBlock');
+        if (histBlock && !document.getElementById('historyListRPS')) {
+            const hl = document.createElement('div'); hl.id = 'historyListRPS'; hl.style.display = 'none';
+            histBlock.appendChild(hl);
+        }
+
+        setInterval(() => {
+            const stage = document.getElementById('rpsStage');
+            if(!stage) return;
+            
+            const t = LANG_DATA[GameState.lang];
+            const stdLbl = document.getElementById('sm-rps-standard-lbl');
+            if (stdLbl) stdLbl.innerText = t.smRPSStd || (GameState.lang === 'ru' ? "С Компьютером" : "VS PC");
+            
+            const pvpLbl = document.getElementById('sm-rps-pvp-lbl');
+            if (pvpLbl) pvpLbl.innerText = t.smRPSPvP || (GameState.lang === 'ru' ? "Два Игрока" : "PvP");
+            
+            const hl = document.getElementById('historyListRPS');
+            if (hl && GameState.subModes && GameState.subModes.rps) {
+                hl.setAttribute('data-mode', GameState.subModes.rps);
+            }
+            
+        }, 500);
+
+        RPSGame.init();
+    } catch (err) { console.error("RPS error:", err); }
+})();
+// --- КОНЕЦ СЕДЬМОЙ ЧАСТИ ---
+// --- НАЧАЛО ВОСЬМОЙ ЧАСТИ ---
+// ==============================================
+// 🛒 ПЛАГИН 6: МАГАЗИН (СТИЛИ ОТОБРАЖЕНИЯ)
+// ==============================================
+const ShopGame = (function() {
+    let purchases = { dice: false, roulette: false, coin: false, flower: false, rps: false };
+    const ITEMS = [
+        { id: 'dice', icon: '🎲', name: {ru: 'Стиль: Кость', en: 'Style: Dice'}, price: 10 },
+        { id: 'roulette', icon: '🔫', name: {ru: 'Стиль: Пуля', en: 'Style: Bullet'}, price: 10 },
+        { id: 'coin', icon: '🪙', name: {ru: 'Стиль: Монета', en: 'Style: Coin'}, price: 10 },
+        { id: 'flower', icon: '🌼', name: {ru: 'Стиль: Цветок', en: 'Style: Flower'}, price: 10 },
+        { id: 'rps', icon: '✌️', name: {ru: 'Стиль: К-Н-Б', en: 'Style: RPS'}, price: 10 }
+    ];
+
+    function init() {
+        if (typeof RULES_HTML !== 'undefined') {
+            RULES_HTML.shop_standard = {
+                ru: `<div class="rules-content"><div style="color: var(--sun-gold); font-weight: bold; font-size: 18px; border-bottom: 1px solid rgba(255, 249, 174, 0.3); padding-bottom: 8px; margin-bottom: 12px; text-align: center;">🛒 Магазин Удачи</div><div style="margin-bottom: 12px; font-style: italic; color: #ccc;">Трать честно заработанные в «Пуле» доллары на визуальные улучшения!</div><ul style="padding-left: 22px; margin-top: 0; margin-bottom: 0; list-style-type: none;"><li style="margin-bottom: 8px;"><span style="margin-left: -22px; margin-right: 4px;">💎</span> <b>Товары:</b> Покупай новые стили отображения для каждой игры.</li><li style="margin-bottom: 8px;"><span style="margin-left: -22px; margin-right: 4px;">💰</span> <b>Баланс:</b> Деньги списываются напрямую из твоего общего банка.</li></ul></div>`,
+                en: `<div class="rules-content"><div style="color: var(--sun-gold); font-weight: bold; font-size: 18px; border-bottom: 1px solid rgba(255, 249, 174, 0.3); padding-bottom: 8px; margin-bottom: 12px; text-align: center;">🛒 Luck Shop</div><div style="margin-bottom: 12px; font-style: italic; color: #ccc;">Spend your "Bullet" dollars on visual upgrades!</div><ul style="padding-left: 22px; margin-top: 0; margin-bottom: 0; list-style-type: none;"><li style="margin-bottom: 8px;"><span style="margin-left: -22px; margin-right: 4px;">💎</span> <b>Items:</b> Buy new display styles for every game.</li><li style="margin-bottom: 8px;"><span style="margin-left: -22px; margin-right: 4px;">💰</span> <b>Wallet:</b> Funds are taken directly from your common bank.</li></ul></div>`
+            };
+        }
+
+        if (typeof App !== 'undefined' && App.updateSubModeHighlights) {
+            const origHighlights = App.updateSubModeHighlights;
+            App.updateSubModeHighlights = function() {
+                origHighlights();
+                // Форсируем подсветку магазина
+                const sBtn = document.getElementById('sm-shop-standard');
+                if (sBtn && (GameState.mode === 'shop' || GameState.previewMode === 'shop')) {
+                    sBtn.classList.add('active-sub');
+                }
+            };
+        }
+    }
+
+    function mount() {
+        const st = document.getElementById('shopStage'); if(st) st.style.display = 'flex';
+        document.body.classList.add('is-shop-active');
+        const t = LANG_DATA[GameState.lang];
+        if (document.getElementById('ui-title')) {
+            const titleEl = document.getElementById('ui-title');
+            titleEl.innerText = t.menuShop || "МАГАЗИН";
+            titleEl.style.color = "var(--sun-gold)";
+            titleEl.style.textShadow = "0 0 10px var(--sun-gold)";
+        }
+        const disp = document.getElementById('current-mode-display');
+        if (disp) {
+            disp.innerText = (t.smShopStd || "ТОВАРЫ").toUpperCase();
+            disp.style.display = 'inline';
+            disp.style.color = "var(--sun-gold)";
+        }
+        if(typeof App !== 'undefined') App.hideError();
+        renderShop();
+    }
+
+    function unmount() {
+        const st = document.getElementById('shopStage'); if(st) st.style.display = 'none';
+        document.body.classList.remove('is-shop-active');
+        const titleEl = document.getElementById('ui-title');
+        if (titleEl) { titleEl.style.color = ""; titleEl.style.textShadow = ""; }
+    }
+
+    function renderShop() {
+        const grid = document.getElementById('shopGrid');
+        if (!grid) return;
+        grid.innerHTML = '';
+        let bank = 50.00;
+        let activePurchases = { ...purchases };
+        if (GameState.activeProfileIdx !== -1 && GameState.profiles[GameState.activeProfileIdx]) {
+            const p = GameState.profiles[GameState.activeProfileIdx];
+            if (p.rStats && p.rStats.bank !== undefined) bank = p.rStats.bank;
+            if (p.shopPurchases) activePurchases = p.shopPurchases;
+        } else if (window.guestBank !== undefined) bank = window.guestBank;
+        const header = document.getElementById('shopBankDisplay');
+        if(header) header.innerText = '$' + bank.toFixed(2);
+        ITEMS.forEach(item => {
+            const isBought = activePurchases[item.id];
+            const canAfford = bank >= item.price;
+            const card = document.createElement('div');
+            card.className = 'shop-item-card' + (isBought ? ' bought' : '');
+            card.innerHTML = `
+                <div class="shop-item-icon">${item.icon}</div>
+                <div class="shop-item-name">${item.name[GameState.lang] || item.name.ru}</div>
+                <button class="shop-buy-btn ${isBought ? 'bought-btn' : (canAfford ? 'can-buy' : 'cannot-buy')}" 
+                        onclick="ShopGame.buyItem('${item.id}', ${item.price})" ${isBought ? 'disabled' : ''}>
+                    ${isBought ? (GameState.lang === 'ru' ? 'КУПЛЕНО' : 'BOUGHT') : '$' + item.price.toFixed(2)}
+                </button>
+            `;
+            grid.appendChild(card);
+        });
+    }
+
+    function buyItem(id, price) {
+        let bank = 50.00;
+        let p = (GameState.activeProfileIdx !== -1) ? GameState.profiles[GameState.activeProfileIdx] : null;
+        if (p && p.rStats) bank = p.rStats.bank;
+        else if (!p && window.guestBank !== undefined) bank = window.guestBank;
+        if (bank < price) { if(typeof App !== 'undefined') App.playSoundEffect('error_pyn'); return; }
+        let newBank = bank - price;
+        if (p) {
+            if (!p.shopPurchases) p.shopPurchases = {};
+            p.shopPurchases[id] = true;
+            if(!p.rStats) p.rStats = { bank: 50.00, pool: 0.00 };
+            p.rStats.bank = newBank;
+        } else { purchases[id] = true; window.guestBank = newBank; }
+        if (typeof RouletteGame !== 'undefined') {
+            const s = RouletteGame.getStats(); s.bank = newBank; RouletteGame.loadStats(s); 
+        }
+        if(typeof App !== 'undefined') { App.playSoundEffect('coins'); App.updateMenuBankUI(); App.requestProfileSave(); }
+        renderShop();
+    }
+
+    return { init, mount, unmount, renderShop, buyItem };
+})();
+
+(function injectShopPlugin() {
+    try {
+        LANG_DATA.ru.menuShop = "МАГАЗИН"; LANG_DATA.en.menuShop = "SHOP";
+        LANG_DATA.ru.smShopStd = "Товары"; LANG_DATA.en.smShopStd = "Items";
+        const style = document.createElement('style');
+        style.className = 'shop-styles';
+        style.innerHTML = `
+            #shopStage { display: none; position: relative; width: 100%; height: auto; min-height: 260px; flex-direction: column; align-items: center; z-index: 50; margin: 15px 0 80px 0; }
+            .shop-header { display: flex; justify-content: center; align-items: center; gap: 10px; font-size: 24px; color: var(--sun-gold); font-weight: bold; margin-bottom: 20px; text-shadow: 0 0 10px var(--sun-gold); }
+            .shop-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; width: 95%; max-width: 360px; justify-content: center; }
+            .shop-item-card { background: rgba(5,8,15,0.8); border: 2px solid rgba(255, 249, 174, 0.3); border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: space-between; padding: 15px 10px; transition: 0.3s; box-shadow: 0 0 10px rgba(0,0,0,0.5); min-height: 120px; }
+            .shop-item-card.bought { border-color: var(--friendly-green); opacity: 0.8; }
+            .shop-item-icon { font-size: 36px; margin-bottom: 8px; filter: drop-shadow(0 0 8px rgba(255,255,255,0.2)); text-align: center; }
+            .shop-item-name { font-size: 10px; color: #fff; text-transform: uppercase; font-weight: bold; margin-bottom: 10px; text-align: center; line-height: 1.1; }
+            .shop-buy-btn { padding: 8px 5px; border-radius: 8px; font-weight: bold; font-size: 12px; cursor: pointer; transition: 0.3s; width: 100%; border: none; }
+            .can-buy { background: var(--sun-gold); color: #000; box-shadow: 0 0 10px rgba(255,249,174,0.5); }
+            .cannot-buy { background: rgba(255,255,255,0.1); color: #888; cursor: not-allowed; }
+            .bought-btn { background: rgba(204,255,204,0.1); color: var(--friendly-green); border: 1px solid var(--friendly-green); cursor: default; }
+            body.is-shop-active #answer-box, body.is-shop-active #bulletStash, body.is-shop-active .action-row, body.is-shop-active #inputWrapper, body.is-shop-active #historyBlock, body.is-shop-active #mainStage, body.is-shop-active .history-header { display: none !important; }
+            #sel-game-shop { border-color: var(--sun-gold); color: var(--sun-gold); }
+            #sel-game-shop.active-preview { box-shadow: 0 0 15px rgba(255,249,174,0.6); transform: scale(1.05); }
+            #submodes-shop { display: none; width: 100%; position: relative; flex-direction: column; gap: 8px; }
+            #submodes-shop .sub-mode-btn.active-sub { border: 2px solid var(--sun-gold) !important; color: var(--sun-gold) !important; background: rgba(255,249,174,0.1) !important; box-shadow: 0 0 10px rgba(255,249,174,0.3) !important; }
+            #submodes-shop .info-mode-btn { background: var(--sun-gold); color: #000; box-shadow: 0 0 5px var(--sun-gold); opacity: 1 !important; visibility: visible !important; display: flex !important; pointer-events: auto !important; z-index: 10; }
+        `;
+        document.head.appendChild(style);
+        const mainStage = document.getElementById('mainStage');
+        if (mainStage && !document.getElementById('shopStage')) {
+            const shopStage = document.createElement('div'); shopStage.id = 'shopStage'; shopStage.className = 'stage';
+            shopStage.innerHTML = `<div class="shop-header"><i class="fas fa-wallet"></i> <span id="shopBankDisplay">$50.00</span></div><div class="shop-grid" id="shopGrid"></div>`;
+            mainStage.parentNode.insertBefore(shopStage, document.getElementById('rouletteStage'));
+        }
+        const gameSelectors = document.querySelector('.game-selector-row');
+        if (gameSelectors && !document.getElementById('sel-game-shop')) {
+            const lockedBtns = document.querySelectorAll('.square-game-btn.locked');
+            const newBtn = document.createElement('button');
+            newBtn.className = 'square-game-btn'; newBtn.id = 'sel-game-shop';
+            newBtn.onclick = () => App.previewGame('shop');
+            newBtn.innerHTML = `<i class="fas fa-store" style="font-size:20px; margin-bottom:3px;"></i><span id="sel-shop-txt">Магазин</span>`;
+            if (lockedBtns.length > 0) lockedBtns[0].parentNode.replaceChild(newBtn, lockedBtns[0]);
+            else gameSelectors.appendChild(newBtn);
+        }
+        const smContainer = document.getElementById('menuPreviewSubModes');
+        if (smContainer && !document.getElementById('submodes-shop')) {
+            const shopSub = document.createElement('div'); shopSub.id = 'submodes-shop';
+            // ДОБАВЛЕН SETTIMEOUT ДЛЯ ФОРСИРОВАНИЯ ПОДСВЕТКИ ПОСЛЕ КЛИКА
+            shopSub.innerHTML = `
+                <button class="sub-mode-btn active-sub" onclick="App.selectSubMode('shop', 'standard', event); setTimeout(() => App.updateSubModeHighlights(), 10);" id="sm-shop-standard">
+                    <div class="float-corner-btn info-mode-btn" onclick="event.stopPropagation(); App.showSubModeRules(event, 'shop', 'standard')"><i class="fas fa-question"></i></div>
+                    <span id="sm-shop-standard-lbl">Товары</span>
+                </button>`;
+            smContainer.appendChild(shopSub);
+            GameState.subModes.shop = 'standard';
+        }
+        const originalPreviewGame = App.previewGame;
+        App.previewGame = function(mode) {
+            originalPreviewGame(mode);
+            const sShop = document.getElementById('sel-game-shop'); if(sShop) sShop.classList.remove('active-preview');
+            const ssSub = document.getElementById('submodes-shop'); if(ssSub) ssSub.style.display = 'none';
+            if (mode === 'shop') {
+                const card = document.getElementById('menuPreviewCard');
+                if(card) { card.style.borderColor = "var(--sun-gold)"; card.style.boxShadow = "0 0 15px rgba(255, 249, 174, 0.4)"; card.style.color = "var(--sun-gold)"; }
+                const pcIcon = document.getElementById('preview-card-icon'); if(pcIcon) pcIcon.innerHTML = '<i class="fas fa-store" style="font-size:45px"></i>';
+                const previewTitle = document.getElementById('preview-card-title'); if (previewTitle) previewTitle.innerText = LANG_DATA[GameState.lang]?.menuShop || "МАГАЗИН";
+                if(sShop) sShop.classList.add('active-preview');
+                if(ssSub) ssSub.style.display = 'flex'; 
+                App.updateSubModeHighlights();
+            }
+        };
+        let wasShop = false;
+        setInterval(() => {
+            const gui = document.getElementById('gameUI');
+            const isVisible = gui && gui.classList.contains('game-ui-visible');
+            if (isVisible && GameState.mode === 'shop') {
+                if (!wasShop) { ShopGame.mount(); wasShop = true; }
+                const titleEl = document.getElementById('ui-title');
+                const t = LANG_DATA[GameState.lang];
+                if (titleEl && titleEl.innerText !== (t.menuShop || "МАГАЗИН")) {
+                    titleEl.innerText = t.menuShop || "МАГАЗИН";
+                    titleEl.style.color = "var(--sun-gold)"; titleEl.style.textShadow = "0 0 10px var(--sun-gold)";
+                }
+            } else if (wasShop) { ShopGame.unmount(); wasShop = false; }
+        }, 100);
+        ShopGame.init();
+    } catch (err) { console.error("Shop error:", err); }
+})();
+// --- КОНЕЦ ВОСЬМОЙ ЧАСТИ ---
 try { if(typeof App !== 'undefined') { App.init(); if(typeof CoinGame !== 'undefined') CoinGame.init(); if(typeof FlowerGame !== 'undefined') FlowerGame.init(); } } catch (err) { console.error("Start error:", err); }
 </script></body></html>
