@@ -64,7 +64,10 @@
         /* === [ CSS: ГЛАВНОЕ МЕНЮ И ПРОФИЛИ ] === */
         #mainMenuOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 400; display: flex; flex-direction: column; align-items: center; justify-content: center; background: transparent; transition: opacity 0.5s ease; overflow-y: auto; }
         #mainMenuOverlay.menu-fade-out { opacity: 0 !important; pointer-events: none !important; }
-
+		/* Выносим правила и инвентарь поверх главного меню */
+        #rulesOverlay { z-index: 500 !important; }
+        .settings-overlay { z-index: 500 !important; }
+		
         @keyframes title-color-shift {
             0% { color: var(--angry-red); text-shadow: 0 0 15px var(--angry-red); }
             33% { color: var(--magic-color); text-shadow: 0 0 15px var(--magic-color); }
@@ -348,6 +351,51 @@
         .rules-content::-webkit-scrollbar { width: 4px; }
         .rules-content::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.02); }
         .rules-content::-webkit-scrollbar-thumb { background: rgba(162, 155, 254, 0.3); border-radius: 10px; }
+		/* === [ CSS: МАГАЗИН ] === */
+		/* === ЖЕСТКАЯ ФИКСАЦИЯ ОКНА ИНВЕНТАРЯ === */
+        #inventoryOverlay {
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 100vw !important;
+            height: 100vh !important;
+            background: rgba(0, 0, 0, 0.85) !important;
+            z-index: 9999 !important;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        #inventoryOverlay .settings-modal {
+            max-height: 85vh; 
+            overflow-y: auto; 
+        }
+		.inv-item-card { display:flex; align-items:center; gap:15px; background:rgba(255,255,255,0.05); padding:10px; border-radius:10px; border:1px solid rgba(255,249,174,0.2); cursor: pointer; transition: 0.2s; }
+        .inv-item-card:hover { background: rgba(255,255,255,0.1); }
+        .inv-item-card.is-active { background: rgba(204, 255, 204, 0.15); border-color: var(--friendly-green); }
+        .inv-active-icon { display: none; color: var(--friendly-green); font-size: 20px; margin-left: auto; }
+        .inv-item-card.is-active .inv-active-icon { display: block; }
+		/* Цвета для кнопок подрежимов магазина */
+        #submodes-shop .sub-mode-btn.active-sub { border-color: var(--sun-gold); color: #fff; box-shadow: 0 0 10px rgba(255, 249, 174, 0.2); background: rgba(255, 249, 174, 0.1); }
+        #submodes-shop .info-mode-btn { background: var(--sun-gold); color: #000; box-shadow: 0 0 5px rgba(255, 249, 174, 0.8); }
+
+        /* Скрытие интерфейса оракула, когда мы в магазине */
+        body.is-shop-active .action-row,
+        body.is-shop-active #answer-box,
+        body.is-shop-active #error-msg,
+        body.is-shop-active #inputWrapper { display: none !important; }
+
+        /* Исправление наложения товаров на заголовок (отменяем жесткую высоту и центрирование) */
+        #shopStage { height: auto !important; min-height: 240px; justify-content: flex-start !important; padding-top: 10px; padding-bottom: 20px; }
+        .shop-header { display: flex; align-items: center; gap: 10px; color: var(--sun-gold); font-weight: 900; font-size: 20px; margin-bottom: 15px; }
+        .shop-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; width: 95%; }
+        .shop-item-card { background: rgba(5,8,15,0.8); border: 1px solid rgba(255,249,174,0.3); border-radius: 12px; padding: 12px; display: flex; flex-direction: column; align-items: center; transition: 0.3s; }
+        .shop-item-card.bought { opacity: 0.8; border-color: var(--friendly-green); }
+        .shop-item-icon { font-size: 30px; margin-bottom: 8px; }
+        .shop-item-name { font-size: 11px; font-weight: bold; text-transform: uppercase; margin-bottom: 10px; color: #ccc; text-align: center; }
+        .shop-buy-btn { width: 100%; padding: 8px; border-radius: 6px; border: none; font-weight: 900; font-size: 12px; cursor: pointer; transition: 0.3s; }
+        .can-buy { background: var(--sun-gold); color: #000; }
+        .cannot-buy { background: #444; color: #888; cursor: not-allowed; }
+        .bought-btn { background: var(--friendly-green); color: #000; }
     </style>
 </head>
 <body>
@@ -396,6 +444,12 @@
                             <span id="sm-roulette-survival-lbl">Выживание</span>
                         </button>
                     </div>
+					<div id="submodes-shop" style="display: none; flex-direction: column; gap: 8px; width: 100%;">
+    <button class="sub-mode-btn active-sub" onclick="App.selectSubMode('shop', 'standard', event)" id="sm-shop-standard">
+        <div class="float-corner-btn info-mode-btn" onclick="App.showSubModeRules(event, 'shop', 'standard')"><i class="fas fa-question"></i></div>
+        <span id="sm-shop-standard-lbl">ВИТРИНА</span>
+    </button>
+</div>
                 </div>
             </div>
             
@@ -405,6 +459,10 @@
                  <button class="square-game-btn locked"><i class="fas fa-lock"></i></button>
                  <button class="square-game-btn locked"><i class="fas fa-lock"></i></button>
                  <button class="square-game-btn locked"><i class="fas fa-lock"></i></button>
+				 <button class="square-game-btn" id="sel-game-shop" onclick="App.previewGame('shop')">
+    <i class="fas fa-shopping-cart" style="color:var(--sun-gold)"></i>
+    <span id="sel-shop-txt">МАГАЗИН</span>
+</button>
             </div>
         </div>
         
@@ -436,7 +494,12 @@
 
 	<div id="gameUI">
         <button class="menu-icon-btn" id="gameSettingsBtn" onclick="App.toggleSettings(true)" style="position: absolute; top: 10px; right: 10px; z-index: 500; opacity: 0.8;"><i class="fas fa-cog"></i></button>
-        <button class="menu-icon-btn" id="homeBtn" onclick="App.openMainMenu()" style="position: absolute; top: 10px; left: 10px; z-index: 500; opacity: 0.8;"><i class="fas fa-home"></i></button>
+        <button class="menu-icon-btn" id="shopOverlayBtn" onclick="ShopGame.toggleInventory(true)" 
+		style="position: absolute; top: 60px; right: 10px; z-index: 500; opacity: 0.8; color: var(--sun-gold);">
+		<i class="fas fa-box-open"></i>
+		</button>
+		</button>
+		<button class="menu-icon-btn" id="homeBtn" onclick="App.openMainMenu()" style="position: absolute; top: 10px; left: 10px; z-index: 500; opacity: 0.8;"><i class="fas fa-home"></i></button>
 
         <div class="header-wrapper">
             <h1 id="ui-title">Кость Истины</h1>
@@ -470,7 +533,12 @@
                 </div>
             </div>
         </div>
-
+<div id="shopStage" class="stage" style="display:none; flex-direction:column; align-items:center; width:100%; max-width:380px; margin-top:10px;">
+    <div class="shop-header" style="display:flex; align-items:center; gap:10px; color:var(--sun-gold); font-weight:900; font-size:20px; margin-bottom:15px;">
+        <i class="fas fa-wallet"></i> <span id="shopBankDisplay">$0.00</span>
+    </div>
+    <div class="shop-grid" id="shopGrid" style="display:grid; grid-template-columns:1fr 1fr; gap:12px; width:95%;"></div>
+</div>
         <div id="rouletteStage">
             <div class="drum-wrapper" id="drumWrapper">
                 <div class="target-marker"><i class="fas fa-caret-down"></i></div>
@@ -598,13 +666,15 @@
         </div>
 
         <div class="history-header" id="st-hist-head">История предсказаний</div>
-        <div class="history" id="historyBlock">
+<div class="history" id="historyBlock">
             <div id="historyListDice"></div>
             <div id="historyListRoulette" style="display: none;"></div>
             <div id="historyListSurvival" style="display: none;"></div>
             <div id="historyListCoin" style="display: none;"></div>
+            <div id="historyListFlower" style="display: none;"></div>
+            <div id="historyListRPS" style="display: none;"></div>
+            <div id="historyListShop" style="display: none;"></div>
         </div>
-    </div> 
     
     <div class="settings-overlay" id="settingsOverlay">
         <div class="settings-modal" id="settingsModalInside">
@@ -616,7 +686,7 @@
                 <span id="st-label-sound">Звук</span>
                 <button id="soundToggleBtn" onclick="App.toggleSound()" style="background: rgba(0,0,0,0.5); border: 1px solid var(--magic-color); color: var(--magic-color); border-radius: 10px; padding: 4px 12px; font-family: inherit; font-size: 14px; font-weight: bold; cursor: pointer; transition: 0.3s; min-width: 65px; text-align: center;">ВКЛ</button>
             </div>
-            <div class="setting-item">
+            <div class="setting-item" style="display: none;">
                 <span id="st-label-cube">Стиль отображения</span>
                 <div id="cubeToggleIcon" onclick="App.toggleCubeStyle()" style="cursor: pointer; font-size: 20px; color: var(--magic-color); transition: 0.3s; padding: 0 10px;"><i class="fas fa-desktop"></i></div>
             </div>
@@ -682,7 +752,10 @@
                 bankMsg1: "Ты на мели, иди проси милостыню.", bankMsg2: "Ноль в банке, ноль в кармане.", bankMsg3: "Казино не выдает кредиты мертвецам.", bankMsg4: "Поищи мелочь под диваном.", bankMsg5: "Ставить нечего. Иди работай.",
                 smStd: "Кость", smRoulStd: "Пуля", smBank: "Банк", smSurv: "Выживание", smBet: "Ставка", smCasino: "Казино",
                 survText1: "выживание", survText2: "выживания", survText5: "выживаний",
-                bulletsText1: "пуля", bulletsText2: "пули", bulletsText5: "пуль"
+                bulletsText1: "пуля", bulletsText2: "пули", bulletsText5: "пуль",
+				menuShop: "Магазин",
+				smShopStd: "Витрина",
+				histShopHead: "История покупок"
             },
             en: { 
                 title: "Dice of Truth", titleRoulette: "DESTINY SHOT", placeholder: "Ask your destiny...", placeBet: "Bet!", 
@@ -699,7 +772,10 @@
                 bankMsg1: "You're broke, go beg.", bankMsg2: "Zero in bank, zero in pocket.", bankMsg3: "Casino doesn't give credit to dead men.", bankMsg4: "Look for coins under the sofa.", bankMsg5: "Nothing to bet. Go to work.",
                 smStd: "Dice", smRoulStd: "Bullet", smBank: "Bank", smSurv: "Survival", smBet: "Bet", smCasino: "Casino",
                 survText1: "survival", survText2: "survivals", survText5: "survivals",
-                bulletsText1: "bullet", bulletsText2: "bullets", bulletsText5: "bullets"
+                bulletsText1: "bullet", bulletsText2: "bullets", bulletsText5: "bullets",
+				menuShop: "Shop",
+				smShopStd: "Showcase",
+				histShopHead: "Purchase History"
             }
         };
 
@@ -729,6 +805,10 @@
                 en: `<div class="rules-content"><div style="color: var(--friendly-green); font-weight: bold; font-size: 18px; border-bottom: 1px solid rgba(204, 255, 204, 0.3); padding-bottom: 8px; margin-bottom: 12px; text-align: center;">🛡️ Survival</div><div style="margin-bottom: 12px; font-style: italic; color: #ccc;">See how long you can cheat death!</div><ul style="padding-left: 22px; margin-top: 0; margin-bottom: 0; list-style-type: none;"><li style="margin-bottom: 8px;"><span style="margin-left: -22px; margin-right: 4px;">🔒</span> <b>Lock:</b> After first survival, bullet count is locked until death.</li><li style="margin-bottom: 8px;"><span style="margin-left: -22px; margin-right: 4px;">🏆</span> <b>Rating:</b> Your best survival streak enters the global leaderboard for all to see!</li><li style="margin-bottom: 8px;"><span style="margin-left: -22px; margin-right: 4px;">☠️</span> <b>Risk:</b> Loading more bullets initially earns more respect on the board.</li></ul></div>`
             }, // <-- ВАЖНО: Убедись, что тут стоит запятая!
             
+			shop_standard: {
+                ru: `<div class="rules-content"><div style="color: var(--sun-gold); font-weight: bold; font-size: 18px; border-bottom: 1px solid rgba(255, 249, 174, 0.3); padding-bottom: 8px; margin-bottom: 12px; text-align: center;">🛒 Магазин</div><div style="margin-bottom: 12px; font-style: italic; color: #ccc;">Здесь ты можешь потратить заработанные в Банке деньги.</div><ul style="padding-left: 22px; margin-top: 0; margin-bottom: 0; list-style-type: none;"><li style="margin-bottom: 8px;"><span style="margin-left: -22px; margin-right: 4px;">🎨</span> <b>Стили:</b> Покупай новые темы для любимых игр.</li><li style="margin-bottom: 8px;"><span style="margin-left: -22px; margin-right: 4px;">📦</span> <b>Инвентарь:</b> Купленные вещи навсегда остаются в твоем профиле. Нажми на иконку коробки в правом верхнем углу, чтобы их посмотреть.</li></ul></div>`,
+                en: `<div class="rules-content"><div style="color: var(--sun-gold); font-weight: bold; font-size: 18px; border-bottom: 1px solid rgba(255, 249, 174, 0.3); padding-bottom: 8px; margin-bottom: 12px; text-align: center;">🛒 Shop</div><div style="margin-bottom: 12px; font-style: italic; color: #ccc;">Spend money earned in Bank mode here.</div><ul style="padding-left: 22px; margin-top: 0; margin-bottom: 0; list-style-type: none;"><li style="margin-bottom: 8px;"><span style="margin-left: -22px; margin-right: 4px;">🎨</span> <b>Styles:</b> Buy new themes for your favorite games.</li><li style="margin-bottom: 8px;"><span style="margin-left: -22px; margin-right: 4px;">📦</span> <b>Inventory:</b> Bought items stay in your profile forever. Tap the box icon in the top right to view them.</li></ul></div>`
+            },
             // НОВЫЕ ПРАВИЛА ДЛЯ МОНЕТЫ
             coin_standard: {
                 ru: `<div class="rules-content"><div style="color: #cbd5e1; font-weight: bold; font-size: 18px; border-bottom: 1px solid rgba(255, 255, 255, 0.3); padding-bottom: 8px; margin-bottom: 12px; text-align: center;">🪙 Грань Выбора</div><div style="margin-bottom: 12px; font-style: italic; color: #ccc;">Брось монету, чтобы принять простое решение. Орел или решка — пусть решит случай!</div><ul style="padding-left: 22px; margin-top: 0; margin-bottom: 0; list-style-type: none;"><li style="margin-bottom: 8px;"><span style="margin-left: -22px; margin-right: 4px;">🪙</span> <b>Орёл / Решка:</b> Классический исход для любых споров.</li><li style="margin-bottom: 8px;"><span style="margin-left: -22px; margin-right: 4px;">⚡</span> <b>Ребро:</b> Крайне редкий случай (шанс 2%). Если монета встала на ребро — значит судьба дает тебе особый знак!</li></ul></div>`,
@@ -1599,6 +1679,7 @@
             }
 
             function updateSubModeHighlights() {
+				if (!GameState.subModes.shop) GameState.subModes.shop = 'standard';
                 if (!GameState.subModes.coin) GameState.subModes.coin = 'standard';
                 if (!GameState.subModes.flower) GameState.subModes.flower = 'standard';
                 if (!GameState.subModes.rps) GameState.subModes.rps = 'standard';
@@ -1619,6 +1700,8 @@
                 
                 const rpsBtn = document.getElementById('sm-rps-' + GameState.subModes.rps);
                 if(rpsBtn) rpsBtn.classList.add('active-sub');
+				const shopBtn = document.getElementById('sm-shop-' + GameState.subModes.shop);
+				if(shopBtn) shopBtn.classList.add('active-sub');
             }
 
             function selectGameMode() {
@@ -1712,6 +1795,7 @@
                 if(typeof CoinGame !== 'undefined') CoinGame.unmount();
                 if(typeof FlowerGame !== 'undefined') FlowerGame.unmount();
                 if(typeof RPSGame !== 'undefined') RPSGame.unmount();
+				if(typeof ShopGame !== 'undefined') ShopGame.unmount();
 
                 if (GameState.mode === 'roulette') {
                     if (titleEl) titleEl.innerText = t.titleRoulette;
@@ -1783,7 +1867,6 @@
                         disp.innerText = (smNames[GameState.subModes.rps] || "С КОМПЬЮТЕРОМ").toUpperCase(); 
                         disp.style.display = 'inline'; 
                     }
-
                     const stHistHead = document.getElementById('st-hist-head');
                     if(stHistHead) stHistHead.innerText = t.histRPSHead || (GameState.lang === 'ru' ? "История К-Н-Б" : "RPS History");
                     
@@ -1793,8 +1876,26 @@
                     if (typeof RPSGame !== 'undefined') RPSGame.mount();
                     setQuestionState(true, true); 
 
+                } else if (GameState.mode === 'shop') {
+                    if (titleEl) titleEl.innerText = t.menuShop;
+                    const disp = document.getElementById('current-mode-display');
+                    if (disp) {
+                        disp.innerText = (t.smShopStd || "ВИТРИНА").toUpperCase();
+                        disp.style.display = 'inline';
+                    }
+                    const stHistHead = document.getElementById('st-hist-head');
+                    if(stHistHead) stHistHead.innerText = t.histShopHead;
+                    
+                    document.body.classList.remove('bank-mode-active');
+                    const tqBtn = document.getElementById('toggleQuestionBtn');
+                    if(tqBtn) tqBtn.style.display = 'none';
+                    
+                    if (typeof ShopGame !== 'undefined') ShopGame.mount();
+                    setQuestionState(true, true);
+
+                // --- НАЧАЛО ДОБАВЛЕННОГО БЛОКА ---
                 } else {
-                    if(titleEl) titleEl.innerText = t.title;
+                    if (titleEl) titleEl.innerText = t.menuDice;
                     const stHistHead = document.getElementById('st-hist-head');
                     if(stHistHead) stHistHead.innerText = t.histDiceHead;
                     
@@ -1802,10 +1903,13 @@
                     const tqBtn = document.getElementById('toggleQuestionBtn');
                     if(tqBtn) tqBtn.style.display = 'flex';
                     
-                    if(typeof DiceGame !== 'undefined') { DiceGame.mount(); DiceGame.updateModeDisplay(); }
-                    setQuestionState(targetHideState, true); 
+                    if (typeof DiceGame !== 'undefined') DiceGame.mount();
+                    setQuestionState(targetHideState, true);
                 }
+                // --- КОНЕЦ ДОБАВЛЕННОГО БЛОКА ---
+
                 updateStyleBtnIcon(); updateHistoryView();
+                if (typeof ShopGame !== 'undefined' && ShopGame.applyGameStyles) ShopGame.applyGameStyles();
             }
 
             function getPlural(n, forms) {
@@ -1819,6 +1923,7 @@
             }
 
             function updateHistoryView() {
+				const hlShop = document.getElementById('historyListShop');
                 const hlDice = document.getElementById('historyListDice');
                 const hlRoul = document.getElementById('historyListRoulette');
                 const hlSurv = document.getElementById('historyListSurvival');
@@ -1832,6 +1937,7 @@
                 if (hlCoin) hlCoin.style.display = 'none';
                 if (hlFlower) hlFlower.style.display = 'none';
                 if (hlRPS) hlRPS.style.display = 'none';
+				if (hlShop) hlShop.style.display = 'none';
 
                 if (GameState.mode === 'rps') {
                     if (hlRPS) hlRPS.style.display = 'block';
@@ -1857,6 +1963,13 @@
                             hlRoul.innerHTML = GameState.profiles[GameState.activeProfileIdx].historyRoulette || '';
                         }
                     }
+					} else if (GameState.mode === 'shop') {
+    if (hlShop) {
+        hlShop.style.display = 'block';
+        if (GameState.activeProfileIdx !== -1 && GameState.profiles[GameState.activeProfileIdx]) {
+            hlShop.innerHTML = GameState.profiles[GameState.activeProfileIdx].historyShop || '';
+        }
+    }
                 } else {
                     if (hlDice) hlDice.style.display = 'block';
                 }
@@ -2840,8 +2953,8 @@
 				betInput.addEventListener('keydown', (e) => {
 				if (e.key === 'Enter') {
 				e.preventDefault(); // Предотвращаем лишние действия браузера
-				// Вызываем функцию совершения ставки
-				if (typeof RouletteGame !== 'undefined' && RouletteGame.placeBet) {
+            // Вызываем функцию совершения ставки
+            if (typeof RouletteGame !== 'undefined' && RouletteGame.placeBet) {
                 RouletteGame.placeBet();
             }
         }
@@ -6331,59 +6444,128 @@ const RPSGame = (function() {
 const ShopGame = (function() {
     let purchases = { dice: false, roulette: false, coin: false, flower: false, rps: false };
     const ITEMS = [
-        { id: 'dice', icon: '🎲', name: {ru: 'Стиль: Кость', en: 'Style: Dice'}, price: 10 },
-        { id: 'roulette', icon: '🔫', name: {ru: 'Стиль: Пуля', en: 'Style: Bullet'}, price: 10 },
-        { id: 'coin', icon: '🪙', name: {ru: 'Стиль: Монета', en: 'Style: Coin'}, price: 10 },
-        { id: 'flower', icon: '🌼', name: {ru: 'Стиль: Цветок', en: 'Style: Flower'}, price: 10 },
-        { id: 'rps', icon: '✌️', name: {ru: 'Стиль: К-Н-Б', en: 'Style: RPS'}, price: 10 }
+        { id: 'dice', icon: '🎲', name: {ru: 'Стиль: Кость', en: 'Style: Dice'}, price: 10, targetGame: 'dice' },
+        { id: 'roulette', icon: '🔫', name: {ru: 'Стиль: Пуля', en: 'Style: Bullet'}, price: 10, targetGame: 'roulette' },
+        { id: 'coin', icon: '🪙', name: {ru: 'Стиль: Монета', en: 'Style: Coin'}, price: 10, targetGame: 'coin' },
+        { id: 'flower', icon: '🌼', name: {ru: 'Стиль: Цветок', en: 'Style: Flower'}, price: 10, targetGame: 'flower' },
+        { id: 'rps', icon: '✌️', name: {ru: 'Стиль: К-Н-Б', en: 'Style: RPS'}, price: 10, targetGame: 'rps' }
     ];
 
     function init() {
-        if (typeof RULES_HTML !== 'undefined') {
-            RULES_HTML.shop_standard = {
-                ru: `<div class="rules-content"><div style="color: var(--sun-gold); font-weight: bold; font-size: 18px; border-bottom: 1px solid rgba(255, 249, 174, 0.3); padding-bottom: 8px; margin-bottom: 12px; text-align: center;">🛒 Магазин Удачи</div><div style="margin-bottom: 12px; font-style: italic; color: #ccc;">Трать честно заработанные в «Пуле» доллары на визуальные улучшения!</div><ul style="padding-left: 22px; margin-top: 0; margin-bottom: 0; list-style-type: none;"><li style="margin-bottom: 8px;"><span style="margin-left: -22px; margin-right: 4px;">💎</span> <b>Товары:</b> Покупай новые стили отображения для каждой игры.</li><li style="margin-bottom: 8px;"><span style="margin-left: -22px; margin-right: 4px;">💰</span> <b>Баланс:</b> Деньги списываются напрямую из твоего общего банка.</li></ul></div>`,
-                en: `<div class="rules-content"><div style="color: var(--sun-gold); font-weight: bold; font-size: 18px; border-bottom: 1px solid rgba(255, 249, 174, 0.3); padding-bottom: 8px; margin-bottom: 12px; text-align: center;">🛒 Luck Shop</div><div style="margin-bottom: 12px; font-style: italic; color: #ccc;">Spend your "Bullet" dollars on visual upgrades!</div><ul style="padding-left: 22px; margin-top: 0; margin-bottom: 0; list-style-type: none;"><li style="margin-bottom: 8px;"><span style="margin-left: -22px; margin-right: 4px;">💎</span> <b>Items:</b> Buy new display styles for every game.</li><li style="margin-bottom: 8px;"><span style="margin-left: -22px; margin-right: 4px;">💰</span> <b>Wallet:</b> Funds are taken directly from your common bank.</li></ul></div>`
-            };
+        // Обработчик закрытия по клику на фон
+        const over = document.getElementById('inventoryOverlay');
+        if(over) over.addEventListener('click', function(e) { if (e.target === this) toggleInventory(false); });
+    }
+	
+	function toggleInventoryItem(itemId) {
+        if (GameState.activeProfileIdx === -1) return;
+        const p = GameState.profiles[GameState.activeProfileIdx];
+        if (!p || !p.shopPurchases || !p.shopPurchases[itemId]) return;
+        
+        if (!p.activeStyles) p.activeStyles = {}; 
+        const item = ITEMS.find(i => i.id === itemId);
+        if (!item) return;
+
+        const target = item.targetGame || 'global';
+
+        if (p.activeStyles[target] === itemId) {
+            delete p.activeStyles[target];
+        } else {
+            p.activeStyles[target] = itemId;
         }
 
-        if (typeof App !== 'undefined' && App.updateSubModeHighlights) {
-            const origHighlights = App.updateSubModeHighlights;
-            App.updateSubModeHighlights = function() {
-                origHighlights();
-                // Форсируем подсветку магазина
-                const sBtn = document.getElementById('sm-shop-standard');
-                if (sBtn && (GameState.mode === 'shop' || GameState.previewMode === 'shop')) {
-                    sBtn.classList.add('active-sub');
-                }
-            };
-        }
+        if(typeof App !== 'undefined') App.requestProfileSave();
+        renderInventory();
+        applyGameStyles();
     }
 
+    function applyGameStyles() {
+        if (GameState.activeProfileIdx === -1) return;
+        const p = GameState.profiles[GameState.activeProfileIdx];
+        
+        // Смотрим, активирована ли купленная вещь для текущей открытой игры
+        let isStyleActive = false;
+        if (p && p.activeStyles && p.activeStyles[GameState.mode]) {
+            isStyleActive = true;
+        }
+
+        // Передаем команду ядру игры включить "Стиль отображения"
+        GameState.isClassic = isStyleActive;
+
+        // Включаем классы редизайна (белый кубик, хром для пули и т.д.)
+        document.body.classList.toggle('classic-mode-active', GameState.isClassic);
+        
+        const cEl = document.getElementById('cube');
+        if (cEl) cEl.classList.toggle('classic-mode', GameState.isClassic);
+        
+        const dWrap = document.getElementById('drumWrapper');
+        if (dWrap) dWrap.classList.toggle('classic', GameState.isClassic);
+
+        // Меняем фон на нужный (как это делала старая кнопка)
+        const bgSel = document.getElementById('bgSelect');
+        if (bgSel) {
+            bgSel.value = GameState.isClassic ? 'bg5' : 'bg1';
+            if (typeof App !== 'undefined' && App.changeBackground) App.changeBackground(true);
+        }
+    }
+    // Управление окном купленных вещей
+    function toggleInventory(show) {
+        const over = document.getElementById('inventoryOverlay');
+        if(!over) return;
+        
+        if (show) {
+            over.style.display = 'flex';
+            renderInventory();
+        } else {
+            over.style.display = 'none';
+        }
+        if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+    }
+
+    // Отрисовка только купленных вещей
+    function renderInventory() {
+        const list = document.getElementById('inventoryList');
+        if (!list) return;
+        list.innerHTML = '';
+
+        let activePurchases = { ...purchases };
+        if (GameState.activeProfileIdx !== -1 && GameState.profiles[GameState.activeProfileIdx]) {
+            activePurchases = GameState.profiles[GameState.activeProfileIdx].shopPurchases || {};
+        }
+
+        const boughtItems = ITEMS.filter(item => activePurchases[item.id]);
+
+        if (boughtItems.length === 0) {
+            list.innerHTML = `<div style="text-align:center; opacity:0.5; padding:20px;">${GameState.lang === 'ru' ? 'Тут пока пусто...' : 'Empty for now...'}</div>`;
+            return;
+        }
+
+        boughtItems.forEach(item => {
+            const isActive = (GameState.activeProfileIdx !== -1 && GameState.profiles[GameState.activeProfileIdx].activeStyles && GameState.profiles[GameState.activeProfileIdx].activeStyles[item.targetGame] === item.id);
+            const activeClass = isActive ? 'is-active' : '';
+
+            const row = document.createElement('div');
+            row.className = `inv-item-card ${activeClass}`;
+            row.onclick = () => ShopGame.toggleInventoryItem(item.id);
+            row.innerHTML = `
+                <div style="font-size:24px;">${item.icon}</div>
+                <div style="flex-grow:1; font-weight:bold; font-size:14px; color:#fff;">${item.name[GameState.lang] || item.name.ru}</div>
+                <i class="fas fa-check-circle inv-active-icon"></i>
+            `;
+            list.appendChild(row);
+        });
+    }
+
+    // Оригинальные функции магазина (для покупки)
     function mount() {
         const st = document.getElementById('shopStage'); if(st) st.style.display = 'flex';
         document.body.classList.add('is-shop-active');
-        const t = LANG_DATA[GameState.lang];
-        if (document.getElementById('ui-title')) {
-            const titleEl = document.getElementById('ui-title');
-            titleEl.innerText = t.menuShop || "МАГАЗИН";
-            titleEl.style.color = "var(--sun-gold)";
-            titleEl.style.textShadow = "0 0 10px var(--sun-gold)";
-        }
-        const disp = document.getElementById('current-mode-display');
-        if (disp) {
-            disp.innerText = (t.smShopStd || "ТОВАРЫ").toUpperCase();
-            disp.style.display = 'inline';
-            disp.style.color = "var(--sun-gold)";
-        }
-        if(typeof App !== 'undefined') App.hideError();
         renderShop();
     }
 
     function unmount() {
         const st = document.getElementById('shopStage'); if(st) st.style.display = 'none';
         document.body.classList.remove('is-shop-active');
-        const titleEl = document.getElementById('ui-title');
-        if (titleEl) { titleEl.style.color = ""; titleEl.style.textShadow = ""; }
     }
 
     function renderShop() {
@@ -6396,9 +6578,10 @@ const ShopGame = (function() {
             const p = GameState.profiles[GameState.activeProfileIdx];
             if (p.rStats && p.rStats.bank !== undefined) bank = p.rStats.bank;
             if (p.shopPurchases) activePurchases = p.shopPurchases;
-        } else if (window.guestBank !== undefined) bank = window.guestBank;
+        }
         const header = document.getElementById('shopBankDisplay');
         if(header) header.innerText = '$' + bank.toFixed(2);
+        
         ITEMS.forEach(item => {
             const isBought = activePurchases[item.id];
             const canAfford = bank >= item.price;
@@ -6420,111 +6603,68 @@ const ShopGame = (function() {
         let bank = 50.00;
         let p = (GameState.activeProfileIdx !== -1) ? GameState.profiles[GameState.activeProfileIdx] : null;
         if (p && p.rStats) bank = p.rStats.bank;
-        else if (!p && window.guestBank !== undefined) bank = window.guestBank;
         if (bank < price) { if(typeof App !== 'undefined') App.playSoundEffect('error_pyn'); return; }
         let newBank = bank - price;
         if (p) {
             if (!p.shopPurchases) p.shopPurchases = {};
             p.shopPurchases[id] = true;
-            if(!p.rStats) p.rStats = { bank: 50.00, pool: 0.00 };
             p.rStats.bank = newBank;
-        } else { purchases[id] = true; window.guestBank = newBank; }
-        if (typeof RouletteGame !== 'undefined') {
-            const s = RouletteGame.getStats(); s.bank = newBank; RouletteGame.loadStats(s); 
         }
         if(typeof App !== 'undefined') { App.playSoundEffect('coins'); App.updateMenuBankUI(); App.requestProfileSave(); }
+		// Записываем в историю
+        const hlShop = document.getElementById('historyListShop');
+        if (hlShop) {
+            const itemObj = ITEMS.find(i => i.id === id);
+            const name = itemObj.name[GameState.lang] || itemObj.name.ru;
+            const time = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+            hlShop.innerHTML = `<div class="history-item"><span style="color:var(--sun-gold); font-weight:bold; font-size:14px;">${itemObj.icon} ${name}</span><br><span style="color:#aaa; font-size:10px;">Куплено за $${price.toFixed(2)} (${time})</span></div>` + hlShop.innerHTML;
+            
+            // Сохраняем историю в профиль
+            if (p) p.historyShop = hlShop.innerHTML;
+        }
         renderShop();
     }
 
-    return { init, mount, unmount, renderShop, buyItem };
+    return { init, mount, unmount, renderShop, buyItem, toggleInventory, renderInventory, toggleInventoryItem, applyGameStyles };
 })();
 
-(function injectShopPlugin() {
-    try {
-        LANG_DATA.ru.menuShop = "МАГАЗИН"; LANG_DATA.en.menuShop = "SHOP";
-        LANG_DATA.ru.smShopStd = "Товары"; LANG_DATA.en.smShopStd = "Items";
-        const style = document.createElement('style');
-        style.className = 'shop-styles';
-        style.innerHTML = `
-            #shopStage { display: none; position: relative; width: 100%; height: auto; min-height: 260px; flex-direction: column; align-items: center; z-index: 50; margin: 15px 0 80px 0; }
-            .shop-header { display: flex; justify-content: center; align-items: center; gap: 10px; font-size: 24px; color: var(--sun-gold); font-weight: bold; margin-bottom: 20px; text-shadow: 0 0 10px var(--sun-gold); }
-            .shop-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; width: 95%; max-width: 360px; justify-content: center; }
-            .shop-item-card { background: rgba(5,8,15,0.8); border: 2px solid rgba(255, 249, 174, 0.3); border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: space-between; padding: 15px 10px; transition: 0.3s; box-shadow: 0 0 10px rgba(0,0,0,0.5); min-height: 120px; }
-            .shop-item-card.bought { border-color: var(--friendly-green); opacity: 0.8; }
-            .shop-item-icon { font-size: 36px; margin-bottom: 8px; filter: drop-shadow(0 0 8px rgba(255,255,255,0.2)); text-align: center; }
-            .shop-item-name { font-size: 10px; color: #fff; text-transform: uppercase; font-weight: bold; margin-bottom: 10px; text-align: center; line-height: 1.1; }
-            .shop-buy-btn { padding: 8px 5px; border-radius: 8px; font-weight: bold; font-size: 12px; cursor: pointer; transition: 0.3s; width: 100%; border: none; }
-            .can-buy { background: var(--sun-gold); color: #000; box-shadow: 0 0 10px rgba(255,249,174,0.5); }
-            .cannot-buy { background: rgba(255,255,255,0.1); color: #888; cursor: not-allowed; }
-            .bought-btn { background: rgba(204,255,204,0.1); color: var(--friendly-green); border: 1px solid var(--friendly-green); cursor: default; }
-            body.is-shop-active #answer-box, body.is-shop-active #bulletStash, body.is-shop-active .action-row, body.is-shop-active #inputWrapper, body.is-shop-active #historyBlock, body.is-shop-active #mainStage, body.is-shop-active .history-header { display: none !important; }
-            #sel-game-shop { border-color: var(--sun-gold); color: var(--sun-gold); }
-            #sel-game-shop.active-preview { box-shadow: 0 0 15px rgba(255,249,174,0.6); transform: scale(1.05); }
-            #submodes-shop { display: none; width: 100%; position: relative; flex-direction: column; gap: 8px; }
-            #submodes-shop .sub-mode-btn.active-sub { border: 2px solid var(--sun-gold) !important; color: var(--sun-gold) !important; background: rgba(255,249,174,0.1) !important; box-shadow: 0 0 10px rgba(255,249,174,0.3) !important; }
-            #submodes-shop .info-mode-btn { background: var(--sun-gold); color: #000; box-shadow: 0 0 5px var(--sun-gold); opacity: 1 !important; visibility: visible !important; display: flex !important; pointer-events: auto !important; z-index: 10; }
-        `;
-        document.head.appendChild(style);
-        const mainStage = document.getElementById('mainStage');
-        if (mainStage && !document.getElementById('shopStage')) {
-            const shopStage = document.createElement('div'); shopStage.id = 'shopStage'; shopStage.className = 'stage';
-            shopStage.innerHTML = `<div class="shop-header"><i class="fas fa-wallet"></i> <span id="shopBankDisplay">$50.00</span></div><div class="shop-grid" id="shopGrid"></div>`;
-            mainStage.parentNode.insertBefore(shopStage, document.getElementById('rouletteStage'));
+// Переопределяем превью в App, чтобы магазин снова появился в меню выбора
+(function fixShopSelection() {
+    const originalPreview = App.previewGame;
+    App.previewGame = function(mode) {
+        originalPreview(mode);
+        const sShop = document.getElementById('sel-game-shop'); if(sShop) sShop.classList.remove('active-preview');
+        const ssSub = document.getElementById('submodes-shop'); if(ssSub) ssSub.style.display = 'none';
+        if (mode === 'shop') {
+            const card = document.getElementById('menuPreviewCard');
+            if(card) { card.style.borderColor = "var(--sun-gold)"; card.style.color = "var(--sun-gold)"; }
+            const pcIcon = document.getElementById('preview-card-icon'); if(pcIcon) pcIcon.innerHTML = '<i class="fas fa-store"></i>';
+            if(sShop) sShop.classList.add('active-preview');
+            if(ssSub) ssSub.style.display = 'flex'; 
+            App.updateSubModeHighlights();
         }
-        const gameSelectors = document.querySelector('.game-selector-row');
-        if (gameSelectors && !document.getElementById('sel-game-shop')) {
-            const lockedBtns = document.querySelectorAll('.square-game-btn.locked');
-            const newBtn = document.createElement('button');
-            newBtn.className = 'square-game-btn'; newBtn.id = 'sel-game-shop';
-            newBtn.onclick = () => App.previewGame('shop');
-            newBtn.innerHTML = `<i class="fas fa-store" style="font-size:20px; margin-bottom:3px;"></i><span id="sel-shop-txt">Магазин</span>`;
-            if (lockedBtns.length > 0) lockedBtns[0].parentNode.replaceChild(newBtn, lockedBtns[0]);
-            else gameSelectors.appendChild(newBtn);
-        }
-        const smContainer = document.getElementById('menuPreviewSubModes');
-        if (smContainer && !document.getElementById('submodes-shop')) {
-            const shopSub = document.createElement('div'); shopSub.id = 'submodes-shop';
-            // ДОБАВЛЕН SETTIMEOUT ДЛЯ ФОРСИРОВАНИЯ ПОДСВЕТКИ ПОСЛЕ КЛИКА
-            shopSub.innerHTML = `
-                <button class="sub-mode-btn active-sub" onclick="App.selectSubMode('shop', 'standard', event); setTimeout(() => App.updateSubModeHighlights(), 10);" id="sm-shop-standard">
-                    <div class="float-corner-btn info-mode-btn" onclick="event.stopPropagation(); App.showSubModeRules(event, 'shop', 'standard')"><i class="fas fa-question"></i></div>
-                    <span id="sm-shop-standard-lbl">Товары</span>
-                </button>`;
-            smContainer.appendChild(shopSub);
-            GameState.subModes.shop = 'standard';
-        }
-        const originalPreviewGame = App.previewGame;
-        App.previewGame = function(mode) {
-            originalPreviewGame(mode);
-            const sShop = document.getElementById('sel-game-shop'); if(sShop) sShop.classList.remove('active-preview');
-            const ssSub = document.getElementById('submodes-shop'); if(ssSub) ssSub.style.display = 'none';
-            if (mode === 'shop') {
-                const card = document.getElementById('menuPreviewCard');
-                if(card) { card.style.borderColor = "var(--sun-gold)"; card.style.boxShadow = "0 0 15px rgba(255, 249, 174, 0.4)"; card.style.color = "var(--sun-gold)"; }
-                const pcIcon = document.getElementById('preview-card-icon'); if(pcIcon) pcIcon.innerHTML = '<i class="fas fa-store" style="font-size:45px"></i>';
-                const previewTitle = document.getElementById('preview-card-title'); if (previewTitle) previewTitle.innerText = LANG_DATA[GameState.lang]?.menuShop || "МАГАЗИН";
-                if(sShop) sShop.classList.add('active-preview');
-                if(ssSub) ssSub.style.display = 'flex'; 
-                App.updateSubModeHighlights();
-            }
-        };
-        let wasShop = false;
-        setInterval(() => {
-            const gui = document.getElementById('gameUI');
-            const isVisible = gui && gui.classList.contains('game-ui-visible');
-            if (isVisible && GameState.mode === 'shop') {
-                if (!wasShop) { ShopGame.mount(); wasShop = true; }
-                const titleEl = document.getElementById('ui-title');
-                const t = LANG_DATA[GameState.lang];
-                if (titleEl && titleEl.innerText !== (t.menuShop || "МАГАЗИН")) {
-                    titleEl.innerText = t.menuShop || "МАГАЗИН";
-                    titleEl.style.color = "var(--sun-gold)"; titleEl.style.textShadow = "0 0 10px var(--sun-gold)";
-                }
-            } else if (wasShop) { ShopGame.unmount(); wasShop = false; }
-        }, 100);
-        ShopGame.init();
-    } catch (err) { console.error("Shop error:", err); }
+    };
 })();
+// Вытаскиваем окно правил в корень документа, чтобы оно работало в главном меню
+        const rulesModal = document.getElementById('rulesOverlay');
+        if (rulesModal) {
+            document.body.appendChild(rulesModal);
+            rulesModal.style.zIndex = '9999';
+        }
 // --- КОНЕЦ ВОСЬМОЙ ЧАСТИ ---
 try { if(typeof App !== 'undefined') { App.init(); if(typeof CoinGame !== 'undefined') CoinGame.init(); if(typeof FlowerGame !== 'undefined') FlowerGame.init(); } } catch (err) { console.error("Start error:", err); }
-</script></body></html>
+</script>
+<div class="settings-overlay" id="inventoryOverlay" style="display:none;">
+    <div class="settings-modal" style="border-color: var(--sun-gold); box-shadow: 0 8px 32px rgba(255, 249, 174, 0.2);">
+        <h2 style="margin-top:0; color:var(--sun-gold); text-align: center;">
+            <i class="fas fa-archive"></i> <span id="st-inv-title">Ваши Вещи</span>
+        </h2>
+        
+        <div id="inventoryList" style="max-height: 50vh; overflow-y: auto; padding: 10px; display: flex; flex-direction: column; gap: 10px;">
+            </div>
+        
+        <button class="close-btn" onclick="ShopGame.toggleInventory(false)" style="background: var(--sun-gold); margin-top: 15px;">Закрыть</button>
+    </div>
+</div>
+</body>
+</html>
