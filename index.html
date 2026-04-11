@@ -1140,6 +1140,11 @@
 
                 setQuestionState(s.isQuestionHidden === true);
                 
+                // ИСПРАВЛЕНИЕ: Восстанавливаем точную карту видимости вопросов для профиля!
+                if (s.questionHiddenMap) {
+                    GameState.questionHiddenMap = s.questionHiddenMap;
+                }
+                
                 GameState.isClassic = s.isClassic === true;
                 const cubeEl = document.getElementById('cube'); if(cubeEl) cubeEl.classList.toggle('classic-mode', GameState.isClassic);
                 const drumWrapper = document.getElementById('drumWrapper'); if(drumWrapper) drumWrapper.classList.toggle('classic', GameState.isClassic);
@@ -1165,7 +1170,7 @@
                 if (s.subModes) {
                     GameState.subModes = s.subModes;
                 } else {
-                    GameState.subModes = { dice: 'standard', roulette: 'standard', coin: 'standard' };
+                    GameState.subModes = { dice: 'standard', roulette: 'standard', coin: 'standard', flower: 'standard' };
                 }
 
                 if (s.lang) {
@@ -1329,6 +1334,15 @@
             }
 
             function loadProfileData(idx) {
+                const uq = document.getElementById('userQuestion');
+                if (uq) uq.value = '';
+
+                // ИСПРАВЛЕНИЕ: Жестко сбрасываем Лепестки при смене профиля, 
+                // чтобы чужое гадание не переносилось на нового игрока!
+                if (typeof FlowerGame !== 'undefined' && typeof FlowerGame.reset === 'function') {
+                    FlowerGame.reset();
+                }
+
                 if (idx !== -1 && GameState.profiles[idx]) {
                     const p = GameState.profiles[idx];
                     if(typeof Achievements !== 'undefined') Achievements.load(p.unlocked, p.order);
@@ -1336,6 +1350,7 @@
                     const hlDice = document.getElementById('historyListDice'); if(hlDice) hlDice.innerHTML = p.historyDice || '';
                     const hlRoul = document.getElementById('historyListRoulette'); if(hlRoul) hlRoul.innerHTML = p.historyRoulette || '';
                     const hlCoin = document.getElementById('historyListCoin'); if(hlCoin) hlCoin.innerHTML = p.historyCoin || '';
+                    const hlFlower = document.getElementById('historyListFlower'); if(hlFlower) hlFlower.innerHTML = p.historyFlower || '';
                     if (p.settings) applySettings(p.settings);
                 } else {
                     if(typeof Achievements !== 'undefined') Achievements.load({}, []);
@@ -1343,13 +1358,14 @@
                     const hlDice = document.getElementById('historyListDice'); if(hlDice) hlDice.innerHTML = '';
                     const hlRoul = document.getElementById('historyListRoulette'); if(hlRoul) hlRoul.innerHTML = '';
                     const hlCoin = document.getElementById('historyListCoin'); if(hlCoin) hlCoin.innerHTML = '';
-                    GameState.subModes = { dice: 'standard', roulette: 'standard', coin: 'standard' };
+                    const hlFlower = document.getElementById('historyListFlower'); if(hlFlower) hlFlower.innerHTML = '';
+                    GameState.subModes = { dice: 'standard', roulette: 'standard', coin: 'standard', flower: 'standard' };
                     updateSubModeHighlights();
                 }
                 updateHistoryView();
             }
 
-            function saveProfileData(unlocked, order, rStats, hDice, hRoul, hCoin, settings) {
+            function saveProfileData(unlocked, order, rStats, hDice, hRoul, hCoin, hFlower, settings) {
                 if (GameState.activeProfileIdx === -1) return; 
                 
                 if (!GameState.profiles[GameState.activeProfileIdx]) {
@@ -1363,6 +1379,7 @@
                 p.rStats = rStats; 
                 p.historyDice = hDice; 
                 p.historyCoin = hCoin;
+                p.historyFlower = hFlower; 
                 
                 if (GameState.subModes.roulette !== 'survival') {
                     p.historyRoulette = hRoul;
@@ -1382,6 +1399,9 @@
                 
                 const hc = document.getElementById('historyListCoin');
                 const hCoin = hc ? hc.innerHTML : '';
+                
+                const hf = document.getElementById('historyListFlower');
+                const hFlower = hf ? hf.innerHTML : '';
                 
                 const mSel = document.getElementById('modeSelect');
                 const bgSel = document.getElementById('bgSelect');
@@ -1403,7 +1423,7 @@
                 const ord = typeof Achievements !== 'undefined' ? Achievements.getOrder() : [];
                 const rSt = typeof RouletteGame !== 'undefined' ? RouletteGame.getStats() : null;
 
-                saveProfileData(unl, ord, rSt, hDice, hRoul, hCoin, settings);
+                saveProfileData(unl, ord, rSt, hDice, hRoul, hCoin, hFlower, settings);
             }
 
             function handleSparkleToggle() {
@@ -1476,7 +1496,12 @@
                 
                 setTimeout(() => {
                     const statusEl = document.getElementById('res-status');
-                    if(statusEl) statusEl.classList.add('visible');
+                    const rc = document.getElementById('res-content');
+                    let isFlowerActive = GameState.mode === 'flower' && typeof FlowerGame !== 'undefined' && FlowerGame.isGameActive();
+                    
+                    if(statusEl && (!rc || !rc.classList.contains('visible')) && !isFlowerActive) {
+                        statusEl.classList.add('visible');
+                    }
                 }, 50); 
             }
 
@@ -1502,7 +1527,7 @@
                 const sdSub = document.getElementById('submodes-dice'); if(sdSub) sdSub.style.display = 'none';
                 const srSub = document.getElementById('submodes-roulette'); if(srSub) srSub.style.display = 'none';
                 const scSub = document.getElementById('submodes-coin'); if(scSub) scSub.style.display = 'none';
-                const sfSub = document.getElementById('submodes-flower'); if(sfSub) sfSub.style.display = 'none'; // Добавили ромашку
+                const sfSub = document.getElementById('submodes-flower'); if(sfSub) sfSub.style.display = 'none';
 
                 if (mode === 'dice') {
                     if(card) { card.style.borderColor = "var(--magic-color)"; card.style.boxShadow = "0 0 10px rgba(162, 155, 254, 0.2)"; card.style.color = "var(--magic-color)"; }
@@ -1526,9 +1551,9 @@
                     if(card) { card.style.borderColor = "#facc15"; card.style.boxShadow = "0 0 10px rgba(250, 204, 21, 0.2)"; card.style.color = "#facc15"; }
                     const pcIcon = document.getElementById('preview-card-icon'); 
                     if(pcIcon) pcIcon.innerHTML = `<svg viewBox="0 0 100 100" style="height: 45px; width: auto;" fill="none" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"><path d="M50 15 Q60 30 50 50 Q40 30 50 15 M50 85 Q60 70 50 50 Q40 70 50 85 M15 50 Q30 60 50 50 Q30 40 15 50 M85 50 Q70 60 50 50 Q70 40 85 50 M25 25 Q40 35 50 50 Q35 40 25 25 M75 75 Q60 65 50 50 Q65 60 75 75 M25 75 Q40 65 50 50 Q35 60 25 75 M75 25 Q60 35 50 50 Q65 40 75 25"/><circle cx="50" cy="50" r="10" fill="currentColor"/></svg>`;
-                    const previewTitle = document.getElementById('preview-card-title'); if (previewTitle) previewTitle.innerText = t.menuFlower || "Ромашка Судьбы";
+                    const previewTitle = document.getElementById('preview-card-title'); if (previewTitle) previewTitle.innerText = t.menuFlower || "Лепестки";
                     if(sFlower) sFlower.classList.add('active-preview');
-                    if(sfSub) sfSub.style.display = 'flex'; // Включаем кнопку подрежима!
+                    if(sfSub) sfSub.style.display = 'flex'; 
                 }
                 updateSubModeHighlights();
                 if (tg.HapticFeedback && tg.HapticFeedback.selectionChanged) tg.HapticFeedback.selectionChanged();
@@ -1556,7 +1581,6 @@
             }
 
             function updateSubModeHighlights() {
-                // Подстраховка для старых сохранений
                 if (!GameState.subModes.coin) GameState.subModes.coin = 'standard';
                 if (!GameState.subModes.flower) GameState.subModes.flower = 'standard';
 
@@ -1636,18 +1660,16 @@
                 const titleEl = document.getElementById('ui-title');
                 const t = LANG_DATA[GameState.lang];
                 
-                // === НАЧАЛО ВСТАВКИ: ПРИНУДИТЕЛЬНЫЙ СБРОС КНОПКИ ===
                 const rollBtn = document.getElementById('rollBtn');
                 if (rollBtn) {
                     rollBtn.innerText = t.rollBtn;
                     rollBtn.disabled = false;
                     rollBtn.classList.remove('gold-text-active');
                 }
-                // === КОНЕЦ ВСТАВКИ ===
                 
                 let qhKey = GameState.mode + '_' + GameState.subModes[GameState.mode];
                 let targetHideState = GameState.questionHiddenMap[qhKey] !== undefined ? GameState.questionHiddenMap[qhKey] : GameState.isQuestionHidden;
-                              
+                
                 if(typeof DiceGame !== 'undefined') DiceGame.unmount();
                 if(typeof RouletteGame !== 'undefined') RouletteGame.unmount();
                 if(typeof CoinGame !== 'undefined') CoinGame.unmount();
@@ -1698,9 +1720,9 @@
                     else setQuestionState(false, true);
 
                 } else if (GameState.mode === 'flower') {
-                    if (titleEl) titleEl.innerText = t.menuFlower || "Ромашка Судьбы";
+                    if (titleEl) titleEl.innerText = t.menuFlower || "Лепестки";
                     const disp = document.getElementById('current-mode-display');
-                    if (disp) { disp.innerText = (t.smFlowerStd || "Гадание").toUpperCase(); disp.style.display = 'inline'; }
+                    if (disp) { disp.innerText = (t.smFlowerStd || "Жребий").toUpperCase(); disp.style.display = 'inline'; }
 
                     const stHistHead = document.getElementById('st-hist-head');
                     if(stHistHead) stHistHead.innerText = t.histFlowerHead || "История лепестков";
@@ -1741,13 +1763,13 @@
                 const hlRoul = document.getElementById('historyListRoulette');
                 const hlSurv = document.getElementById('historyListSurvival');
                 const hlCoin = document.getElementById('historyListCoin');
-                const hlFlower = document.getElementById('historyListFlower'); // <--- NEW
+                const hlFlower = document.getElementById('historyListFlower');
 
                 if (hlDice) hlDice.style.display = 'none';
                 if (hlRoul) hlRoul.style.display = 'none';
                 if (hlSurv) hlSurv.style.display = 'none';
                 if (hlCoin) hlCoin.style.display = 'none';
-                if (hlFlower) hlFlower.style.display = 'none'; // <--- NEW
+                if (hlFlower) hlFlower.style.display = 'none';
 
                 if (GameState.mode === 'flower') {
                     if (hlFlower) hlFlower.style.display = 'block';
@@ -1987,7 +2009,6 @@
                 const dr = document.getElementById('st-debug-row');
                 if(dr) dr.style.display = GameState.debugEnabled ? 'flex' : 'none';
                 
-                // Синхронизируем UI при открытии меню
                 if (show) {
                     const btn = document.getElementById('soundToggleBtn');
                     if (btn) {
@@ -2082,6 +2103,8 @@
                     else headTxt = t.histSurvHead;
                 } else if (GameState.mode === 'coin') {
                     headTxt = t.histCoinHead || "Броски монеты";
+                } else if (GameState.mode === 'flower') {
+                    headTxt = t.histFlowerHead || "История лепестков";
                 }
                 const hHead = document.getElementById('st-hist-head');
                 if(hHead) hHead.innerText = headTxt;
@@ -2111,13 +2134,21 @@
                 const sDT = document.getElementById('sel-dice-txt'); if(sDT) sDT.innerText = t.smStd;
                 const sRT = document.getElementById('sel-roul-txt'); if(sRT) sRT.innerText = t.smRoulStd;
 
-                // Для Монеты
                 const scTxt = document.getElementById('sel-coin-txt'); if(scTxt) scTxt.innerText = GameState.lang === 'ru' ? "Грань" : "Edge";
                 const smCS = document.getElementById('sm-coin-standard-lbl'); if(smCS) smCS.innerText = t.smCoinStd || "Бросок";
                 const smCQ = document.getElementById('sm-coin-question-lbl'); if(smCQ) smCQ.innerText = t.smCoinQst || "Вопрос";
 
+                const sfTxt = document.getElementById('sel-flower-txt'); if(sfTxt) sfTxt.innerText = t.menuFlower || "Лепестки";
+                const smFS = document.getElementById('sm-flower-standard-lbl'); if(smFS) smFS.innerText = t.smFlowerStd || "Жребий";
+
                 const rollBtn = document.getElementById('rollBtn');
-                if(rollBtn) rollBtn.innerText = t.rollBtn; 
+                if(rollBtn) {
+                    if (GameState.mode === 'flower' && typeof FlowerGame !== 'undefined' && FlowerGame.isGameActive && FlowerGame.isGameActive()) {
+                        rollBtn.innerText = t.flowerTear || "ОТРЫВАЙ ЛЕПЕСТКИ";
+                    } else {
+                        rollBtn.innerText = t.rollBtn; 
+                    }
+                }
                 
                 const resC = document.getElementById('res-content');
                 if(resC && !resC.classList.contains('visible')) {
@@ -2147,6 +2178,11 @@
                     const disp = document.getElementById('current-mode-display');
                     if (disp) {
                         disp.innerText = subNamesCoin[GameState.subModes.coin].toUpperCase();
+                    }
+                } else if (GameState.mode === 'flower') {
+                    const disp = document.getElementById('current-mode-display');
+                    if (disp) {
+                        disp.innerText = (t.smFlowerStd || "Жребий").toUpperCase();
                     }
                 }
 
@@ -2205,7 +2241,7 @@
                 toggleCubeStyle, toggleSound, toggleSettings, toggleRules, changeLanguage, 
                 changeBackground, toggleDebug, toggleLanguage, updateHistoryView, previewGame, 
                 getPlural, showError, hideError, triggerButtonError, playSoundEffect, 
-                createSparkle, askOracle, setQuestionState, // <--- ДОБАВЬ ЭТО СЛОВО
+                createSparkle, askOracle, setQuestionState,
                 updateModeDisplay: () => { if(typeof DiceGame !== 'undefined') DiceGame.updateModeDisplay(); requestProfileSave(); }
             };
         })();
@@ -4484,7 +4520,7 @@
 // --- КОНЕЦ ПЯТОЙ ЧАСТИ ---
 // --- НАЧАЛО ШЕСТОЙ ЧАСТИ ---
 // ==============================================
-// 🌼 ПЛАГИН 4: ЛЕПЕСТКИ (ИНТЕРАКТИВНЫЙ ОРАКУЛ) v5.2
+// 🌼 ПЛАГИН 4: ЛЕПЕСТКИ (ИНТЕРАКТИВНЫЙ ОРАКУЛ) v5.5
 // ==============================================
 const FlowerGame = (function() {
     let totalPetals = 0;
@@ -4493,6 +4529,7 @@ const FlowerGame = (function() {
     let isSpinning = false;
     let originalQuestion = "";
     let lastFlowerTap = 0;
+    let currentSessionId = 0; 
     
     let draggedPetal = null;
     let flowerCenterX = 0;
@@ -4550,6 +4587,40 @@ const FlowerGame = (function() {
         lastFlowerTap = now;
     }
 
+    function reset() {
+        currentSessionId++; 
+        isGameActive = false;
+        isSpinning = false;
+        tornCount = 0;
+        totalPetals = 0;
+        originalQuestion = "";
+        
+        const container = document.getElementById('flowerPetalsContainer');
+        if (container) {
+            container.innerHTML = '';
+            renderPetals(12, false);
+        }
+        
+        const t = LANG_DATA[GameState.lang];
+        const rollBtn = document.getElementById('rollBtn');
+        if (rollBtn) {
+            rollBtn.innerText = t.rollBtn || "ИСПЫТАТЬ СУДЬБУ";
+            rollBtn.disabled = false;
+            rollBtn.classList.remove('gold-text-active');
+        }
+        
+        const rs = document.getElementById('res-status'); 
+        if (rs) rs.classList.add('visible'); 
+        
+        const rc = document.getElementById('res-content'); 
+        if (rc) rc.classList.remove('visible');
+        
+        const tempRes = document.getElementById('flowerTempRes');
+        if (tempRes) tempRes.style.opacity = 0;
+        
+        updateFlowerUIState();
+    }
+
     function mount() {
         const st = document.getElementById('flowerStage'); if(st) st.style.display = 'flex';
         document.body.classList.add('is-flower-game-active');
@@ -4574,7 +4645,6 @@ const FlowerGame = (function() {
         const cont = document.getElementById('flowerPetalsContainer');
         if (cont && cont.children.length === 0) renderPetals(12, true);
 
-        // ВОССТАНОВЛЕНИЕ СОСТОЯНИЯ КНОПКИ ПРИ ВОЗВРАТЕ
         const rollBtn = document.getElementById('rollBtn');
         const rs = document.getElementById('res-status');
         const rc = document.getElementById('res-content');
@@ -4697,6 +4767,9 @@ const FlowerGame = (function() {
         originalQuestion = q; 
         
         updateFlowerUIState();
+        
+        currentSessionId++;
+        const session = currentSessionId;
 
         const rollBtn = document.getElementById('rollBtn');
         if(rollBtn) { rollBtn.disabled = true; rollBtn.innerText = t.waiting; rollBtn.classList.add('gold-text-active'); }
@@ -4717,9 +4790,13 @@ const FlowerGame = (function() {
             rotator.style.transition = 'transform 2.5s cubic-bezier(0.45, 0.05, 0.55, 0.95)';
             rotator.style.transform = `rotate(${spins}deg)`;
 
-            setTimeout(() => { renderPetals(totalPetals); }, 1000);
+            setTimeout(() => { 
+                if (session !== currentSessionId) return;
+                renderPetals(totalPetals); 
+            }, 1000);
 
             setTimeout(() => {
+                if (session !== currentSessionId) return;
                 isSpinning = false;
                 if(rollBtn) { 
                     rollBtn.innerText = t.flowerTear || "ОТРЫВАЙ ЛЕПЕСТКИ"; 
@@ -4791,6 +4868,9 @@ const FlowerGame = (function() {
         petal.style.transition = 'transform 0.6s ease-out, opacity 0.5s ease-out';
         petal.style.transform = `rotate(${flyAngle}deg) translateY(-450px) scaleY(1.05)`;
         petal.style.opacity = 0;
+        
+        const session = currentSessionId;
+        
         const rotator = document.getElementById('flowerRotator');
         if(rotator) {
             const rad = baseAngle * Math.PI / 180;
@@ -4798,6 +4878,7 @@ const FlowerGame = (function() {
             rotator.style.transition = 'none';
             rotator.style.transform += ` translate(${moveX}px, ${moveY}px)`;
             setTimeout(() => {
+                if (session !== currentSessionId) return;
                 const currentRot = rotator.style.transform.match(/rotate\((.+?)deg\)/);
                 rotator.style.transition = 'transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
                 rotator.style.transform = currentRot ? `rotate(${currentRot[1]}deg)` : 'rotate(0deg)';
@@ -4805,15 +4886,29 @@ const FlowerGame = (function() {
         }
         if(typeof App !== 'undefined') App.playSoundEffect('tick');
         if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('heavy');
-        setTimeout(() => { if (petal.parentNode) petal.remove(); }, 600);
+        setTimeout(() => { 
+            if (session !== currentSessionId) return;
+            if (petal.parentNode) petal.remove(); 
+        }, 600);
         const isYes = (tornCount % 2 !== 0);
         showIntermediateResult(isYes);
-        if (tornCount >= totalPetals) { isGameActive = false; setTimeout(() => finalizeGame(isYes), 500); }
+        
+        if (tornCount >= totalPetals) { 
+            isGameActive = false; 
+            setTimeout(() => {
+                if (session !== currentSessionId) return;
+                finalizeGame(isYes, session); 
+            }, 500); 
+        }
     }
 
     function showIntermediateResult(isYes) {
         const tempRes = document.getElementById('flowerTempRes');
         if (!tempRes) return;
+        
+        const rs = document.getElementById('res-status'); 
+        if (rs) rs.classList.remove('visible');
+
         const t = LANG_DATA[GameState.lang];
         const ynText = isYes ? (t.yn ? t.yn[1] : "ДА") : (t.yn ? t.yn[0] : "НЕТ");
         const uiColor = isYes ? "var(--friendly-green)" : "var(--angry-red)";
@@ -4829,7 +4924,10 @@ const FlowerGame = (function() {
         tempRes.style.opacity = 1;
     }
 
-    function finalizeGame(isYes) {
+    function finalizeGame(isYes, session) {
+        const uq = document.getElementById('userQuestion');
+        if (!GameState.isQuestionHidden && uq) uq.value = '';
+
         const t = LANG_DATA[GameState.lang];
         const uiColor = isYes ? "var(--friendly-green)" : "var(--angry-red)";
         const finalAns = isYes ? (t.yn ? t.yn[1] : "ДА!") : (t.yn ? t.yn[0] : "НЕТ!");
@@ -4849,14 +4947,18 @@ const FlowerGame = (function() {
         if(hl) hl.prepend(item);
         if(typeof App !== 'undefined') App.requestProfileSave();
         const rollBtn = document.getElementById('rollBtn');
-        if(rollBtn) { rollBtn.disabled = false; rollBtn.innerText = t.rollBtn; }
-        setTimeout(() => { if(rollBtn && !rollBtn.disabled) { 
-            const rs = document.getElementById('res-status'); if(rs) rs.classList.add('visible');
-            updateFlowerUIState(); 
-        } }, 3000);
+        
+        setTimeout(() => { 
+            if (session !== currentSessionId) return;
+            if(rollBtn && !rollBtn.disabled) { 
+                rollBtn.disabled = false; 
+                rollBtn.innerText = t.rollBtn; 
+                updateFlowerUIState(); 
+            } 
+        }, 3000);
     }
 
-    return { init, mount, unmount, play };
+    return { init, mount, unmount, play, reset, isGameActive: () => isGameActive };
 })();
 
 (function injectFlowerPlugin() {
@@ -4910,7 +5012,7 @@ const FlowerGame = (function() {
             mainStage.parentNode.insertBefore(flowerStage, document.getElementById('rouletteStage'));
         }
 
-        // БЕЗОПАСНАЯ ИНЪЕКЦИЯ СЛОТОВ С ОБНОВЛЕННЫМ ТЕКСТОМ "Лепестки"
+        // БЕЗОПАСНАЯ ИНЪЕКЦИЯ СЛОТОВ
         const gameSelectors = document.querySelector('.game-selector-row');
         if (gameSelectors && !document.getElementById('sel-game-flower')) {
             const lockedBtns = document.querySelectorAll('.square-game-btn.locked');
@@ -4934,7 +5036,6 @@ const FlowerGame = (function() {
         if (smContainer && !document.getElementById('submodes-flower')) {
             const flowerSub = document.createElement('div'); flowerSub.id = 'submodes-flower';
             
-            // ОБНОВЛЕННЫЙ ТЕКСТ ПОДРЕЖИМА "Жребий"
             flowerSub.innerHTML = `
                 <button class="sub-mode-btn active-sub" onclick="App.selectSubMode('flower', 'standard', event)" id="sm-flower-standard">
                     <div class="float-corner-btn info-mode-btn" onclick="App.showSubModeRules(event, 'flower', 'standard')"><i class="fas fa-question"></i></div>
@@ -4950,7 +5051,6 @@ const FlowerGame = (function() {
             histBlock.appendChild(hl);
         }
         
-        // ОБНОВЛЕННЫЕ ДАННЫЕ ДЛЯ ЯЗЫКОВ
         LANG_DATA.ru.menuFlower = "Лепестки"; LANG_DATA.en.menuFlower = "Petals";
         LANG_DATA.ru.smFlowerStd = "Жребий"; LANG_DATA.en.smFlowerStd = "Draw";
         LANG_DATA.ru.flowerTear = "ОТРЫВАЙ ЛЕПЕСТКИ"; LANG_DATA.en.flowerTear = "TEAR PETALS";
