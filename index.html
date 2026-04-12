@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Игры Судьбы. v0.8.8.33</title>
+    <title>Игры Судьбы. v0.8.8.34</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
@@ -520,7 +520,7 @@
     <div id="stars" class="stars-layer stars-active bg1-stars"></div>
 
     <div id="mainMenuOverlay">
-        <div class="version">v0.8.8.33</div> <div class="menu-top-bar">
+        <div class="version">v0.8.8.34</div> <div class="menu-top-bar">
             <button class="menu-icon-btn" id="langSwitchBtn" onclick="App.toggleLanguage()"><i class="fas fa-globe"></i></button>
         </div>
         <div id="mainMenuTitle" class="menu-title-main">Игры Судьбы</div>
@@ -596,10 +596,8 @@
         
         <div class="profiles-grid" id="profilesGrid"></div>
 
-        <div class="menu-footer-row">
-            <div class="menu-subtitle-row">
-                <a href="https://t.me/Antis_Corpus">t.me/Antis_Corpus</a>
-            </div>
+        <div style="position: fixed; bottom: 5px; left: 8px; font-size: 10px; color: rgba(162, 155, 254, 0.6); font-weight: bold; letter-spacing: 1px; text-transform: uppercase; z-index: 500; pointer-events: auto;">
+            <a href="https://t.me/Antis_Corpus" style="color: inherit; text-decoration: none; transition: color 0.3s;" onmouseover="this.style.color='var(--magic-color)'" onmouseout="this.style.color='inherit'">t.me/Antis_Corpus</a>
         </div>
     </div>
 
@@ -1140,7 +1138,7 @@
                 }
 
                 if (typeof App !== 'undefined' && typeof App.requestProfileSave === 'function') {
-                    App.requestProfileSave();
+                    App.addCrystal(); App.addCrystal(); App.requestProfileSave();
                 }
                 
                 achievementQueue.push(id);
@@ -1195,7 +1193,7 @@
                         if (el) showTooltip(allIds[i], el, null);
                         if (typeof App !== 'undefined') App.playSoundEffect('achievement');
                         if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
-                        if (typeof App !== 'undefined' && typeof App.requestProfileSave === 'function') App.requestProfileSave();
+                        if (typeof App !== 'undefined' && typeof App.requestProfileSave === 'function') App.addCrystal(); App.requestProfileSave();
                         break;
                     }
                 }
@@ -1390,46 +1388,75 @@
                 updateMenuBankUI();
             }
 
-            function renderProfiles() {
-                const grid = document.getElementById('profilesGrid');
-                if (!grid) return;
-                grid.style.display = 'grid'; 
-                grid.innerHTML = '';
-                
-                GameState.profiles.forEach((p, i) => {
-                    const wrapper = document.createElement('div');
-                    wrapper.className = 'profile-wrapper';
-                    
-                    const btn = document.createElement('button');
-                    btn.className = 'profile-btn' + (GameState.activeProfileIdx === i ? ' active-slot' : '');
-                    btn.innerText = p.name;
-                    btn.onclick = () => selectProfile(i);
-                    wrapper.appendChild(btn);
+           function renderProfiles() {
+    const grid = document.getElementById('profilesGrid');
+    if (!grid) return;
+    grid.style.display = 'grid'; 
+    grid.innerHTML = '';
+    
+    GameState.profiles.forEach((p, i) => {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'profile-wrapper';
+        
+        const btn = document.createElement('button');
+        btn.className = 'profile-btn' + (GameState.activeProfileIdx === i ? ' active-slot' : '');
+        
+        // 1. Вытаскиваем баланс из банка (один раз!)
+        let bal = 50; // Стартовый капитал по умолчанию
+        if (p.rStats && p.rStats.bank !== undefined && !isNaN(p.rStats.bank)) {
+            bal = Number(p.rStats.bank);
+        } else {
+            if (!p.rStats) p.rStats = {};
+            p.rStats.bank = bal;
+        }
 
-                    if (GameState.activeProfileIdx === i) {
-                        const editBtn = document.createElement('button');
-                        editBtn.className = 'float-corner-btn edit-profile-btn';
-                        editBtn.innerHTML = '<i class="fas fa-pen"></i>';
-                        editBtn.onclick = (e) => showRenameModal(e, i);
-                        wrapper.appendChild(editBtn);
+        // 2. Вытаскиваем кристаллы (один раз!)
+        const crystals = (p.crystals !== undefined && !isNaN(p.crystals)) ? Number(p.crystals) : 0;
+        
+        // 3. Формируем красивую карточку (без дублей!)
+        btn.innerHTML = `
+            <div style="display:flex; flex-direction:column; align-items:center; gap:6px; width: 100%;">
+                <span style="font-size:14px; font-weight:bold;">${p.name}</span>
+                <div style="display:flex; justify-content: space-around; width: 90%; background:rgba(0,0,0,0.5); padding:6px 0; border-radius:8px; border: 1px solid rgba(255,255,255,0.1);">
+                    <span style="color:var(--friendly-green); font-size: 12px; font-weight: bold; text-shadow:0 0 5px var(--friendly-green);">
+                        <i class="fas fa-dollar-sign"></i> ${bal.toFixed(0)}
+                    </span>
+                    <span style="color:var(--magic-color); font-size: 12px; font-weight: bold; text-shadow:0 0 5px var(--magic-color);">
+                        <i class="fas fa-gem"></i> ${crystals}
+                    </span>
+                </div>
+            </div>`;
+        
+        // 4. Назначаем клик и добавляем кнопку
+        btn.onclick = () => { selectProfile(i); renderProfiles(); };
+        wrapper.appendChild(btn);
 
-                        const delBtn = document.createElement('button');
-                        delBtn.className = 'float-corner-btn delete-profile-btn';
-                        delBtn.innerHTML = '<i class="fas fa-trash"></i>';
-                        delBtn.onclick = (e) => showDeleteConfirm(e, i);
-                        wrapper.appendChild(delBtn);
-                    }
-                    grid.appendChild(wrapper);
-                });
+        // 5. Кнопки редактирования и удаления (оставляем твои родные)
+        if (GameState.activeProfileIdx === i) {
+            const editBtn = document.createElement('button');
+            editBtn.className = 'float-corner-btn edit-profile-btn';
+            editBtn.innerHTML = '<i class="fas fa-pen"></i>';
+            editBtn.onclick = (e) => showRenameModal(e, i);
+            wrapper.appendChild(editBtn);
 
-                if (GameState.profiles.length < 6) {
-                    const newBtn = document.createElement('button');
-                    newBtn.className = 'profile-btn new-slot' + (GameState.activeProfileIdx === GameState.profiles.length ? ' active-slot' : '');
-                    newBtn.innerText = LANG_DATA[GameState.lang].newPlayer;
-                    newBtn.onclick = (e) => createNewProfile(e);
-                    grid.appendChild(newBtn);
-                }
-            }
+            const delBtn = document.createElement('button');
+            delBtn.className = 'float-corner-btn delete-profile-btn';
+            delBtn.innerHTML = '<i class="fas fa-trash"></i>';
+            delBtn.onclick = (e) => showDeleteConfirm(e, i);
+            wrapper.appendChild(delBtn);
+        }
+        grid.appendChild(wrapper);
+    });
+
+    // 6. Кнопка создания нового профиля
+    if (GameState.profiles.length < 6) {
+        const newBtn = document.createElement('button');
+        newBtn.className = 'profile-btn new-slot' + (GameState.activeProfileIdx === GameState.profiles.length ? ' active-slot' : '');
+        newBtn.innerText = LANG_DATA[GameState.lang] ? LANG_DATA[GameState.lang].newPlayer : "Новый игрок";
+        newBtn.onclick = (e) => createNewProfile(e);
+        grid.appendChild(newBtn);
+    }
+}
             
             function createNewProfile(e) {
                 if (e) e.stopPropagation();
@@ -1602,6 +1629,53 @@
                 localStorage.setItem('gof_profiles', JSON.stringify(GameState.profiles));
             }
 
+            function addCrystal() {
+                if (GameState.activeProfileIdx !== -1 && GameState.profiles[GameState.activeProfileIdx]) {
+                    const p = GameState.profiles[GameState.activeProfileIdx];
+                    p.crystals = (p.crystals || 0) + 1;
+                    renderProfiles(); // Сразу обновляем интерфейс профиля
+                }
+            }
+
+			function updateTopBalances() {
+                if (GameState.activeProfileIdx !== -1 && GameState.profiles[GameState.activeProfileIdx]) {
+                    const p = GameState.profiles[GameState.activeProfileIdx];
+                    const coins = (p.rStats && p.rStats.bank !== undefined) ? p.rStats.bank : 0;
+                    const crystals = p.crystals || 0;
+                    
+                    const moneyEl = document.getElementById('ui-top-money');
+                    const crystalEl = document.getElementById('ui-top-crystals');
+                    
+                    if (moneyEl) moneyEl.innerHTML = `<i class="fas fa-dollar-sign"></i> ${coins.toFixed(2)}`;
+                    if (crystalEl) crystalEl.innerHTML = `<i class="fas fa-gem"></i> ${crystals}`;
+                }
+            }
+
+            function addCrystal() {
+                if (GameState.activeProfileIdx !== -1 && GameState.profiles[GameState.activeProfileIdx]) {
+                    const p = GameState.profiles[GameState.activeProfileIdx];
+                    p.crystals = (p.crystals || 0) + 1;
+                    
+                    updateTopBalances();
+                    renderProfiles(); // Обновляем плашки при получении
+                    
+                    // Запуск анимации
+                    const anim = document.createElement('div');
+                    anim.className = 'crystal-anim';
+                    anim.innerHTML = '+1 <i class="fas fa-gem"></i>';
+                    document.body.appendChild(anim);
+                    setTimeout(() => anim.remove(), 1500);
+                }
+            }
+
+            function addCrystal() {
+                if (GameState.activeProfileIdx !== -1 && GameState.profiles[GameState.activeProfileIdx]) {
+                    const p = GameState.profiles[GameState.activeProfileIdx];
+                    p.crystals = (p.crystals || 0) + 1;
+                    renderProfiles(); // Сразу обновляем интерфейс профиля
+                }
+            }
+
             function requestProfileSave() {
                 const hd = document.getElementById('historyListDice');
                 const hDice = hd ? hd.innerHTML : '';
@@ -1639,6 +1713,7 @@
                 const rSt = typeof RouletteGame !== 'undefined' ? RouletteGame.getStats() : null;
 
                 saveProfileData(unl, ord, rSt, hDice, hRoul, hCoin, hFlower, hRPS, settings);
+                renderProfiles(); // <-- Перерисовываем профили, чтобы алмазы обновлялись!
             }
 
             function handleSparkleToggle() {
@@ -1736,51 +1811,55 @@
                 const card = document.getElementById('menuPreviewCard');
                 const t = LANG_DATA[GameState.lang];
 
-                const sDice = document.getElementById('sel-game-dice'); if(sDice) sDice.classList.remove('active-preview');
-                const sRoul = document.getElementById('sel-game-roulette'); if(sRoul) sRoul.classList.remove('active-preview');
-                const sCoin = document.getElementById('sel-game-coin'); if(sCoin) sCoin.classList.remove('active-preview');
-                const sFlower = document.getElementById('sel-game-flower'); if(sFlower) sFlower.classList.remove('active-preview');
-                const sRPS = document.getElementById('sel-game-rps'); if(sRPS) sRPS.classList.remove('active-preview');
-                
-                const sdSub = document.getElementById('submodes-dice'); if(sdSub) sdSub.style.display = 'none';
-                const srSub = document.getElementById('submodes-roulette'); if(srSub) srSub.style.display = 'none';
-                const scSub = document.getElementById('submodes-coin'); if(scSub) scSub.style.display = 'none';
-                const sfSub = document.getElementById('submodes-flower'); if(sfSub) sfSub.style.display = 'none';
-                const srpsSub = document.getElementById('submodes-rps'); if(srpsSub) srpsSub.style.display = 'none';
+                // 🧹 Умная зачистка всех иконок и меню
+                ['dice', 'roulette', 'coin', 'flower', 'rps', 'shop'].forEach(id => {
+                    const el = document.getElementById('sel-game-' + id);
+                    if (el) el.classList.remove('active-preview');
+                    const sub = document.getElementById('submodes-' + id);
+                    if (sub) sub.style.display = 'none';
+                });
 
                 if (mode === 'dice') {
                     if(card) { card.style.borderColor = "var(--magic-color)"; card.style.boxShadow = "0 0 10px rgba(162, 155, 254, 0.2)"; card.style.color = "var(--magic-color)"; }
                     const pcIcon = document.getElementById('preview-card-icon'); if(pcIcon) pcIcon.innerHTML = `<i class="fas fa-dice-d6"></i>`;
                     const previewTitle = document.getElementById('preview-card-title'); if (previewTitle) previewTitle.innerText = t.menuDice;
-                    if(sDice) sDice.classList.add('active-preview');
-                    if(sdSub) sdSub.style.display = 'flex';
+                    const sBtn = document.getElementById('sel-game-dice'); if(sBtn) sBtn.classList.add('active-preview');
+                    const sub = document.getElementById('submodes-dice'); if(sub) sub.style.display = 'flex';
                 } else if (mode === 'roulette') {
                     if(card) { card.style.borderColor = "var(--angry-red)"; card.style.boxShadow = "0 0 10px rgba(255, 102, 102, 0.2)"; card.style.color = "var(--angry-red)"; }
                     const pcIcon = document.getElementById('preview-card-icon'); if(pcIcon) pcIcon.innerHTML = `<svg viewBox="0 0 200 200" style="height: 45px; width: auto;" fill="currentColor"><path fill-rule="evenodd" d="M 100,4 A 96,96 0 1,1 100,196 A 96,96 0 1,1 100,4 Z M 100,86 A 14,14 0 1,0 100,114 A 14,14 0 1,0 100,86 Z M 100,6 A 22,22 0 1,0 100,50 A 22,22 0 1,0 100,6 Z M 162.35,42 A 22,22 0 1,0 162.35,86 A 22,22 0 1,0 162.35,42 Z M 162.35,114 A 22,22 0 1,0 162.35,158 A 22,22 0 1,0 162.35,114 Z M 100,150 A 22,22 0 1,0 100,194 A 22,22 0 1,0 100,150 Z M 37.65,114 A 22,22 0 1,0 37.65,158 A 22,22 0 1,0 37.65,114 Z M 37.65,42 A 22,22 0 1,0 37.65,86 A 22,22 0 1,0 37.65,42 Z"></path></svg>`;
                     const previewTitle = document.getElementById('preview-card-title'); if (previewTitle) previewTitle.innerText = t.menuRoulette;
-                    if(sRoul) sRoul.classList.add('active-preview');
-                    if(srSub) srSub.style.display = 'flex';
+                    const sBtn = document.getElementById('sel-game-roulette'); if(sBtn) sBtn.classList.add('active-preview');
+                    const sub = document.getElementById('submodes-roulette'); if(sub) sub.style.display = 'flex';
                 } else if (mode === 'coin') {
                     if(card) { card.style.borderColor = "#cbd5e1"; card.style.boxShadow = "0 0 10px rgba(255, 255, 255, 0.2)"; card.style.color = "#cbd5e1"; }
                     const pcIcon = document.getElementById('preview-card-icon'); if(pcIcon) pcIcon.innerHTML = `<svg viewBox="0 0 100 100" style="height: 45px; width: auto;" fill="none" stroke="currentColor" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="50" cy="42" rx="40" ry="16"/><ellipse cx="50" cy="42" rx="24" ry="9" stroke-width="6"/><path d="M 10 42 v 16 a 40 16 0 0 0 80 0 v -16"/><path d="M 26 55 v 16 M 38 57 v 16 M 50 58 v 16 M 62 57 v 16 M 74 55 v 16" stroke-width="4"/></svg>`;
                     const previewTitle = document.getElementById('preview-card-title'); if (previewTitle) previewTitle.innerText = t.menuCoin || "Грань Выбора";
-                    if(sCoin) sCoin.classList.add('active-preview');
-                    if(scSub) scSub.style.display = 'flex';
+                    const sBtn = document.getElementById('sel-game-coin'); if(sBtn) sBtn.classList.add('active-preview');
+                    const sub = document.getElementById('submodes-coin'); if(sub) sub.style.display = 'flex';
                 } else if (mode === 'flower') {
                     if(card) { card.style.borderColor = "var(--friendly-green)"; card.style.boxShadow = "0 0 10px rgba(250, 204, 21, 0.2)"; card.style.color = "var(--friendly-green)"; }
                     const pcIcon = document.getElementById('preview-card-icon'); 
                     if(pcIcon) pcIcon.innerHTML = `<svg viewBox="0 0 100 100" style="height: 45px; width: auto;" fill="none" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"><path d="M50 15 Q60 30 50 50 Q40 30 50 15 M50 85 Q60 70 50 50 Q40 70 50 85 M15 50 Q30 60 50 50 Q30 40 15 50 M85 50 Q70 60 50 50 Q70 40 85 50 M25 25 Q40 35 50 50 Q35 40 25 25 M75 75 Q60 65 50 50 Q65 60 75 75 M25 75 Q40 65 50 50 Q35 60 25 75 M75 25 Q60 35 50 50 Q65 40 75 25"/><circle cx="50" cy="50" r="10" fill="currentColor"/></svg>`;
                     const previewTitle = document.getElementById('preview-card-title'); if (previewTitle) previewTitle.innerText = t.menuFlower || "Лепестки";
-                    if(sFlower) sFlower.classList.add('active-preview');
-                    if(sfSub) sfSub.style.display = 'flex'; 
+                    const sBtn = document.getElementById('sel-game-flower'); if(sBtn) sBtn.classList.add('active-preview');
+                    const sub = document.getElementById('submodes-flower'); if(sub) sub.style.display = 'flex'; 
                 } else if (mode === 'rps') {
                     if(card) { card.style.borderColor = "#ff9f43"; card.style.boxShadow = "0 0 10px rgba(255, 159, 67, 0.2)"; card.style.color = "#ff9f43"; }
                     const pcIcon = document.getElementById('preview-card-icon'); 
                     if(pcIcon) pcIcon.innerHTML = `<i class="fas fa-hand-peace"></i>`;
                     const previewTitle = document.getElementById('preview-card-title'); if (previewTitle) previewTitle.innerText = t.menuRPS || "К-Н-Б";
-                    if(sRPS) sRPS.classList.add('active-preview');
-                    if(srpsSub) srpsSub.style.display = 'flex'; 
+                    const sBtn = document.getElementById('sel-game-rps'); if(sBtn) sBtn.classList.add('active-preview');
+                    const sub = document.getElementById('submodes-rps'); if(sub) sub.style.display = 'flex'; 
+                } else if (mode === 'shop') {
+                    if(card) { card.style.borderColor = "var(--sun-gold)"; card.style.boxShadow = "0 0 10px rgba(255, 249, 174, 0.2)"; card.style.color = "var(--sun-gold)"; }
+                    const pcIcon = document.getElementById('preview-card-icon'); 
+                    if(pcIcon) pcIcon.innerHTML = `<i class="fas fa-shopping-cart"></i>`;
+                    const previewTitle = document.getElementById('preview-card-title'); if (previewTitle) previewTitle.innerText = t.menuShop || "Магазин";
+                    const sBtn = document.getElementById('sel-game-shop'); if(sBtn) sBtn.classList.add('active-preview');
+                    const sub = document.getElementById('submodes-shop'); if(sub) sub.style.display = 'flex'; 
                 }
+                
                 updateSubModeHighlights();
                 if (tg.HapticFeedback && tg.HapticFeedback.selectionChanged) tg.HapticFeedback.selectionChanged();
             }
@@ -2007,10 +2086,11 @@
                     setQuestionState(true, true); 
 
                 } else if (GameState.mode === 'shop') {
-                    if (titleEl) titleEl.innerText = t.menuShop;
+                    if (titleEl) titleEl.innerText = t.menuShop || "МАГАЗИН";
                     const disp = document.getElementById('current-mode-display');
                     if (disp) {
-                        disp.innerText = (t.smShopStd || "ВИТРИНА").toUpperCase();
+                        const shopSubNames = { standard: "СТИЛИ", perks: "ПЕРКИ" };
+                        disp.innerText = (shopSubNames[GameState.subModes.shop] || "СТИЛИ").toUpperCase();
                         disp.style.display = 'inline';
                     }
                     const stHistHead = document.getElementById('st-hist-head');
@@ -2595,7 +2675,7 @@
                 toggleCubeStyle, toggleSound, toggleSettings, toggleRules, changeLanguage, 
                 changeBackground, toggleDebug, toggleLanguage, updateHistoryView, previewGame, 
                 getPlural, showError, hideError, triggerButtonError, playSoundEffect, 
-                createSparkle, askOracle, setQuestionState,
+                createSparkle, askOracle, setQuestionState, addCrystal,
                 updateModeDisplay: () => { if(typeof DiceGame !== 'undefined') DiceGame.updateModeDisplay(); requestProfileSave(); }
             };
         })();
@@ -2935,7 +3015,7 @@
                 
                 const hlDice = document.getElementById('historyListDice');
                 if(hlDice) hlDice.prepend(item);
-                if(typeof App !== 'undefined') App.requestProfileSave(); 
+                if(typeof App !== 'undefined') { App.addCrystal(); App.requestProfileSave(); }
 
                 // ВОТ ЭТИ ДВЕ СТРОЧКИ СТИРАЮТ ВОПРОС ПОСЛЕ АНИМАЦИИ:
                 const uq = document.getElementById('userQuestion');
@@ -3605,7 +3685,7 @@
                 
                 if(typeof App !== 'undefined') App.playSoundEffect('load');
                 if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
-                if(typeof App !== 'undefined') App.requestProfileSave(); 
+                if(typeof App !== 'undefined') App.addCrystal(); App.requestProfileSave(); 
             }
 
             function loadRandomBullets() {
@@ -3660,7 +3740,7 @@
                 updateButtonStates();
                 if(typeof App !== 'undefined') App.playSoundEffect('load');
                 if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
-                if(typeof App !== 'undefined') App.requestProfileSave(); 
+                if(typeof App !== 'undefined') App.addCrystal(); App.requestProfileSave(); 
             }
 
             function reset() {
@@ -3708,7 +3788,7 @@
                 if(rc) rc.classList.remove('visible');
 
                 updateButtonStates();
-                if(typeof App !== 'undefined') App.requestProfileSave(); 
+                if(typeof App !== 'undefined') App.addCrystal(); App.requestProfileSave(); 
             }
 
             function spinRandomly() {
@@ -3826,10 +3906,11 @@
                 }
                 
                 if (bInput.value !== "" && (isNaN(betVal) || betVal < 0.10)) {
-                    if(typeof App !== 'undefined') { 
-                        App.triggerButtonError(); 
-                        App.showError(t.errBank); 
-                    }
+                    if(typeof App !== 'undefined') {
+                    App.clearQuestionDraft();
+                    App.addCrystal();
+                    App.requestProfileSave(); 
+                }
                     return;
                 }
                 
@@ -3851,7 +3932,7 @@
                 await animateBankTransfer(betVal);
                 isBetting = false;
                 updateButtonStates();
-                if(typeof App !== 'undefined') App.requestProfileSave();
+                if(typeof App !== 'undefined') App.addCrystal(); App.requestProfileSave();
             }
 
             async function cashout() {
@@ -3910,7 +3991,7 @@
                         
                         isBetting = false;
                         updateButtonStates();
-                        if(typeof App !== 'undefined') App.requestProfileSave();
+                        if(typeof App !== 'undefined') App.addCrystal(); App.requestProfileSave();
                         
                         const t = LANG_DATA[GameState.lang];
                         const rs = document.getElementById('res-status');
@@ -4292,7 +4373,8 @@
 
                 if(typeof App !== 'undefined') {
                     App.clearQuestionDraft();
-                    App.requestProfileSave(); 
+                    App.addCrystal();
+                    App.addCrystal(); App.requestProfileSave(); 
                 }
 
                 const rollBtn = document.getElementById('rollBtn');
@@ -4314,7 +4396,7 @@
                                 rs.innerText = idleText;
                                 rs.classList.add('visible');
                             }
-                            if(typeof App !== 'undefined') App.requestProfileSave(); 
+                            if(typeof App !== 'undefined') App.addCrystal(); App.requestProfileSave(); 
                         }
                     }, mode === 'bank' ? 3500 : 2200); 
                 } else {
@@ -4330,7 +4412,7 @@
                             rs.innerText = idleText;
                             rs.classList.add('visible'); 
                         }
-                        if(typeof App !== 'undefined') App.requestProfileSave();
+                        if(typeof App !== 'undefined') App.addCrystal(); App.requestProfileSave();
                     }, 1200); 
                 }
             }
@@ -4797,8 +4879,8 @@
                 const hlCoin = document.getElementById('historyListCoin') || document.getElementById('historyListDice'); 
                 if(hlCoin) hlCoin.prepend(item);
                 
-                if(typeof App !== 'undefined') App.clearQuestionDraft();
-                App.requestProfileSave();
+                if(typeof App !== 'undefined') { App.clearQuestionDraft(); App.addCrystal(); }
+                App.addCrystal(); App.requestProfileSave();
                 
                 const rollBtn = document.getElementById('rollBtn');
                 if(rollBtn) { rollBtn.disabled = false; rollBtn.innerText = t.rollBtn; rollBtn.classList.remove('gold-text-active'); }
@@ -5603,7 +5685,7 @@ const FlowerGame = (function() {
         
         const hl = document.getElementById('historyListFlower') || document.getElementById('historyListDice');
         if(hl) hl.prepend(item);
-        if(typeof App !== 'undefined') App.requestProfileSave();
+        if(typeof App !== 'undefined') { App.addCrystal(); App.requestProfileSave(); }
         
         const rollBtn = document.getElementById('rollBtn');
         const selector = document.getElementById('flowerNumberSelector');
@@ -6468,7 +6550,7 @@ else if (pvpState === 4) {
         
         const hl = document.getElementById('historyListRPS');
         if(hl) hl.prepend(item);
-        if(typeof App !== 'undefined') App.requestProfileSave();
+        if(typeof App !== 'undefined') { App.addCrystal(); App.requestProfileSave(); }
         
         const rollBtn = document.getElementById('rollBtn');
         if(rollBtn) {
@@ -6730,226 +6812,191 @@ else if (pvpState === 4) {
 // --- КОНЕЦ СЕДЬМОЙ ЧАСТИ ---
 // --- НАЧАЛО ВОСЬМОЙ ЧАСТИ ---
 // ==============================================
-// 🛒 ПЛАГИН 6: МАГАЗИН (СТИЛИ ОТОБРАЖЕНИЯ)
+// 🛒 ПЛАГИН 6: МАГАЗИН (СТИЛИ И ПЕРКИ)
 // ==============================================
 const ShopGame = (function() {
-    let purchases = { dice: false, roulette: false, coin: false, flower: false, rps: false };
-    const ITEMS = [
-        { id: 'dice', icon: '🎲', name: {ru: 'Стиль: Кость', en: 'Style: Dice'}, price: 10, targetGame: 'dice' },
-        { id: 'roulette', icon: '🔫', name: {ru: 'Стиль: Пуля', en: 'Style: Bullet'}, price: 10, targetGame: 'roulette' },
-        { id: 'coin', icon: '🪙', name: {ru: 'Стиль: Монета', en: 'Style: Coin'}, price: 10, targetGame: 'coin' },
-        { id: 'flower', icon: '🌼', name: {ru: 'Стиль: Цветок', en: 'Style: Flower'}, price: 10, targetGame: 'flower' },
-        { id: 'rps', icon: '✌️', name: {ru: 'Стиль: К-Н-Б', en: 'Style: RPS'}, price: 10, targetGame: 'rps' }
-    ];
+    let isGameActive = false;
+
+    const shopItems = {
+        backgrounds: [
+            { id: 'bg_space', name: 'Космос', priceCoins: 30, priceCrystals: 10, icon: '🌌' },
+            { id: 'bg_neon', name: 'Кибер Неон', priceCoins: 30, priceCrystals: 10, icon: '🟣' },
+            { id: 'bg_blood', name: 'Темное Фэнтези', priceCoins: 30, priceCrystals: 10, icon: '🩸' },
+            { id: 'bg_matrix', name: 'Матрица', priceCoins: 30, priceCrystals: 10, icon: '🟩' }
+        ],
+        gameStyles: [
+            { id: 'coin_gold', name: 'Золотая Монета', priceCoins: 30, priceCrystals: 10, icon: '🟡' },
+            { id: 'coin_btc', name: 'Биткоин', priceCoins: 30, priceCrystals: 10, icon: '₿' },
+            { id: 'coin_wood', name: 'Деревянная', priceCoins: 30, priceCrystals: 10, icon: '🪵' },
+            { id: 'bullet_blood', name: 'Кровавая Пуля', priceCoins: 30, priceCrystals: 10, icon: '🩸' },
+            { id: 'flower_sakura', name: 'Сакура', priceCoins: 30, priceCrystals: 10, icon: '🌸' }
+        ],
+        diceSkins: [
+            { id: 'dice_classic', name: 'Белая Кость', priceCoins: 30, priceCrystals: 10, icon: '🎲' },
+            { id: 'dice_gold', name: 'Золотая', priceCoins: 30, priceCrystals: 10, icon: '🟨' },
+            { id: 'dice_red', name: 'Кровавая', priceCoins: 30, priceCrystals: 10, icon: '🟥' },
+            { id: 'dice_neon', name: 'Неоновая', priceCoins: 30, priceCrystals: 10, icon: '🟪' },
+            { id: 'dice_dark', name: 'Тьма', priceCoins: 30, priceCrystals: 10, icon: '⬛' }
+        ]
+    };
 
     function init() {
-        // Обработчик закрытия по клику на фон
-        const over = document.getElementById('inventoryOverlay');
-        if(over) over.addEventListener('click', function(e) { if (e.target === this) toggleInventory(false); });
-    }
-	
-	function toggleInventoryItem(itemId) {
-        if (GameState.activeProfileIdx === -1) return;
-        const p = GameState.profiles[GameState.activeProfileIdx];
-        if (!p || !p.shopPurchases || !p.shopPurchases[itemId]) return;
-        
-        if (!p.activeStyles) p.activeStyles = {}; 
-        const item = ITEMS.find(i => i.id === itemId);
-        if (!item) return;
-
-        const target = item.targetGame || 'global';
-
-        if (p.activeStyles[target] === itemId) {
-            delete p.activeStyles[target];
-        } else {
-            p.activeStyles[target] = itemId;
-        }
-
-        if(typeof App !== 'undefined') App.requestProfileSave();
-        renderInventory();
-        applyGameStyles();
+        if (!GameState.subModes.shop) GameState.subModes.shop = 'standard';
     }
 
-    function applyGameStyles() {
-        if (GameState.activeProfileIdx === -1) return;
-        const p = GameState.profiles[GameState.activeProfileIdx];
-        // --- ДОБАВЛЯЕМ ЭТУ СТРОЧКУ ---
-        // Сообщаем всему сайту (тегу body), какая игра сейчас открыта
-        document.body.setAttribute('data-game-mode', GameState.mode);
-
-        // Смотрим, активирована ли купленная вещь для текущей открытой игры
-        let isStyleActive = false;
-        if (p && p.activeStyles && p.activeStyles[GameState.mode]) {
-            isStyleActive = true;
-        }
-
-        // Передаем команду ядру игры включить "Стиль отображения"
-        GameState.isClassic = isStyleActive;
-
-        // Включаем классы редизайна (белый кубик, хром для пули и т.д.)
-        document.body.classList.toggle('classic-mode-active', GameState.isClassic);
-        
-        const cEl = document.getElementById('cube');
-        if (cEl) cEl.classList.toggle('classic-mode', GameState.isClassic);
-        
-        const dWrap = document.getElementById('drumWrapper');
-        if (dWrap) dWrap.classList.toggle('classic', GameState.isClassic);
-
-        // Меняем фон на нужный (как это делала старая кнопка)
-        const bgSel = document.getElementById('bgSelect');
-        if (bgSel) {
-            bgSel.value = GameState.isClassic ? 'bg5' : 'bg1';
-            if (typeof App !== 'undefined' && App.changeBackground) App.changeBackground(true);
-        }
-    }
-    // Управление окном купленных вещей
-    function toggleInventory(show) {
-        const over = document.getElementById('inventoryOverlay');
-        if(!over) return;
-        
-        if (show) {
-            over.style.display = 'flex';
-            renderInventory();
-        } else {
-            over.style.display = 'none';
-        }
-        if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
-    }
-
-    // Отрисовка только купленных вещей
-    function renderInventory() {
-        const list = document.getElementById('inventoryList');
-        if (!list) return;
-        list.innerHTML = '';
-
-        let activePurchases = { ...purchases };
-        if (GameState.activeProfileIdx !== -1 && GameState.profiles[GameState.activeProfileIdx]) {
-            activePurchases = GameState.profiles[GameState.activeProfileIdx].shopPurchases || {};
-        }
-
-        const boughtItems = ITEMS.filter(item => activePurchases[item.id]);
-
-        if (boughtItems.length === 0) {
-            list.innerHTML = `<div style="text-align:center; opacity:0.5; padding:20px;">${GameState.lang === 'ru' ? 'Тут пока пусто...' : 'Empty for now...'}</div>`;
-            return;
-        }
-
-        boughtItems.forEach(item => {
-            const isActive = (GameState.activeProfileIdx !== -1 && GameState.profiles[GameState.activeProfileIdx].activeStyles && GameState.profiles[GameState.activeProfileIdx].activeStyles[item.targetGame] === item.id);
-            const activeClass = isActive ? 'is-active' : '';
-
-            const row = document.createElement('div');
-            row.className = `inv-item-card ${activeClass}`;
-            row.onclick = () => ShopGame.toggleInventoryItem(item.id);
-            row.innerHTML = `
-                <div style="font-size:24px;">${item.icon}</div>
-                <div style="flex-grow:1; font-weight:bold; font-size:14px; color:#fff;">${item.name[GameState.lang] || item.name.ru}</div>
-                <i class="fas fa-check-circle inv-active-icon"></i>
-            `;
-            list.appendChild(row);
-        });
-    }
-
-    // Оригинальные функции магазина (для покупки)
     function mount() {
-        const st = document.getElementById('shopStage'); if(st) st.style.display = 'flex';
-        document.body.classList.add('is-shop-active');
-        renderShop();
-    }
+        isGameActive = true;
+        if (typeof App !== 'undefined' && App.setTopNavLocked) App.setTopNavLocked(false);
+        if (!GameState.subModes.shop) GameState.subModes.shop = 'standard';
 
-    function unmount() {
-        const st = document.getElementById('shopStage'); if(st) st.style.display = 'none';
-        document.body.classList.remove('is-shop-active');
+        const stage = document.getElementById('shopStage');
+        if (stage) stage.style.display = 'flex';
+
+        const rollBtn = document.getElementById('rollBtn');
+        if (rollBtn) rollBtn.style.display = 'none';
+        const resStatus = document.getElementById('res-status');
+        if (resStatus) resStatus.style.display = 'none';
+
+        renderShop();
     }
 
     function renderShop() {
         const grid = document.getElementById('shopGrid');
         if (!grid) return;
-        grid.innerHTML = '';
-        let bank = 50.00;
-        let activePurchases = { ...purchases };
-        if (GameState.activeProfileIdx !== -1 && GameState.profiles[GameState.activeProfileIdx]) {
-            const p = GameState.profiles[GameState.activeProfileIdx];
-            if (p.rStats && p.rStats.bank !== undefined) bank = p.rStats.bank;
-            if (p.shopPurchases) activePurchases = p.shopPurchases;
-        }
-        const header = document.getElementById('shopBankDisplay');
-        if(header) header.innerText = '$' + bank.toFixed(2);
         
-        ITEMS.forEach(item => {
-            const isBought = activePurchases[item.id];
-            const canAfford = bank >= item.price;
-            const card = document.createElement('div');
-            card.className = 'shop-item-card' + (isBought ? ' bought' : '');
-            card.innerHTML = `
-                <div class="shop-item-icon">${item.icon}</div>
-                <div class="shop-item-name">${item.name[GameState.lang] || item.name.ru}</div>
-                <button class="shop-buy-btn ${isBought ? 'bought-btn' : (canAfford ? 'can-buy' : 'cannot-buy')}" 
-                        onclick="ShopGame.buyItem('${item.id}', ${item.price})" ${isBought ? 'disabled' : ''}>
-                    ${isBought ? (GameState.lang === 'ru' ? 'КУПЛЕНО' : 'BOUGHT') : '$' + item.price.toFixed(2)}
-                </button>
+        grid.innerHTML = '';
+        grid.style.gridTemplateColumns = 'repeat(3, 1fr)';
+        grid.style.gap = '8px';
+
+        const p = GameState.profiles[GameState.currentProfile] || GameState.profiles[GameState.activeProfileIdx];
+        const balanceCoins = (p && p.rStats) ? (p.rStats.bank || 0) : 0;
+        const balanceCrystals = p ? (p.crystals || 0) : 0;
+
+        if (GameState.subModes.shop === 'standard') {
+            // Плашка с обеими валютами
+            const balHeader = document.createElement('div');
+            balHeader.style.gridColumn = '1 / -1';
+            balHeader.style.textAlign = 'center';
+            balHeader.style.marginBottom = '10px';
+            balHeader.innerHTML = `
+                <div style="background: rgba(0,0,0,0.4); padding: 8px 16px; border-radius: 20px; border: 1px solid rgba(204,255,204,0.2); font-size: 14px; display: inline-flex; gap: 15px;">
+                    <span style="color: var(--friendly-green); font-weight: bold;"><i class="fas fa-dollar-sign"></i> ${balanceCoins.toFixed(0)}</span>
+                    <span style="color: var(--magic-color); font-weight: bold;"><i class="fas fa-gem"></i> ${balanceCrystals}</span>
+                </div>`;
+            grid.appendChild(balHeader);
+
+            grid.appendChild(createCategoryHeader('Стили заднего фона'));
+            appendItems(grid, shopItems.backgrounds, balanceCoins, balanceCrystals);
+            
+            grid.appendChild(createCategoryHeader('Стили игр'));
+            appendItems(grid, shopItems.gameStyles, balanceCoins, balanceCrystals);
+            
+            grid.appendChild(createCategoryHeader('Кость Истины'));
+            appendItems(grid, shopItems.diceSkins, balanceCoins, balanceCrystals);
+        } else {
+            grid.style.gridTemplateColumns = '1fr';
+            grid.innerHTML = `
+                <div style="color: rgba(255,255,255,0.4); text-align: center; font-size: 13px; padding: 20px; background: rgba(0,0,0,0.2); border-radius: 12px; border: 1px dashed rgba(255,255,255,0.1); margin-top: 20px;">
+                    <i class="fas fa-lock" style="font-size:32px; margin-bottom:12px; display:block; color: rgba(255,255,255,0.2);"></i>
+                    Мощные улучшения и модификаторы игр появятся в грядущих обновлениях. Копите кристаллы!
+                </div>
             `;
+        }
+    }
+
+    function createCategoryHeader(title) {
+        const h = document.createElement('div');
+        h.style.gridColumn = '1 / -1';
+        h.style.color = 'var(--sun-gold)';
+        h.style.fontSize = '13px';
+        h.style.fontWeight = 'bold';
+        h.style.textAlign = 'center';
+        h.style.marginTop = '15px';
+        h.style.marginBottom = '5px';
+        h.style.textTransform = 'uppercase';
+        h.style.letterSpacing = '1px';
+        h.style.borderBottom = '1px solid rgba(255, 249, 174, 0.15)';
+        h.style.paddingBottom = '5px';
+        h.innerText = title;
+        return h;
+    }
+
+    function appendItems(grid, items, balanceCoins, balanceCrystals) {
+        items.forEach(item => {
+            const card = document.createElement('div');
+            card.className = 'shop-item-card';
+            card.style.padding = '10px 4px';
+            card.style.minHeight = '85px';
+            card.style.cursor = 'pointer';
+            
+            const canAffordCoins = balanceCoins >= item.priceCoins;
+            const canAffordCrystals = balanceCrystals >= item.priceCrystals;
+            
+            card.innerHTML = `
+                <div style="font-size: 26px; margin-bottom: 6px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));">${item.icon}</div>
+                <div style="color: #fff; font-size: 10px; line-height: 1.2; margin-bottom: 8px; word-break: break-word; opacity: 0.9;">${item.name}</div>
+                <div style="display: flex; flex-direction: column; gap: 2px; width: 90%;">
+                    <div style="color: ${canAffordCoins ? 'var(--friendly-green)' : 'var(--angry-red)'}; font-size: 10px; font-weight: bold; background: rgba(0,0,0,0.5); padding: 2px 4px; border-radius: 4px; border: 1px solid rgba(204, 255, 204, 0.1);"><i class="fas fa-dollar-sign"></i> ${item.priceCoins}</div>
+                    <div style="color: ${canAffordCrystals ? 'var(--magic-color)' : 'var(--angry-red)'}; font-size: 10px; font-weight: bold; background: rgba(0,0,0,0.5); padding: 2px 4px; border-radius: 4px; border: 1px solid rgba(162, 155, 254, 0.1);"><i class="fas fa-gem"></i> ${item.priceCrystals}</div>
+                </div>
+            `;
+            
+            card.onclick = () => {
+                if (typeof App !== 'undefined') App.playSoundEffect('click');
+                if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
+                
+                const p = GameState.profiles[GameState.activeProfileIdx];
+                if (!p) return;
+                
+                const curCoins = (p && p.rStats) ? (p.rStats.bank || 0) : 0;
+                const curCryst = p.crystals || 0;
+                
+                if (curCoins < item.priceCoins || curCryst < item.priceCrystals) {
+                    if (typeof App !== 'undefined' && App.showError) App.showError(`Недостаточно средств!`);
+                    return; 
+                }
+
+                if (typeof App !== 'undefined' && App.showCustomAlert) {
+                    App.showCustomAlert(`Стиль «${item.name}» скоро будет доступен для покупки!`);
+                } else {
+                    alert(`Стиль «${item.name}» скоро будет доступен для покупки!`);
+                }
+            };
             grid.appendChild(card);
         });
     }
 
-    function buyItem(id, price) {
-        let bank = 50.00;
-        let p = (GameState.activeProfileIdx !== -1) ? GameState.profiles[GameState.activeProfileIdx] : null;
-        if (p && p.rStats) bank = p.rStats.bank;
-        if (bank < price) { if(typeof App !== 'undefined') App.playSoundEffect('error_pyn'); return; }
-        let newBank = bank - price;
-        if (p) {
-            if (!p.shopPurchases) p.shopPurchases = {};
-            p.shopPurchases[id] = true;
-            p.rStats.bank = newBank;
-        }
-        if(typeof App !== 'undefined') { App.playSoundEffect('coins'); App.updateMenuBankUI(); App.requestProfileSave(); }
-		// Записываем в историю
-        const hlShop = document.getElementById('historyListShop');
-        if (hlShop) {
-            const itemObj = ITEMS.find(i => i.id === id);
-            const name = itemObj.name[GameState.lang] || itemObj.name.ru;
-            const time = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-            hlShop.innerHTML = `<div class="history-item"><span style="color:var(--sun-gold); font-weight:bold; font-size:14px;">${itemObj.icon} ${name}</span><br><span style="color:#aaa; font-size:10px;">Куплено за $${price.toFixed(2)} (${time})</span></div>` + hlShop.innerHTML;
-            
-            // Сохраняем историю в профиль
-            if (p) p.historyShop = hlShop.innerHTML;
-        }
-        renderShop();
+    function unmount() {
+        isGameActive = false;
+        const stage = document.getElementById('shopStage');
+        if (stage) stage.style.display = 'none';
+
+        const rollBtn = document.getElementById('rollBtn');
+        if (rollBtn) rollBtn.style.display = '';
+        const resStatus = document.getElementById('res-status');
+        if (resStatus) resStatus.style.display = '';
     }
 
-    return { init, mount, unmount, renderShop, buyItem, toggleInventory, renderInventory, toggleInventoryItem, applyGameStyles };
+    function toggleInventory(show) {
+        const inv = document.getElementById('inventoryOverlay');
+        if (inv) inv.style.display = show ? 'flex' : 'none';
+    }
+
+    return { init, mount, unmount, toggleInventory, renderShop };
 })();
 
-// Переопределяем превью в App, чтобы магазин снова появился в меню выбора
-(function fixShopSelection() {
-    const originalPreview = App.previewGame;
-    App.previewGame = function(mode) {
-        originalPreview(mode);
-        const sShop = document.getElementById('sel-game-shop'); if(sShop) sShop.classList.remove('active-preview');
-        const ssSub = document.getElementById('submodes-shop'); if(ssSub) ssSub.style.display = 'none';
-        if (mode === 'shop') {
-            const card = document.getElementById('menuPreviewCard');
-            if(card) { card.style.borderColor = "var(--sun-gold)"; card.style.color = "var(--sun-gold)"; }
-            const pcIcon = document.getElementById('preview-card-icon'); if(pcIcon) pcIcon.innerHTML = '<i class="fas fa-store"></i>';
-            
-            // ИСПРАВЛЕНИЕ: Принудительно меняем текст на карточке для магазина
-            const previewTitle = document.getElementById('preview-card-title'); 
-            if (previewTitle) previewTitle.innerText = (GameState.lang === 'en' ? 'Shop' : 'Магазин');
+const invModal = document.getElementById('inventoryOverlay');
+if (invModal) {
+    document.body.appendChild(invModal);
+    invModal.style.zIndex = '9999';
+    invModal.addEventListener('click', function(e) { if (e.target === this) ShopGame.toggleInventory(false); });
+}
 
-            if(sShop) sShop.classList.add('active-preview');
-            if(ssSub) ssSub.style.display = 'flex'; 
-            App.updateSubModeHighlights();
-        }
-    };
-})();
-// Вытаскиваем окно правил в корень документа, чтобы оно работало в главном меню
-        const rulesModal = document.getElementById('rulesOverlay');
-        if (rulesModal) {
-            document.body.appendChild(rulesModal);
-            rulesModal.style.zIndex = '9999';
-        }
+const rulesModal = document.getElementById('rulesOverlay');
+if (rulesModal) {
+    document.body.appendChild(rulesModal);
+    rulesModal.style.zIndex = '9999';
+}
 // --- КОНЕЦ ВОСЬМОЙ ЧАСТИ ---
 try { if(typeof App !== 'undefined') { App.init(); if(typeof CoinGame !== 'undefined') CoinGame.init(); if(typeof FlowerGame !== 'undefined') FlowerGame.init(); } } catch (err) { console.error("Start error:", err); }
 </script>
