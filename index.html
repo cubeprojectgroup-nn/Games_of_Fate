@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Игры Судьбы. v0.8.8.30</title>
+    <title>Игры Судьбы. v0.8.8.33</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
@@ -520,7 +520,7 @@
     <div id="stars" class="stars-layer stars-active bg1-stars"></div>
 
     <div id="mainMenuOverlay">
-        <div class="version">v0.8.8.30</div> <div class="menu-top-bar">
+        <div class="version">v0.8.8.33</div> <div class="menu-top-bar">
             <button class="menu-icon-btn" id="langSwitchBtn" onclick="App.toggleLanguage()"><i class="fas fa-globe"></i></button>
         </div>
         <div id="mainMenuTitle" class="menu-title-main">Игры Судьбы</div>
@@ -1789,6 +1789,8 @@
                 playSoundEffect('tick');
                 if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
 
+                if (typeof App !== 'undefined' && App.setTopNavLocked) App.setTopNavLocked(false);
+
                 const gui = document.getElementById('gameUI');
                 if(gui) gui.classList.remove('game-ui-visible');
                 
@@ -2571,7 +2573,20 @@
                 GameState.questionDrafts[qhKey] = '';
             }
 
+            // === БЛОКИРОВКА ВЕРХНЕГО МЕНЮ (ТОЛЬКО ДОМОЙ) ===
+            function setTopNavLocked(locked) {
+                // Оставили только homeBtn, настройки и инвентарь теперь всегда активны
+                ['homeBtn'].forEach(id => {
+                    const btn = document.getElementById(id);
+                    if (btn) {
+                        btn.style.opacity = locked ? '0.3' : '';
+                        btn.style.pointerEvents = locked ? 'none' : '';
+                    }
+                });
+            }
+
             return {
+                setTopNavLocked,
                 clearQuestionDraft, // <--- ДОБАВИТЬ СЮДА
                 init, selectProfile, createNewProfile, loadProfileData, requestProfileSave, 
                 showDeleteConfirm, confirmDeleteProfile, showRenameModal, confirmRenameProfile, 
@@ -2768,6 +2783,8 @@
                 const rollBtn = document.getElementById('rollBtn');
                 if(rollBtn) { rollBtn.disabled = true; rollBtn.innerText = t.waiting; rollBtn.classList.add('gold-text-active'); }
                 
+                if (typeof App !== 'undefined' && App.setTopNavLocked) App.setTopNavLocked(true); // <--- БЛОКИРУЕМ
+                
                 const rc = document.getElementById('res-content'); if(rc) rc.classList.remove('visible'); 
                 const rs = document.getElementById('res-status'); if(rs) rs.classList.remove('visible');
                 updateFaces();
@@ -2930,6 +2947,8 @@
                     rollBtn.disabled = false; rollBtn.innerText = t.rollBtn; rollBtn.classList.remove('gold-text-active');
                 }
                 
+                if (typeof App !== 'undefined' && App.setTopNavLocked) App.setTopNavLocked(false); // <--- РАЗБЛОКИРУЕМ
+
                 setTimeout(() => { if(rollBtn && !rollBtn.disabled) { 
                     const rs = document.getElementById('res-status');
                     if(rs) { rs.innerText = GameState.isQuestionHidden ? t.idleNoQ : t.idle; rs.classList.add('visible'); }
@@ -3156,6 +3175,9 @@
                 if(!rollBtn || !miniBtn) return;
                 
                 const isBusy = isSpinningDrum || isWaitingResult || isBetting;
+                
+                if (typeof App !== 'undefined' && App.setTopNavLocked) App.setTopNavLocked(isBusy); // <--- УМНАЯ БЛОКИРОВКА ПУЛИ
+
                 const isFull = loadedBullets === 5;
 
                 rollBtn.disabled = isBusy;
@@ -4677,6 +4699,8 @@
                 const rollBtn = document.getElementById('rollBtn');
                 if(rollBtn) { rollBtn.disabled = true; rollBtn.innerText = t.waiting || "БРОСАЮ..."; rollBtn.classList.add('gold-text-active'); }
                 
+                if (typeof App !== 'undefined' && App.setTopNavLocked) App.setTopNavLocked(true); // <--- БЛОКИРУЕМ
+
                 const rc = document.getElementById('res-content'); if(rc) rc.classList.remove('visible');
                 const rs = document.getElementById('res-status'); if(rs) rs.classList.remove('visible');
                 
@@ -4779,7 +4803,9 @@
                 const rollBtn = document.getElementById('rollBtn');
                 if(rollBtn) { rollBtn.disabled = false; rollBtn.innerText = t.rollBtn; rollBtn.classList.remove('gold-text-active'); }
                 
-                setTimeout(() => { if(rollBtn && !rollBtn.disabled) { 
+                if (typeof App !== 'undefined' && App.setTopNavLocked) App.setTopNavLocked(false); // <--- РАЗБЛОКИРУЕМ
+
+                setTimeout(() => { if(rollBtn && !rollBtn.disabled) {
                     const rs = document.getElementById('res-status');
                     if(rs) { rs.innerText = GameState.isQuestionHidden ? t.idleNoQ : t.idle; rs.classList.add('visible'); }
                 } }, 3000);
@@ -5176,6 +5202,8 @@ const FlowerGame = (function() {
         const uq = document.getElementById('userQuestion');
         const shouldLock = isSpinning || (isGameActive && tornCount > 0);
         
+        if (typeof App !== 'undefined' && App.setTopNavLocked) App.setTopNavLocked(shouldLock); // <--- УМНАЯ БЛОКИРОВКА РОМАШКИ
+
         if(tqBtn) {
             if (shouldLock) {
                 tqBtn.disabled = true;
@@ -5916,11 +5944,33 @@ const RPSGame = (function() {
     }
 
     function unmount() {
-        const st = document.getElementById('rpsStage'); if(st) st.style.display = 'none';
+        const st = document.getElementById('rpsStage');
+        if(st) st.style.display = 'none';
         document.body.classList.remove('is-rps-game-active');
         
         const rs = document.getElementById('res-status'); if(rs) rs.classList.remove('visible');
         const rc = document.getElementById('res-content'); if(rc) rc.classList.remove('visible');
+
+        // === ОЧИСТКА ПАМЯТИ И ВОЗВРАТ КНОПКИ ПРИ ВЫХОДЕ ===
+        isGameActive = false;
+        pvpState = 0;
+        p1Move = null;
+        p2Move = null;
+        playerMove = null;
+        pcMove = null;
+        currentSessionId++; 
+        
+        const rollBtn = document.getElementById('rollBtn');
+        if (rollBtn) {
+            // САМОЕ ВАЖНОЕ: возвращаем кнопке её родную функцию запуска игр
+            rollBtn.onclick = function() { if (typeof App !== 'undefined') App.askOracle(); };
+            
+            rollBtn.disabled = false;
+            rollBtn.classList.remove('gold-text-active');
+            const t = (typeof LANG_DATA !== 'undefined') ? LANG_DATA[GameState.lang] : null;
+            rollBtn.innerText = (t && t.rollBtn) ? t.rollBtn : "ИСПЫТАТЬ СУДЬБУ";
+        }
+        // =================================================
     }
 
     function clearHandsFormatting() {
@@ -6249,6 +6299,8 @@ else if (pvpState === 4) {
         const rollBtn = document.getElementById('rollBtn');
         if(rollBtn) { rollBtn.disabled = true; rollBtn.innerText = t.waiting; rollBtn.classList.add('gold-text-active'); }
         
+        if (typeof App !== 'undefined' && App.setTopNavLocked) App.setTopNavLocked(true); // <--- БЛОКИРУЕМ
+
         const rs = document.getElementById('res-status'); if(rs) rs.classList.remove('visible');
         const rc = document.getElementById('res-content'); if(rc) rc.classList.remove('visible');
         
@@ -6424,6 +6476,8 @@ else if (pvpState === 4) {
             rollBtn.disabled = false;
             rollBtn.classList.remove('gold-text-active');
         }
+        
+        if (typeof App !== 'undefined' && App.setTopNavLocked) App.setTopNavLocked(false); // <--- РАЗБЛОКИРУЕМ
     }
 
     function isGameActiveState() {
