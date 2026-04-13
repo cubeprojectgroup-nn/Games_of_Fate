@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Игры Судьбы. v0.8.8.34</title>
+    <title>Игры Судьбы. v0.8.8.35</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
@@ -42,7 +42,7 @@
             width: 100% !important; /* Растягиваем сетку на 100% */
             max-width: 500px !important; /* Предохранитель для планшетов */
             padding: 0 16px !important; /* Выравниваем отступы по краям ровно по границам интерфейса */
-            margin: 0 auto 20px auto !important;
+            margin: 0 auto 5px auto !important;
             box-sizing: border-box !important;
         }
         
@@ -173,7 +173,7 @@
             66% { color: var(--friendly-green); text-shadow: 0 0 15px var(--friendly-green); }
             100% { color: var(--angry-red); text-shadow: 0 0 15px var(--angry-red); }
         }
-        .menu-title-main { font-size: 38px; margin-bottom: 30px; margin-top: 20px; font-weight: bold; text-transform: uppercase; letter-spacing: 2px; transition: opacity 0.3s ease; animation: title-color-shift 10s infinite alternate ease-in-out; flex-shrink: 0; }
+        .menu-title-main { font-size: 38px; margin-bottom: 30px; margin-top: 5px; font-weight: bold; text-transform: uppercase; letter-spacing: 2px; transition: opacity 0.3s ease; animation: title-color-shift 10s infinite alternate ease-in-out; flex-shrink: 0; }
         .title-fade-out { opacity: 0 !important; }
 
         .game-card { background: rgba(5, 8, 15, 0.8); border: 2px solid var(--magic-color); border-radius: 15px; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; box-shadow: 0 0 10px rgba(162, 155, 254, 0.2); transition: transform 0.2s, border-color 0.3s, box-shadow 0.3s; }
@@ -209,7 +209,7 @@
         .profile-btn.active-slot ~ .edit-profile-btn, .profile-btn.active-slot ~ .delete-profile-btn { opacity: 1; transform: scale(1); pointer-events: auto; }
         .sub-mode-btn.active-sub .info-mode-btn { opacity: 1; transform: scale(1); pointer-events: auto; }
 
-        .profiles-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; width: 90%; max-width: 380px; margin-top: 25px; transition: opacity 0.5s ease; padding-bottom: 30px; }
+        .profiles-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; width: 90%; max-width: 380px; margin-top: 5px; transition: opacity 0.5s ease; padding-bottom: 30px; }
         .profile-wrapper { position: relative; display: flex; align-items: center; justify-content: center; width: 100%; }
         .profile-btn { width: 100%; background: rgba(5, 8, 15, 0.8); border: 2px solid rgba(162, 155, 254, 0.3); border-radius: 8px; color: white; padding: 12px 5px; font-size: 12px; cursor: pointer; transition: 0.3s; text-transform: uppercase; font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .profile-btn.active-slot { border-color: var(--friendly-green); box-shadow: 0 0 10px rgba(204,255,204,0.3); color: var(--friendly-green); transform: scale(1.05); z-index: 5; }
@@ -451,60 +451,51 @@
         .rules-content::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.02); }
         .rules-content::-webkit-scrollbar-thumb { background: rgba(162, 155, 254, 0.3); border-radius: 10px; }
 		/* === [ CSS: МАГАЗИН ] === */
-		/* === ЖЕСТКАЯ ФИКСАЦИЯ ОКНА ИНВЕНТАРЯ === */
-        #inventoryOverlay {
-            position: fixed !important;
-            top: 0 !important;
-            left: 0 !important;
-            width: 100vw !important;
-            height: 100vh !important;
-            background: rgba(0, 0, 0, 0.85) !important;
-            z-index: 9999 !important;
-            align-items: center;
-            justify-content: center;
+        /* Разблокировка скролла магазина */
+        #shopStage { 
+            height: auto !important; 
+            min-height: 240px; 
+            justify-content: flex-start !important; 
+            padding-top: 10px; 
+            padding-bottom: 30px; 
+            touch-action: pan-y !important; /* Разрешаем скролл пальцем */
+            overflow-y: auto !important;
+            max-height: 65vh; 
+            width: 100%;
         }
-		
-        #mainInvBtn { transition: color 0.2s ease !important; cursor: pointer; }
-        #mainInvBtn:hover { color: #ffffff !important; }
-		
-        #inventoryOverlay .settings-modal {
-            max-height: 85vh; 
-            overflow-y: auto; 
-        }
-		.inv-item-card { display:flex; align-items:center; gap:15px; background:rgba(255,255,255,0.05); padding:10px; border-radius:10px; border:1px solid rgba(255,249,174,0.2); cursor: pointer; transition: 0.2s; }
-        .inv-item-card:hover { background: rgba(255,255,255,0.1); }
-        .inv-item-card.is-active { background: rgba(204, 255, 204, 0.15); border-color: var(--friendly-green); }
-        .inv-active-icon { display: none; color: var(--friendly-green); font-size: 20px; margin-left: auto; }
-        .inv-item-card.is-active .inv-active-icon { display: block; }
-		/* Цвета для кнопок подрежимов магазина */
-        #submodes-shop .sub-mode-btn.active-sub { border-color: var(--sun-gold); color: #fff; box-shadow: 0 0 10px rgba(255, 249, 174, 0.2); background: rgba(255, 249, 174, 0.1); }
-        #submodes-shop .info-mode-btn { background: var(--sun-gold); color: #000; box-shadow: 0 0 5px rgba(255, 249, 174, 0.8); }
-
-        /* Скрытие интерфейса оракула, когда мы в магазине */
+        .shop-header { display: flex; align-items: center; gap: 10px; color: var(--sun-gold); font-weight: 900; font-size: 20px; margin-bottom: 15px; }
+        
+        /* Сетка на 4 колонки */
+        .shop-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; width: 100%; padding: 0 5px; box-sizing: border-box; }
+        
+        /* Компактные карточки */
+        .shop-item-card { background: rgba(5,8,15,0.8); border: 1px solid rgba(255,249,174,0.3); border-radius: 8px; padding: 6px 4px; display: flex; flex-direction: column; align-items: center; justify-content: space-between; transition: 0.3s; min-height: 100px; }
+        .shop-item-card.bought { opacity: 0.8; border-color: var(--friendly-green); }
+        .shop-item-icon { font-size: 22px; margin-bottom: 4px; }
+        .shop-item-name { font-size: 8px; line-height: 1.1; font-weight: bold; text-transform: uppercase; margin-bottom: 6px; color: #ccc; text-align: center; word-wrap: break-word; }
+        
+        /* Ценники */
+        .shop-price-container { display: flex; flex-direction: column; gap: 3px; width: 100%; margin-bottom: 6px; }
+        .shop-price-tag { display: flex; align-items: center; justify-content: center; gap: 3px; font-size: 8px; font-weight: bold; background: rgba(0, 0, 0, 0.5); border-radius: 4px; padding: 2px; }
+        .shop-price-tag.coin-price { color: var(--sun-gold); border: 1px solid rgba(255, 249, 174, 0.3); }
+        .shop-price-tag.gem-price { color: var(--magic-color); border: 1px solid rgba(162, 155, 254, 0.3); }
+        
+        .shop-buy-btn { width: 100%; padding: 5px 0; border-radius: 4px; border: none; font-weight: 900; font-size: 9px; cursor: pointer; transition: 0.3s; margin-top: auto; }
+        .can-buy { background: var(--sun-gold); color: #000; }
+        .cannot-buy { background: #444; color: #888; cursor: not-allowed; }
+        .bought-btn { background: var(--friendly-green); color: #000; }
+        
+        /* Скрытие интерфейса оракула */
         body.is-shop-active .action-row,
         body.is-shop-active #answer-box,
         body.is-shop-active #error-msg,
         body.is-shop-active #inputWrapper { display: none !important; }
 
-        /* Исправление наложения товаров на заголовок (отменяем жесткую высоту и центрирование) */
-        #shopStage { height: auto !important; min-height: 240px; justify-content: flex-start !important; padding-top: 10px; padding-bottom: 20px; }
-        .shop-header { display: flex; align-items: center; gap: 10px; color: var(--sun-gold); font-weight: 900; font-size: 20px; margin-bottom: 15px; }
-        .shop-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; width: 95%; }
-        .shop-item-card { background: rgba(5,8,15,0.8); border: 1px solid rgba(255,249,174,0.3); border-radius: 12px; padding: 12px; display: flex; flex-direction: column; align-items: center; transition: 0.3s; }
-        .shop-item-card.bought { opacity: 0.8; border-color: var(--friendly-green); }
-        .shop-item-icon { font-size: 30px; margin-bottom: 8px; }
-        .shop-item-name { font-size: 11px; font-weight: bold; text-transform: uppercase; margin-bottom: 10px; color: #ccc; text-align: center; }
-        .shop-buy-btn { width: 100%; padding: 8px; border-radius: 6px; border: none; font-weight: 900; font-size: 12px; cursor: pointer; transition: 0.3s; }
-        .can-buy { background: var(--sun-gold); color: #000; }
-        .cannot-buy { background: #444; color: #888; cursor: not-allowed; }
-        .bought-btn { background: var(--friendly-green); color: #000; }
-		
-		/* === 1. Делаем текст активных подрежимов (ГРАНЬ, ЛЕПЕСТКИ и др.) кристально белым === */
-        .sub-mode-btn.active-sub {
-            color: #ffffff !important;
-        }
+        /* Делаем текст подрежимов белым */
+        .sub-mode-btn.active-sub { color: #ffffff !important; }
+        #submodes-shop .sub-mode-btn.active-sub { border-color: var(--sun-gold); color: #fff; box-shadow: 0 0 10px rgba(255, 249, 174, 0.2); background: rgba(255, 249, 174, 0.1); }
+        #submodes-shop .info-mode-btn { background: var(--sun-gold); color: #000; box-shadow: 0 0 5px rgba(255, 249, 174, 0.8); }
 
-        /* === 2. Перекрашиваем главную кнопку действия в зеленый ТОЛЬКО для Цветка === */
         body[data-game-mode="flower"] #actionBtn,
         body[data-game-mode="flower"] #action-btn,
         body[data-game-mode="flower"] .action-btn,
@@ -514,13 +505,53 @@
             box-shadow: 0 0 18px rgba(204, 255, 204, 0.3) !important;
         }
 		
+		/* === [ УБИЙСТВО СКРОЛЛОВ ДЛЯ МАГАЗИНА ] === */
+        #shopStage::-webkit-scrollbar, 
+        #inventoryList::-webkit-scrollbar { display: none !important; width: 0 !important; height: 0 !important; }
+        #shopStage, #inventoryList { -ms-overflow-style: none !important; scrollbar-width: none !important; }
+        
+        /* === [ ВИЗУАЛЬНЫЕ ТЕМЫ ИГР ] === */
+        
+        /* КОСТЬ: Классический белый стиль v.27 */
+        body.theme-style_dice .cube .face { 
+            background: #ffffff !important; 
+            color: #111b27 !important; 
+            border: 1px solid #ddd !important; 
+            box-shadow: inset 0 0 15px rgba(0,0,0,0.1) !important;
+        }
+        body.theme-style_dice .dot { background: #111b27 !important; }
+
+        /* ПУЛЯ: Белый барабан и красные пули */
+        body.theme-style_roulette .drum-wrapper { color: #ffffff !important; filter: drop-shadow(0 0 8px rgba(255,255,255,0.4)) !important; }
+        body.theme-style_roulette .bullet-outer { fill: var(--angry-red) !important; }
+        body.theme-style_roulette .bullet-inner { fill: #ffffff !important; }
+        body.theme-style_roulette .chamber-slot.filled { filter: drop-shadow(0 0 5px var(--angry-red)) !important; }
+        body.theme-style_roulette .stash-bullet { color: var(--angry-red) !important; filter: drop-shadow(0 0 5px var(--angry-red)) !important; }
+
+        /* МОНЕТА: Медная 3D монета из v.27 */
+        body.theme-style_coin .coin-face { 
+            background: linear-gradient(135deg, #b87333 0%, #804a19 100%) !important; 
+            border: 2px solid #e3a676 !important; 
+            color: #3d230a !important; 
+            text-shadow: 1px 1px 0px rgba(255,255,255,0.2) !important;
+        }
+        body.theme-style_coin .coin-edge { background: #804a19 !important; }
+        body.theme-style_coin .coin-rim-segment { background: #b87333 !important; border-color: #e3a676 !important; }
+
+        /* ЦВЕТОК: Розовая сакура */
+        body.theme-style_flower .petal path { stroke: #ffb7c5 !important; filter: drop-shadow(0 0 5px #ffb7c5) !important; }
+        body.theme-style_flower .flower-center { border-color: #ffb7c5 !important; color: #ffb7c5 !important; }
+
+        /* К-Н-Б: Неоновый стиль */
+        body.theme-style_rps .rps-hand { color: #00f5d4 !important; text-shadow: 0 0 15px #00f5d4 !important; }
+		
     </style>
 </head>
 <body>
     <div id="stars" class="stars-layer stars-active bg1-stars"></div>
 
     <div id="mainMenuOverlay">
-        <div class="version">v0.8.8.34</div> <div class="menu-top-bar">
+        <div class="version">v0.8.8.35</div> <div class="menu-top-bar">
             <button class="menu-icon-btn" id="langSwitchBtn" onclick="App.toggleLanguage()"><i class="fas fa-globe"></i></button>
         </div>
         <div id="mainMenuTitle" class="menu-title-main">Игры Судьбы</div>
@@ -782,13 +813,16 @@
         </div>
 
         <div class="debug-panel" id="debugPanel">
-            <button class="debug-btn" onclick="App.askOracle(0)">1</button>
-            <button class="debug-btn" onclick="App.askOracle(1)">2</button>
-            <button class="debug-btn" onclick="App.askOracle(2)">3</button>
-            <button class="debug-btn" onclick="App.askOracle(3)">4</button>
-            <button class="debug-btn" onclick="App.askOracle(4)">5</button>
-            <button class="debug-btn" onclick="App.askOracle(5)">6</button>
-            <button class="debug-btn" onclick="Achievements.unlockNextDebug()"><i class="fas fa-trophy"></i></button>
+            <button class="debug-btn std-debug-btn" onclick="App.askOracle(0)">1</button>
+            <button class="debug-btn std-debug-btn" onclick="App.askOracle(1)">2</button>
+            <button class="debug-btn std-debug-btn" onclick="App.askOracle(2)">3</button>
+            <button class="debug-btn std-debug-btn" onclick="App.askOracle(3)">4</button>
+            <button class="debug-btn std-debug-btn" onclick="App.askOracle(4)">5</button>
+            <button class="debug-btn std-debug-btn" onclick="App.askOracle(5)">6</button>
+            <button class="debug-btn std-debug-btn" onclick="Achievements.unlockNextDebug()"><i class="fas fa-trophy"></i></button>
+            
+            <button class="debug-btn shop-debug-btn" style="display: none; border-color: var(--friendly-green); color: var(--friendly-green);" onclick="App.addDebugMoney()"><i class="fas fa-dollar-sign"></i><i class="fas fa-plus" style="font-size: 8px; position:absolute; top:4px; right:4px;"></i></button>
+            <button class="debug-btn shop-debug-btn" style="display: none; border-color: var(--magic-color); color: var(--magic-color);" onclick="App.addDebugCrystals()"><i class="fas fa-gem"></i><i class="fas fa-plus" style="font-size: 8px; position:absolute; top:4px; right:4px;"></i></button>
         </div>
 
         <div class="history-header" id="st-hist-head">История предсказаний</div>
@@ -2665,8 +2699,31 @@
                 });
             }
 
+			function addDebugMoney() {
+                if (GameState.activeProfileIdx < 0) return;
+                const p = GameState.profiles[GameState.activeProfileIdx];
+                if (!p.rStats) p.rStats = { bank: 0 };
+                p.rStats.bank += 25;
+                requestProfileSave();
+                if (typeof ShopGame !== 'undefined') ShopGame.renderShop();
+                if (typeof App !== 'undefined' && App.updateMenuBankUI) App.updateMenuBankUI();
+                playSoundEffect('tick');
+                if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.HapticFeedback) window.Telegram.WebApp.HapticFeedback.impactOccurred('light');
+            }
+
+            function addDebugCrystals() {
+                if (GameState.activeProfileIdx < 0) return;
+                const p = GameState.profiles[GameState.activeProfileIdx];
+                if (!p.crystals) p.crystals = 0;
+                p.crystals += 25;
+                requestProfileSave();
+                if (typeof ShopGame !== 'undefined') ShopGame.renderShop();
+                playSoundEffect('tick');
+                if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.HapticFeedback) window.Telegram.WebApp.HapticFeedback.impactOccurred('light');
+            }
+			
             return {
-                setTopNavLocked,
+                setTopNavLocked, addDebugMoney, addDebugCrystals,
                 clearQuestionDraft, // <--- ДОБАВИТЬ СЮДА
                 init, selectProfile, createNewProfile, loadProfileData, requestProfileSave, 
                 showDeleteConfirm, confirmDeleteProfile, showRenameModal, confirmRenameProfile, 
@@ -6819,29 +6876,40 @@ const ShopGame = (function() {
 
     const shopItems = {
         backgrounds: [
-            { id: 'bg_space', name: 'Космос', priceCoins: 30, priceCrystals: 10, icon: '🌌' },
-            { id: 'bg_neon', name: 'Кибер Неон', priceCoins: 30, priceCrystals: 10, icon: '🟣' },
-            { id: 'bg_blood', name: 'Темное Фэнтези', priceCoins: 30, priceCrystals: 10, icon: '🩸' },
-            { id: 'bg_matrix', name: 'Матрица', priceCoins: 30, priceCrystals: 10, icon: '🟩' }
+            { id: 'bg_space', name: 'Космос', priceCoins: 30, priceCrystals: 10, icon: '🌌', bgValue: 'radial-gradient(circle at center, #0a0b2e 0%, #010105 100%)' },
+            { id: 'bg_neon', name: 'Кибер Неон', priceCoins: 30, priceCrystals: 10, icon: '🟣', bgValue: 'radial-gradient(circle at center, #240046 0%, #050011 100%)' },
+            { id: 'bg_blood', name: 'Темное Фэнтези', priceCoins: 30, priceCrystals: 10, icon: '🩸', bgValue: 'radial-gradient(circle at center, #3a0000 0%, #050000 100%)' },
+            { id: 'bg_matrix', name: 'Матрица', priceCoins: 30, priceCrystals: 10, icon: '🟩', bgValue: 'radial-gradient(circle at center, #002200 0%, #000000 100%)' }
         ],
         gameStyles: [
-            { id: 'coin_gold', name: 'Золотая Монета', priceCoins: 30, priceCrystals: 10, icon: '🟡' },
-            { id: 'coin_btc', name: 'Биткоин', priceCoins: 30, priceCrystals: 10, icon: '₿' },
-            { id: 'coin_wood', name: 'Деревянная', priceCoins: 30, priceCrystals: 10, icon: '🪵' },
-            { id: 'bullet_blood', name: 'Кровавая Пуля', priceCoins: 30, priceCrystals: 10, icon: '🩸' },
-            { id: 'flower_sakura', name: 'Сакура', priceCoins: 30, priceCrystals: 10, icon: '🌸' }
+            { id: 'style_dice', name: 'Кость Истины', priceCoins: 50, priceCrystals: 15, icon: '🎲' },
+            { id: 'style_roulette', name: 'Роковая Пуля', priceCoins: 50, priceCrystals: 15, icon: '🔫' },
+            { id: 'style_coin', name: 'Грань Выбора', priceCoins: 50, priceCrystals: 15, icon: '🪙' },
+            { id: 'style_flower', name: 'Лепестки', priceCoins: 50, priceCrystals: 15, icon: '🌼' },
+            { id: 'style_rps', name: 'К-Н-Б', priceCoins: 50, priceCrystals: 15, icon: '✌️' }
         ],
-        diceSkins: [
-            { id: 'dice_classic', name: 'Белая Кость', priceCoins: 30, priceCrystals: 10, icon: '🎲' },
-            { id: 'dice_gold', name: 'Золотая', priceCoins: 30, priceCrystals: 10, icon: '🟨' },
-            { id: 'dice_red', name: 'Кровавая', priceCoins: 30, priceCrystals: 10, icon: '🟥' },
-            { id: 'dice_neon', name: 'Неоновая', priceCoins: 30, priceCrystals: 10, icon: '🟪' },
-            { id: 'dice_dark', name: 'Тьма', priceCoins: 30, priceCrystals: 10, icon: '⬛' }
+        diceModes: [
+            { id: 'dice_dots', name: 'Точки', priceCoins: 0, priceCrystals: 0, icon: '🔢' },
+            { id: 'dice_nums', name: 'Числа', priceCoins: 30, priceCrystals: 10, icon: '🔟' },
+            { id: 'dice_yesno', name: 'Да / Нет', priceCoins: 30, priceCrystals: 10, icon: '⚖️' },
+            { id: 'dice_trader', name: 'Трейдер', priceCoins: 50, priceCrystals: 15, icon: '📈' },
+            { id: 'dice_alco', name: 'Алконавт', priceCoins: 50, priceCrystals: 15, icon: '🍹' }
         ]
     };
 
     function init() {
         if (!GameState.subModes.shop) GameState.subModes.shop = 'standard';
+        
+        setTimeout(() => {
+            const p = GameState.profiles[GameState.currentProfile] || GameState.profiles[GameState.activeProfileIdx];
+            if (p && p.equipped) {
+                if (p.equipped.backgrounds) applyEquippedItem('backgrounds', p.equipped.backgrounds);
+                if (p.equipped.diceModes) applyEquippedItem('diceModes', p.equipped.diceModes);
+                ['style_dice', 'style_roulette', 'style_coin', 'style_flower', 'style_rps'].forEach(styleId => {
+                    if (p.equipped[styleId]) applyEquippedItem('gameStyles', styleId, true);
+                });
+            }
+        }, 300);
     }
 
     function mount() {
@@ -6857,6 +6925,9 @@ const ShopGame = (function() {
         const resStatus = document.getElementById('res-status');
         if (resStatus) resStatus.style.display = 'none';
 
+        document.querySelectorAll('.std-debug-btn').forEach(el => el.style.display = 'none');
+        document.querySelectorAll('.shop-debug-btn').forEach(el => el.style.display = 'flex');
+
         renderShop();
     }
 
@@ -6865,15 +6936,14 @@ const ShopGame = (function() {
         if (!grid) return;
         
         grid.innerHTML = '';
-        grid.style.gridTemplateColumns = 'repeat(3, 1fr)';
-        grid.style.gap = '8px';
+        grid.style.gridTemplateColumns = 'repeat(4, 1fr)';
+        grid.style.gap = '4px';
 
         const p = GameState.profiles[GameState.currentProfile] || GameState.profiles[GameState.activeProfileIdx];
         const balanceCoins = (p && p.rStats) ? (p.rStats.bank || 0) : 0;
         const balanceCrystals = p ? (p.crystals || 0) : 0;
 
         if (GameState.subModes.shop === 'standard') {
-            // Плашка с обеими валютами
             const balHeader = document.createElement('div');
             balHeader.style.gridColumn = '1 / -1';
             balHeader.style.textAlign = 'center';
@@ -6888,11 +6958,11 @@ const ShopGame = (function() {
             grid.appendChild(createCategoryHeader('Стили заднего фона'));
             appendItems(grid, shopItems.backgrounds, balanceCoins, balanceCrystals);
             
-            grid.appendChild(createCategoryHeader('Стили игр'));
+            grid.appendChild(createCategoryHeader('Стили Игр'));
             appendItems(grid, shopItems.gameStyles, balanceCoins, balanceCrystals);
             
             grid.appendChild(createCategoryHeader('Кость Истины'));
-            appendItems(grid, shopItems.diceSkins, balanceCoins, balanceCrystals);
+            appendItems(grid, shopItems.diceModes, balanceCoins, balanceCrystals);
         } else {
             grid.style.gridTemplateColumns = '1fr';
             grid.innerHTML = `
@@ -6908,60 +6978,93 @@ const ShopGame = (function() {
         const h = document.createElement('div');
         h.style.gridColumn = '1 / -1';
         h.style.color = 'var(--sun-gold)';
-        h.style.fontSize = '13px';
+        h.style.fontSize = '11px';
         h.style.fontWeight = 'bold';
         h.style.textAlign = 'center';
-        h.style.marginTop = '15px';
-        h.style.marginBottom = '5px';
+        h.style.marginTop = '12px';
+        h.style.marginBottom = '4px';
         h.style.textTransform = 'uppercase';
         h.style.letterSpacing = '1px';
         h.style.borderBottom = '1px solid rgba(255, 249, 174, 0.15)';
-        h.style.paddingBottom = '5px';
+        h.style.paddingBottom = '4px';
         h.innerText = title;
         return h;
     }
 
     function appendItems(grid, items, balanceCoins, balanceCrystals) {
+        const p = GameState.profiles[GameState.currentProfile] || GameState.profiles[GameState.activeProfileIdx];
+        const inv = p ? (p.inventory || []) : [];
+
         items.forEach(item => {
+            const isBought = inv.includes(item.id);
             const card = document.createElement('div');
             card.className = 'shop-item-card';
-            card.style.padding = '10px 4px';
-            card.style.minHeight = '85px';
-            card.style.cursor = 'pointer';
+            card.style.padding = '6px 2px';
+            card.style.minHeight = '75px';
+            card.style.cursor = isBought ? 'default' : 'pointer';
+            card.style.display = 'flex';
+            card.style.flexDirection = 'column';
+            card.style.alignItems = 'center';
+            card.style.justifyContent = 'space-between';
+            card.style.borderRadius = '8px';
+            
+            if (isBought) {
+                card.style.border = '1px solid var(--friendly-green)';
+                card.style.background = 'rgba(204,255,204,0.05)';
+            } else {
+                card.style.border = '1px solid rgba(255,249,174,0.3)';
+                card.style.background = 'rgba(5,8,15,0.8)';
+            }
             
             const canAffordCoins = balanceCoins >= item.priceCoins;
             const canAffordCrystals = balanceCrystals >= item.priceCrystals;
             
+            let priceSection = '';
+            if (isBought) {
+                priceSection = `<div style="color: var(--friendly-green); font-size: 8px; font-weight: bold; background: rgba(0,0,0,0.5); padding: 4px 0; border-radius: 8px; border: 1px solid rgba(204, 255, 204, 0.2); width: 90%; text-align: center; margin-top: auto;">КУПЛЕНО</div>`;
+            } else {
+                priceSection = `
+                    <div style="display: flex; flex-direction: row; justify-content: center; align-items: center; gap: 8px; width: 90%; margin-top: auto; background: rgba(0,0,0,0.5); padding: 4px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);">
+                        <div style="color: ${canAffordCoins ? 'var(--friendly-green)' : 'var(--angry-red)'}; font-size: 9px; font-weight: bold; display: flex; align-items: center; gap: 3px;"><i class="fas fa-dollar-sign"></i>${item.priceCoins}</div>
+                        <div style="color: rgba(255,255,255,0.2); font-size: 9px;">|</div>
+                        <div style="color: ${canAffordCrystals ? 'var(--magic-color)' : 'var(--angry-red)'}; font-size: 9px; font-weight: bold; display: flex; align-items: center; gap: 3px;"><i class="fas fa-gem"></i>${item.priceCrystals}</div>
+                    </div>
+                `;
+            }
+
             card.innerHTML = `
-                <div style="font-size: 26px; margin-bottom: 6px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));">${item.icon}</div>
-                <div style="color: #fff; font-size: 10px; line-height: 1.2; margin-bottom: 8px; word-break: break-word; opacity: 0.9;">${item.name}</div>
-                <div style="display: flex; flex-direction: column; gap: 2px; width: 90%;">
-                    <div style="color: ${canAffordCoins ? 'var(--friendly-green)' : 'var(--angry-red)'}; font-size: 10px; font-weight: bold; background: rgba(0,0,0,0.5); padding: 2px 4px; border-radius: 4px; border: 1px solid rgba(204, 255, 204, 0.1);"><i class="fas fa-dollar-sign"></i> ${item.priceCoins}</div>
-                    <div style="color: ${canAffordCrystals ? 'var(--magic-color)' : 'var(--angry-red)'}; font-size: 10px; font-weight: bold; background: rgba(0,0,0,0.5); padding: 2px 4px; border-radius: 4px; border: 1px solid rgba(162, 155, 254, 0.1);"><i class="fas fa-gem"></i> ${item.priceCrystals}</div>
-                </div>
+                <div style="font-size: 22px; margin-bottom: 4px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));">${item.icon}</div>
+                <div style="color: #fff; font-size: 8px; line-height: 1.1; margin-bottom: 6px; word-break: break-word; opacity: 0.9; text-align: center; font-weight: bold; text-transform: uppercase;">${item.name}</div>
+                ${priceSection}
             `;
             
-            card.onclick = () => {
-                if (typeof App !== 'undefined') App.playSoundEffect('click');
-                if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
-                
-                const p = GameState.profiles[GameState.activeProfileIdx];
-                if (!p) return;
-                
-                const curCoins = (p && p.rStats) ? (p.rStats.bank || 0) : 0;
-                const curCryst = p.crystals || 0;
-                
-                if (curCoins < item.priceCoins || curCryst < item.priceCrystals) {
-                    if (typeof App !== 'undefined' && App.showError) App.showError(`Недостаточно средств!`);
-                    return; 
-                }
+            if (!isBought) {
+                card.onclick = () => {
+                    if (typeof App !== 'undefined' && App.playSoundEffect) App.playSoundEffect('click');
+                    if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.HapticFeedback) window.Telegram.WebApp.HapticFeedback.impactOccurred('medium');
+                    
+                    const curCoins = (p && p.rStats) ? (p.rStats.bank || 0) : 0;
+                    const curCryst = p.crystals || 0;
+                    
+                    if (curCoins < item.priceCoins || curCryst < item.priceCrystals) {
+                        if (typeof App !== 'undefined' && App.showError) App.showError(`Недостаточно средств!`);
+                        return; 
+                    }
 
-                if (typeof App !== 'undefined' && App.showCustomAlert) {
-                    App.showCustomAlert(`Стиль «${item.name}» скоро будет доступен для покупки!`);
-                } else {
-                    alert(`Стиль «${item.name}» скоро будет доступен для покупки!`);
-                }
-            };
+                    if (p.rStats && p.rStats.bank !== undefined) p.rStats.bank -= item.priceCoins;
+                    if (!p.crystals) p.crystals = 0;
+                    p.crystals -= item.priceCrystals;
+                    
+                    if (!p.inventory) p.inventory = [];
+                    p.inventory.push(item.id);
+
+                    if (typeof App !== 'undefined' && App.requestProfileSave) App.requestProfileSave();
+                    renderShop();
+
+                    if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.HapticFeedback) window.Telegram.WebApp.HapticFeedback.notificationOccurred('success');
+                    if (typeof App !== 'undefined' && App.playSoundEffect) App.playSoundEffect('achievement');
+                };
+            }
             grid.appendChild(card);
         });
     }
@@ -6975,11 +7078,148 @@ const ShopGame = (function() {
         if (rollBtn) rollBtn.style.display = '';
         const resStatus = document.getElementById('res-status');
         if (resStatus) resStatus.style.display = '';
+
+        document.querySelectorAll('.std-debug-btn').forEach(el => el.style.display = 'flex');
+        document.querySelectorAll('.shop-debug-btn').forEach(el => el.style.display = 'none');
     }
 
     function toggleInventory(show) {
         const inv = document.getElementById('inventoryOverlay');
         if (inv) inv.style.display = show ? 'flex' : 'none';
+        if (show) renderInventoryList();
+
+        // ФИКС: Прячем 3D-сцены, чтобы барабан не перекрывал инвентарь на iOS/WebKit
+        const mainStage = document.getElementById('mainStage');
+        const rouletteStage = document.getElementById('rouletteStage');
+        if (mainStage) mainStage.style.visibility = show ? 'hidden' : 'visible';
+        if (rouletteStage) rouletteStage.style.visibility = show ? 'hidden' : 'visible';
+    }
+
+    function equipItem(cat, id) {
+        const p = GameState.profiles[GameState.currentProfile] || GameState.profiles[GameState.activeProfileIdx];
+        if (!p) return;
+        if (!p.equipped) p.equipped = {};
+        
+        if (cat === 'gameStyles') {
+            if (p.equipped[id]) {
+                delete p.equipped[id];
+                applyEquippedItem(cat, id, false);
+            } else {
+                p.equipped[id] = true;
+                applyEquippedItem(cat, id, true);
+            }
+        } else {
+            if (p.equipped[cat] === id) {
+                if (cat !== 'diceModes') { 
+                    delete p.equipped[cat];
+                    applyEquippedItem(cat, null);
+                }
+            } else {
+                p.equipped[cat] = id;
+                applyEquippedItem(cat, id);
+            }
+        }
+        
+        if (typeof App !== 'undefined' && App.requestProfileSave) App.requestProfileSave();
+        renderInventoryList();
+        
+        if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.HapticFeedback) window.Telegram.WebApp.HapticFeedback.impactOccurred('light');
+        if (typeof App !== 'undefined' && App.playSoundEffect) App.playSoundEffect('click');
+    }
+
+    function applyEquippedItem(cat, id, isActive = true) {
+        if (cat === 'backgrounds') {
+            if (id === null) {
+                document.body.style.background = '';
+            } else {
+                const bgItem = shopItems.backgrounds.find(i => i.id === id);
+                if (bgItem && bgItem.bgValue) document.body.style.background = bgItem.bgValue;
+            }
+        }
+        else if (cat === 'diceModes') {
+            let actualMode = id ? id.replace('dice_', '') : 'dots';
+            if (actualMode === 'nums') actualMode = 'numbers'; // <--- ФИКС: транслируем nums в numbers
+            
+            GameState.mode = actualMode;
+            const sel = document.getElementById('modeSelect');
+            if (sel) sel.value = actualMode;
+            
+            if (typeof DiceGame !== 'undefined' && typeof DiceGame.updateModeDisplay === 'function') {
+                DiceGame.updateModeDisplay();
+            } else if (typeof App !== 'undefined' && typeof App.updateModeDisplay === 'function') {
+                App.updateModeDisplay();
+            }
+        }
+        else if (cat === 'gameStyles') {
+            // ФИКС СТИЛЕЙ: Привязываем классы напрямую к body
+            document.body.classList.toggle(`theme-${id}`, isActive);
+        }
+    }
+
+    function renderInventoryList() {
+        const list = document.getElementById('inventoryList');
+        if (!list) return;
+        list.innerHTML = '';
+        
+        const p = GameState.profiles[GameState.currentProfile] || GameState.profiles[GameState.activeProfileIdx];
+        const inv = p ? (p.inventory || []) : [];
+        const equipped = p ? (p.equipped || {}) : {};
+        
+        if (inv.length === 0) {
+            list.innerHTML = '<div style="color:rgba(255,255,255,0.4); text-align:center; padding: 20px;">Инвентарь пуст</div>';
+            return;
+        }
+
+        const categories = [
+            { key: 'backgrounds', title: 'Стили заднего фона' },
+            { key: 'gameStyles', title: 'Стили Игр' },
+            { key: 'diceModes', title: 'Кость Истины' }
+        ];
+
+        categories.forEach(catDef => {
+            const ownedItems = shopItems[catDef.key].filter(item => inv.includes(item.id));
+            
+            if (ownedItems.length > 0) {
+                list.appendChild(createCategoryHeader(catDef.title));
+                
+                const grid = document.createElement('div');
+                grid.style.display = 'grid';
+                grid.style.gridTemplateColumns = 'repeat(4, 1fr)';
+                grid.style.gap = '4px';
+                grid.style.marginBottom = '10px';
+                
+                ownedItems.forEach(item => {
+                    let isEquipped = false;
+                    if (catDef.key === 'gameStyles') {
+                        isEquipped = !!equipped[item.id];
+                    } else {
+                        isEquipped = equipped[catDef.key] === item.id;
+                    }
+
+                    const borderStyle = isEquipped ? '1px solid var(--friendly-green)' : '1px solid rgba(255,249,174,0.3)';
+                    const bgStyle = isEquipped ? 'rgba(204,255,204,0.1)' : 'rgba(5,8,15,0.8)';
+
+                    const card = document.createElement('div');
+                    card.className = 'shop-item-card';
+                    card.style.cssText = `padding: 6px 2px; min-height: 75px; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: space-between; border-radius: 8px; border: ${borderStyle}; background: ${bgStyle}; transition: 0.3s;`;
+                    
+                    const statusHTML = isEquipped 
+                        ? `<div style="color: var(--friendly-green); font-size: 8px; font-weight: bold; background: rgba(0,0,0,0.5); padding: 3px 0; border-radius: 4px; width: 90%; text-align: center; margin-top: auto;"><i class="fas fa-check"></i> АКТИВНО</div>` 
+                        : `<div style="height: 14px; margin-top: auto;"></div>`;
+
+                    card.innerHTML = `
+                        <div style="font-size: 22px; margin-bottom: 4px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));">${item.icon}</div>
+                        <div style="color: #fff; font-size: 8px; line-height: 1.1; margin-bottom: 6px; word-break: break-word; opacity: 0.9; text-align: center; font-weight: bold; text-transform: uppercase;">${item.name}</div>
+                        ${statusHTML}
+                    `;
+                    
+                    card.onclick = () => equipItem(catDef.key, item.id);
+                    grid.appendChild(card);
+                });
+                
+                list.appendChild(grid);
+            }
+        });
     }
 
     return { init, mount, unmount, toggleInventory, renderShop };
@@ -6998,7 +7238,7 @@ if (rulesModal) {
     rulesModal.style.zIndex = '9999';
 }
 // --- КОНЕЦ ВОСЬМОЙ ЧАСТИ ---
-try { if(typeof App !== 'undefined') { App.init(); if(typeof CoinGame !== 'undefined') CoinGame.init(); if(typeof FlowerGame !== 'undefined') FlowerGame.init(); } } catch (err) { console.error("Start error:", err); }
+try { if(typeof App !== 'undefined') { App.init(); if(typeof ShopGame !== 'undefined') ShopGame.init(); if(typeof CoinGame !== 'undefined') CoinGame.init(); if(typeof FlowerGame !== 'undefined') FlowerGame.init(); } } catch (err) { console.error("Start error:", err); }
 </script>
 <div class="settings-overlay" id="inventoryOverlay" style="display:none;">
     <div class="settings-modal" style="border-color: var(--sun-gold); box-shadow: 0 8px 32px rgba(255, 249, 174, 0.2);">
@@ -7007,7 +7247,7 @@ try { if(typeof App !== 'undefined') { App.init(); if(typeof CoinGame !== 'undef
         </h2>
         
         <div id="inventoryList" style="max-height: 50vh; overflow-y: auto; padding: 10px; display: flex; flex-direction: column; gap: 10px;">
-            </div>
+        </div>
         
         <button class="close-btn" onclick="ShopGame.toggleInventory(false)" style="background: var(--sun-gold); margin-top: 15px;">Закрыть</button>
     </div>
