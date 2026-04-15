@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Игры Судьбы. v0.8.8.40</title>
+    <title>Игры Судьбы. v0.8.8.42</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
@@ -239,7 +239,7 @@
         .profile-btn.active-slot ~ .edit-profile-btn, .profile-btn.active-slot ~ .delete-profile-btn { opacity: 1; transform: scale(1); pointer-events: auto; }
         .sub-mode-btn.active-sub .info-mode-btn { opacity: 1; transform: scale(1); pointer-events: auto; }
 
-        .profiles-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; width: 90%; max-width: 350px; margin-top: 5px; transition: opacity 0.5s ease; padding-bottom: 30px; }
+        .profiles-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; width: 85%; max-width: 350px; margin-top: 5px; transition: opacity 0.5s ease; padding-bottom: 30px; }
         .profile-wrapper { position: relative; display: flex; align-items: center; justify-content: center; width: 100%; }
         .profile-btn { width: 100%; background: rgba(5, 8, 15, 0.8); border: 2px solid rgba(162, 155, 254, 0.3); border-radius: 8px; color: white; padding: 12px 5px; font-size: 12px; cursor: pointer; transition: 0.3s; text-transform: uppercase; font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .profile-btn.active-slot { border-color: var(--friendly-green); box-shadow: 0 0 10px rgba(204,255,204,0.3); color: var(--friendly-green); transform: scale(1.05); z-index: 5; }
@@ -637,20 +637,89 @@
         body, .cube .face, .cube .dot, .rps-hand, .bullet-outer, .bullet-inner, .drum-top-layer circle {
     transition: background 0.8s ease, filter 0.8s ease, fill 0.8s ease, stroke 0.8s ease, color 0.8s ease, box-shadow 0.8s ease !important;
 }
+
+	/* === ФИКС СЛОЕВ (z-index) === */
+        .settings-overlay, #inventoryOverlay, #rulesOverlay { z-index: 99999 !important; }
+        .drum-3d-scene, #drumWrapper { z-index: 10 !important; }
+
+	/* Скрин 2: Кнопка "Новый игрок" в две строки */
+        #profilesGrid button {
+            white-space: normal !important;
+            line-height: 1.2 !important;
+            padding: 5px !important;
+        }
+
+        /* Срезаем главную левую кнопку превью */
+        #menuPreviewCard {
+            max-height: 132px !important; /* Идеальная высота под 3 кнопки режимов */
+            overflow: hidden !important;
+        }
+
+/* Фикс адаптивности: заставляем карточки магазина сжиматься */
+        #shopGrid {
+            width: 100% !important;
+            box-sizing: border-box !important;
+        }
+        #shopGrid > div {
+            min-width: 0 !important; /* Главный секрет: разрешаем сжиматься меньше размера текста */
+            padding-left: 4px !important;
+            padding-right: 4px !important;
+        }
+        #shopGrid > div * {
+            white-space: normal !important; /* Разрешаем длинным названиям переноситься на новые строки */
+            word-wrap: break-word !important; /* Разрываем слишком длинные слова, если нужно */
+            line-height: 1.1 !important;
+            text-align: center !important;
+        }
+
+/* Возвращаем плавное размытие сверху и снизу для магазина */
+        #shopStage {
+            -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 5%, black 95%, transparent 100%) !important;
+            mask-image: linear-gradient(to bottom, transparent 0%, black 5%, black 95%, transparent 100%) !important;
+        }
+
+/* --- СЕКРЕТНЫЙ ПЕРЕКЛЮЧАТЕЛЬ ДЕБАГА ДЛЯ РОМАШКИ --- */
+/* 1. Если активна любая ромашка — прячем цифры 1-6 */
+body.is-flower-game-active #debugPanel .debug-dice-btn { display: none !important; }
+
+/* 2. Если это режим ЖРЕБИЙ (не интуиция) — показываем галочку и крестик */
+body.is-flower-game-active:not(.flower-int-active) #debugPanel .debug-flower-std { display: flex !important; }
+
+/* 3. Если это режим ИНТУИЦИЯ — показываем цветок и крестик */
+body.is-flower-game-active.flower-int-active #debugPanel .debug-flower-int { display: flex !important; }
 		
     </style>
 </head>
+
+<script>
+
+// === АВТОМАТИЧЕСКИЙ ПЕРЕВОД КНОПОК МАГАЗИНА ===
+setInterval(() => {
+    if (typeof GameState === 'undefined') return;
+    const isEng = GameState.lang === 'en';
+    
+    const exLbl = document.getElementById('sm-shop-exchange-lbl');
+    if (exLbl) exLbl.innerText = isEng ? 'EXCHANGE' : 'ОБМЕН';
+    
+    const stLbl = document.getElementById('sm-shop-standard-lbl');
+    if (stLbl) stLbl.innerText = isEng ? 'STYLES' : 'СТИЛИ';
+    
+    const pkLbl = document.getElementById('sm-shop-perks-lbl');
+    if (pkLbl) pkLbl.innerText = isEng ? 'PERKS' : 'ПЕРКИ';
+}, 10);
+</script>
+
 <body>
     <div id="stars" class="stars-layer stars-active bg1-stars"></div>
 
     <div id="mainMenuOverlay">
-        <div class="version">v0.8.8.40</div> <div class="menu-top-bar">
+        <div class="version">v0.8.8.42</div> <div class="menu-top-bar">
             <button class="menu-icon-btn" id="langSwitchBtn" onclick="App.toggleLanguage()"><i class="fas fa-globe"></i></button>
         </div>
         <div id="mainMenuTitle" class="menu-title-main">Игры Судьбы</div>
         
         <div id="mainMenuCards" class="games-layout" style="display:flex; flex-direction:column; align-items: center; gap: 15px; width: 90%; max-width: 380px; transition: opacity 0.5s ease;">
-            <div style="display:flex; gap: 15px; width: 100%; height: 160px;">
+            <div style="display:flex; gap: 15px; width: 100%; height: 132px;">
                 <div class="game-card active-preview-card" id="menuPreviewCard" onclick="App.selectGameMode()" style="flex: 1; height: 100%; margin: 0; position: relative;">
                     <div class="card-icon" id="preview-card-icon"><i class="fas fa-dice-d6"></i></div>
                     <div class="card-title" id="preview-card-title">Кость Истины</div>
@@ -679,27 +748,28 @@
     <button class="sub-mode-btn" onclick="RouletteGame.switchSubMode('bank', event)" id="sm-roulette-bank">
         <div class="float-corner-btn info-mode-btn" onclick="App.showSubModeRules(event, 'roulette', 'bank')"><i class="fas fa-question"></i></div>
         <span id="sm-roulette-bank-lbl">Банк</span>
-        <span id="menuBankVal" style="position:absolute; right:5px; font-size:11px; color:var(--friendly-green); text-shadow:0 0 5px var(--friendly-green);"></span>
-    </button>
+        </button>
     <button class="sub-mode-btn" onclick="RouletteGame.switchSubMode('survival', event)" id="sm-roulette-survival">
         <div class="float-corner-btn info-mode-btn" onclick="App.showSubModeRules(event, 'roulette', 'survival')"><i class="fas fa-question"></i></div>
         <span id="sm-roulette-survival-lbl">Выживание</span>
     </button>
 </div>
 					<div id="submodes-shop" style="display: none; flex-direction: column; gap: 8px; width: 100%;">
-                        <button class="sub-mode-btn active-sub" onclick="App.selectSubMode('shop', 'exchange', event)" id="sm-shop-exchange">
-                            <div class="float-corner-btn info-mode-btn" onclick="App.showSubModeRules(event, 'shop', 'exchange')"><i class="fas fa-question"></i></div>
-                            <span id="sm-shop-exchange-lbl">ОБМЕН</span>
-                        </button>
-                        <button class="sub-mode-btn" onclick="App.selectSubMode('shop', 'standard', event)" id="sm-shop-standard">
-                            <div class="float-corner-btn info-mode-btn" onclick="App.showSubModeRules(event, 'shop', 'standard')"><i class="fas fa-question"></i></div>
-                            <span id="sm-shop-standard-lbl">СТИЛИ</span>
-                        </button>
-                        <button class="sub-mode-btn" onclick="App.selectSubMode('shop', 'perks', event)" id="sm-shop-perks">
-                            <div class="float-corner-btn info-mode-btn" onclick="App.showSubModeRules(event, 'shop', 'perks')"><i class="fas fa-question"></i></div>
-                            <span id="sm-shop-perks-lbl">ПЕРКИ</span>
-                        </button>
-                    </div>
+    <button class="sub-mode-btn active-sub" onclick="App.selectSubMode('shop', 'exchange', event)" id="sm-shop-exchange">
+        <div class="float-corner-btn info-mode-btn" onclick="event.stopPropagation(); App.showSubModeRules(event, 'shop', 'exchange')" style="z-index: 20; pointer-events: auto;"><i class="fas fa-question"></i></div>
+        <span id="sm-shop-exchange-lbl">ОБМЕН</span>
+    </button>
+    
+    <button class="sub-mode-btn" onclick="App.selectSubMode('shop', 'standard', event)" id="sm-shop-standard">
+        <div class="float-corner-btn info-mode-btn" onclick="event.stopPropagation(); App.showSubModeRules(event, 'shop', 'standard')" style="z-index: 20; pointer-events: auto;"><i class="fas fa-question"></i></div>
+        <span id="sm-shop-standard-lbl">СТИЛИ</span>
+    </button>
+    
+    <button class="sub-mode-btn" onclick="App.selectSubMode('shop', 'perks', event)" id="sm-shop-perks">
+        <div class="float-corner-btn info-mode-btn" onclick="event.stopPropagation(); App.showSubModeRules(event, 'shop', 'perks')" style="z-index: 20; pointer-events: auto;"><i class="fas fa-question"></i></div>
+        <span id="sm-shop-perks-lbl">ПЕРКИ</span>
+    </button>
+</div>
                 </div>
             </div>
             
@@ -911,17 +981,24 @@
         </div>
 
         <div class="debug-panel" id="debugPanel">
-            <button class="debug-btn std-debug-btn" onclick="App.askOracle(0)">1</button>
-            <button class="debug-btn std-debug-btn" onclick="App.askOracle(1)">2</button>
-            <button class="debug-btn std-debug-btn" onclick="App.askOracle(2)">3</button>
-            <button class="debug-btn std-debug-btn" onclick="App.askOracle(3)">4</button>
-            <button class="debug-btn std-debug-btn" onclick="App.askOracle(4)">5</button>
-            <button class="debug-btn std-debug-btn" onclick="App.askOracle(5)">6</button>
-            <button class="debug-btn std-debug-btn" onclick="Achievements.unlockNextDebug()"><i class="fas fa-trophy"></i></button>
-            
-            <button class="debug-btn shop-debug-btn" style="display: none; border-color: var(--friendly-green); color: var(--friendly-green);" onclick="App.addDebugMoney()"><i class="fas fa-dollar-sign"></i><i class="fas fa-plus" style="font-size: 8px; position:absolute; top:4px; right:4px;"></i></button>
-            <button class="debug-btn shop-debug-btn" style="display: none; border-color: var(--magic-color); color: var(--magic-color);" onclick="App.addDebugCrystals()"><i class="fas fa-gem"></i><i class="fas fa-plus" style="font-size: 8px; position:absolute; top:4px; right:4px;"></i></button>
-        </div>
+    <button class="debug-btn std-debug-btn debug-dice-btn" onclick="App.askOracle(0)">1</button>
+    <button class="debug-btn std-debug-btn debug-dice-btn" onclick="App.askOracle(1)">2</button>
+    <button class="debug-btn std-debug-btn debug-dice-btn" onclick="App.askOracle(2)">3</button>
+    <button class="debug-btn std-debug-btn debug-dice-btn" onclick="App.askOracle(3)">4</button>
+    <button class="debug-btn std-debug-btn debug-dice-btn" onclick="App.askOracle(4)">5</button>
+    <button class="debug-btn std-debug-btn debug-dice-btn" onclick="App.askOracle(5)">6</button>
+
+    <button class="debug-btn debug-flower-std" style="display: none; color: var(--friendly-green);" onclick="FlowerGame.play(true)">✅</button>
+    <button class="debug-btn debug-flower-std" style="display: none; color: var(--angry-red);" onclick="FlowerGame.play(false)">❌</button>
+
+    <button class="debug-btn debug-flower-int" style="display: none; color: var(--sun-gold);" onclick="FlowerGame.play('win_int')">🌸</button>
+    <button class="debug-btn debug-flower-int" style="display: none; color: var(--angry-red);" onclick="FlowerGame.play('lose_int')">❌</button>
+
+    <button class="debug-btn std-debug-btn" onclick="Achievements.unlockNextDebug()"><i class="fas fa-trophy"></i></button>
+    
+    <button class="debug-btn shop-debug-btn" style="display: none; border-color: var(--friendly-green); color: var(--friendly-green);" onclick="App.addDebugMoney()"><i class="fas fa-dollar-sign"></i></button>
+    <button class="debug-btn shop-debug-btn" style="display: none; border-color: var(--magic-color); color: var(--magic-color);" onclick="App.addDebugCrystals()"><i class="fas fa-gem"></i></button>
+</div>
 
         <div class="history-header" id="st-hist-head">История предсказаний</div>
 <div class="history" id="historyBlock">
@@ -1084,8 +1161,20 @@
 			flower_standard: {
                 ru: `<div class="rules-content"><div style="color: #facc15; font-weight: bold; font-size: 18px; border-bottom: 1px solid rgba(250, 204, 21, 0.3); padding-bottom: 8px; margin-bottom: 12px; text-align: center;">🌼 Ромашка Судьбы</div><div style="margin-bottom: 12px; font-style: italic; color: #ccc;">Задай вопрос и отрывай лепестки. Последний лепесток скажет правду!</div><ul style="padding-left: 22px; margin-top: 0; margin-bottom: 0; list-style-type: none;"><li style="margin-bottom: 8px;"><span style="margin-left: -22px; margin-right: 4px;">🌸</span> <b>Гадание:</b> Нажми "Испытать судьбу", чтобы закрутить цветок. Затем отрывай лепестки по одному (смахивай вверх или просто кликай).</li><li style="margin-bottom: 8px;"><span style="margin-left: -22px; margin-right: 4px;">🎨</span> <b>Стиль:</b> В настройках можно переключить "Стиль отображения", чтобы ромашка стала кибер-голубой!</li></ul></div>`,
                 en: `<div class="rules-content"><div style="color: #facc15; font-weight: bold; font-size: 18px; border-bottom: 1px solid rgba(250, 204, 21, 0.3); padding-bottom: 8px; margin-bottom: 12px; text-align: center;">🌼 Daisy of Fate</div><div style="margin-bottom: 12px; font-style: italic; color: #ccc;">Ask a question and tear the petals. The last one tells the truth!</div><ul style="padding-left: 22px; margin-top: 0; margin-bottom: 0; list-style-type: none;"><li style="margin-bottom: 8px;"><span style="margin-left: -22px; margin-right: 4px;">🌸</span> <b>Divination:</b> Press "Try your fate" to spin the flower. Then tear the petals one by one.</li><li style="margin-bottom: 8px;"><span style="margin-left: -22px; margin-right: 4px;">🎨</span> <b>Style:</b> Toggle "Display Style" in settings for a cyber-blue daisy!</li></ul></div>`
-            }
-			
+            }, // Запятая обязательна для продолжения списка!
+            shop_exchange: {
+                ru: `<div class="rules-content"><div style="color: #facc15; font-weight: bold; font-size: 18px; border-bottom: 1px solid rgba(250, 204, 21, 0.3); padding-bottom: 8px; margin-bottom: 12px; text-align: center;">💱 Обмен</div><div style="margin-bottom: 12px; font-style: italic; color: #ccc;">Банк обмена валют!</div><ul style="padding-left: 22px; margin-top: 0; margin-bottom: 0; list-style-type: none;"><li style="margin-bottom: 8px;"><span style="margin-left: -22px; margin-right: 4px;">💎</span> <b>Кристаллы:</b> Здесь вы можете обменять заработанные Монеты на драгоценные Кристаллы по текущему курсу.</li></ul></div>`,
+                en: `<div class="rules-content"><div style="color: #facc15; font-weight: bold; font-size: 18px; border-bottom: 1px solid rgba(250, 204, 21, 0.3); padding-bottom: 8px; margin-bottom: 12px; text-align: center;">💱 Exchange</div><div style="margin-bottom: 12px; font-style: italic; color: #ccc;">Currency exchange bank!</div><ul style="padding-left: 22px; margin-top: 0; margin-bottom: 0; list-style-type: none;"><li style="margin-bottom: 8px;"><span style="margin-left: -22px; margin-right: 4px;">💎</span> <b>Crystals:</b> Here you can exchange earned Coins for precious Crystals at the current rate.</li></ul></div>`
+            },
+            shop_standard: {
+                ru: `<div class="rules-content"><div style="color: var(--sun-gold); font-weight: bold; font-size: 18px; border-bottom: 1px solid rgba(255, 249, 174, 0.3); padding-bottom: 8px; margin-bottom: 12px; text-align: center;">🛒 Стили</div><div style="margin-bottom: 12px; font-style: italic; color: #ccc;">Здесь ты можешь потратить заработанные в Банке деньги.</div><ul style="padding-left: 22px; margin-top: 0; margin-bottom: 0; list-style-type: none;"><li style="margin-bottom: 8px;"><span style="margin-left: -22px; margin-right: 4px;">🎨</span> <b>Темы:</b> Покупай новые стили для любимых игр.</li><li style="margin-bottom: 8px;"><span style="margin-left: -22px; margin-right: 4px;">📦</span> <b>Инвентарь:</b> Купленные вещи навсегда остаются в твоем профиле. Нажми на иконку коробки в правом верхнем углу, чтобы их посмотреть.</li></ul></div>`,
+                en: `<div class="rules-content"><div style="color: var(--sun-gold); font-weight: bold; font-size: 18px; border-bottom: 1px solid rgba(255, 249, 174, 0.3); padding-bottom: 8px; margin-bottom: 12px; text-align: center;">🛒 Styles</div><div style="margin-bottom: 12px; font-style: italic; color: #ccc;">Spend money earned in Bank mode here.</div><ul style="padding-left: 22px; margin-top: 0; margin-bottom: 0; list-style-type: none;"><li style="margin-bottom: 8px;"><span style="margin-left: -22px; margin-right: 4px;">🎨</span> <b>Themes:</b> Buy new themes for your favorite games.</li><li style="margin-bottom: 8px;"><span style="margin-left: -22px; margin-right: 4px;">📦</span> <b>Inventory:</b> Bought items stay in your profile forever. Tap the box icon in the top right to view them.</li></ul></div>`
+            },
+            shop_perks: {
+                ru: `<div class="rules-content"><div style="color: var(--sun-gold); font-weight: bold; font-size: 18px; border-bottom: 1px solid rgba(255, 249, 174, 0.3); padding-bottom: 8px; margin-bottom: 12px; text-align: center;">💎 Перки</div><div style="margin-bottom: 12px; font-style: italic; color: #ccc;">Здесь можно приобрести особые улучшения.</div><ul style="padding-left: 22px; margin-top: 0; margin-bottom: 0; list-style-type: none;"><li style="margin-bottom: 8px;"><span style="margin-left: -22px; margin-right: 4px;">🎲</span> <b>Модификаторы:</b> Разблокируй новые режимы для игр.</li><li style="margin-bottom: 8px;"><span style="margin-left: -22px; margin-right: 4px;">🛡️</span> <b>Защита:</b> Бонусы, которые помогут в выживании.</li></ul></div>`,
+                en: `<div class="rules-content"><div style="color: var(--sun-gold); font-weight: bold; font-size: 18px; border-bottom: 1px solid rgba(255, 249, 174, 0.3); padding-bottom: 8px; margin-bottom: 12px; text-align: center;">💎 Perks</div><div style="margin-bottom: 12px; font-style: italic; color: #ccc;">Buy special upgrades here.</div><ul style="padding-left: 22px; margin-top: 0; margin-bottom: 0; list-style-type: none;"><li style="margin-bottom: 8px;"><span style="margin-left: -22px; margin-right: 4px;">🎲</span> <b>Modifiers:</b> Unlock new game modes.</li><li style="margin-bottom: 8px;"><span style="margin-left: -22px; margin-right: 4px;">🛡️</span> <b>Protection:</b> Bonuses to help you survive.</li></ul></div>`
+            }		
+		
         };
 
         const traderIcons = ['<i class="fas fa-rocket"></i>', '<i class="fas fa-arrow-trend-down"></i>', '<i class="fas fa-chart-line"></i>', '<i class="fas fa-chart-area" style="transform: scaleY(-1)"></i>', '<i class="fas fa-arrows-left-right"></i>', '<i class="fas fa-skull"></i>'];
@@ -1689,6 +1778,11 @@
                     } catch (e) {
                         console.error("Ошибка при смене фона профиля:", e);
                     }
+
+                    // === FIX: RESTORE ACTIVE SUB-MODE HIGHLIGHTS ===
+                    if (typeof updateSubModeHighlights === 'function') {
+                        updateSubModeHighlights();
+                    }
                 }, 50);
             }
 
@@ -2037,7 +2131,26 @@
                     const sub = document.getElementById('submodes-shop'); if(sub) sub.style.display = 'flex'; 
                 }
                 
-                updateSubModeHighlights();
+                if (typeof updateSubModeHighlights === 'function') updateSubModeHighlights();
+                
+                // === ЖЕСТКАЯ СИНХРОНИЗАЦИЯ ПОДСВЕТКИ РЕЖИМОВ ===
+                if (GameState && GameState.subModes) {
+                    Object.keys(GameState.subModes).forEach(gameId => {
+                        const currentSub = GameState.subModes[gameId];
+                        if (!currentSub) return;
+                        
+                        // 1. Снимаем выделение со всех кнопок в блоке конкретной игры
+                        document.querySelectorAll(`#submodes-${gameId} .sub-mode-btn`).forEach(btn => {
+                            btn.classList.remove('active-sub');
+                        });
+                        
+                        // 2. Ищем нужную кнопку и принудительно ее подсвечиваем
+                        const activeBtn = document.getElementById(`sm-${gameId}-${currentSub}`);
+                        if (activeBtn) activeBtn.classList.add('active-sub');
+                    });
+                }
+                // ==============================================
+
                 if (tg.HapticFeedback && tg.HapticFeedback.selectionChanged) tg.HapticFeedback.selectionChanged();
             }
 
@@ -2937,7 +3050,7 @@
                 if (GameState.activeProfileIdx < 0) return;
                 const p = GameState.profiles[GameState.activeProfileIdx];
                 if (p.bank === undefined) p.bank = (p.rStats && p.rStats.bank !== undefined) ? p.rStats.bank : 50.00;
-                p.bank += 25;
+                p.bank += 100;
                 requestProfileSave();
                 if (typeof ShopGame !== 'undefined') ShopGame.renderShop();
                 if (typeof App !== 'undefined' && App.updateMenuBankUI) App.updateMenuBankUI();
@@ -2949,14 +3062,14 @@
                 if (GameState.activeProfileIdx < 0) return;
                 const p = GameState.profiles[GameState.activeProfileIdx];
                 if (!p.crystals) p.crystals = 0;
-                p.crystals += 25;
+                p.crystals += 100;
                 requestProfileSave();
                 if (typeof ShopGame !== 'undefined') ShopGame.renderShop();
                 playSoundEffect('tick');
                 if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.HapticFeedback) window.Telegram.WebApp.HapticFeedback.impactOccurred('light');
             }
 			
-            function addCrystal(game = null, subMode = null) {
+            function addCrystal(game = null, subMode = null, customAmount = null) {
                 if (GameState.activeProfileIdx !== -1 && GameState.profiles[GameState.activeProfileIdx]) {
                     const p = GameState.profiles[GameState.activeProfileIdx];
                     
@@ -2969,7 +3082,13 @@
                     };
 
                     let amount = 1; 
-                    if (game && subMode && rewards[game] && rewards[game][subMode] !== undefined) {
+                    
+                    // 1. Если игра передала свою уникальную сумму (например, 10 для джекпота) - используем её
+                    if (customAmount !== null) {
+                        amount = customAmount;
+                    } 
+                    // 2. Иначе по старинке берем из таблицы
+                    else if (game && subMode && rewards[game] && rewards[game][subMode] !== undefined) {
                         amount = rewards[game][subMode];
                     }
 
@@ -2977,8 +3096,8 @@
 
                     p.crystals = (p.crystals || 0) + amount;
                     
-                    updateTopBalances();
-                    renderProfiles(); 
+                    if (typeof updateTopBalances === 'function') updateTopBalances();
+                    if (typeof renderProfiles === 'function') renderProfiles(); 
                     
                     const anim = document.createElement('div');
                     anim.className = 'crystal-anim-new'; 
@@ -3349,9 +3468,20 @@
                 const hlDice = document.getElementById('historyListDice');
                 if(hlDice) hlDice.prepend(item);
 
-                // ИНЖЕКЦИЯ: Правильное добавление кристалла (через Ядро)
+                // ИНЖЕКЦИЯ: Правильное добавление кристалла (только за победу)
                 if(typeof App !== 'undefined') { 
-                    App.addCrystal('dice', dMode); 
+                    let isWin = false;
+                    if (dMode === 'trader') {
+                        isWin = (rIdx === 0 || rIdx === 2 || rIdx === 4); // Позитивные графики
+                    } else if (dMode === 'alco') {
+                        isWin = (rIdx !== 5); // Любой напиток, кроме воды (индекс 5)
+                    } else {
+                        isWin = isSuccess; // Для базовых режимов: Четные числа / ДА
+                    }
+                    
+                    if (isWin) {
+                        App.addCrystal('dice', dMode); 
+                    }
                     App.requestProfileSave(); 
                 }
 
@@ -3724,7 +3854,8 @@
 			
             function updateBankUI() {
                 if (GameState.subModes.roulette === 'bank') {
-                    const stats = getStats(); 
+                    const stats = getStats();
+					canCashout = stats.pool > 0; // <--- ДОБАВЬ ЭТУ СТРОКУ					
                     const bVal = document.getElementById('bankVal'); 
                     if(bVal) bVal.innerText = stats.bank.toFixed(2);
                     
@@ -4788,7 +4919,9 @@
                 // ИНЖЕКЦИЯ: Правильное добавление кристалла (строго один раз за раунд)
                 if(typeof App !== 'undefined') {
                     App.clearQuestionDraft();
-                    App.addCrystal('roulette', mode);
+                    if (!isGunshotResult) {
+                        App.addCrystal('roulette', mode);
+                    }
                     App.requestProfileSave(); 
                 }
 
@@ -5290,12 +5423,47 @@
                 const hlCoin = document.getElementById('historyListCoin') || document.getElementById('historyListDice'); 
                 if(hlCoin) hlCoin.prepend(item);
                 
-                // ИНЖЕКЦИЯ: Правильное добавление кристалла (через Ядро)
+                // === ИНЖЕКЦИЯ: НАГРАДЫ ЗА МОНЕТУ + ЗВУК ДЖЕКПОТА ===
                 if(typeof App !== 'undefined') { 
                     App.clearQuestionDraft(); 
-                    App.addCrystal('coin', GameState.subModes.coin); 
+                    
+                    if (rIdx === 0) {
+                        // ОРЁЛ (Победа): +1 кристалл
+                        App.addCrystal('coin', GameState.subModes.coin, 1); 
+                    } else if (rIdx === 2) {
+                        // РЕБРО (Джекпот!): +25 кристаллов
+                        App.addCrystal('coin', GameState.subModes.coin, 25); 
+                        
+                        // --- МАГИЧЕСКИЙ ЗВУК РЕБРА (СИНТЕЗАТОР) ---
+                        if (GameState.sound) {
+                            try {
+                                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                                const playOsc = (freq, type, delay, dur, vol) => {
+                                    const osc = ctx.createOscillator(), g = ctx.createGain();
+                                    osc.type = type; 
+                                    osc.frequency.setValueAtTime(freq, ctx.currentTime + delay);
+                                    g.gain.setValueAtTime(vol, ctx.currentTime + delay);
+                                    g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + delay + dur);
+                                    osc.connect(g); g.connect(ctx.destination);
+                                    osc.start(ctx.currentTime + delay); 
+                                    osc.stop(ctx.currentTime + delay + dur);
+                                };
+                                // Восходящее арпеджио (Победный перезвон)
+                                [523.25, 659.25, 783.99, 1046.50, 1318.51].forEach((f, i) => {
+                                    playOsc(f, 'sine', i * 0.08, 0.8, 0.2); // Чистый тон
+                                    playOsc(f * 1.01, 'triangle', i * 0.08, 0.8, 0.1); // Легкое мерцание
+                                });
+                                // Длинное сияние в конце аккорда
+                                playOsc(1046.50, 'sine', 0.4, 2.5, 0.2);
+                                playOsc(1567.98, 'sine', 0.45, 2.5, 0.1);
+                            } catch(e){}
+                        }
+                        // -----------------------------------------
+                    }
+
                     App.requestProfileSave(); 
                 }
+                // ===================================================
                 
                 const rollBtn = document.getElementById('rollBtn');
                 if(rollBtn) { rollBtn.disabled = false; rollBtn.innerText = t.rollBtn; rollBtn.classList.remove('gold-text-active'); }
@@ -5660,41 +5828,24 @@ const FlowerGame = (function() {
     function mount() {
         const st = document.getElementById('flowerStage'); if(st) st.style.display = 'flex';
         document.body.classList.add('is-flower-game-active');
+        
+        // Помечаем, если зашли в интуицию, чтобы CSS переключил кнопки
+        if (GameState.subModes.flower === 'intuition') {
+            document.body.classList.add('flower-int-active');
+        } else {
+            document.body.classList.remove('flower-int-active');
+        }
+
         const t = LANG_DATA[GameState.lang];
+        if (document.getElementById('ui-title')) document.getElementById('ui-title').innerText = t.menuFlower || "ЛЕПЕСТКИ";
         
-        if (document.getElementById('ui-title')) document.getElementById('ui-title').innerText = t.menuFlower || (GameState.lang === 'ru' ? "Лепестки" : "Petals");
-        
-        const disp = document.getElementById('current-mode-display');
-        if (disp) {
-            const smNames = { standard: t.smFlowerStd || (GameState.lang === 'ru' ? "Жребий" : "Draw"), intuition: t.smFlowerInt || (GameState.lang === 'ru' ? "Интуиция" : "Intuition") };
-            disp.innerText = (smNames[GameState.subModes.flower] || (GameState.lang === 'ru' ? "Жребий" : "Draw")).toUpperCase();
-            disp.style.display = 'inline';
-        }
-        
-        if(typeof App !== 'undefined' && typeof App.setQuestionState === 'function') {
-            const qhKey = 'flower_' + GameState.subModes.flower;
-            const isHidden = GameState.questionHiddenMap[qhKey] !== undefined ? GameState.questionHiddenMap[qhKey] : GameState.isQuestionHidden;
-            App.setQuestionState(isHidden, true);
-        }
-
-        if(typeof App !== 'undefined') App.hideError();
-        
-        const cont = document.getElementById('flowerPetalsContainer');
-        if (cont && cont.children.length === 0) renderPetals(12, true);
-
         restoreUI();
     }
 
     function unmount() {
         const st = document.getElementById('flowerStage'); if(st) st.style.display = 'none';
-        document.body.classList.remove('is-flower-game-active');
-        
-        const tqBtn = document.getElementById('toggleQuestionBtn');
-        if(tqBtn) { 
-            tqBtn.disabled = false; 
-            tqBtn.style.opacity = "1"; 
-            tqBtn.style.pointerEvents = "auto";
-        }
+        // Убираем все метки — кнопки 1-6 вернутся сами по CSS
+        document.body.classList.remove('is-flower-game-active', 'flower-int-active');
 
         const rs = document.getElementById('res-status'); if(rs) rs.classList.remove('visible');
         const rc = document.getElementById('res-content'); if(rc) rc.classList.remove('visible');
@@ -5785,69 +5936,81 @@ const FlowerGame = (function() {
         }
     }
 
-    function play(forcedCount = null) {
+    function play(forcedResult = null) {
         if (isSpinning || isGameActive) return;
-
-        // Жесткая задержка в 300мс против случайных двойных кликов
         const now = Date.now();
         if (now - lastClickTime < 300) return;
         lastClickTime = now;
 
         const container = document.getElementById('flowerPetalsContainer');
-        const isEmpty = container && container.children.length === 0;
-
-        // 1. ЕСЛИ ИГРА ОКОНЧЕНА (ИЛИ ПУСТАЯ) - ТОЛЬКО ВОССТАНАВЛИВАЕМ ЛЕПЕСТКИ И ВЫХОДИМ
-        if (isEmpty || (tornCount > 0 && tornCount >= totalPetals)) {
-            const uq = document.getElementById('userQuestion');
-            if(uq && !GameState.isQuestionHidden) uq.value = '';
-            
-            currentSessionId++;
+        if (!container || (container.children.length === 0 && !forcedResult)) {
             resetToIdle(true);
-            if(tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
-            return; 
+            return;
         }
 
-        // 2. ЕСЛИ ЛЕПЕСТКИ УЖЕ ЕСТЬ - ЗАПУСКАЕМ ИГРУ
         const uq = document.getElementById('userQuestion');
         const q = uq ? uq.value.trim() : '';
         const t = LANG_DATA[GameState.lang];
-        
-        if (!GameState.isQuestionHidden && !q && forcedCount === null) { 
+        if (!GameState.isQuestionHidden && !q && forcedResult === null) { 
             if(typeof App !== 'undefined') { App.triggerButtonError(); App.showError(t.error); }
-            return; 
+            return;
         }
         
-        if(typeof App !== 'undefined') App.hideError(); 
-        
+        if(typeof App !== 'undefined') App.hideError();
         isGameActive = true;
         isSpinning = true;
         tornCount = 0;
         tornIndices = [];
         originalQuestion = q; 
-        
         selectedStubCount = null;
         currentStubs = 0;
         stubIndices = [];
-        const isIntuition = GameState.subModes.flower === 'intuition';
-        totalPetals = forcedCount !== null ? forcedCount : Math.floor(getCryptoRandom() * 8) + 11;
         
-        if (isIntuition) {
-            targetStubs = Math.floor(getCryptoRandom() * 6); 
-            while(stubIndices.length < targetStubs) {
-                let r = Math.floor(Math.random() * totalPetals);
-                if(!stubIndices.includes(r)) stubIndices.push(r);
+        const isInt = GameState.subModes.flower === 'intuition';
+
+        // === ИСПРАВЛЕННАЯ ЛОГИКА КОНАМИ-КОДА ===
+        if (isInt) {
+            if (forcedResult === 'win_int') {
+                totalPetals = 5; 
+                targetStubs = 1; 
+                stubIndices = [0]; 
+                currentOptions = [1]; 
+            } else if (forcedResult === 'lose_int') {
+                totalPetals = 5;
+                targetStubs = 4; // Теперь это число реально достижимо для цикла!
+                currentOptions = [0, 1, 2, 3, 5]; // Специально исключаем "4" из кнопок выбора
+            } else {
+                totalPetals = 11 + Math.floor(getCryptoRandom() * 8);
+                targetStubs = Math.floor(getCryptoRandom() * 6);
+                currentOptions = [targetStubs];
             }
-            
-            currentOptions = [targetStubs];
-            while(currentOptions.length < 5) {
-                let r = Math.floor(Math.random() * 9); 
+
+            // Настройка вариантов ответа (с защитой от зависания)
+            let safety = 0;
+            while(currentOptions.length < 5 && safety < 100) {
+                safety++;
+                let r = Math.floor(Math.random() * 9);
                 if(!currentOptions.includes(r)) currentOptions.push(r);
             }
             currentOptions.sort((a,b) => a - b);
+
+            // Настройка индексов стабов (с защитой от зависания)
+            if (forcedResult !== 'win_int') {
+                safety = 0;
+                while(stubIndices.length < targetStubs && safety < 100) {
+                    safety++;
+                    let r = Math.floor(Math.random() * totalPetals);
+                    if(!stubIndices.includes(r)) stubIndices.push(r);
+                }
+            }
+        } else {
+            if (forcedResult === true) totalPetals = 7; 
+            else if (forcedResult === false) totalPetals = 8; 
+            else totalPetals = 11 + Math.floor(getCryptoRandom() * 8);
         }
+        // ======================================
         
         updateFlowerUIState();
-        
         currentSessionId++;
         const session = currentSessionId;
 
@@ -5856,68 +6019,21 @@ const FlowerGame = (function() {
         
         const rs = document.getElementById('res-status'); if(rs) rs.classList.remove('visible');
         const rc = document.getElementById('res-content'); if(rc) rc.classList.remove('visible');
-        const selector = document.getElementById('flowerNumberSelector'); if(selector) selector.classList.remove('visible');
 
         const rotator = document.getElementById('flowerRotator');
-        
         if (rotator) {
             if(typeof App !== 'undefined') App.playSoundEffect('load');
-            
-            // --- ПАТЧ ИСПРАВЛЕНИЯ "ДЕРГАНЬЯ" ---
-            let currentAngle = 0;
-            const match = (rotator.style.transform || '').match(/rotate\(([-0-9.]+)deg\)/);
-            if (match && match[1]) {
-                currentAngle = parseFloat(match[1]);
-            }
-            // Нормализуем угол, чтобы он не улетал в бесконечность
-            const normalizedAngle = currentAngle % 360;
-
             rotator.style.transition = 'none';
-            rotator.style.transform = `rotate(${normalizedAngle}deg)`;
-
-            // Принудительный Reflow (заставляет браузер применить стили мгновенно, без скачков)
+            rotator.style.transform = 'rotate(0deg)';
             void rotator.offsetWidth;
-
-            // Теперь добавляем красивые обороты
-            const newAngle = normalizedAngle + 360 * (4 + Math.floor(getCryptoRandom() * 2));
             rotator.style.transition = 'transform 2.5s cubic-bezier(0.45, 0.05, 0.55, 0.95)';
-            rotator.style.transform = `rotate(${newAngle}deg)`;
-            // -----------------------------------
+            rotator.style.transform = `rotate(${360 * 5}deg)`;
 
-            setTimeout(() => { 
-                if (session !== currentSessionId) return;
-                renderPetals(totalPetals); 
-            }, 1000);
-
+            setTimeout(() => { if (session === currentSessionId) renderPetals(totalPetals); }, 1000);
             setTimeout(() => {
                 if (session !== currentSessionId) return;
                 isSpinning = false;
-                
-                if (isIntuition) {
-                    if (selector) {
-                        selector.innerHTML = '';
-                        currentOptions.forEach(num => {
-                            const btn = document.createElement('div');
-                            btn.className = 'flower-guess-btn';
-                            btn.innerText = num;
-                            btn.onclick = () => selectStubCount(num, btn);
-                            selector.appendChild(btn);
-                        });
-                        selector.classList.add('visible');
-                    }
-                    if(rollBtn) { 
-                        rollBtn.innerText = t.flowerChoose || "ВЫБЕРИ ЧИСЛО"; 
-                        rollBtn.classList.remove('gold-text-active'); 
-                        rollBtn.disabled = false; 
-                    }
-                } else {
-                    if(rollBtn) { 
-                        rollBtn.innerText = t.flowerTear || "ОТРЫВАЙ ЛЕПЕСТКИ"; 
-                        rollBtn.classList.remove('gold-text-active'); 
-                        rollBtn.disabled = false;
-                    }
-                }
-                
+                restoreUI();
                 if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
             }, 2600);
         }
@@ -6122,11 +6238,30 @@ const FlowerGame = (function() {
         const hl = document.getElementById('historyListFlower') || document.getElementById('historyListDice');
         if(hl) hl.prepend(item);
         
-        // ИНЖЕКЦИЯ: Правильное добавление кристалла (через Ядро)
+        // === УМНЫЕ НАГРАДЫ ЗА РОМАШКУ ===
         if(typeof App !== 'undefined') { 
-            App.addCrystal('flower', GameState.subModes.flower); 
+            const isWin = (uiColor === "var(--friendly-green)"); // Проверка на успех
+            
+            if (isWin) {
+                let flowerReward = 0;
+                
+                if (GameState.subModes.flower === 'intuition') {
+                    // ИНТУИЦИЯ: Угадал точное число — 5 кристаллов
+                    flowerReward = 5;
+                } else {
+                    // ЖРЕБИЙ: Выпало "ДА" — 2 кристалла
+                    flowerReward = 2;
+                }
+                
+                if (flowerReward > 0) {
+                    App.addCrystal('flower', GameState.subModes.flower, flowerReward);
+                }
+            }
+            // Если проигрыш (НЕТ или не угадал число) — кристалл не выдается!
+
             App.requestProfileSave(); 
         }
+        // ===============================
         
         const rollBtn = document.getElementById('rollBtn');
         const selector = document.getElementById('flowerNumberSelector');
@@ -7468,7 +7603,7 @@ const ShopGame = (function() {
                 }
                 
                 priceSection = `
-                    <div style="display: flex; flex-direction: row; justify-content: center; align-items: center; gap: 8px; width: 90%; margin-top: auto; background: rgba(0,0,0,0.5); padding: 4px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);">
+                    <div style="display: flex; flex-direction: row; justify-content: center; align-items: center; gap: 2px; width: 90%; margin-top: auto; background: rgba(0,0,0,0.5); padding: 4px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);">
                         ${priceInnerHTML}
                     </div>
                 `;
