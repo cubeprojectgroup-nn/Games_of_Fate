@@ -453,18 +453,18 @@
         @keyframes sparkle-fly { 0% { opacity: 1; transform: translate(-50%, -50%) scale(1); } 100% { opacity: 0; transform: translate(var(--fly-x), var(--fly-y)) scale(0); } }
 
         /* === [ ОТЛАДКА И ИСТОРИЯ ] === */
-        .debug-panel {
+        .debug-panel { 
     display: none;
-    justify-content: center;
-    gap: 8px;
-    margin: 5px 0 10px 0;
-    width: 100%;
+    justify-content: center; 
+    gap: 8px; 
+    margin: 5px 0 10px 0; 
+    width: 100%; 
     max-width: 350px;
-    /* --- ДОБАВИТЬ ЭТО --- */
+    /* --- ФИКС КАСАНИЙ НА МОБИЛКЕ --- */
     position: relative; 
-    z-index: 9999; /* Вытаскиваем кнопки поверх магазина и любых размытий */
-    pointer-events: auto; /* Жестко разрешаем клики */
-	}
+    z-index: 9999;
+    pointer-events: auto;
+}
         .debug-btn { width: 35px; height: 35px; border-radius: 50%; background: rgba(162, 155, 254, 0.1); border: 1px solid var(--magic-color); font-size: 14px; color: white; font-weight: bold; cursor: pointer; transition: 0.3s; display: flex; align-items: center; justify-content: center; }
         .debug-btn:active { background: var(--magic-color); color: #000; transform: scale(0.9); }
 
@@ -683,11 +683,11 @@
             text-align: center !important;
         }
 
-/* Возвращаем плавное размытие сверху и снизу для магазина */
-        #shopStage {
-            -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 5%, black 95%, transparent 100%) !important;
-            mask-image: linear-gradient(to bottom, transparent 0%, black 5%, black 95%, transparent 100%) !important;
-        }
+		/* Возвращаем плавное размытие сверху и снизу для магазина */
+		#shopStage {
+			-webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 5%, black 95%, transparent 100%) !important;
+			mask-image: linear-gradient(to bottom, transparent 0%, black 5%, black 95%, transparent 100%) !important;
+}
 
 /* --- СЕКРЕТНЫЙ ПЕРЕКЛЮЧАТЕЛЬ ДЕБАГА ДЛЯ РОМАШКИ --- */
 /* 1. Если активна любая ромашка — прячем цифры 1-6 */
