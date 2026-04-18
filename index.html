@@ -189,6 +189,34 @@
 /* Увеличенные эмодзи в дуэли */
 .rps-hand { font-size: 110px !important; } /* Сделали значительно больше */
 
+/* === ЭФФЕКТ ФАТАЛЬНОГО ВЫСТРЕЛА === */
+        body.fatal-shot {
+            animation: screen-shake 0.5s cubic-bezier(.36,.07,.19,.97) both !important;
+        }
+        
+        /* Кровавая пелена поверх абсолютно всего интерфейса */
+        body.fatal-shot::after {
+            content: "";
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: #ff0000;
+            z-index: 999999;
+            pointer-events: none;
+            animation: blood-flash 0.6s ease-out forwards;
+        }
+
+        @keyframes blood-flash {
+            0% { opacity: 0; }
+            10% { opacity: 0.9; background: #ffffff; } /* Сначала ослепительно белый */
+            25% { opacity: 0.7; background: #ff0000; } /* Резко красный */
+            100% { opacity: 0; }
+        }
+
+        @keyframes screen-shake {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            10%, 30%, 50%, 70%, 90% { transform: translate(-5px, 4px) rotate(-0deg); }
+            20%, 40%, 60%, 80% { transform: translate(5px, -4px) rotate(0deg); }
+        }
 
         /* === [ CSS: ГЛАВНОЕ МЕНЮ И ПРОФИЛИ ] === */
         #mainMenuOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 400; display: flex; flex-direction: column; align-items: center; justify-content: center; background: transparent; transition: opacity 0.5s ease; overflow-y: auto; }
@@ -1028,6 +1056,7 @@ setInterval(() => {
 <div class="history" id="historyBlock">
             <div id="historyListDice"></div>
             <div id="historyListRoulette" style="display: none;"></div>
+			<div id="historyListBank" style="display: none;"></div>
             <div id="historyListSurvival" style="display: none;"></div>
             <div id="historyListCoin" style="display: none;"></div>
             <div id="historyListFlower" style="display: none;"></div>
@@ -1842,7 +1871,7 @@ setInterval(() => {
                     }
                 };
 
-                const lists = ['historyListDice', 'historyListRoulette', 'historyListSurvival', 'historyListCoin', 'historyListFlower', 'historyListRPS', 'historyListShop'];
+                const lists = ['historyListDice', 'historyListRoulette', 'historyListBank', 'historyListSurvival', 'historyListCoin', 'historyListFlower', 'historyListRPS', 'historyListShop'];
                 lists.forEach(id => { const el = document.getElementById(id); if(el) el.innerHTML = ''; });
 
                 if (idx !== -1 && GameState.profiles[idx]) {
@@ -1850,7 +1879,8 @@ setInterval(() => {
                     
                     setH('historyListDice', p.historyDice);
                     setH('historyListRoulette', p.historyRoulette);
-                    setH('historyListSurvival', p.historySurvival); 
+					setH('historyListBank', p.historyBank); 
+					setH('historyListSurvival', p.historySurvival);
                     setH('historyListCoin', p.historyCoin);
                     setH('historyListFlower', p.historyFlower);
                     setH('historyListRPS', p.historyRPS);
@@ -1912,7 +1942,9 @@ setInterval(() => {
 
                 // РАЗРЕШАЕМ Монете использовать стандартный класс
                 p.historyDice = getCleanH('historyListDice', ['hist-standard', 'hist-trader', 'hist-alco', 'hist-yesno']);
-                p.historyRoulette = getCleanH('historyListRoulette', ['hist-roulette', 'hist-bank']);
+                p.historyRoulette = getCleanH('historyListRoulette', ['hist-roulette']);
+				p.historyBank = getCleanH('historyListBank', ['hist-bank']);
+				p.historySurvival = getCleanH('historyListSurvival', ['hist-survival']);
                 p.historyCoin = getCleanH('historyListCoin', ['hist-standard', 'hist-question']); // <--- ВАЖНО
                 p.historyFlower = getCleanH('historyListFlower', ['hist-standard', 'hist-intuition']);
                 p.historyRPS = getCleanH('historyListRPS', ['hist-standard', 'hist-pvp']);
@@ -2225,7 +2257,11 @@ setInterval(() => {
                 
                 let activeId = 'historyListDice';
                 if (mode === 'dice') activeId = 'historyListDice';
-                else if (mode === 'roulette') activeId = (subMode === 'survival') ? 'historyListSurvival' : 'historyListRoulette';
+                else if (mode === 'roulette') {
+                    if (subMode === 'survival') activeId = 'historyListSurvival';
+                    else if (subMode === 'bank') activeId = 'historyListBank';
+                    else activeId = 'historyListRoulette';
+					}
                 else if (mode === 'coin') activeId = 'historyListCoin';
                 else if (mode === 'flower') activeId = 'historyListFlower';
                 else if (mode === 'rps') activeId = 'historyListRPS';
@@ -2242,7 +2278,8 @@ setInterval(() => {
                                 let isAllowed = false;
                                 
                                 if (id === 'historyListDice') isAllowed = child.matches('.hist-standard, .hist-trader, .hist-alco, .hist-yesno');
-                                else if (id === 'historyListRoulette') isAllowed = child.matches('.hist-roulette, .hist-bank');
+                                else if (id === 'historyListRoulette') isAllowed = child.matches('.hist-roulette');
+                                else if (id === 'historyListBank') isAllowed = child.matches('.hist-bank');
                                 else if (id === 'historyListSurvival') isAllowed = child.matches('.hist-survival');
                                 else if (id === 'historyListCoin') isAllowed = child.matches('.hist-standard, .hist-question');
                                 else if (id === 'historyListFlower') isAllowed = child.matches('.hist-standard, .hist-intuition');
@@ -3958,18 +3995,33 @@ setInterval(() => {
             function switchSubMode(newMode, event) {
                 if (isSpinningDrum || isWaitingResult || isBetting) return;
                 
-                // 1. Сначала жестко синхронизируем текущие пули в память
-                saveCurrentSubState(); 
+                // === ФИКС 2: СОСТОЯНИЕ ГОНКИ (Устраняем перетекание патронов) ===
+                // 1. Сохраняем патроны СТРОГО в старый режим
+                const oldMode = GameState.subModes.roulette;
+                if (subStates[oldMode]) {
+                    subStates[oldMode].loadedBullets = loadedBullets;
+                    subStates[oldMode].chamberState = [...chamberState];
+                    subStates[oldMode].stashState = [...stashState];
+                    subStates[oldMode].drumRotation = drumRotation;
+                    subStates[oldMode].survivalCount = survivalCount;
+                    subStates[oldMode].survivalInitialBullets = survivalInitialBullets;
+                }
                 
-                // 2. Вызываем смену режима в Ядре
+                // 2. Загружаем патроны НОВОГО режима в память Пули ДО ТОГО, как Ядро начнет сохранять
+                if (subStates[newMode]) {
+                    loadedBullets = subStates[newMode].loadedBullets;
+                    chamberState = [...subStates[newMode].chamberState];
+                    stashState = [...subStates[newMode].stashState];
+                    drumRotation = subStates[newMode].drumRotation;
+                    survivalCount = subStates[newMode].survivalCount;
+                    survivalInitialBullets = subStates[newMode].survivalInitialBullets;
+                }
+                
+                // 3. Теперь безопасно просим Ядро сменить режим и сохранить профиль
                 if(typeof App !== 'undefined') App.selectSubMode('roulette', newMode, event); 
                 
-                // 3. ПАУЗА: Даем Ядру скрыть старую историю в DOM
-                setTimeout(() => {
-                    loadCurrentSubState(); // Загружаем пули нового режима
-                    restoreDrumVisuals();  // Обновляем барабан
-                    if(typeof App !== 'undefined') App.requestProfileSave();
-                }, 10); 
+                // 4. Обновляем барабан
+                restoreDrumVisuals(); 
             }
 			
             function updateBankUI() {
@@ -4067,7 +4119,10 @@ setInterval(() => {
                 if(rlb) rlb.style.display = 'flex';
                 
                 const hlr = document.getElementById('historyListRoulette'); 
-                if (hlr && GameState.subModes.roulette !== 'survival') hlr.style.display = 'block';
+                if (hlr && GameState.subModes.roulette === 'standard') hlr.style.display = 'block';
+                
+                const hlb = document.getElementById('historyListBank'); 
+                if (hlb && GameState.subModes.roulette === 'bank') hlb.style.display = 'block';
                 
                 const hls = document.getElementById('historyListSurvival'); 
                 if (hls && GameState.subModes.roulette === 'survival') hls.style.display = 'block';
@@ -4107,9 +4162,10 @@ setInterval(() => {
                 if (typeof updateGlobalCounters === 'function') updateGlobalCounters();
                 if (typeof updateBankUI === 'function') updateBankUI(); 
                 
-                initInteraction();
-                syncStateToUI();
-                applyTransform();
+                // === ФИКС 3: ПРИЗРАКИ КОСТИ ===
+                // Убрали несуществующие функции, которые ломали инициализацию
+                loadCurrentSubState();
+                restoreDrumVisuals();
             }
 
             function unmount() {
@@ -4137,6 +4193,9 @@ setInterval(() => {
 
                 const hlr = document.getElementById('historyListRoulette');
                 if (hlr) hlr.style.display = 'none';
+				
+				const hlb = document.getElementById('historyListBank');
+                if (hlb) hlb.style.display = 'none';
                 
                 const hls = document.getElementById('historyListSurvival');
                 if (hls) hls.style.display = 'none';
@@ -4428,8 +4487,13 @@ setInterval(() => {
                 isWaitingResult = false; // КРИТИЧНО: Снимаем флаг ожидания
                 
                 // Очистка UI
-                const sc = document.getElementById('survivalCounter'); if(sc) sc.classList.remove('visible');
-                const dr = document.getElementById('drumRotator'); if(dr) { dr.style.transition = 'none'; dr.style.transform = `rotate(0deg)`; } 
+				const sc = document.getElementById('survivalCounter'); if(sc) sc.classList.remove('visible');
+				const dr = document.getElementById('drumRotator'); if(dr) { dr.style.transition = 'none'; dr.style.transform = `rotate(0deg)`; } 
+            
+				// ВЫПРЯМЛЯЕМ ЦИФРЫ ПРИ СБРОСЕ БАРАБАНА
+				updateNumbers();
+            
+				document.querySelectorAll('.stash-bullet').forEach(b => { b.classList.remove('loaded', 'disabled-srv'); }); 
                 
                 document.querySelectorAll('.stash-bullet').forEach(b => { b.classList.remove('loaded', 'disabled-srv'); });
                 document.querySelectorAll('.chamber-slot').forEach(c => { c.classList.remove('filled', 'fired', 'heart-pulse', 'skull-aura'); });
@@ -4799,8 +4863,8 @@ setInterval(() => {
                     mainSubI = '<i class="fas fa-skull-crossbones" style="font-size: 75px;"></i>'; 
                     histSubI = '<i class="fas fa-skull-crossbones"></i>';
                     
-                    document.body.classList.add('flash-red'); 
-                    setTimeout(()=>document.body.classList.remove('flash-red'), 500); 
+                    document.body.classList.add('fatal-shot'); 
+                    setTimeout(() => document.body.classList.remove('fatal-shot'), 600);
                     
                     if (tg.HapticFeedback) { 
                         tg.HapticFeedback.notificationOccurred('error'); 
@@ -4997,32 +5061,38 @@ setInterval(() => {
                 
                 if(typeof App !== 'undefined') App.playSoundEffect('result', snd);
 
-                if (mode !== 'survival') {
-                    const item = document.createElement('div');
-                    // ФИКС: Выдаем пуле уникальный паспорт 'hist-roulette'
-                    const safeMode = (mode === 'standard') ? 'roulette' : mode;
-                    item.className = 'history-item hist-' + safeMode;
-                    
-                    let histHeader = "";
-                    const bulletsTag = `<span style="color:#aaa; font-size:9px;">[${loadedBullets}/6]</span>`;
-                    if (mode === 'bank') {
-                        histHeader = `<span style="color:var(--sun-gold); font-weight:bold; text-shadow: 0 0 5px var(--sun-gold);">$${currentPoolForHist.toFixed(2)}</span> ${bulletsTag}`;
-                    } else {
-                        const qMark = `<span style="color:#fff; font-weight:bold; text-shadow: 0 0 8px #fff, 0 0 15px ${uiColor};">?</span>`;
-                        const qText = GameState.isQuestionHidden ? '---' : originalQuestion;
-                        const subNames = { standard: t.smRoulStd, bank: t.smBank, survival: t.smSurv };
-                        const mTag = `<span style="color:#aaa; font-size:9px;">[${subNames[mode].toUpperCase()}]</span>`;
-                        histHeader = `${qMark} ${qText} ${mTag} ${bulletsTag}`;
-                    }
-
-                    item.innerHTML = `${histHeader}<br><span style="color:${uiColor};">➔ ${histSubI} ${histDispTxt}</span>`;
-                    const hlr = document.getElementById('historyListRoulette');
-                    if (hlr) {
-                        hlr.prepend(item);
-                        // ПРЯМАЯ ЗАПИСЬ УДАЛЕНА! 
-                        // Теперь Пуля доверяет сохранение нашему Ядру и его Иммунной системе.
-                    }
+                // === ФИКС 1: ПИШЕМ ИСТОРИЮ ДЛЯ ВСЕХ РЕЖИМОВ (ВКЛЮЧАЯ ВЫЖИВАНИЕ) ===
+                const item = document.createElement('div');
+                const safeMode = (mode === 'standard') ? 'roulette' : mode;
+                item.className = 'history-item hist-' + safeMode; // Раздаем правильные паспорта
+                
+                let histHeader = "";
+                const bulletsTag = `<span style="color:#aaa; font-size:9px;">[${loadedBullets}/6]</span>`;
+                
+                if (mode === 'bank') {
+                    histHeader = `<span style="color:var(--sun-gold); font-weight:bold; text-shadow: 0 0 5px var(--sun-gold);">$${currentPoolForHist.toFixed(2)}</span> ${bulletsTag}`;
+                } else if (mode === 'survival') {
+                     histHeader = `<span style="color:var(--friendly-green); font-weight:bold;">Попытка ${survivalCount > 0 ? survivalCount : 'провалена'}</span> ${bulletsTag}`;
+                } else {
+                    const qMark = `<span style="color:#fff; font-weight:bold; text-shadow: 0 0 8px #fff, 0 0 15px ${uiColor};">?</span>`;
+                    const qText = GameState.isQuestionHidden ? '---' : originalQuestion;
+                    const subNames = { standard: t.smRoulStd, bank: t.smBank, survival: t.smSurv };
+                    const mTag = `<span style="color:#aaa; font-size:9px;">[${subNames[mode].toUpperCase()}]</span>`;
+                    histHeader = `${qMark} ${qText} ${mTag} ${bulletsTag}`;
                 }
+
+                item.innerHTML = `${histHeader}<br><span style="color:${uiColor};">➔ ${histSubI} ${histDispTxt}</span>`;
+                
+                // Раскладываем логи по правильным контейнерам!
+                let targetContainerId = 'historyListRoulette';
+                if (mode === 'survival') targetContainerId = 'historyListSurvival';
+                else if (mode === 'bank') targetContainerId = 'historyListBank';
+                
+                const container = document.getElementById(targetContainerId);
+                if (container) {
+                    container.prepend(item);
+                }
+                // =================================================================
 
                 if(typeof App !== 'undefined') {
                     App.clearQuestionDraft();
