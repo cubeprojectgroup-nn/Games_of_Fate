@@ -1899,6 +1899,7 @@ setInterval(() => {
 // === ПЕРЕМЕННАЯ-ЗАМОК ===
             let isSwitchingProfile = false;
 
+            // === 1. ЗАГРУЗКА ПРОФИЛЯ ===
             function loadProfileData(idx) {
                 isSwitchingProfile = true; 
                 const uq = document.getElementById('userQuestion');
@@ -1909,31 +1910,29 @@ setInterval(() => {
                 try { if (typeof RPSGame !== 'undefined' && RPSGame.resetAll) RPSGame.resetAll(); } catch(e){}
                 try { if (typeof RouletteGame !== 'undefined' && RouletteGame.reset) RouletteGame.reset(); } catch(e){}
 
-                const cleanHTML = (rawStr) => {
-                    if (!rawStr) return '';
-                    const temp = document.createElement('div');
-                    temp.innerHTML = rawStr;
-                    let clean = '';
-                    Array.from(temp.children).forEach(child => {
-                        if (child.classList.contains('history-item') || child.classList.contains('history-header')) {
-                            clean += child.outerHTML;
+                // 🛡️ ГАРАНТИЯ КОНТЕЙНЕРОВ: Создаем их до загрузки, если их нет в HTML
+                const histBlock = document.getElementById('historyBlock');
+                const lists = ['historyListDice', 'historyListRoulette', 'historyListBank', 'historyListSurvival', 'historyListCoin', 'historyListFlower', 'historyListRPS', 'historyListShop', 'historyListSticks'];
+                if (histBlock) {
+                    lists.forEach(id => {
+                        if (!document.getElementById(id)) {
+                            const el = document.createElement('div');
+                            el.id = id;
+                            el.style.display = 'none';
+                            histBlock.appendChild(el);
                         }
                     });
-                    return clean;
-                };
+                }
 
-                // ЮВЕЛИРНАЯ ЗАГРУЗКА: Очищаем и вставляем только логи
+                // ЮВЕЛИРНАЯ ЗАГРУЗКА
                 const setH = (id, val) => { 
                     const el = document.getElementById(id);
                     if (el) {
-                        // 1. Выщипываем старые логи, НЕ трогая ачивки и другие вложенные div-ы
                         Array.from(el.children).forEach(child => {
                             if (child.classList.contains('history-item') || child.classList.contains('history-header')) {
                                 child.remove();
                             }
                         });
-                        
-                        // 2. Аккуратно вставляем новые логи из памяти
                         if (val && val.trim() !== '') {
                             const temp = document.createElement('div');
                             temp.innerHTML = val;
@@ -1944,7 +1943,6 @@ setInterval(() => {
                     }
                 };
 
-                const lists = ['historyListDice', 'historyListRoulette', 'historyListBank', 'historyListSurvival', 'historyListCoin', 'historyListFlower', 'historyListRPS', 'historyListShop', 'historyListSticks'];
                 lists.forEach(id => { const el = document.getElementById(id); if(el) el.innerHTML = ''; });
 
                 if (idx !== -1 && GameState.profiles[idx]) {
@@ -1952,16 +1950,15 @@ setInterval(() => {
                     
                     setH('historyListDice', p.historyDice);
                     setH('historyListRoulette', p.historyRoulette);
-					setH('historyListBank', p.historyBank); 
-					setH('historyListSurvival', p.historySurvival);
+                    setH('historyListBank', p.historyBank); 
+                    setH('historyListSurvival', p.historySurvival);
                     setH('historyListCoin', p.historyCoin);
                     setH('historyListFlower', p.historyFlower);
                     setH('historyListRPS', p.historyRPS);
                     setH('historyListShop', p.historyShop);
-					setH('historyListSticks', p.historySticks);
+                    setH('historyListSticks', p.historySticks);
 
-                    // УНИФИКАЦИЯ: Дефолт 'standard' для Кости Истины
-                    GameState.subModes = (p.settings && p.settings.subModes) ? JSON.parse(JSON.stringify(p.settings.subModes)) : { dice: 'standard', roulette: 'standard', coin: 'standard', flower: 'standard', rps: 'standard', shop: 'standard' };
+                    GameState.subModes = (p.settings && p.settings.subModes) ? JSON.parse(JSON.stringify(p.settings.subModes)) : { dice: 'standard', roulette: 'standard', coin: 'standard', flower: 'standard', rps: 'standard', shop: 'standard', sticks: 'standard' };
 
                     try { if(typeof Achievements !== 'undefined' && Achievements.load) Achievements.load(p.unlocked, p.order); } catch(e){}
                     try { if(typeof RouletteGame !== 'undefined' && RouletteGame.loadStats) RouletteGame.loadStats(p.rStats); } catch(e){}
@@ -1969,7 +1966,7 @@ setInterval(() => {
                     if (typeof changeBackground === 'function') changeBackground(true);
                     if (p.settings && typeof applySettings === 'function') applySettings(p.settings);
                 } else {
-                    GameState.subModes = { dice: 'standard', roulette: 'standard', coin: 'standard', flower: 'standard', rps: 'standard', shop: 'standard' };
+                    GameState.subModes = { dice: 'standard', roulette: 'standard', coin: 'standard', flower: 'standard', rps: 'standard', shop: 'standard', sticks: 'standard' };
                 }
 
                 updateHistoryView();
@@ -1978,20 +1975,21 @@ setInterval(() => {
                 setTimeout(() => { isSwitchingProfile = false; }, 100);
             }
 
+            // === 2. СОХРАНЕНИЕ ПРОФИЛЯ ===
             function requestProfileSave() {
                 if (typeof isSwitchingProfile !== 'undefined' && isSwitchingProfile) return;
                 if (GameState.activeProfileIdx === -1 || !GameState.profiles[GameState.activeProfileIdx]) return;
                 
                 const p = GameState.profiles[GameState.activeProfileIdx];
                 
-                // ЮВЕЛИРНОЕ СОХРАНЕНИЕ: Берем только логи, игнорируем вложенные контейнеры
-                const getCleanH = (id, allowedClasses) => { 
+                // ЮВЕЛИРНОЕ СОХРАНЕНИЕ (С БРОНЕЖИЛЕТОМ ДЛЯ ДАННЫХ)
+                const getCleanH = (id, allowedClasses, fallbackData) => { 
                     const el = document.getElementById(id);
-                    if (!el) return '';
+                    // 🛡️ ЕСЛИ БЛОКА НЕТ НА ЭКРАНЕ - ПРОСТО ОСТАВЛЯЕМ СТАРУЮ ЗАПИСЬ ИЗ ПАМЯТИ!
+                    if (!el) return fallbackData || ''; 
                     
                     let cleanContent = '';
                     Array.from(el.children).forEach(child => {
-                        // Смотрим только на элементы с классом лога
                         if (child.classList.contains('history-item')) {
                             let isAllowed = false;
                             if (allowedClasses) {
@@ -2000,11 +1998,10 @@ setInterval(() => {
                                 isAllowed = true;
                             }
                             
-                            // Записываем только чистый HTML самого лога
                             if (isAllowed) {
                                 cleanContent += child.outerHTML;
                             } else {
-                                child.remove(); // Заодно счищаем с экрана нелегалов
+                                child.remove(); 
                             }
                         } else if (child.classList.contains('history-header')) {
                             cleanContent += child.outerHTML;
@@ -2014,16 +2011,16 @@ setInterval(() => {
                     return cleanContent.trim().length > 5 ? cleanContent : ''; 
                 };
 
-                // РАЗРЕШАЕМ Монете использовать стандартный класс
-                p.historyDice = getCleanH('historyListDice', ['hist-standard', 'hist-trader', 'hist-alco', 'hist-yesno']);
-                p.historyRoulette = getCleanH('historyListRoulette', ['hist-roulette']);
-                p.historyBank = getCleanH('historyListBank', ['hist-bank']);
-                p.historySurvival = getCleanH('historyListSurvival', ['hist-survival']);
-                p.historyCoin = getCleanH('historyListCoin', ['hist-standard', 'hist-question']); 
-                p.historyFlower = getCleanH('historyListFlower', ['hist-standard', 'hist-intuition']);
-                p.historyRPS = getCleanH('historyListRPS', ['hist-standard', 'hist-pvp']);
-                p.historyShop = getCleanH('historyListShop', ['hist-standard']);
-                p.historySticks = getCleanH('historyListSticks', ['hist-standard', 'hist-pvp']);
+                // Передаем текущую память (p.history...) как запасной вариант (fallback)
+                p.historyDice = getCleanH('historyListDice', ['hist-standard', 'hist-trader', 'hist-alco', 'hist-yesno'], p.historyDice);
+                p.historyRoulette = getCleanH('historyListRoulette', ['hist-roulette'], p.historyRoulette);
+                p.historyBank = getCleanH('historyListBank', ['hist-bank'], p.historyBank);
+                p.historySurvival = getCleanH('historyListSurvival', ['hist-survival'], p.historySurvival);
+                p.historyCoin = getCleanH('historyListCoin', ['hist-standard', 'hist-question'], p.historyCoin); 
+                p.historyFlower = getCleanH('historyListFlower', ['hist-standard', 'hist-intuition'], p.historyFlower);
+                p.historyRPS = getCleanH('historyListRPS', ['hist-standard', 'hist-pvp'], p.historyRPS);
+                p.historyShop = getCleanH('historyListShop', ['hist-standard', 'hist-perks', 'hist-exchange', 'hist-shop'], p.historyShop);
+                p.historySticks = getCleanH('historyListSticks', ['hist-standard', 'hist-pvp'], p.historySticks);
 
                 const bgSel = document.getElementById('bgSelect');
                 const spTog = document.getElementById('sparkleToggle');
@@ -2038,20 +2035,16 @@ setInterval(() => {
                 try { if (typeof Achievements !== 'undefined' && Achievements.getOrder) p.order = Achievements.getOrder(); } catch(e){}
                 try { if (typeof RouletteGame !== 'undefined' && RouletteGame.getStats) p.rStats = RouletteGame.getStats(); } catch(e){}
 
-                // ЗАПИСЬ В ПАМЯТЬ БРАУЗЕРА
                 localStorage.setItem('gof_profiles', JSON.stringify(GameState.profiles));
             }
-
-            // Заглушка для старых вызовов из плагинов
-            function saveProfileData() { requestProfileSave(); }
 
             // === 3. СОЗДАНИЕ ИГРОКА БЕЗ УТЕЧЕК ===
             function createNewProfile(e) {
                 if (e) e.stopPropagation();
                 isSwitchingProfile = true; 
                 
-                // ДОБАВЛЕНО: 'historyListSticks' в массив
-                const lists = ['historyListDice', 'historyListRoulette', 'historyListSurvival', 'historyListCoin', 'historyListFlower', 'historyListRPS', 'historyListShop', 'historyListSticks'];
+                // ИСПРАВЛЕНИЕ: Добавлен historyListBank в массив очистки
+                const lists = ['historyListDice', 'historyListRoulette', 'historyListBank', 'historyListSurvival', 'historyListCoin', 'historyListFlower', 'historyListRPS', 'historyListShop', 'historyListSticks'];
                 lists.forEach(id => { const el = document.getElementById(id); if (el) el.innerHTML = ''; });
 
                 const newIdx = GameState.profiles.length;
@@ -2070,16 +2063,16 @@ setInterval(() => {
                         diceMode: 'standard', 
                         bgTheme: 'bg1', 
                         sparkles: true,
-                        // ДОБАВЛЕНО: sticks: 'standard'
                         subModes: { dice: 'standard', roulette: 'standard', coin: 'standard', flower: 'standard', rps: 'standard', shop: 'standard', sticks: 'standard' }
                     },
                     historyDice: '', 
                     historyRoulette: '', 
                     historySurvival: '', 
+                    historyBank: '', // ИСПРАВЛЕНИЕ: Добавлен Банк
                     historyCoin: '', 
                     historyFlower: '', 
                     historyRPS: '', 
-                    historyShop: '', // <-- ТУТ БЫЛА ПРОПУЩЕНА ЗАПЯТАЯ
+                    historyShop: '', 
                     historySticks: ''
                 };
                 
@@ -2097,6 +2090,92 @@ setInterval(() => {
                 if (typeof updateSubModeHighlights === 'function') updateSubModeHighlights();
                 if (typeof ShopGame !== 'undefined' && ShopGame.applyAllEquippedVisuals) ShopGame.applyAllEquippedVisuals();
             }
+        
+            function updateHistoryView() {
+                // ==========================================
+                // 🚜 АВТО-БУЛЬДОЗЕР: РАЗБИВАЕМ МАТРЕШКИ
+                // ==========================================
+                const histBlock = document.getElementById('historyBlock');
+                const allLists = ['historyListDice', 'historyListRoulette', 'historyListSurvival', 'historyListBank', 'historyListCoin', 'historyListFlower', 'historyListRPS', 'historyListShop', 'historyListSticks'];
+                if (histBlock) {
+                    allLists.forEach(id => {
+                        const el = document.getElementById(id);
+                        // Если контейнер проглочен Пулей (лежит не в корне histBlock)
+                        if (el && el.parentNode !== histBlock) {
+                            histBlock.appendChild(el); // Жестко вытаскиваем его наружу!
+                        }
+                    });
+                }
+                // ==========================================
+
+                const mode = GameState.mode || 'dice';
+                const subMode = GameState.subModes ? GameState.subModes[mode] : 'standard';
+                
+                let activeId = 'historyListDice';
+                if (mode === 'dice') activeId = 'historyListDice';
+                else if (mode === 'roulette') {
+                    if (subMode === 'survival') activeId = 'historyListSurvival';
+                    else if (subMode === 'bank') activeId = 'historyListBank';
+                    else activeId = 'historyListRoulette';
+                }
+                else if (mode === 'coin') activeId = 'historyListCoin';
+                else if (mode === 'flower') activeId = 'historyListFlower';
+                else if (mode === 'rps') activeId = 'historyListRPS';
+                else if (mode === 'shop') activeId = 'historyListShop';
+                else if (mode === 'sticks') activeId = 'historyListSticks';
+
+                allLists.forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) {
+                        el.style.display = (id === activeId) ? 'block' : 'none';
+                        
+                        // Мягкая очистка от нелегалов (Ачивки не трогаем!)
+                        Array.from(el.children).forEach(child => {
+                            if (child.classList.contains('history-item')) {
+                                let isAllowed = false;
+                                
+                                if (id === 'historyListDice') isAllowed = child.matches('.hist-standard, .hist-trader, .hist-alco, .hist-yesno');
+                                else if (id === 'historyListRoulette') isAllowed = child.matches('.hist-roulette');
+                                else if (id === 'historyListBank') isAllowed = child.matches('.hist-bank');
+                                else if (id === 'historyListSurvival') isAllowed = child.matches('.hist-survival');
+                                else if (id === 'historyListCoin') isAllowed = child.matches('.hist-standard, .hist-question');
+                                else if (id === 'historyListFlower') isAllowed = child.matches('.hist-standard, .hist-intuition');
+                                else if (id === 'historyListRPS') isAllowed = child.matches('.hist-standard, .hist-pvp');
+                                // ИСПРАВЛЕНИЕ: Допуски классов для магазина
+                                else if (id === 'historyListShop') isAllowed = child.matches('.hist-standard, .hist-perks, .hist-exchange, .hist-shop');
+                                else if (id === 'historyListSticks') isAllowed = child.matches('.hist-standard, .hist-pvp');
+
+                                if (!isAllowed) {
+                                    child.remove();
+                                } else if (id === activeId) {
+                                    // ИСПРАВЛЕНИЕ: Визуальное разделение логов между подрежимами без их удаления!
+                                    let isVisible = true;
+                                    if (['sticks', 'rps', 'flower', 'coin'].includes(mode)) {
+                                        isVisible = child.classList.contains('hist-' + subMode);
+                                    } else if (mode === 'shop') {
+                                        isVisible = child.classList.contains('hist-' + subMode) || (subMode === 'standard' && child.classList.contains('hist-shop'));
+                                    }
+                                    
+                                    // Прячем логи других подрежимов с помощью CSS, чтобы getCleanH их все равно сохранял
+                                    child.style.display = isVisible ? '' : 'none';
+                                }
+                            }
+                        });
+                    }
+                });
+
+                const stHist = document.getElementById('st-hist-head');
+                if (stHist) {
+                    const t = LANG_DATA[GameState.lang] || {};
+                    const titles = { 'dice': t.histDiceHead, 'roulette': (subMode === 'survival' ? t.histSurvivalHead : (subMode === 'bank' ? t.histBankHead : t.histRouletteHead)), 'coin': t.histCoinHead, 'flower': t.histFlowerHead, 'rps': t.histRPSHead, 'shop': t.histShopHead, 'sticks': t.histSticksHead };
+                    stHist.innerText = titles[mode] || "История";
+                }
+            }
+
+            // Заглушка для старых вызовов из плагинов
+            function saveProfileData() { requestProfileSave(); }
+
+            
 
             function selectProfile(idx) {
                 // ИСПРАВЛЕНИЕ: Перед тем как переключиться, жестко сохраняем старый профиль!
@@ -2316,73 +2395,8 @@ function addCrystal(game = null, subMode = null, customAmount = null) {
                 }
             }
 
-            function updateHistoryView() {
-                // ==========================================
-                // 🚜 АВТО-БУЛЬДОЗЕР: РАЗБИВАЕМ МАТРЕШКИ
-                // ==========================================
-                const histBlock = document.getElementById('historyBlock');
-                const allLists = ['historyListDice', 'historyListRoulette', 'historyListSurvival', 'historyListCoin', 'historyListFlower', 'historyListRPS', 'historyListShop', 'historyListSticks'];
-                if (histBlock) {
-                    allLists.forEach(id => {
-                        const el = document.getElementById(id);
-                        // Если контейнер проглочен Пулей (лежит не в корне histBlock)
-                        if (el && el.parentNode !== histBlock) {
-                            histBlock.appendChild(el); // Жестко вытаскиваем его наружу!
-                        }
-                    });
-                }
-                // ==========================================
+            
 
-                const mode = GameState.mode || 'dice';
-                const subMode = GameState.subModes ? GameState.subModes[mode] : 'standard';
-                
-                let activeId = 'historyListDice';
-                if (mode === 'dice') activeId = 'historyListDice';
-                else if (mode === 'roulette') {
-                    if (subMode === 'survival') activeId = 'historyListSurvival';
-                    else if (subMode === 'bank') activeId = 'historyListBank';
-                    else activeId = 'historyListRoulette';
-                }
-                else if (mode === 'coin') activeId = 'historyListCoin';
-                else if (mode === 'flower') activeId = 'historyListFlower';
-                else if (mode === 'rps') activeId = 'historyListRPS';
-                else if (mode === 'shop') activeId = 'historyListShop';
-                else if (mode === 'sticks') activeId = 'historyListSticks';
-
-                allLists.forEach(id => {
-                    const el = document.getElementById(id);
-                    if (el) {
-                        el.style.display = (id === activeId) ? 'block' : 'none';
-                        
-                        // Мягкая очистка от нелегалов (Ачивки не трогаем!)
-                        Array.from(el.children).forEach(child => {
-                            if (child.classList.contains('history-item')) {
-                                let isAllowed = false;
-                                
-                                if (id === 'historyListDice') isAllowed = child.matches('.hist-standard, .hist-trader, .hist-alco, .hist-yesno');
-                                else if (id === 'historyListRoulette') isAllowed = child.matches('.hist-roulette');
-                                else if (id === 'historyListBank') isAllowed = child.matches('.hist-bank');
-                                else if (id === 'historyListSurvival') isAllowed = child.matches('.hist-survival');
-                                else if (id === 'historyListCoin') isAllowed = child.matches('.hist-standard, .hist-question');
-                                else if (id === 'historyListFlower') isAllowed = child.matches('.hist-standard, .hist-intuition');
-                                else if (id === 'historyListRPS') isAllowed = child.matches('.hist-standard, .hist-pvp');
-                                else if (id === 'historyListShop') isAllowed = child.matches('.hist-standard');
-                                else if (id === 'historyListSticks') isAllowed = child.matches('.hist-standard, .hist-pvp');
-
-                                if (!isAllowed) child.remove();
-                            }
-                        });
-                    }
-                });
-
-                const stHist = document.getElementById('st-hist-head');
-                if (stHist) {
-                    const t = LANG_DATA[GameState.lang] || {};
-                    const titles = { 'dice': t.histDiceHead, 'roulette': (subMode === 'survival' ? t.histSurvivalHead : t.histRouletteHead), 'coin': t.histCoinHead, 'flower': t.histFlowerHead, 'rps': t.histRPSHead, 'shop': t.histShopHead, 'sticks': t.histSticksHead };
-                    stHist.innerText = titles[mode] || "История";
-                }
-            }
-            // === КОНЕЦ БЛОКА ===
 
             function setQuestionState(hide, force = false) {
                 if (GameState.isQuestionHidden === hide && !force) return;
@@ -7756,6 +7770,7 @@ else if (pvpState === 4) {
 const SticksGame = (function() {
     let isGameActive = false;
     let isGameOver = false; // Флаг завершения игры
+    let isAnimating = false; // 🔒 ПРЕДОХРАНИТЕЛЬ ОТ СПАМА
     let mode = 'standard'; 
     let currentTurn = 1; 
     let sticks = []; 
@@ -7766,6 +7781,12 @@ const SticksGame = (function() {
     let boxStartX = 0;
     let boxStartRotY = 0;
     let lastHapticRot = 0;
+
+    // === НОВЫЕ ПЕРЕМЕННЫЕ ДЛЯ ИНЕРЦИИ ===
+    let lastBoxX = 0;
+    let boxVelocity = 0;
+    let inertiaFrame = null;
+    // ====================================
 
     let draggedStick = null;
     let startY = 0;
@@ -7816,6 +7837,36 @@ const SticksGame = (function() {
         } catch(e) {}
     }
 
+    // === НОВЫЕ МЯГКИЕ ЗВУКИ ДЛЯ ПАЛОЧЕК ===
+    function playSoftSound(type) {
+        if (typeof GameState !== 'undefined' && !GameState.sound) return;
+        try {
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+
+            if (type === 'whoosh') {
+                // Мягкий звук вытягивания (деревянный свист)
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(300, ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(80, ctx.currentTime + 0.2);
+                gain.gain.setValueAtTime(0.3, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+                osc.start(); osc.stop(ctx.currentTime + 0.3);
+            } else if (type === 'pop') {
+                // Ненавязчивый "бульк" при появлении в UI
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(600, ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(800, ctx.currentTime + 0.05);
+                gain.gain.setValueAtTime(0.1, ctx.currentTime); // Очень тихий
+                gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.1);
+                osc.start(); osc.stop(ctx.currentTime + 0.1);
+            }
+        } catch(e) {}
+    }
+    
     function init() {
         if (!GameState.subModes.sticks) GameState.subModes.sticks = 'standard';
 
@@ -7845,7 +7896,12 @@ const SticksGame = (function() {
 
             const style = document.createElement('style');
             style.innerHTML = `
-                #sticksStage { perspective: 800px; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; width: 100%; height: 100%; }
+                /* ❗ ПЕРЕНЕСЛИ АНТИ-ВЫДЕЛЕНИЕ СЮДА, В КОРЕНЬ СЦЕНЫ ❗ */
+                #sticksStage { 
+                    perspective: 800px; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; width: 100%; height: 100%; 
+                    -webkit-tap-highlight-color: transparent; 
+                    outline: none;
+                }
                 .sticks-scene { width: 100%; height: 280px; display: flex; align-items: flex-end; justify-content: center; touch-action: none; position: relative; padding-bottom: 30px; }
                 
                 .sticks-box-wrapper { width: 80px; height: 100px; position: relative; transform-style: preserve-3d; transform: rotateX(-15deg); cursor: grab; will-change: transform; }
@@ -7861,9 +7917,10 @@ const SticksGame = (function() {
                 
                 #sticksContainer { position: absolute; inset: 0; transform-style: preserve-3d; pointer-events: none; }
                 
+                /* Вернули .stick в исходное состояние */
                 .stick { position: absolute; left: 33px; width: 14px; top: -40px; height: var(--h); transform-style: preserve-3d; transform: translateY(var(--py)) rotateY(var(--ry)) translateZ(22px); transition: transform 0.6s cubic-bezier(0.18, 0.89, 0.32, 1.28); cursor: pointer; pointer-events: auto; touch-action: none; }
-                .stick.dragging { transition: none; } 
-
+                .stick.dragging { transition: none; }
+                
                 .s-face { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 1px; clip-path: polygon(0 0, 100% 0, 100% calc(95px - var(--py)), 0 calc(95px - var(--py))); }
                 
                 .s-front { transform: translateZ(7px); background: linear-gradient(to bottom, #e63946 0%, #f5e1c0 30%, #d4a373 70%, #1a110a 100%); }
@@ -7892,8 +7949,16 @@ const SticksGame = (function() {
             const startBoxDrag = (e) => {
                 if (e.target.closest('.stick')) return; 
                 boxDrag = true;
-                boxStartX = e.clientX || (e.touches && e.touches.length > 0 ? e.touches[0].clientX : 0);
+                
+                // ⚡ Тормозим инерцию и сохраняем стартовую точку
+                let clientX = e.clientX || (e.touches && e.touches.length > 0 ? e.touches[0].clientX : 0);
+                boxStartX = clientX;
+                lastBoxX = clientX; 
                 boxStartRotY = rotY;
+                
+                boxVelocity = 0; 
+                if (inertiaFrame) cancelAnimationFrame(inertiaFrame); 
+                
                 lastHapticRot = rotY;
             };
             scene.addEventListener('mousedown', startBoxDrag);
@@ -7918,8 +7983,14 @@ const SticksGame = (function() {
     function reset() {
         isGameActive = false; 
         isGameOver = false;
+        isAnimating = false;
         currentTurn = 1; 
         rotY = 0;
+        
+        // Сброс инерции
+        if (inertiaFrame) cancelAnimationFrame(inertiaFrame); 
+        boxVelocity = 0; 
+        
         finalMessageHtml = "";
         
         document.getElementById('sticksDrawnUI').innerHTML = '';
@@ -7991,6 +8062,7 @@ const SticksGame = (function() {
         if (boxDrag && Math.abs(rotY - boxStartRotY) > 5) return; 
 
         isGameActive = true;
+        isAnimating = false;
         document.getElementById('sticksScene').onclick = null;
         if (typeof App !== 'undefined') App.playSoundEffect('tick');
 
@@ -8009,7 +8081,7 @@ const SticksGame = (function() {
     }
 
     function startDrag(e, stickObj) {
-        if (!isGameActive || isGameOver || (mode === 'standard' && currentTurn === 2)) return;
+        if (!isGameActive || isGameOver || isAnimating || (mode === 'standard' && currentTurn === 2)) return;
         if (stickObj.drawn) return;
 
         draggedStick = stickObj;
@@ -8044,7 +8116,12 @@ const SticksGame = (function() {
         if (boxDrag && !isDragging) {
             e.preventDefault(); 
             let x = e.clientX || (e.touches && e.touches.length > 0 ? e.touches[0].clientX : 0);
-            rotY = boxStartRotY + (x - boxStartX) * 0.8; 
+            
+            // ⚡ Вычисляем скорость (дельту) для инерции
+            boxVelocity = x - lastBoxX;
+            rotY += boxVelocity * 0.8; 
+            lastBoxX = x;
+
             document.getElementById('sticksBoxWrap').style.transform = `rotateX(-15deg) rotateY(${rotY}deg)`;
             
             if (Math.abs(rotY - lastHapticRot) > 15) { hapticTick(); lastHapticRot = rotY; }
@@ -8061,17 +8138,44 @@ const SticksGame = (function() {
             }
         }
         isDragging = false; draggedStick = null;
-        setTimeout(() => { boxDrag = false; }, 50);
+
+        // ⚡ Запускаем инерцию, если коробку крутнули достаточно сильно
+        if (boxDrag) {
+            boxDrag = false;
+            if (Math.abs(boxVelocity) > 2) {
+                applyInertia();
+            }
+        }
+    }
+
+    // === ⚡ НОВАЯ ФУНКЦИЯ ИНЕРЦИИ ===
+    function applyInertia() {
+        if (boxDrag) return; 
+        
+        boxVelocity *= 0.92; // Трение
+        rotY += boxVelocity * 0.8;
+        
+        const boxWrap = document.getElementById('sticksBoxWrap');
+        if (boxWrap) boxWrap.style.transform = `rotateX(-15deg) rotateY(${rotY}deg)`;
+        
+        if (Math.abs(rotY - lastHapticRot) > 15) { hapticTick(); lastHapticRot = rotY; }
+
+        if (Math.abs(boxVelocity) > 0.5) {
+            inertiaFrame = requestAnimationFrame(applyInertia);
+        }
     }
 
     function finishPull(sObj) {
         sObj.drawn = true;
+        isAnimating = true; // 🔒 ЗАКРЫВАЕМ ЗАМОК
         sObj.el.classList.remove('dragging');
         sObj.el.classList.add('drawn');
         
         // БЛОКИРУЕМ ВЫХОД В МЕНЮ ВО ВРЕМЯ АНИМАЦИИ
         if (typeof App !== 'undefined' && App.setTopNavLocked) App.setTopNavLocked(true);
-        if (typeof App !== 'undefined') App.playSoundEffect('coin_flip');
+        
+        // 🔊 Мягкий звук вылета палочки
+        playSoftSound('whoosh');
 
         sObj.el.style.transition = 'transform 0.8s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.8s ease-in';
         sObj.el.style.transform = `translateY(-220px) translateX(-120px) translateZ(0px) rotateY(0deg) rotateZ(-60deg) scale3d(0.3, 0.3, 0.3)`;
@@ -8090,6 +8194,7 @@ const SticksGame = (function() {
                 } else {
                     // Разблокируем меню, так как теперь ход игрока
                     if (typeof App !== 'undefined' && App.setTopNavLocked) App.setTopNavLocked(false);
+                    isAnimating = false; // 🔓 ОТКРЫВАЕМ ЗАМОК (можно тянуть следующую)
                 }
             }
         }, 800); 
@@ -8112,11 +8217,14 @@ const SticksGame = (function() {
         const m = document.createElement('div');
         m.className = `mini-stick ${isShort ? 's' : 'l'}`;
         ui.appendChild(m);
+        
+        // 🔊 Звук появления в интерфейсе
+        playSoftSound('pop');
     }
 
     // === ЧИТ-КОДЫ: ЖЕЛЕЗОБЕТОННАЯ РАБОТА ===
     function triggerCheat(outcome) {
-        if (isGameOver || boxDrag) return; 
+        if (isGameOver || boxDrag || isAnimating) return;
 
         if (outcome === 'achieve') {
             if (typeof App !== 'undefined') App.playSoundEffect('achievement');
@@ -8125,7 +8233,8 @@ const SticksGame = (function() {
             return;
         }
 
-        if (!isGameActive) startGame(); 
+        if (!isGameActive) startGame();
+        isAnimating = true; // Блокируем интерфейс во время чита       
 
         // Мгновенно показываем все палочки
         sticks.forEach(sObj => {
@@ -8252,8 +8361,6 @@ const SticksGame = (function() {
 
     return { load, unmount, triggerCheat };
 })();
-// =========================================================================
-// =========================================================================
 // --- КОНЕЦ ВОСЬМОЙ ЧАСТИ ---
 // --- НАЧАЛО ДЕВЯТОЙ ЧАСТИ ---
 // ==============================================
