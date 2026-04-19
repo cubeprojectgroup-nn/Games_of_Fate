@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Игры Судьбы. v0.8.8.51</title>
+    <title>Игры Судьбы. v0.8.8.52</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
@@ -777,7 +777,7 @@ setInterval(() => {
     <div id="stars" class="stars-layer stars-active bg1-stars"></div>
 
     <div id="mainMenuOverlay">
-        <div class="version">v0.8.8.51</div> <div class="menu-top-bar">
+        <div class="version">v0.8.8.52</div> <div class="menu-top-bar">
             <button class="menu-icon-btn" id="langSwitchBtn" onclick="App.toggleLanguage()"><i class="fas fa-globe"></i></button>
         </div>
         <div id="mainMenuTitle" class="menu-title-main">Игры Судьбы</div>
@@ -5927,7 +5927,7 @@ function addCrystal(game = null, subMode = null, customAmount = null) {
 // --- КОНЕЦ ПЯТОЙ ЧАСТИ ---
 // --- НАЧАЛО ШЕСТОЙ ЧАСТИ ---
 // ==============================================
-// 🌼 ПЛАГИН 4: ЛЕПЕСТКИ (ИНТЕРАКТИВНЫЙ ОРАКУЛ) v6.5 (SMOOTH ANIMATION & TRANSLATION)
+// 🌼 ПЛАГИН 4: ЛЕПЕСТКИ (ИНТЕРАКТИВНЫЙ ОРАКУЛ) v6.6 (STORE STYLES INTEGRATION)
 // ==============================================
 const FlowerGame = (function() {
     function getEmptyState() {
@@ -6284,10 +6284,14 @@ const FlowerGame = (function() {
         lastClickTime = now;
 
         const container = document.getElementById('flowerPetalsContainer');
-        if (!container || (container.children.length === 0 && !forcedResult)) {
+        
+        // === ИСПРАВЛЕНИЕ: Проверяем, завершена ли предыдущая игра ===
+        const isGameOver = (totalPetals > 0 && tornCount >= totalPetals);
+        if (!container || ((container.children.length === 0 || isGameOver) && !forcedResult)) {
             resetToIdle(true);
             return;
         }
+        // ==========================================================
 
         const uq = document.getElementById('userQuestion');
         const q = uq ? uq.value.trim() : '';
@@ -6309,7 +6313,6 @@ const FlowerGame = (function() {
         
         const isInt = GameState.subModes.flower === 'intuition';
 
-        // === ИСПРАВЛЕННАЯ ЛОГИКА КОНАМИ-КОДА ===
         if (isInt) {
             if (forcedResult === 'win_int') {
                 totalPetals = 5; 
@@ -6326,7 +6329,6 @@ const FlowerGame = (function() {
                 currentOptions = [targetStubs];
             }
 
-            // Настройка вариантов ответа (с защитой от зависания)
             let safety = 0;
             while(currentOptions.length < 5 && safety < 100) {
                 safety++;
@@ -6335,7 +6337,6 @@ const FlowerGame = (function() {
             }
             currentOptions.sort((a,b) => a - b);
 
-            // Настройка индексов стабов (с защитой от зависания)
             if (forcedResult !== 'win_int') {
                 safety = 0;
                 while(stubIndices.length < targetStubs && safety < 100) {
@@ -6349,7 +6350,6 @@ const FlowerGame = (function() {
             else if (forcedResult === false) totalPetals = 8; 
             else totalPetals = 11 + Math.floor(getCryptoRandom() * 8);
         }
-        // ======================================
         
         updateFlowerUIState();
         currentSessionId++;
@@ -6579,18 +6579,15 @@ const FlowerGame = (function() {
         const hl = document.getElementById('historyListFlower');
         if(hl) hl.prepend(item);
         
-        // === УМНЫЕ НАГРАДЫ ЗА РОМАШКУ ===
         if(typeof App !== 'undefined') { 
-            const isWin = (uiColor === "var(--friendly-green)"); // Проверка на успех
+            const isWin = (uiColor === "var(--friendly-green)"); 
             
             if (isWin) {
                 let flowerReward = 0;
                 
                 if (GameState.subModes.flower === 'intuition') {
-                    // ИНТУИЦИЯ: Угадал точное число — 5 кристаллов
                     flowerReward = 5;
                 } else {
-                    // ЖРЕБИЙ: Выпало "ДА" — 2 кристалла
                     flowerReward = 2;
                 }
                 
@@ -6598,11 +6595,9 @@ const FlowerGame = (function() {
                     App.addCrystal('flower', GameState.subModes.flower, flowerReward);
                 }
             }
-            // Если проигрыш (НЕТ или не угадал число) — кристалл не выдается!
 
             App.requestProfileSave(); 
         }
-        // ===============================
         
         const rollBtn = document.getElementById('rollBtn');
         const selector = document.getElementById('flowerNumberSelector');
@@ -6611,8 +6606,6 @@ const FlowerGame = (function() {
         if(rollBtn) {
             rollBtn.innerText = t.flowerDone || "СУДЬБА РЕШИЛА"; 
         }
-        
-        // --- АВТО-РЕСТАРТ ПО ТАЙМЕРУ УБРАН ---
     }
 
     function getState() {
@@ -6682,7 +6675,43 @@ const FlowerGame = (function() {
                 clip-path: polygon(0% 100%, 100% 100%, 100% 30%, 80% 10%, 65% 25%, 45% 5%, 25% 20%, 0% 15%);
             }
 
-			/* КИБЕР-ЦВЕТОК: ГОЛУБОЙ */
+            /* --- МАГАЗИННЫЕ СТИЛИ: СЕРДЦЕВИНЫ --- */
+            /* Аметист */
+            #flowerStage.core-amethyst #flowerCore {
+                background: radial-gradient(circle at 30% 30%, #f3e8ff, #a855f7, #581c87) !important;
+                border-color: #9333ea !important;
+                box-shadow: 0 0 20px rgba(168, 85, 247, 0.6), inset -5px -5px 15px rgba(88, 28, 135, 0.5) !important;
+            }
+            /* Изумруд */
+            #flowerStage.core-emerald #flowerCore {
+                background: radial-gradient(circle at 30% 30%, #dcfce7, #22c55e, #14532d) !important;
+                border-color: #16a34a !important;
+                box-shadow: 0 0 20px rgba(34, 197, 94, 0.6), inset -5px -5px 15px rgba(20, 83, 45, 0.5) !important;
+            }
+
+            /* --- МАГАЗИННЫЕ СТИЛИ: ЛЕПЕСТКИ --- */
+            /* Сакура */
+            #flowerStage.petal-sakura .flower-petal {
+                background: linear-gradient(to bottom, #fdf2f8 0%, #fbcfe8 70%, #f472b6 100%) !important;
+                border: 1px solid #f9a8d4 !important;
+                box-shadow: inset -2px -5px 10px rgba(219, 39, 119, 0.1), 0 3px 8px rgba(0,0,0,0.1) !important;
+            }
+            #flowerStage.petal-sakura .flower-petal-stub {
+                background: linear-gradient(to bottom, #fbcfe8 0%, #f472b6 100%) !important;
+                border: 1px solid #f9a8d4 !important; border-bottom: none !important;
+            }
+            /* Кровавая Роза */
+            #flowerStage.petal-blood .flower-petal {
+                background: linear-gradient(to bottom, #fecaca 0%, #dc2626 50%, #7f1d1d 100%) !important;
+                border: 1px solid #b91c1c !important;
+                box-shadow: inset -2px -5px 10px rgba(127, 29, 29, 0.2), 0 3px 8px rgba(0,0,0,0.2) !important;
+            }
+            #flowerStage.petal-blood .flower-petal-stub {
+                background: linear-gradient(to bottom, #dc2626 0%, #7f1d1d 100%) !important;
+                border: 1px solid #b91c1c !important; border-bottom: none !important;
+            }
+
+            /* КИБЕР-ЦВЕТОК: ГОЛУБОЙ (Классическая UI Тема) */
             #flowerStage.cyber-flower .flower-petal { 
                 background: linear-gradient(to bottom, #7dd3fc 0%, var(--magic-color, #0ea5e9) 60%, #1e40af 100%) !important; 
                 border: 2px solid var(--magic-color, #a78bfa) !important; 
@@ -6798,6 +6827,23 @@ const FlowerGame = (function() {
             const stage = document.getElementById('flowerStage');
             const subMenu = document.getElementById('submodes-flower');
             if(!stage) return;
+
+            // === ИНТЕГРАЦИЯ СТИЛЕЙ ИЗ ИНВЕНТАРЯ ===
+            const p = GameState.profiles[GameState.currentProfile] || GameState.profiles[GameState.activeProfileIdx];
+            const equipped = p ? (p.equipped || {}) : {};
+
+            // Сердцевины
+            const coreStyle = equipped.flowerCores || 'flower_core_original';
+            stage.classList.remove('core-amethyst', 'core-emerald');
+            if (coreStyle === 'flower_core_amethyst') stage.classList.add('core-amethyst');
+            else if (coreStyle === 'flower_core_emerald') stage.classList.add('core-emerald');
+
+            // Лепестки
+            const petalStyle = equipped.flowerPetals || 'flower_petal_original';
+            stage.classList.remove('petal-sakura', 'petal-blood');
+            if (petalStyle === 'flower_petal_sakura') stage.classList.add('petal-sakura');
+            else if (petalStyle === 'flower_petal_blood') stage.classList.add('petal-blood');
+            // ======================================
             
             const isCyber = document.body.classList.contains('theme-style_flower') || GameState.isClassic;
             
@@ -7765,16 +7811,16 @@ else if (pvpState === 4) {
 // --- КОНЕЦ СЕДЬМОЙ ЧАСТИ ---
 // --- НАЧАЛО ВОСЬМОЙ ЧАСТИ ---
 // =========================================================================
-// 🥢 ПЛАГИН 5: ЖРЕБИЙ (3D КОРОБОЧКА И ПАЛОЧКИ) v12.0 [STATE SAVING, CORE TEXT, CHEATS]
+// 🥢 ПЛАГИН 5: ЖРЕБИЙ (3D КОРОБОЧКА И ПАЛОЧКИ) v12.2 [STORE STYLES & 3D FIXES]
 // =========================================================================
 const SticksGame = (function() {
     let isGameActive = false;
-    let isGameOver = false; // Флаг завершения игры
-    let isAnimating = false; // 🔒 ПРЕДОХРАНИТЕЛЬ ОТ СПАМА
+    let isGameOver = false; 
+    let isAnimating = false; 
     let mode = 'standard'; 
     let currentTurn = 1; 
     let sticks = []; 
-    let finalMessageHtml = ""; // Хранит финальный текст победы/поражения
+    let finalMessageHtml = ""; 
     
     let rotY = 0;
     let boxDrag = false;
@@ -7782,11 +7828,9 @@ const SticksGame = (function() {
     let boxStartRotY = 0;
     let lastHapticRot = 0;
 
-    // === НОВЫЕ ПЕРЕМЕННЫЕ ДЛЯ ИНЕРЦИИ ===
     let lastBoxX = 0;
     let boxVelocity = 0;
     let inertiaFrame = null;
-    // ====================================
 
     let draggedStick = null;
     let startY = 0;
@@ -7837,7 +7881,6 @@ const SticksGame = (function() {
         } catch(e) {}
     }
 
-    // === НОВЫЕ МЯГКИЕ ЗВУКИ ДЛЯ ПАЛОЧЕК ===
     function playSoftSound(type) {
         if (typeof GameState !== 'undefined' && !GameState.sound) return;
         try {
@@ -7848,7 +7891,6 @@ const SticksGame = (function() {
             gain.connect(ctx.destination);
 
             if (type === 'whoosh') {
-                // Мягкий звук вытягивания (деревянный свист)
                 osc.type = 'triangle';
                 osc.frequency.setValueAtTime(300, ctx.currentTime);
                 osc.frequency.exponentialRampToValueAtTime(80, ctx.currentTime + 0.2);
@@ -7856,11 +7898,10 @@ const SticksGame = (function() {
                 gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
                 osc.start(); osc.stop(ctx.currentTime + 0.3);
             } else if (type === 'pop') {
-                // Ненавязчивый "бульк" при появлении в UI
                 osc.type = 'sine';
                 osc.frequency.setValueAtTime(600, ctx.currentTime);
                 osc.frequency.exponentialRampToValueAtTime(800, ctx.currentTime + 0.05);
-                gain.gain.setValueAtTime(0.1, ctx.currentTime); // Очень тихий
+                gain.gain.setValueAtTime(0.1, ctx.currentTime); 
                 gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.1);
                 osc.start(); osc.stop(ctx.currentTime + 0.1);
             }
@@ -7876,7 +7917,6 @@ const SticksGame = (function() {
             stage.id = 'sticksStage';
             stage.className = 'stage';
             stage.style.display = 'none';
-            // ВАЖНО: Мы удалили локальный <div id="sticksStatus">, текст пойдет в res-status Ядра
             stage.innerHTML = `
                 <div id="sticksDrawnUI"></div>
                 <div class="sticks-scene" id="sticksScene">
@@ -7896,7 +7936,6 @@ const SticksGame = (function() {
 
             const style = document.createElement('style');
             style.innerHTML = `
-                /* ❗ ПЕРЕНЕСЛИ АНТИ-ВЫДЕЛЕНИЕ СЮДА, В КОРЕНЬ СЦЕНЫ ❗ */
                 #sticksStage { 
                     perspective: 800px; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; width: 100%; height: 100%; 
                     -webkit-tap-highlight-color: transparent; 
@@ -7917,7 +7956,6 @@ const SticksGame = (function() {
                 
                 #sticksContainer { position: absolute; inset: 0; transform-style: preserve-3d; pointer-events: none; }
                 
-                /* Вернули .stick в исходное состояние */
                 .stick { position: absolute; left: 33px; width: 14px; top: -40px; height: var(--h); transform-style: preserve-3d; transform: translateY(var(--py)) rotateY(var(--ry)) translateZ(22px); transition: transform 0.6s cubic-bezier(0.18, 0.89, 0.32, 1.28); cursor: pointer; pointer-events: auto; touch-action: none; }
                 .stick.dragging { transition: none; }
                 
@@ -7931,12 +7969,109 @@ const SticksGame = (function() {
 
                 .stick.drawn .s-face, .stick.drawn .s-top { clip-path: none !important; }
 
-                #sticksDrawnUI { position: absolute; top: 15px; left: 15px; display: flex; gap: 5px; z-index: 100; max-width: 50%; flex-wrap: wrap; }
-                .mini-stick { width: 6px; border-radius: 3px; background: #e3c193; box-shadow: 0 0 5px rgba(0,0,0,0.5); }
-                .mini-stick.l { height: 35px; } .mini-stick.s { height: 18px; background: #ff4d4d; }
+                /* === ИНТЕГРАЦИЯ С МАГАЗИНОМ: СТИЛИ КОРОБОК === */
+                #sticksStage.box-steel .box-face { background: linear-gradient(135deg, #71717a, #3f3f46) !important; border: 1px solid #a1a1aa !important; box-shadow: inset 0 0 15px rgba(0,0,0,0.5) !important; }
+                #sticksStage.box-steel .b-bottom { background: #27272a !important; }
+                
+                #sticksStage.box-porcelain .box-face { background: linear-gradient(135deg, #f8fafc, #cbd5e1) !important; border: 1px solid #ffffff !important; box-shadow: inset 0 0 10px rgba(0,0,0,0.1), 0 0 10px rgba(255,255,255,0.3) !important; }
+                #sticksStage.box-porcelain .b-bottom { background: #94a3b8 !important; }
+                
+                #sticksStage.box-leather .box-face { background: linear-gradient(135deg, #78350f, #451a03) !important; border: 1px dashed #b45309 !important; box-shadow: inset 0 0 25px rgba(0,0,0,0.9) !important; }
+                #sticksStage.box-leather .b-bottom { background: #280f00 !important; }
 
+                /* === ИНТЕГРАЦИЯ С МАГАЗИНОМ: СТИЛИ ПАЛОЧЕК === */
+                /* 1. Спички (Исправлена сферическая головка) */
+                #sticksStage.stick-matches .s-front, #sticksStage.stick-matches .s-back, #sticksStage.stick-matches .s-left, #sticksStage.stick-matches .s-right { background: linear-gradient(to bottom, #fef08a 0%, #d97706 70%, #1a110a 100%) !important; }
+                #sticksStage.stick-matches .s-top { 
+                    background: radial-gradient(circle at 30% 30%, #ef4444, #991b1b) !important; 
+                    border-radius: 50% !important; 
+                    width: 18px !important; 
+                    height: 18px !important; 
+                    left: -2px !important; 
+                    transform: translateY(-9px) rotateX(90deg) !important; 
+                    box-shadow: inset -2px -2px 4px rgba(0,0,0,0.5);
+                }
+                
+                /* 2. Гвозди (Исправлены разрывы граней и шляпка) */
+                #sticksStage.stick-nails .stick { width: 8px !important; left: 36px !important; }
+                #sticksStage.stick-nails .s-front, #sticksStage.stick-nails .s-back { width: 8px !important; left: 0 !important; background: linear-gradient(to bottom, #d4d4d8 0%, #71717a 60%, #27272a 100%) !important; }
+                #sticksStage.stick-nails .s-left, #sticksStage.stick-nails .s-right { width: 8px !important; left: 0 !important; background: linear-gradient(to bottom, #a1a1aa 0%, #52525b 60%, #18181b 100%) !important; }
+                #sticksStage.stick-nails .s-left { transform: translateX(-4px) rotateY(-90deg) !important; }
+                #sticksStage.stick-nails .s-right { transform: translateX(4px) rotateY(90deg) !important; }
+                #sticksStage.stick-nails .s-front { transform: translateZ(4px) !important; }
+                #sticksStage.stick-nails .s-back { transform: translateZ(-4px) rotateY(180deg) !important; }
+                #sticksStage.stick-nails .s-top { 
+                    background: #a1a1aa !important; 
+                    border-radius: 50% !important; 
+                    width: 16px !important; 
+                    height: 16px !important; 
+                    left: -4px !important; 
+                    transform: translateY(-8px) rotateX(90deg) !important; 
+                    box-shadow: inset 0 0 3px rgba(0,0,0,0.5); 
+                }
+                
+                /* 3. От мороженого (Добавлен объем сбоку) */
+                #sticksStage.stick-icecream .stick { width: 22px !important; left: 29px !important; }
+                #sticksStage.stick-icecream .s-front, #sticksStage.stick-icecream .s-back { background: linear-gradient(to bottom, #fde68a 0%, #f59e0b 80%, #1a110a 100%) !important; width: 22px !important; border-radius: 11px 11px 0 0 !important; }
+                #sticksStage.stick-icecream .s-left, #sticksStage.stick-icecream .s-right { display: block !important; width: 4px !important; left: 9px !important; background: linear-gradient(to bottom, #d97706 0%, #b45309 80%, #1a110a 100%) !important; border-radius: 2px 2px 0 0 !important; }
+                #sticksStage.stick-icecream .s-left { transform: translateX(-11px) rotateY(-90deg) !important; }
+                #sticksStage.stick-icecream .s-right { transform: translateX(11px) rotateY(90deg) !important; }
+                #sticksStage.stick-icecream .s-top { display: none !important; }
+
+                /* === ГЛОБАЛЬНАЯ ТЕМА ВУДУ (Добавлен градиент верхушкам) === */
+                #sticksStage.theme-style_lots .box-face { background: linear-gradient(135deg, #2e1065, #000000) !important; border: 1px solid #8b5cf6 !important; box-shadow: inset 0 0 20px rgba(139,92,246,0.8), 0 0 10px rgba(139,92,246,0.4) !important; }
+                #sticksStage.theme-style_lots .b-bottom { background: #000000 !important; }
+                #sticksStage.theme-style_lots .s-front, #sticksStage.theme-style_lots .s-back, #sticksStage.theme-style_lots .s-left, #sticksStage.theme-style_lots .s-right { background: linear-gradient(to bottom, #e5e7eb 0%, #6b7280 60%, #111827 100%) !important; border-radius: 2px; }
+                #sticksStage.theme-style_lots .s-top { 
+                    background: radial-gradient(circle, #f3f4f6 20%, #8b5cf6 90%) !important; 
+                    border-radius: 4px !important; 
+                    box-shadow: 0 0 8px #8b5cf6 !important;
+                }
+
+                /* === UI МИНИ-ПАЛОЧКИ === */
+                #sticksDrawnUI { position: absolute; top: 15px; left: 15px; display: flex; gap: 5px; z-index: 100; max-width: 50%; flex-wrap: wrap; }
+                .mini-stick { width: 6px; border-radius: 3px; background: #e3c193; box-shadow: 0 0 5px rgba(0,0,0,0.5); transition: background 0.3s; }
+                .mini-stick.l { height: 35px; } 
+                .mini-stick.s { height: 18px; background: #ff4d4d; }
+
+                /* Стилизация мини-палочек под экипировку */
+                #sticksStage.stick-matches .mini-stick { background: #fef08a; border-top: 4px solid #991b1b; border-radius: 3px; }
+                #sticksStage.stick-matches .mini-stick.s { background: #fef08a; }
+                
+                #sticksStage.stick-nails .mini-stick { background: #a1a1aa; border-radius: 0; width: 4px; border-top: 3px solid #d4d4d8; }
+                #sticksStage.stick-nails .mini-stick.s { background: #71717a; border-top: 3px solid #d4d4d8; }
+                
+                #sticksStage.stick-icecream .mini-stick { background: #fde68a; width: 12px; border-radius: 6px 6px 0 0; }
+                #sticksStage.stick-icecream .mini-stick.s { background: #f59e0b; }
+                
+                #sticksStage.theme-style_lots .mini-stick { background: #d1d5db; border: 1px solid #374151; }
+                #sticksStage.theme-style_lots .mini-stick.s { background: #8b5cf6; }
             `;
             document.head.appendChild(style);
+
+            // ИНТЕРВАЛ ОБНОВЛЕНИЯ СТИЛЕЙ ИЗ ИНВЕНТАРЯ
+            setInterval(() => {
+                const sStage = document.getElementById('sticksStage');
+                if (!sStage) return;
+                const p = GameState.profiles[GameState.currentProfile] || GameState.profiles[GameState.activeProfileIdx];
+                const equipped = p ? (p.equipped || {}) : {};
+
+                const boxStyle = equipped.lotsBoxes || 'lots_box_original';
+                sStage.classList.remove('box-steel', 'box-porcelain', 'box-leather');
+                if (boxStyle === 'lots_box_steel') sStage.classList.add('box-steel');
+                else if (boxStyle === 'lots_box_porcelain') sStage.classList.add('box-porcelain');
+                else if (boxStyle === 'lots_box_leather') sStage.classList.add('box-leather');
+
+                const stickStyle = equipped.lotsSticks || 'lots_stick_original';
+                sStage.classList.remove('stick-matches', 'stick-nails', 'stick-icecream');
+                if (stickStyle === 'lots_stick_matches') sStage.classList.add('stick-matches');
+                else if (stickStyle === 'lots_stick_nails') sStage.classList.add('stick-nails');
+                else if (stickStyle === 'lots_stick_icecream') sStage.classList.add('stick-icecream');
+
+                if (document.body.classList.contains('theme-style_lots')) sStage.classList.add('theme-style_lots');
+                else sStage.classList.remove('theme-style_lots');
+
+            }, 500);
         }
 
         window.addEventListener('mousemove', onMove);
@@ -7949,16 +8084,12 @@ const SticksGame = (function() {
             const startBoxDrag = (e) => {
                 if (e.target.closest('.stick')) return; 
                 boxDrag = true;
-                
-                // ⚡ Тормозим инерцию и сохраняем стартовую точку
                 let clientX = e.clientX || (e.touches && e.touches.length > 0 ? e.touches[0].clientX : 0);
                 boxStartX = clientX;
                 lastBoxX = clientX; 
                 boxStartRotY = rotY;
-                
                 boxVelocity = 0; 
                 if (inertiaFrame) cancelAnimationFrame(inertiaFrame); 
-                
                 lastHapticRot = rotY;
             };
             scene.addEventListener('mousedown', startBoxDrag);
@@ -7969,13 +8100,10 @@ const SticksGame = (function() {
     function load() {
         let newMode = GameState.subModes.sticks || 'standard';
         document.body.classList.add('sticks-active');
-        
-        // Восстановление состояния: сбрасываем, только если игра не активна или сменился режим
         if (!isGameActive && !isGameOver || mode !== newMode) {
             mode = newMode;
             reset();
         } else {
-            // Если мы вернулись в идущую игру, просто восстанавливаем надписи
             setTimeout(updateUI, 50);
         }
     }
@@ -7986,11 +8114,8 @@ const SticksGame = (function() {
         isAnimating = false;
         currentTurn = 1; 
         rotY = 0;
-        
-        // Сброс инерции
         if (inertiaFrame) cancelAnimationFrame(inertiaFrame); 
         boxVelocity = 0; 
-        
         finalMessageHtml = "";
         
         document.getElementById('sticksDrawnUI').innerHTML = '';
@@ -8028,27 +8153,23 @@ const SticksGame = (function() {
             s.addEventListener('touchstart', (e) => startDrag(e, stickObj), {passive: false});
         }
 
-        updateUI(); // Выведет "НАЖМИ НА КОРОБКУ"
+        updateUI(); 
         document.getElementById('sticksScene').onclick = startGame;
     }
 
     function updateUI() {
         const status = document.getElementById('res-status');
         if (!status) return;
-        status.classList.add('visible'); // Гарантируем, что текст видно
-        
+        status.classList.add('visible');
         if (isGameOver) {
             status.innerHTML = finalMessageHtml;
             return;
         }
-        
         const lang = GameState.lang || 'ru';
-        
         if (!isGameActive) {
             status.innerHTML = lang === 'ru' ? "НАЖМИ НА КОРОБКУ" : "TAP THE BOX";
             return;
         }
-        
         if (mode === 'standard') {
             status.innerHTML = currentTurn === 1 ? (lang === 'ru' ? "Твой ход!" : "Your turn!") : (lang === 'ru' ? "Оракул думает..." : "Oracle is thinking...");
         } else {
@@ -8116,8 +8237,6 @@ const SticksGame = (function() {
         if (boxDrag && !isDragging) {
             e.preventDefault(); 
             let x = e.clientX || (e.touches && e.touches.length > 0 ? e.touches[0].clientX : 0);
-            
-            // ⚡ Вычисляем скорость (дельту) для инерции
             boxVelocity = x - lastBoxX;
             rotY += boxVelocity * 0.8; 
             lastBoxX = x;
@@ -8139,7 +8258,6 @@ const SticksGame = (function() {
         }
         isDragging = false; draggedStick = null;
 
-        // ⚡ Запускаем инерцию, если коробку крутнули достаточно сильно
         if (boxDrag) {
             boxDrag = false;
             if (Math.abs(boxVelocity) > 2) {
@@ -8148,11 +8266,10 @@ const SticksGame = (function() {
         }
     }
 
-    // === ⚡ НОВАЯ ФУНКЦИЯ ИНЕРЦИИ ===
     function applyInertia() {
         if (boxDrag) return; 
         
-        boxVelocity *= 0.92; // Трение
+        boxVelocity *= 0.92;
         rotY += boxVelocity * 0.8;
         
         const boxWrap = document.getElementById('sticksBoxWrap');
@@ -8167,14 +8284,11 @@ const SticksGame = (function() {
 
     function finishPull(sObj) {
         sObj.drawn = true;
-        isAnimating = true; // 🔒 ЗАКРЫВАЕМ ЗАМОК
+        isAnimating = true; 
         sObj.el.classList.remove('dragging');
         sObj.el.classList.add('drawn');
         
-        // БЛОКИРУЕМ ВЫХОД В МЕНЮ ВО ВРЕМЯ АНИМАЦИИ
         if (typeof App !== 'undefined' && App.setTopNavLocked) App.setTopNavLocked(true);
-        
-        // 🔊 Мягкий звук вылета палочки
         playSoftSound('whoosh');
 
         sObj.el.style.transition = 'transform 0.8s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.8s ease-in';
@@ -8192,9 +8306,8 @@ const SticksGame = (function() {
                 if (mode === 'standard' && currentTurn === 2) {
                     setTimeout(oracleTurn, 1000);
                 } else {
-                    // Разблокируем меню, так как теперь ход игрока
                     if (typeof App !== 'undefined' && App.setTopNavLocked) App.setTopNavLocked(false);
-                    isAnimating = false; // 🔓 ОТКРЫВАЕМ ЗАМОК (можно тянуть следующую)
+                    isAnimating = false; 
                 }
             }
         }, 800); 
@@ -8217,15 +8330,11 @@ const SticksGame = (function() {
         const m = document.createElement('div');
         m.className = `mini-stick ${isShort ? 's' : 'l'}`;
         ui.appendChild(m);
-        
-        // 🔊 Звук появления в интерфейсе
         playSoftSound('pop');
     }
 
-    // === ЧИТ-КОДЫ: ЖЕЛЕЗОБЕТОННАЯ РАБОТА ===
     function triggerCheat(outcome) {
         if (isGameOver || boxDrag || isAnimating) return;
-
         if (outcome === 'achieve') {
             if (typeof App !== 'undefined') App.playSoundEffect('achievement');
             if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.HapticFeedback) window.Telegram.WebApp.HapticFeedback.notificationOccurred('success');
@@ -8234,9 +8343,8 @@ const SticksGame = (function() {
         }
 
         if (!isGameActive) startGame();
-        isAnimating = true; // Блокируем интерфейс во время чита       
+        isAnimating = true;       
 
-        // Мгновенно показываем все палочки
         sticks.forEach(sObj => {
             Array.from(sObj.el.children).forEach(face => { face.style.opacity = '1'; });
             sObj.currentY = 0; 
@@ -8246,9 +8354,6 @@ const SticksGame = (function() {
         setTimeout(() => {
             let target = sticks.find(s => s.isShort);
             if (!target) return;
-            
-            // Если нужна ПОБЕДА - заставляем Оракула/Второго игрока вытянуть короткую (Ход = 2)
-            // Если нужен ПРОИГРЫШ - заставляем Игрока 1 вытянуть короткую (Ход = 1)
             currentTurn = (outcome === 'win') ? 2 : 1; 
             finishPull(target);
         }, 400);
@@ -8280,18 +8385,16 @@ const SticksGame = (function() {
         if (mode !== 'standard') color = 'var(--magic-color)'; 
         
         finalMessageHtml = `<span style="color:${color}; font-size: 24px; text-shadow: 0 0 10px ${color};">${msg}</span>`;
-        updateUI(); // Выводим текст победы в res-status
+        updateUI();
 
         playResultSound(isPlayerWin);
 
-        // 💎 ИСПРАВЛЕННОЕ НАЧИСЛЕНИЕ КРИСТАЛЛОВ (ЧЕРЕЗ ЯДРО) 💎
         if (mode === 'standard' && isPlayerWin) {
             if (typeof App !== 'undefined' && App.addCrystal) {
                 App.addCrystal('sticks', mode);
             }
         }
 
-        // Запись истории
         const t = (typeof LANG_DATA !== 'undefined' && LANG_DATA[GameState.lang]) ? LANG_DATA[GameState.lang] : {};
         const smName = mode === 'standard' ? (t.smSticksStandard || (lang === 'ru' ? "ОРАКУЛ" : "ORACLE")) : (t.smSticksPvp || (lang === 'ru' ? "ДВА ИГРОКА" : "PVP"));
         
@@ -8337,7 +8440,6 @@ const SticksGame = (function() {
             window.Telegram.WebApp.HapticFeedback.notificationOccurred(isPlayerWin ? 'success' : 'error');
         }
 
-        // Разблокировка кнопки меню по окончанию игры
         setTimeout(() => { 
             document.getElementById('sticksScene').onclick = reset; 
             if (typeof App !== 'undefined' && App.setTopNavLocked) App.setTopNavLocked(false);
@@ -8410,7 +8512,8 @@ const ShopGame = (function() {
             { id: 'roulette_bullets', name: { ru: 'Кровавые Патроны', en: 'Blood Bullets' }, priceCoins: 50, priceCrystals: 15, icon: '🩸' },
             { id: 'roulette_drum', name: { ru: 'Светлый Барабан', en: 'Light Drum' }, priceCoins: 60, priceCrystals: 20, icon: '🔄' },
             { id: 'style_coin', name: { ru: 'Грань Выбора', en: 'Edge of Choice' }, priceCoins: 50, priceCrystals: 15, icon: '🪙' },
-            { id: 'style_flower', name: { ru: 'Лепестки', en: 'Petals' }, priceCoins: 50, priceCrystals: 15, icon: '🌼' },
+            { id: 'style_flower', name: { ru: 'Фелиция', en: 'Felicia' }, priceCoins: 50, priceCrystals: 15, icon: '🦋' },
+            { id: 'style_lots', name: { ru: 'Магия Вуду', en: 'Voodoo Magic' }, priceCoins: 50, priceCrystals: 15, icon: '🪬' },
             { id: 'style_rps', name: { ru: 'К-Н-Б', en: 'R-P-S' }, priceCoins: 50, priceCrystals: 15, icon: '✌️' }
         ],
         diceModes: [
@@ -8419,6 +8522,28 @@ const ShopGame = (function() {
             { id: 'dice_yesno', name: { ru: 'Да / Нет', en: 'Yes / No' }, priceCoins: 30, priceCrystals: 10, icon: '⚖️' },
             { id: 'dice_trader', name: { ru: 'Трейдер', en: 'Trader' }, priceCoins: 50, priceCrystals: 15, icon: '📈' },
             { id: 'dice_alco', name: { ru: 'Алконавт', en: 'Alco' }, priceCoins: 50, priceCrystals: 15, icon: '🍹' }
+        ],
+        flowerCores: [
+            { id: 'flower_core_original', name: { ru: 'Желтая (Ориг.)', en: 'Yellow (Orig.)' }, priceCoins: 0, priceCrystals: 0, icon: '🌼' },
+            { id: 'flower_core_amethyst', name: { ru: 'Аметист', en: 'Amethyst' }, priceCoins: 50, priceCrystals: 15, icon: '🔮' },
+            { id: 'flower_core_emerald', name: { ru: 'Изумруд', en: 'Emerald' }, priceCoins: 50, priceCrystals: 15, icon: '❇️' }
+        ],
+        flowerPetals: [
+            { id: 'flower_petal_original', name: { ru: 'Белые (Ориг.)', en: 'White (Orig.)' }, priceCoins: 0, priceCrystals: 0, icon: '💮' },
+            { id: 'flower_petal_sakura', name: { ru: 'Сакура', en: 'Sakura' }, priceCoins: 50, priceCrystals: 15, icon: '🌸' },
+            { id: 'flower_petal_blood', name: { ru: 'Кровавая Роза', en: 'Blood Rose' }, priceCoins: 50, priceCrystals: 15, icon: '🥀' }
+        ],
+        lotsBoxes: [
+            { id: 'lots_box_original', name: { ru: 'Деревянная (Ориг.)', en: 'Wooden (Orig.)' }, priceCoins: 0, priceCrystals: 0, icon: '📦' },
+            { id: 'lots_box_steel', name: { ru: 'Стальная', en: 'Steel' }, priceCoins: 50, priceCrystals: 15, icon: '🗄️' },
+            { id: 'lots_box_porcelain', name: { ru: 'Фарфоровая', en: 'Porcelain' }, priceCoins: 50, priceCrystals: 15, icon: '🏺' },
+            { id: 'lots_box_leather', name: { ru: 'Кожаный тубус', en: 'Leather Tube' }, priceCoins: 50, priceCrystals: 15, icon: '📜' }
+        ],
+        lotsSticks: [
+            { id: 'lots_stick_original', name: { ru: 'Бамбуковые (Ориг.)', en: 'Bamboo (Orig.)' }, priceCoins: 0, priceCrystals: 0, icon: '🥢' },
+            { id: 'lots_stick_matches', name: { ru: 'Спички', en: 'Matches' }, priceCoins: 50, priceCrystals: 15, icon: '🧨' },
+            { id: 'lots_stick_nails', name: { ru: 'Гвозди', en: 'Nails' }, priceCoins: 50, priceCrystals: 15, icon: '📌' },
+            { id: 'lots_stick_icecream', name: { ru: 'От мороженого', en: 'Ice Cream' }, priceCoins: 50, priceCrystals: 15, icon: '🍦' }
         ],
         perks: [
             { id: 'exchange_coin_1', name: { ru: '1 Монета', en: '1 Coin' }, priceCoins: 0, priceCrystals: 10, icon: '🪙', isConsumable: true, rewardCoins: 1, rewardCrystals: 0 },
@@ -8489,9 +8614,10 @@ const ShopGame = (function() {
         }
         
         balHeader.style.display = 'flex';
-        balHeader.style.cssText = 'display: flex; justify-content: center; width: 100%; margin-top: 20px; margin-bottom: 20px; z-index: 10; flex-shrink: 0; transform: scale(0.95);';
+        balHeader.style.cssText = 'position: sticky; top: 0; display: flex; justify-content: center; width: 100%; padding-top: 15px; padding-bottom: 10px; z-index: 100; flex-shrink: 0; transform: scale(0.95); pointer-events: none;';
+        
         balHeader.innerHTML = `
-            <div style="background: rgba(0,0,0,0.5); padding: 6px 20px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.1); font-size: 15px; display: inline-flex; align-items: center; gap: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.5);">
+            <div style="background: rgba(10, 15, 25, 0.95); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); padding: 6px 20px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.15); font-size: 15px; display: inline-flex; align-items: center; gap: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.8); pointer-events: auto;">
                 <span id="shop-local-wallet" style="color: var(--friendly-green); font-weight: bold;"><i class="fas fa-wallet"></i> ${balanceCoins.toFixed(2)}</span>
                 <span style="color: rgba(255,255,255,0.2);">|</span>
                 <span id="shop-local-crystals" style="color: var(--magic-color); font-weight: bold; text-shadow: 0 0 8px rgba(162,155,254,0.5);"><i class="fas fa-gem"></i> ${balanceCrystals}</span>
@@ -8505,19 +8631,59 @@ const ShopGame = (function() {
         // === ВКЛАДКА: ОБМЕН ===
         if (GameState.subModes.shop === 'exchange') {
             grid.appendChild(createCategoryHeader(lang === 'ru' ? 'Обмен Валюты' : 'Currency Exchange', 'var(--sun-gold)'));
-            // Фильтруем: показываем только валюту, отсекая искры
             const exchangeItems = shopItems.perks.filter(i => i.id.startsWith('exchange_'));
             appendItems(grid, exchangeItems, balanceCoins, balanceCrystals, lang);
         } 
         // === ВКЛАДКА: СТИЛИ ===
         else if (GameState.subModes.shop === 'standard') {
-            grid.appendChild(createCategoryHeader(lang === 'ru' ? 'Стили Игр' : 'Game Styles', 'var(--friendly-green)'));
-            appendItems(grid, shopItems.gameStyles, balanceCoins, balanceCrystals, lang);
             
-            grid.appendChild(createCategoryHeader(lang === 'ru' ? 'Стили Фона' : 'Background Styles', 'var(--magic-color)'));
+            // --- КОСТЬ ИСТИНЫ ---
+            grid.appendChild(createCategoryHeader(lang === 'ru' ? 'Кость Истины' : 'Dice of Fate', 'var(--friendly-green)'));
+            grid.appendChild(createCategoryHeader(lang === 'ru' ? 'Тема интерфейса' : 'UI Theme', '#ffffff', true));
+            appendItems(grid, shopItems.gameStyles.filter(i => i.id === 'style_dice'), balanceCoins, balanceCrystals, lang);
+
+            // --- РУССКАЯ РУЛЕТКА ---
+            grid.appendChild(createCategoryHeader(lang === 'ru' ? 'Русская Рулетка' : 'Russian Roulette', '#ff4444'));
+            grid.appendChild(createCategoryHeader(lang === 'ru' ? 'Тема интерфейса' : 'UI Theme', '#ffffff', true));
+            appendItems(grid, shopItems.gameStyles.filter(i => i.id.startsWith('roulette_')), balanceCoins, balanceCrystals, lang);
+
+            // --- ГРАНЬ ВЫБОРА ---
+            grid.appendChild(createCategoryHeader(lang === 'ru' ? 'Грань Выбора' : 'Edge of Choice', 'var(--sun-gold)'));
+            grid.appendChild(createCategoryHeader(lang === 'ru' ? 'Тема интерфейса' : 'UI Theme', '#ffffff', true));
+            appendItems(grid, shopItems.gameStyles.filter(i => i.id === 'style_coin'), balanceCoins, balanceCrystals, lang);
+
+            // --- ЛЕПЕСТКИ ---
+            grid.appendChild(createCategoryHeader(lang === 'ru' ? 'Лепестки' : 'Petals', '#ffaa00'));
+            grid.appendChild(createCategoryHeader(lang === 'ru' ? 'Тема интерфейса' : 'UI Theme', '#ffffff', true));
+            appendItems(grid, shopItems.gameStyles.filter(i => i.id === 'style_flower'), balanceCoins, balanceCrystals, lang);
+
+            grid.appendChild(createCategoryHeader(lang === 'ru' ? 'Облик сердцевины' : 'Core Styles', '#ffffff', true));
+            appendItems(grid, shopItems.flowerCores, balanceCoins, balanceCrystals, lang);
+
+            grid.appendChild(createCategoryHeader(lang === 'ru' ? 'Цвет лепестков' : 'Petal Colors', '#ffffff', true));
+            appendItems(grid, shopItems.flowerPetals, balanceCoins, balanceCrystals, lang);
+
+            // --- ЖРЕБИЙ ---
+            grid.appendChild(createCategoryHeader(lang === 'ru' ? 'Жребий' : 'Draw Lots', '#b58900'));
+            grid.appendChild(createCategoryHeader(lang === 'ru' ? 'Тема интерфейса' : 'UI Theme', '#ffffff', true));
+            appendItems(grid, shopItems.gameStyles.filter(i => i.id === 'style_lots'), balanceCoins, balanceCrystals, lang);
+
+            grid.appendChild(createCategoryHeader(lang === 'ru' ? 'Облик коробки' : 'Box Styles', '#ffffff', true));
+            appendItems(grid, shopItems.lotsBoxes, balanceCoins, balanceCrystals, lang);
+
+            grid.appendChild(createCategoryHeader(lang === 'ru' ? 'Вид палочек' : 'Stick Styles', '#ffffff', true));
+            appendItems(grid, shopItems.lotsSticks, balanceCoins, balanceCrystals, lang);
+
+            // --- КАМЕНЬ-НОЖНИЦЫ-БУМАГА ---
+            grid.appendChild(createCategoryHeader(lang === 'ru' ? 'К-Н-Б' : 'R-P-S', '#44aaff'));
+            grid.appendChild(createCategoryHeader(lang === 'ru' ? 'Тема интерфейса' : 'UI Theme', '#ffffff', true));
+            appendItems(grid, shopItems.gameStyles.filter(i => i.id === 'style_rps'), balanceCoins, balanceCrystals, lang);
+
+            // --- ФОНЫ ---
+            grid.appendChild(createCategoryHeader(lang === 'ru' ? 'Глобальные Фоны' : 'Global Backgrounds', 'var(--magic-color)'));
             appendItems(grid, shopItems.backgrounds, balanceCoins, balanceCrystals, lang);
         } 
-        // === ВКЛАДКА: ПЕРКИ (УМНАЯ ИЕРАРХИЯ) ===
+        // === ВКЛАДКА: ПЕРКИ ===
         else if (GameState.subModes.shop === 'perks') {
             
             // --- РАЗДЕЛ 1: КОСТЬ ИСТИНЫ ---
@@ -8532,15 +8698,11 @@ const ShopGame = (function() {
             const diceSparkle = shopItems.perks.filter(i => i.id === 'perk_sparkle_dice');
             appendItems(grid, diceSparkle, balanceCoins, balanceCrystals, lang);
 
-
             // --- РАЗДЕЛ 2: ГРАНЬ ВЫБОРА ---
             grid.appendChild(createCategoryHeader(lang === 'ru' ? 'Грань Выбора' : 'Edge of Choice', 'var(--sun-gold)'));
             
-            // Подраздел: Облики грани (Пока оставляем пустое место под будущие товары)
             grid.appendChild(createCategoryHeader(lang === 'ru' ? 'Облик монеты' : 'Coin Styles', '#ffffff', true));
-            // Тут позже сделаем appendItems, когда добавим карточки
             
-            // Подраздел: Дополнительные функции (Искры)
             grid.appendChild(createCategoryHeader(lang === 'ru' ? 'Дополнительные функции' : 'Extra Features', '#ffffff', true));
             const coinSparkle = shopItems.perks.filter(i => i.id === 'perk_sparkle_coin');
             appendItems(grid, coinSparkle, balanceCoins, balanceCrystals, lang);
@@ -8557,20 +8719,18 @@ const ShopGame = (function() {
         h.style.letterSpacing = '1px';
         
         if (isSub) {
-            // Стили для подзаголовков (Облики, Доп. функции) - аккуратные и серые
             h.style.fontSize = '9px';
             h.style.marginTop = '12px';
             h.style.marginBottom = '2px';
             h.style.opacity = '0.5';
         } else {
-            // Стили для главных заголовков игр (КОСТЬ ИСТИНЫ) - яркий неон с полоской
             h.style.fontSize = '14px';
             h.style.marginTop = '25px';
             h.style.marginBottom = '6px';
             h.style.borderBottom = `1px solid ${color}`;
             h.style.paddingBottom = '6px';
-            h.style.boxShadow = `0 4px 10px -8px ${color}`; // Легкое свечение под полоской
-            h.style.textShadow = `0 0 10px ${color}`; // Свечение текста
+            h.style.boxShadow = `0 4px 10px -8px ${color}`; 
+            h.style.textShadow = `0 0 10px ${color}`; 
         }
         
         h.innerText = title;
@@ -8684,8 +8844,9 @@ const ShopGame = (function() {
                     else if (item.priceCoins > 0) logPriceStr = `- $${item.priceCoins.toFixed(2)}`;
                     else logPriceStr = freeTxtLog;
 
+                    const currentShopMode = GameState.subModes.shop || 'standard';
                     const itemHTML = `
-                        <div class="history-item hist-shop">
+                        <div class="history-item hist-${currentShopMode}">
                             <span style="color:var(--friendly-green); font-weight:bold;">[${actionName}]</span> ${item.icon} ${itemName}
                             <br><span style="color:#aaa; font-size:9px;">${logPriceStr}</span>
                         </div>`;
@@ -8695,6 +8856,7 @@ const ShopGame = (function() {
                     if (hlShop) hlShop.innerHTML = p.historyShop;
 
                     if (typeof App !== 'undefined' && App.requestProfileSave) App.requestProfileSave();
+                    if (typeof App !== 'undefined' && App.updateHistoryView) App.updateHistoryView();
                     updateTopUI(); 
                     renderShop();
 
@@ -8722,11 +8884,14 @@ const ShopGame = (function() {
             return;
         }
 
-        // ДОБАВЛЕНА КАТЕГОРИЯ ПЕРКОВ
         const categories = [
             { key: 'backgrounds', title: { ru: 'Стили заднего фона', en: 'Background Styles' } },
-            { key: 'gameStyles', title: { ru: 'Стили Игр', en: 'Game Styles' } },
-            { key: 'diceModes', title: { ru: 'Кость Истины', en: 'Dice of Fate' } },
+            { key: 'gameStyles', title: { ru: 'Темы интерфейса', en: 'UI Themes' } },
+            { key: 'diceModes', title: { ru: 'Кость Истины: Грани', en: 'Dice of Fate: Faces' } },
+            { key: 'flowerCores', title: { ru: 'Лепестки: Сердцевина', en: 'Petals: Core' } },
+            { key: 'flowerPetals', title: { ru: 'Лепестки: Цвет', en: 'Petals: Color' } },
+            { key: 'lotsBoxes', title: { ru: 'Жребий: Коробка', en: 'Lots: Box' } },
+            { key: 'lotsSticks', title: { ru: 'Жребий: Палочки', en: 'Lots: Sticks' } },
             { key: 'perks', title: { ru: 'Перки и Эффекты', en: 'Perks & Effects' } } 
         ];
 
@@ -8743,7 +8908,7 @@ const ShopGame = (function() {
                 
                 ownedItems.forEach(item => {
                     let isEquipped = false;
-                    // ПЕРКИ ТЕПЕРЬ РАБОТАЮТ КАК СТИЛИ ИГР (можно включить несколько)
+                    
                     if (catDef.key === 'gameStyles' || catDef.key === 'perks') isEquipped = !!equipped[item.id];
                     else isEquipped = equipped[catDef.key] === item.id;
 
@@ -8797,11 +8962,9 @@ const ShopGame = (function() {
         const p = GameState.profiles[GameState.currentProfile] || GameState.profiles[GameState.activeProfileIdx];
         if (!p) return;
 
-        // Если профиль совершенно новый, у него нет .equipped.
-        // Мы создаем пустой объект, чтобы жестко ОТКЛЮЧИТЬ все чужие стили!
         const equipped = p.equipped || {};
 
-        // 1. Кость (Сброс на "Точки", если ничего не надето)
+        // 1. Кость
         let actualMode = 'dots';
         if (equipped.diceModes) {
             actualMode = equipped.diceModes.replace('dice_', '');
@@ -8817,7 +8980,7 @@ const ShopGame = (function() {
             else if (typeof App !== 'undefined' && typeof App.updateModeDisplay === 'function') App.updateModeDisplay();
         } catch(e){}
 
-        // 2. Фон (Сброс на "Космос", если ничего не надето)
+        // 2. Фон
         const bgSel = document.getElementById('bgSelect');
         if (bgSel) {
             bgSel.value = equipped.backgrounds || 'bg_space'; 
@@ -8825,7 +8988,7 @@ const ShopGame = (function() {
         if (typeof App !== 'undefined' && App.changeBackground) App.changeBackground(true);
 
         // 3. Железобетонно вешаем/снимаем классы стилей интерфейса
-        const styleIds = ['style_dice', 'roulette_bullets', 'roulette_drum', 'style_coin', 'style_flower', 'style_rps'];
+        const styleIds = ['style_dice', 'roulette_bullets', 'roulette_drum', 'style_coin', 'style_flower', 'style_lots', 'style_rps'];
         styleIds.forEach(id => {
             if (equipped[id]) document.body.classList.add(`theme-${id}`);
             else document.body.classList.remove(`theme-${id}`);
@@ -8839,7 +9002,6 @@ const ShopGame = (function() {
         if (show) {
             renderInventoryList();
         } else {
-            // ВАУ-ЭФФЕКТ: Стили применяются только при закрытии окна
             if (pendingVisualUpdates) {
                 applyAllEquippedVisuals();
                 pendingVisualUpdates = false;
@@ -8852,24 +9014,46 @@ const ShopGame = (function() {
         if (rouletteStage) rouletteStage.style.visibility = show ? 'hidden' : 'visible';
     }
 
+    // === УМНАЯ СИСТЕМА ЭКИПИРОВКИ (ВЗАИМОИСКЛЮЧЕНИЯ) ===
     function equipItem(cat, id) {
         const p = GameState.profiles[GameState.currentProfile] || GameState.profiles[GameState.activeProfileIdx];
         if (!p) return;
         if (!p.equipped) p.equipped = {};
         
-        // Меняем только данные, визуал пока не трогаем
-        if (cat === 'gameStyles' || cat === 'perks') { // ТЕПЕРЬ ПЕРКИ В ЭТОМ СПИСКЕ
-            if (p.equipped[id]) delete p.equipped[id];
-            else p.equipped[id] = true;
+        if (cat === 'gameStyles' || cat === 'perks') { 
+            if (p.equipped[id]) {
+                delete p.equipped[id]; // Снимаем
+            } else {
+                p.equipped[id] = true; // Надеваем
+                
+                // АВТО-СНЯТИЕ ДЕТАЛЕЙ ПРИ ВЫБОРЕ ТЕМЫ
+                if (id === 'style_flower') {
+                    delete p.equipped['flowerCores'];
+                    delete p.equipped['flowerPetals'];
+                } else if (id === 'style_lots') {
+                    delete p.equipped['lotsBoxes'];
+                    delete p.equipped['lotsSticks'];
+                }
+            }
         } else {
-            if (p.equipped[cat] === id && cat !== 'diceModes') delete p.equipped[cat];
-            else p.equipped[cat] = id;
+            // Запрещаем снимать базовые элементы кликом по ним же
+            if (p.equipped[cat] === id && cat !== 'diceModes' && cat !== 'flowerCores' && cat !== 'flowerPetals' && cat !== 'lotsBoxes' && cat !== 'lotsSticks') {
+                delete p.equipped[cat];
+            } else {
+                p.equipped[cat] = id; // Надеваем деталь
+                
+                // АВТО-СНЯТИЕ ТЕМЫ ПРИ ВЫБОРЕ ДЕТАЛЕЙ
+                if (cat === 'flowerCores' || cat === 'flowerPetals') {
+                    delete p.equipped['style_flower'];
+                } else if (cat === 'lotsBoxes' || cat === 'lotsSticks') {
+                    delete p.equipped['style_lots'];
+                }
+            }
         }
         
         if (typeof App !== 'undefined' && App.requestProfileSave) App.requestProfileSave();
-        renderInventoryList();
+        renderInventoryList(); // Моментально обновляем интерфейс инвентаря
         
-        // Ставим флаг обновления
         pendingVisualUpdates = true;
         
         if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.HapticFeedback) window.Telegram.WebApp.HapticFeedback.impactOccurred('light');
@@ -8879,13 +9063,12 @@ const ShopGame = (function() {
     function init() {
         if (!GameState.subModes.shop) GameState.subModes.shop = 'exchange';
         setTimeout(() => {
-            applyAllEquippedVisuals(); // При старте применяем все стили
+            applyAllEquippedVisuals(); 
         }, 300);
     }
 
     return { init, mount, unmount, toggleInventory, renderShop, applyAllEquippedVisuals };
 })();
-
 // --- КОНЕЦ ДЕВЯТОЙ ЧАСТИ ---
 
 const invModal = document.getElementById('inventoryOverlay');
