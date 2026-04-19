@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Игры Судьбы. v0.8.8.48</title>
+    <title>Игры Судьбы. v0.8.8.51</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
@@ -109,6 +109,21 @@
         #sel-game-shop { border-color: rgba(255, 249, 174, 0.3) !important; box-shadow: 0 0 8px rgba(255, 249, 174, 0.1); }
         #sel-game-shop.active-preview { background: rgba(255, 249, 174, 0.15) !important; border-color: var(--sun-gold) !important; box-shadow: 0 0 15px rgba(255, 249, 174, 0.5); }
         
+		/* 🥢 ЖРЕБИЙ (Бирюзовый / Cyan) */
+#sel-game-sticks { border-color: rgba(0, 210, 211, 0.3) !important; box-shadow: 0 0 8px rgba(0, 210, 211, 0.1); }
+#sel-game-sticks.active-preview { border-color: rgba(0, 210, 211, 1) !important; box-shadow: 0 0 15px rgba(0, 210, 211, 0.4); background: rgba(0, 210, 211, 0.1); }
+
+/* Подсветка активного режима и заливка вопросика */
+#submodes-sticks .active-sub {
+    border-color: #00d2d3 !important;
+    box-shadow: 0 0 10px rgba(0, 210, 211, 0.3) !important;
+    color: #00d2d3 !important;
+    background: rgba(0, 210, 211, 0.1) !important;
+}
+#submodes-sticks .active-sub .info-mode-btn {
+    background: #00d2d3 !important;
+    color: #111b27 !important; /* Темный цвет иконки для контраста */
+}
 		
 		/* Обязательно возвращаем выделение для полей ввода, чтобы работал курсор */
 		input, textarea {
@@ -762,7 +777,7 @@ setInterval(() => {
     <div id="stars" class="stars-layer stars-active bg1-stars"></div>
 
     <div id="mainMenuOverlay">
-        <div class="version">v0.8.8.48</div> <div class="menu-top-bar">
+        <div class="version">v0.8.8.51</div> <div class="menu-top-bar">
             <button class="menu-icon-btn" id="langSwitchBtn" onclick="App.toggleLanguage()"><i class="fas fa-globe"></i></button>
         </div>
         <div id="mainMenuTitle" class="menu-title-main">Игры Судьбы</div>
@@ -789,36 +804,48 @@ setInterval(() => {
                             <span id="sm-dice-casino-lbl">Казино</span>
                         </button>
                     </div>
+                    
                     <div id="submodes-roulette" style="display: none; flex-direction: column; gap: 8px; width: 100%;">
-    <button class="sub-mode-btn active-sub" onclick="RouletteGame.switchSubMode('standard', event)" id="sm-roulette-standard">
-        <div class="float-corner-btn info-mode-btn" onclick="App.showSubModeRules(event, 'roulette', 'standard')"><i class="fas fa-question"></i></div>
-        <span id="sm-roulette-standard-lbl">Пуля</span>
+                        <button class="sub-mode-btn active-sub" onclick="RouletteGame.switchSubMode('standard', event)" id="sm-roulette-standard">
+                            <div class="float-corner-btn info-mode-btn" onclick="App.showSubModeRules(event, 'roulette', 'standard')"><i class="fas fa-question"></i></div>
+                            <span id="sm-roulette-standard-lbl">Пуля</span>
+                        </button>
+                        <button class="sub-mode-btn" onclick="RouletteGame.switchSubMode('bank', event)" id="sm-roulette-bank">
+                            <div class="float-corner-btn info-mode-btn" onclick="App.showSubModeRules(event, 'roulette', 'bank')"><i class="fas fa-question"></i></div>
+                            <span id="sm-roulette-bank-lbl">Банк</span>
+                        </button>
+                        <button class="sub-mode-btn" onclick="RouletteGame.switchSubMode('survival', event)" id="sm-roulette-survival">
+                            <div class="float-corner-btn info-mode-btn" onclick="App.showSubModeRules(event, 'roulette', 'survival')"><i class="fas fa-question"></i></div>
+                            <span id="sm-roulette-survival-lbl">Выживание</span>
+                        </button>
+                    </div>
+                    
+                    <div id="submodes-shop" style="display: none; flex-direction: column; gap: 8px; width: 100%;">
+                        <button class="sub-mode-btn active-sub" onclick="App.selectSubMode('shop', 'exchange', event)" id="sm-shop-exchange">
+                            <div class="float-corner-btn info-mode-btn" onclick="event.stopPropagation(); App.showSubModeRules(event, 'shop', 'exchange')" style="z-index: 20; pointer-events: auto;"><i class="fas fa-question"></i></div>
+                            <span id="sm-shop-exchange-lbl">ОБМЕН</span>
+                        </button>
+                        <button class="sub-mode-btn" onclick="App.selectSubMode('shop', 'standard', event)" id="sm-shop-standard">
+                            <div class="float-corner-btn info-mode-btn" onclick="event.stopPropagation(); App.showSubModeRules(event, 'shop', 'standard')" style="z-index: 20; pointer-events: auto;"><i class="fas fa-question"></i></div>
+                            <span id="sm-shop-standard-lbl">СТИЛИ</span>
+                        </button>
+                        <button class="sub-mode-btn" onclick="App.selectSubMode('shop', 'perks', event)" id="sm-shop-perks">
+                            <div class="float-corner-btn info-mode-btn" onclick="event.stopPropagation(); App.showSubModeRules(event, 'shop', 'perks')" style="z-index: 20; pointer-events: auto;"><i class="fas fa-question"></i></div>
+                            <span id="sm-shop-perks-lbl">ПЕРКИ</span>
+                        </button>
+                    </div>
+
+                    <div id="submodes-sticks" style="display: none; flex-direction: column; gap: 8px; width: 100%;">
+    <button class="sub-mode-btn active-sub" onclick="App.selectSubMode('sticks', 'standard', event)" id="sm-sticks-standard">
+        <div class="float-corner-btn info-mode-btn" onclick="App.showSubModeRules(event, 'sticks', 'standard')"><i class="fas fa-question"></i></div>
+        <span id="sm-sticks-standard-lbl">Оракул</span>
     </button>
-    <button class="sub-mode-btn" onclick="RouletteGame.switchSubMode('bank', event)" id="sm-roulette-bank">
-        <div class="float-corner-btn info-mode-btn" onclick="App.showSubModeRules(event, 'roulette', 'bank')"><i class="fas fa-question"></i></div>
-        <span id="sm-roulette-bank-lbl">Банк</span>
-        </button>
-    <button class="sub-mode-btn" onclick="RouletteGame.switchSubMode('survival', event)" id="sm-roulette-survival">
-        <div class="float-corner-btn info-mode-btn" onclick="App.showSubModeRules(event, 'roulette', 'survival')"><i class="fas fa-question"></i></div>
-        <span id="sm-roulette-survival-lbl">Выживание</span>
+    <button class="sub-mode-btn" onclick="App.selectSubMode('sticks', 'pvp', event)" id="sm-sticks-pvp">
+        <div class="float-corner-btn info-mode-btn" onclick="App.showSubModeRules(event, 'sticks', 'pvp')"><i class="fas fa-question"></i></div>
+        <span id="sm-sticks-pvp-lbl">Два Игрока</span>
     </button>
 </div>
-					<div id="submodes-shop" style="display: none; flex-direction: column; gap: 8px; width: 100%;">
-    <button class="sub-mode-btn active-sub" onclick="App.selectSubMode('shop', 'exchange', event)" id="sm-shop-exchange">
-        <div class="float-corner-btn info-mode-btn" onclick="event.stopPropagation(); App.showSubModeRules(event, 'shop', 'exchange')" style="z-index: 20; pointer-events: auto;"><i class="fas fa-question"></i></div>
-        <span id="sm-shop-exchange-lbl">ОБМЕН</span>
-    </button>
-    
-    <button class="sub-mode-btn" onclick="App.selectSubMode('shop', 'standard', event)" id="sm-shop-standard">
-        <div class="float-corner-btn info-mode-btn" onclick="event.stopPropagation(); App.showSubModeRules(event, 'shop', 'standard')" style="z-index: 20; pointer-events: auto;"><i class="fas fa-question"></i></div>
-        <span id="sm-shop-standard-lbl">СТИЛИ</span>
-    </button>
-    
-    <button class="sub-mode-btn" onclick="App.selectSubMode('shop', 'perks', event)" id="sm-shop-perks">
-        <div class="float-corner-btn info-mode-btn" onclick="event.stopPropagation(); App.showSubModeRules(event, 'shop', 'perks')" style="z-index: 20; pointer-events: auto;"><i class="fas fa-question"></i></div>
-        <span id="sm-shop-perks-lbl">ПЕРКИ</span>
-    </button>
-</div>
+
                 </div>
             </div>
             
@@ -828,15 +855,17 @@ setInterval(() => {
                  <button class="square-game-btn" id="sel-game-roulette" onclick="App.previewGame('roulette')"><svg viewBox="0 0 200 200" fill="currentColor" style="height:26px; width:auto; margin-bottom:8px;"><path fill-rule="evenodd" d="M 100,4 A 96,96 0 1,1 100,196 A 96,96 0 1,1 100,4 Z M 100,86 A 14,14 0 1,0 100,114 A 14,14 0 1,0 100,86 Z M 100,6 A 22,22 0 1,0 100,50 A 22,22 0 1,0 100,6 Z M 162.35,42 A 22,22 0 1,0 162.35,86 A 22,22 0 1,0 162.35,42 Z M 162.35,114 A 22,22 0 1,0 162.35,158 A 22,22 0 1,0 162.35,114 Z M 100,150 A 22,22 0 1,0 100,194 A 22,22 0 1,0 100,150 Z M 37.65,114 A 22,22 0 1,0 37.65,158 A 22,22 0 1,0 37.65,114 Z M 37.65,42 A 22,22 0 1,0 37.65,86 A 22,22 0 1,0 37.65,42 Z"></path></svg><span id="sel-roul-txt">Пуля</span></button>
                  
                  <button class="square-game-btn" id="sel-game-coin" onclick="App.previewGame('coin')">
-    <svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="8" style="height: 24px; width: auto; margin-bottom: 6px;">
-        <circle cx="50" cy="50" r="40"/>
-        <rect x="38" y="38" width="24" height="24" rx="4" stroke-width="6" transform="rotate(45 50 50)"/>
-    </svg>
-    <span id="sel-coin-txt">Монета</span>
-</button>
+                    <svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="8" style="height: 24px; width: auto; margin-bottom: 6px;">
+                        <circle cx="50" cy="50" r="40"/>
+                        <rect x="38" y="38" width="24" height="24" rx="4" stroke-width="6" transform="rotate(45 50 50)"/>
+                    </svg>
+                    <span id="sel-coin-txt">Монета</span>
+                 </button>
                  <button class="square-game-btn" id="sel-game-flower" onclick="App.previewGame('flower')"><i class="fas fa-seedling"></i><span id="sel-flower-txt">Цветок</span></button>
                  
                  <button class="square-game-btn" id="sel-game-rps" onclick="App.previewGame('rps')"><i class="fas fa-hand-rock"></i><span id="sel-rps-txt">К-Н-Б</span></button>
+
+                 <button class="square-game-btn" id="sel-game-sticks" onclick="App.previewGame('sticks')"><i class="fas fa-grip-lines-vertical"></i><span id="sel-sticks-txt">Жребий</span></button>
                  
                  <button class="square-game-btn" id="sel-game-shop" onclick="App.previewGame('shop')">
                     <i class="fas fa-shopping-cart" style="color:var(--sun-gold)"></i>
@@ -1029,7 +1058,7 @@ setInterval(() => {
             </button>
         </div>
 
-        <div class="debug-panel" id="debugPanel">
+<div class="debug-panel" id="debugPanel">
     <button class="debug-btn std-debug-btn debug-dice-btn" onclick="App.askOracle(0)">1</button>
     <button class="debug-btn std-debug-btn debug-dice-btn" onclick="App.askOracle(1)">2</button>
     <button class="debug-btn std-debug-btn debug-dice-btn" onclick="App.askOracle(2)">3</button>
@@ -1037,19 +1066,20 @@ setInterval(() => {
     <button class="debug-btn std-debug-btn debug-dice-btn" onclick="App.askOracle(4)">5</button>
     <button class="debug-btn std-debug-btn debug-dice-btn" onclick="App.askOracle(5)">6</button>
 
-    <button class="debug-btn debug-flower-std" style="display: none; color: var(--friendly-green);" onclick="FlowerGame.play(true)">✅</button>
-    <button class="debug-btn debug-flower-std" style="display: none; color: var(--angry-red);" onclick="FlowerGame.play(false)">❌</button>
+    <button class="debug-btn std-debug-btn debug-flower-std" style="display: none; color: var(--friendly-green);" onclick="FlowerGame.play(true)">✅</button>
+    <button class="debug-btn std-debug-btn debug-flower-std" style="display: none; color: var(--angry-red);" onclick="FlowerGame.play(false)">❌</button>
+    <button class="debug-btn std-debug-btn debug-flower-int" style="display: none; color: var(--sun-gold);" onclick="FlowerGame.play('win_int')">🌸</button>
+    <button class="debug-btn std-debug-btn debug-flower-int" style="display: none; color: var(--angry-red);" onclick="FlowerGame.play('lose_int')">❌</button>
 
-    <button class="debug-btn debug-flower-int" style="display: none; color: var(--sun-gold);" onclick="FlowerGame.play('win_int')">🌸</button>
-    <button class="debug-btn debug-flower-int" style="display: none; color: var(--angry-red);" onclick="FlowerGame.play('lose_int')">❌</button>
+    <button class="debug-btn std-debug-btn debug-rps-std" style="display: none; color: var(--friendly-green);" onclick="RPSGame.triggerCheat('win')">👑</button>
+    <button class="debug-btn std-debug-btn debug-rps-std" style="display: none; color: var(--angry-red);" onclick="RPSGame.triggerCheat('lose')">💀</button>
+
+    <button class="debug-btn std-debug-btn debug-sticks-btn" style="display: none; color: var(--friendly-green);" onclick="SticksGame.triggerCheat('win')">🏆</button>
+    <button class="debug-btn std-debug-btn debug-sticks-btn" style="display: none; color: var(--angry-red);" onclick="SticksGame.triggerCheat('lose')">💀</button>
 
     <button class="debug-btn std-debug-btn" onclick="Achievements.unlockNextDebug()"><i class="fas fa-trophy"></i></button>
-    
-    <button class="debug-btn shop-debug-btn" style="display: none; border-color: var(--friendly-green); color: var(--friendly-green);" onclick="App.addDebugMoney()"><i class="fas fa-dollar-sign"></i></button>
-    
-	<button class="debug-btn debug-rps-std" style="display: none; color: var(--friendly-green);" onclick="RPSGame.triggerCheat('win')">👑</button>
-    <button class="debug-btn debug-rps-std" style="display: none; color: var(--angry-red);" onclick="RPSGame.triggerCheat('lose')">💀</button>
-	<button class="debug-btn shop-debug-btn" style="display: none; border-color: var(--magic-color); color: var(--magic-color);" onclick="App.addDebugCrystals()"><i class="fas fa-gem"></i></button>
+    <button class="debug-btn std-debug-btn shop-debug-btn" style="display: none; border-color: var(--friendly-green); color: var(--friendly-green);" onclick="App.addDebugMoney()"><i class="fas fa-dollar-sign"></i></button>
+    <button class="debug-btn std-debug-btn shop-debug-btn" style="display: none; border-color: var(--magic-color); color: var(--magic-color);" onclick="App.addDebugCrystals()"><i class="fas fa-gem"></i></button>
 </div>
 
         <div class="history-header" id="st-hist-head">История предсказаний</div>
@@ -1184,7 +1214,9 @@ setInterval(() => {
 				menuShop: "Магазин",
 				smShopStd: "Стили",
                 smShopPerks: "Перки",
-				histShopHead: "История покупок"
+				histShopHead: "История покупок",
+				btnSticks: "ЖРЕБИЙ", menuSticks: "Жребий",
+                smSticksStandard: "Оракул", smSticksPvp: "Два Игрока"
             },
             en: { 
                 title: "Dice of Truth", titleRoulette: "DESTINY SHOT", placeholder: "Ask your destiny...", placeBet: "Bet!", 
@@ -1205,7 +1237,9 @@ setInterval(() => {
 				menuShop: "Shop",
 				smShopStd: "Styles",
                 smShopPerks: "Perks",
-				histShopHead: "Purchase History"
+				histShopHead: "Purchase History",
+				btnSticks: "STICKS", menuSticks: "Sticks",
+                smSticksStandard: "Oracle", smSticksPvp: "Two Players"
             }
         };
 
@@ -1266,9 +1300,18 @@ setInterval(() => {
             shop_perks: {
                 ru: `<div class="rules-content"><div style="color: var(--sun-gold); font-weight: bold; font-size: 18px; border-bottom: 1px solid rgba(255, 249, 174, 0.3); padding-bottom: 8px; margin-bottom: 12px; text-align: center;">💎 Перки</div><div style="margin-bottom: 12px; font-style: italic; color: #ccc;">Здесь можно приобрести особые улучшения.</div><ul style="padding-left: 22px; margin-top: 0; margin-bottom: 0; list-style-type: none;"><li style="margin-bottom: 8px;"><span style="margin-left: -22px; margin-right: 4px;">🎲</span> <b>Модификаторы:</b> Разблокируй новые режимы для игр.</li><li style="margin-bottom: 8px;"><span style="margin-left: -22px; margin-right: 4px;">🛡️</span> <b>Защита:</b> Бонусы, которые помогут в выживании.</li></ul></div>`,
                 en: `<div class="rules-content"><div style="color: var(--sun-gold); font-weight: bold; font-size: 18px; border-bottom: 1px solid rgba(255, 249, 174, 0.3); padding-bottom: 8px; margin-bottom: 12px; text-align: center;">💎 Perks</div><div style="margin-bottom: 12px; font-style: italic; color: #ccc;">Buy special upgrades here.</div><ul style="padding-left: 22px; margin-top: 0; margin-bottom: 0; list-style-type: none;"><li style="margin-bottom: 8px;"><span style="margin-left: -22px; margin-right: 4px;">🎲</span> <b>Modifiers:</b> Unlock new game modes.</li><li style="margin-bottom: 8px;"><span style="margin-left: -22px; margin-right: 4px;">🛡️</span> <b>Protection:</b> Bonuses to help you survive.</li></ul></div>`
-            }		
-		
+            },
+			// 🥢 НОВЫЕ ПРАВИЛА ДЛЯ ЖРЕБИЯ
+            sticks_standard: {
+                ru: `<div class="rules-content"><div style="color: #00d2d3; font-weight: bold; font-size: 18px; border-bottom: 1px solid rgba(0, 210, 211, 0.3); padding-bottom: 8px; margin-bottom: 12px; text-align: center;">🥢 Жребий: Оракул</div><div style="margin-bottom: 12px; font-style: italic; color: #ccc;">Тяните палочки по очереди с компьютером. Кто вытянет короткую — проиграл!</div><ul style="padding-left: 22px; margin-top: 0; margin-bottom: 0; list-style-type: none;"><li style="margin-bottom: 8px;"><span style="margin-left: -22px; margin-right: 4px;">📦</span> <b>Коробочка:</b> Внутри 6 палочек, одна из них короткая.</li><li style="margin-bottom: 8px;"><span style="margin-left: -22px; margin-right: 4px;">👆</span> <b>Ход:</b> Тяни палочку вверх (свайпом), пока она не выйдет из коробочки.</li><li style="margin-bottom: 8px;"><span style="margin-left: -22px; margin-right: 4px;">🤖</span> <b>Оракул:</b> Делает ход сразу после тебя. Держись до последнего!</li></ul></div>`,
+                en: `<div class="rules-content"><div style="color: #00d2d3; font-weight: bold; font-size: 18px; border-bottom: 1px solid rgba(0, 210, 211, 0.3); padding-bottom: 8px; margin-bottom: 12px; text-align: center;">🥢 Sticks: Oracle</div><div style="margin-bottom: 12px; font-style: italic; color: #ccc;">Take turns drawing sticks with the computer. Draw the short one and you lose!</div><ul style="padding-left: 22px; margin-top: 0; margin-bottom: 0; list-style-type: none;"><li style="margin-bottom: 8px;"><span style="margin-left: -22px; margin-right: 4px;">📦</span> <b>Box:</b> Contains 6 sticks, one is short.</li><li style="margin-bottom: 8px;"><span style="margin-left: -22px; margin-right: 4px;">👆</span> <b>Move:</b> Pull a stick up (swipe) until it leaves the box.</li><li style="margin-bottom: 8px;"><span style="margin-left: -22px; margin-right: 4px;">🤖</span> <b>Oracle:</b> Moves right after you. Survive as long as you can!</li></ul></div>`
+            },
+            sticks_pvp: {
+                ru: `<div class="rules-content"><div style="color: #00d2d3; font-weight: bold; font-size: 18px; border-bottom: 1px solid rgba(0, 210, 211, 0.3); padding-bottom: 8px; margin-bottom: 12px; text-align: center;">👥 Жребий: Два Игрока</div><div style="margin-bottom: 12px; font-style: italic; color: #ccc;">Классический жребий для двоих. Выясните, кто сегодня платит за кофе!</div><ul style="padding-left: 22px; margin-top: 0; margin-bottom: 0; list-style-type: none;"><li style="margin-bottom: 8px;"><span style="margin-left: -22px; margin-right: 4px;">📱</span> <b>Передача:</b> Делайте ход и передавайте телефон друг другу.</li><li style="margin-bottom: 8px;"><span style="margin-left: -22px; margin-right: 4px;">🤞</span> <b>Удача:</b> Из 6 палочек только 1 короткая. Тот, кто ее вытянет — проигрывает раунд.</li></ul></div>`,
+                en: `<div class="rules-content"><div style="color: #00d2d3; font-weight: bold; font-size: 18px; border-bottom: 1px solid rgba(0, 210, 211, 0.3); padding-bottom: 8px; margin-bottom: 12px; text-align: center;">👥 Sticks: Two Players</div><div style="margin-bottom: 12px; font-style: italic; color: #ccc;">Classic draw for two. Find out who pays for coffee today!</div><ul style="padding-left: 22px; margin-top: 0; margin-bottom: 0; list-style-type: none;"><li style="margin-bottom: 8px;"><span style="margin-left: -22px; margin-right: 4px;">📱</span> <b>Pass:</b> Make a move and pass the phone to your friend.</li><li style="margin-bottom: 8px;"><span style="margin-left: -22px; margin-right: 4px;">🤞</span> <b>Luck:</b> Out of 6 sticks, 1 is short. Whoever draws it loses the round.</li></ul></div>`
+            }
         };
+		
 
         const traderIcons = ['<i class="fas fa-rocket"></i>', '<i class="fas fa-arrow-trend-down"></i>', '<i class="fas fa-chart-line"></i>', '<i class="fas fa-chart-area" style="transform: scaleY(-1)"></i>', '<i class="fas fa-arrows-left-right"></i>', '<i class="fas fa-skull"></i>'];
         const alcoIcons = ['<i class="fas fa-wine-glass-alt"></i>', '<i class="fas fa-beer-mug-empty"></i>', '<i class="fas fa-glass-martini-alt"></i>', '<i class="fas fa-whiskey-glass"></i>', '<i class="fas fa-vial"></i>', '<i class="fas fa-droplet"></i>'];
@@ -1500,22 +1543,52 @@ setInterval(() => {
             }
 
             function unlockNextDebug() {
-                const allIds = Object.keys(list);
-                for (let i = 0; i < allIds.length; i++) {
-                    if (!unlocked[allIds[i]]) {
-                        unlocked[allIds[i]] = true;
-                        order.push(allIds[i]);
-                        visibleIds.push(allIds[i]);
+                const mode = GameState.mode || 'dice';
+                
+                // === КАРТА АЧИВОК ПО ИГРАМ ===
+                // Когда создашь новые ачивки в объекте list, просто добавь их ID в нужный массив здесь:
+                const gameAchievements = {
+                    'roulette': [
+                        'first_surv', 'first_blood', 
+                        'surv_1', 'surv_2', 'surv_3', 'surv_4', 'surv_5', 
+                        'nimble_guy', 'intangible', 
+                        'dancer_1', 'dancer_2', 
+                        'death_3', 'death_5', 'death_10'
+                    ],
+                    'sticks': [], // <-- Сюда впишешь ID ачивок Жребия
+                    'dice': [],   // <-- Для Кубика
+                    'coin': [],   // <-- Для Монеты
+                    'flower': [], // <-- Для Лепестков
+                    'rps': []     // <-- Для К-Н-Б
+                };
+
+                const targetIds = gameAchievements[mode] || [];
+
+                // Если для текущей игры массив пуст, кнопка просто ничего не сделает
+                if (targetIds.length === 0) return;
+
+                // Перебираем только ачивки текущей игры
+                for (let i = 0; i < targetIds.length; i++) {
+                    const achId = targetIds[i];
+                    
+                    if (!unlocked[achId]) {
+                        unlocked[achId] = true;
+                        order.push(achId);
+                        visibleIds.push(achId);
                         render();
-                        const el = document.getElementById('ach-' + allIds[i]);
-                        if (el) showTooltip(allIds[i], el, null);
+                        
+                        const el = document.getElementById('ach-' + achId);
+                        if (el) showTooltip(achId, el, null);
+                        
                         if (typeof App !== 'undefined') App.playSoundEffect('achievement');
-                        if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.HapticFeedback) window.Telegram.WebApp.HapticFeedback.notificationOccurred('success');
+                        if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.HapticFeedback) {
+                            window.Telegram.WebApp.HapticFeedback.notificationOccurred('success');
+                        }
                         
                         if (typeof App !== 'undefined' && typeof App.requestProfileSave === 'function') { 
                             App.requestProfileSave(); 
                         }
-                        break;
+                        break; // Выдаем строго по одной за клик
                     }
                 }
             }
@@ -1871,7 +1944,7 @@ setInterval(() => {
                     }
                 };
 
-                const lists = ['historyListDice', 'historyListRoulette', 'historyListBank', 'historyListSurvival', 'historyListCoin', 'historyListFlower', 'historyListRPS', 'historyListShop'];
+                const lists = ['historyListDice', 'historyListRoulette', 'historyListBank', 'historyListSurvival', 'historyListCoin', 'historyListFlower', 'historyListRPS', 'historyListShop', 'historyListSticks'];
                 lists.forEach(id => { const el = document.getElementById(id); if(el) el.innerHTML = ''; });
 
                 if (idx !== -1 && GameState.profiles[idx]) {
@@ -1885,6 +1958,7 @@ setInterval(() => {
                     setH('historyListFlower', p.historyFlower);
                     setH('historyListRPS', p.historyRPS);
                     setH('historyListShop', p.historyShop);
+					setH('historyListSticks', p.historySticks);
 
                     // УНИФИКАЦИЯ: Дефолт 'standard' для Кости Истины
                     GameState.subModes = (p.settings && p.settings.subModes) ? JSON.parse(JSON.stringify(p.settings.subModes)) : { dice: 'standard', roulette: 'standard', coin: 'standard', flower: 'standard', rps: 'standard', shop: 'standard' };
@@ -1943,14 +2017,13 @@ setInterval(() => {
                 // РАЗРЕШАЕМ Монете использовать стандартный класс
                 p.historyDice = getCleanH('historyListDice', ['hist-standard', 'hist-trader', 'hist-alco', 'hist-yesno']);
                 p.historyRoulette = getCleanH('historyListRoulette', ['hist-roulette']);
-				p.historyBank = getCleanH('historyListBank', ['hist-bank']);
-				p.historySurvival = getCleanH('historyListSurvival', ['hist-survival']);
-                p.historyCoin = getCleanH('historyListCoin', ['hist-standard', 'hist-question']); // <--- ВАЖНО
+                p.historyBank = getCleanH('historyListBank', ['hist-bank']);
+                p.historySurvival = getCleanH('historyListSurvival', ['hist-survival']);
+                p.historyCoin = getCleanH('historyListCoin', ['hist-standard', 'hist-question']); 
                 p.historyFlower = getCleanH('historyListFlower', ['hist-standard', 'hist-intuition']);
                 p.historyRPS = getCleanH('historyListRPS', ['hist-standard', 'hist-pvp']);
                 p.historyShop = getCleanH('historyListShop', ['hist-standard']);
-                
-                p.historySurvival = getCleanH('historyListSurvival');
+                p.historySticks = getCleanH('historyListSticks', ['hist-standard', 'hist-pvp']);
 
                 const bgSel = document.getElementById('bgSelect');
                 const spTog = document.getElementById('sparkleToggle');
@@ -1977,7 +2050,8 @@ setInterval(() => {
                 if (e) e.stopPropagation();
                 isSwitchingProfile = true; 
                 
-                const lists = ['historyListDice', 'historyListRoulette', 'historyListSurvival', 'historyListCoin', 'historyListFlower', 'historyListRPS', 'historyListShop'];
+                // ДОБАВЛЕНО: 'historyListSticks' в массив
+                const lists = ['historyListDice', 'historyListRoulette', 'historyListSurvival', 'historyListCoin', 'historyListFlower', 'historyListRPS', 'historyListShop', 'historyListSticks'];
                 lists.forEach(id => { const el = document.getElementById(id); if (el) el.innerHTML = ''; });
 
                 const newIdx = GameState.profiles.length;
@@ -1996,7 +2070,8 @@ setInterval(() => {
                         diceMode: 'standard', 
                         bgTheme: 'bg1', 
                         sparkles: true,
-                        subModes: { dice: 'standard', roulette: 'standard', coin: 'standard', flower: 'standard', rps: 'standard', shop: 'standard' }
+                        // ДОБАВЛЕНО: sticks: 'standard'
+                        subModes: { dice: 'standard', roulette: 'standard', coin: 'standard', flower: 'standard', rps: 'standard', shop: 'standard', sticks: 'standard' }
                     },
                     historyDice: '', 
                     historyRoulette: '', 
@@ -2004,7 +2079,8 @@ setInterval(() => {
                     historyCoin: '', 
                     historyFlower: '', 
                     historyRPS: '', 
-                    historyShop: ''
+                    historyShop: '', // <-- ТУТ БЫЛА ПРОПУЩЕНА ЗАПЯТАЯ
+                    historySticks: ''
                 };
                 
                 GameState.profiles.push(newPlayer);
@@ -2183,43 +2259,48 @@ setInterval(() => {
             }
 
             
+            // === 3. КРИСТАЛЛЫ: ФИКС ДЛЯ ВСЕХ ИГР ===
+// === 3. КРИСТАЛЛЫ: ФИНАЛЬНАЯ ВЕРСИЯ ДЛЯ ВСЕХ ИГР ===
+function addCrystal(game = null, subMode = null, customAmount = null) {
+    if (GameState.activeProfileIdx === -1 || !GameState.profiles[GameState.activeProfileIdx]) return;
+    const p = GameState.profiles[GameState.activeProfileIdx];
+    
+    const rewards = {
+        'dice': { 'standard': 1, 'dots': 1, 'numbers': 1, 'yesno': 1, 'trader': 1, 'alco': 1 },
+        'roulette': { 'standard': 1, 'bank': 1, 'survival': 1 },
+        'coin': { 'standard': 1, 'question': 1 },
+        'flower': { 'standard': 1, 'intuition': 1 },
+        'rps': { 'standard': 1, 'pvp': 1 },
+        'sticks': { 'standard': 1 } // 🥢 Жребий теперь официально в системе наград!
+    };
 
-            // === 3. КРИСТАЛЛЫ: ФИКС ДЛЯ КОСТИ (ДА/ЧЕТНЫЕ) ===
-            function addCrystal(game = null, subMode = null, customAmount = null) {
-                if (GameState.activeProfileIdx === -1 || !GameState.profiles[GameState.activeProfileIdx]) return;
-                const p = GameState.profiles[GameState.activeProfileIdx];
-                
-                const rewards = {
-                    'dice': { 'standard': 1, 'dots': 1, 'numbers': 1, 'yesno': 1, 'trader': 1, 'alco': 1 },
-                    'roulette': { 'standard': 1, 'bank': 1, 'survival': 1 },
-                    'coin': { 'standard': 1, 'question': 1 },
-                    'flower': { 'standard': 1, 'intuition': 1 },
-                    'rps': { 'standard': 1, 'pvp': 1 }
-                };
+    let amount = 0;
+    if (customAmount !== null) amount = customAmount;
+    else if (game && subMode && rewards[game]) {
+        amount = rewards[game][subMode] || 0;
+    }
 
-                let amount = 0;
-                if (customAmount !== null) amount = customAmount;
-                else if (game && subMode && rewards[game]) {
-                    // Проверяем и прямое имя мода, и маппинг
-                    amount = rewards[game][subMode] || 0;
-                }
+    if (amount <= 0) return; 
 
-                if (amount <= 0) return; 
+    p.crystals = (p.crystals || 0) + amount;
+    
+    // Обновляем интерфейс
+    if (typeof updateTopBalances === 'function') updateTopBalances();
+    if (typeof renderProfiles === 'function') renderProfiles(); 
+    
+    // Жесткое сохранение в профиль
+    if (typeof App !== 'undefined' && App.requestProfileSave) App.requestProfileSave();
 
-                p.crystals = (p.crystals || 0) + amount;
-                
-                if (typeof updateTopBalances === 'function') updateTopBalances();
-                if (typeof renderProfiles === 'function') renderProfiles(); 
-                
-                const anim = document.createElement('div');
-                anim.className = 'crystal-anim-new'; 
-                anim.innerHTML = `+${amount} <i class="fas fa-gem"></i>`;
-                document.body.appendChild(anim);
+    // Анимация вылета алмаза
+    const anim = document.createElement('div');
+    anim.className = 'crystal-anim-new'; 
+    anim.innerHTML = `+${amount} <i class="fas fa-gem"></i>`;
+    document.body.appendChild(anim);
 
-                setTimeout(() => { anim.classList.add('show'); }, 30);
-                setTimeout(() => { anim.classList.add('hide'); }, 1200);
-                setTimeout(() => { if (anim.parentNode) anim.remove(); }, 1800);
-            }
+    setTimeout(() => { anim.classList.add('show'); }, 30);
+    setTimeout(() => { anim.classList.add('hide'); }, 1200);
+    setTimeout(() => { if (anim.parentNode) anim.remove(); }, 1800);
+}
 
             function updateTopBalances() {
                 if (GameState.activeProfileIdx !== -1 && GameState.profiles[GameState.activeProfileIdx]) {
@@ -2240,7 +2321,7 @@ setInterval(() => {
                 // 🚜 АВТО-БУЛЬДОЗЕР: РАЗБИВАЕМ МАТРЕШКИ
                 // ==========================================
                 const histBlock = document.getElementById('historyBlock');
-                const allLists = ['historyListDice', 'historyListRoulette', 'historyListSurvival', 'historyListCoin', 'historyListFlower', 'historyListRPS', 'historyListShop'];
+                const allLists = ['historyListDice', 'historyListRoulette', 'historyListSurvival', 'historyListCoin', 'historyListFlower', 'historyListRPS', 'historyListShop', 'historyListSticks'];
                 if (histBlock) {
                     allLists.forEach(id => {
                         const el = document.getElementById(id);
@@ -2261,11 +2342,12 @@ setInterval(() => {
                     if (subMode === 'survival') activeId = 'historyListSurvival';
                     else if (subMode === 'bank') activeId = 'historyListBank';
                     else activeId = 'historyListRoulette';
-					}
+                }
                 else if (mode === 'coin') activeId = 'historyListCoin';
                 else if (mode === 'flower') activeId = 'historyListFlower';
                 else if (mode === 'rps') activeId = 'historyListRPS';
                 else if (mode === 'shop') activeId = 'historyListShop';
+                else if (mode === 'sticks') activeId = 'historyListSticks';
 
                 allLists.forEach(id => {
                     const el = document.getElementById(id);
@@ -2285,6 +2367,7 @@ setInterval(() => {
                                 else if (id === 'historyListFlower') isAllowed = child.matches('.hist-standard, .hist-intuition');
                                 else if (id === 'historyListRPS') isAllowed = child.matches('.hist-standard, .hist-pvp');
                                 else if (id === 'historyListShop') isAllowed = child.matches('.hist-standard');
+                                else if (id === 'historyListSticks') isAllowed = child.matches('.hist-standard, .hist-pvp');
 
                                 if (!isAllowed) child.remove();
                             }
@@ -2295,7 +2378,7 @@ setInterval(() => {
                 const stHist = document.getElementById('st-hist-head');
                 if (stHist) {
                     const t = LANG_DATA[GameState.lang] || {};
-                    const titles = { 'dice': t.histDiceHead, 'roulette': (subMode === 'survival' ? t.histSurvivalHead : t.histRouletteHead), 'coin': t.histCoinHead, 'flower': t.histFlowerHead, 'rps': t.histRPSHead, 'shop': t.histShopHead };
+                    const titles = { 'dice': t.histDiceHead, 'roulette': (subMode === 'survival' ? t.histSurvivalHead : t.histRouletteHead), 'coin': t.histCoinHead, 'flower': t.histFlowerHead, 'rps': t.histRPSHead, 'shop': t.histShopHead, 'sticks': t.histSticksHead };
                     stHist.innerText = titles[mode] || "История";
                 }
             }
@@ -2401,78 +2484,96 @@ setInterval(() => {
             }
 
             function updateSubModeHighlights() {
-                // 1. Дефолты (теперь и для Кости это 'standard')
-                if (!GameState.subModes) GameState.subModes = {};
-				// АВТО-КОРРЕКТОР: если в памяти старый режим, переводим его на новый стандарт
-                if (GameState.subModes.dice === 'dots') GameState.subModes.dice = 'standard';
-                if (GameState.subModes.roulette === 'dots') GameState.subModes.roulette = 'standard';
-                const games = ['dice', 'roulette', 'coin', 'flower', 'rps', 'shop'];
-                games.forEach(g => {
-                    if (!GameState.subModes[g]) GameState.subModes[g] = 'standard';
-                });
+    if (!GameState.subModes) GameState.subModes = {};
+    
+    // АВТО-КОРРЕКТОР
+    if (GameState.subModes.dice === 'dots') GameState.subModes.dice = 'standard';
+    if (GameState.subModes.roulette === 'dots') GameState.subModes.roulette = 'standard';
+    
+    const games = ['dice', 'roulette', 'coin', 'flower', 'rps', 'shop', 'sticks'];
+    
+    games.forEach(g => {
+        if (!GameState.subModes[g]) GameState.subModes[g] = 'standard';
+    });
 
-                // 2. Жестко снимаем все классы
-                document.querySelectorAll('.sub-mode-btn').forEach(b => b.classList.remove('active-sub'));
-                
-                // 3. Жестко ставим нужные
-                games.forEach(g => {
-                    const btn = document.getElementById(`sm-${g}-${GameState.subModes[g]}`);
-                    if (btn) btn.classList.add('active-sub');
-                });
-            }
+    // Снимаем классы
+    document.querySelectorAll('.sub-mode-btn').forEach(b => b.classList.remove('active-sub'));
+    
+    // Ставим нужные
+    games.forEach(g => {
+        const btn = document.getElementById(`sm-${g}-${GameState.subModes[g]}`);
+        if (btn) btn.classList.add('active-sub');
+    });
+}
 
             function previewGame(mode) {
-                if (!mode) mode = GameState.mode || 'dice'; 
-                GameState.previewMode = mode; 
+    if (!mode) mode = GameState.mode || 'dice'; 
+    GameState.previewMode = mode; 
 
-                const card = document.getElementById('menuPreviewCard');
-                const t = LANG_DATA[GameState.lang];
+    const card = document.getElementById('menuPreviewCard');
+    const t = LANG_DATA[GameState.lang];
 
-                // Синхронно прячем всё
-                ['dice', 'roulette', 'coin', 'flower', 'rps', 'shop'].forEach(id => {
-                    const el = document.getElementById('sel-game-' + id);
-                    if (el) el.classList.remove('active-preview');
-                    const sub = document.getElementById('submodes-' + id);
-                    if (sub) sub.style.display = 'none';
-                });
+    // Синхронно прячем всё (ДОБАВЛЕН 'sticks' в массив)
+    ['dice', 'roulette', 'coin', 'flower', 'rps', 'shop', 'sticks'].forEach(id => {
+        const el = document.getElementById('sel-game-' + id);
+        if (el) el.classList.remove('active-preview');
+        const sub = document.getElementById('submodes-' + id);
+        if (sub) sub.style.display = 'none';
+    });
 
-                // Синхронно включаем нужное
-                const activeBtn = document.getElementById('sel-game-' + mode);
-                if(activeBtn) activeBtn.classList.add('active-preview');
-                const subBlock = document.getElementById('submodes-' + mode);
-                if(subBlock) subBlock.style.display = 'flex';
+    // Синхронно включаем нужное
+    const activeBtn = document.getElementById('sel-game-' + mode);
+    if(activeBtn) activeBtn.classList.add('active-preview');
+    const subBlock = document.getElementById('submodes-' + mode);
+    if(subBlock) subBlock.style.display = 'flex';
 
-                if (mode === 'dice') {
-                    if(card) { card.style.borderColor = "var(--magic-color)"; card.style.boxShadow = "0 0 10px rgba(162, 155, 254, 0.2)"; card.style.color = "var(--magic-color)"; }
-                    const pcIcon = document.getElementById('preview-card-icon'); if(pcIcon) pcIcon.innerHTML = `<i class="fas fa-dice-d6"></i>`;
-                    const previewTitle = document.getElementById('preview-card-title'); if (previewTitle) previewTitle.innerText = t.menuDice;
-                } else if (mode === 'roulette') {
-                    if(card) { card.style.borderColor = "var(--angry-red)"; card.style.boxShadow = "0 0 10px rgba(255, 102, 102, 0.2)"; card.style.color = "var(--angry-red)"; }
-                    const pcIcon = document.getElementById('preview-card-icon'); if(pcIcon) pcIcon.innerHTML = `<svg viewBox="0 0 200 200" style="height: 45px; width: auto;" fill="currentColor"><path fill-rule="evenodd" d="M 100,4 A 96,96 0 1,1 100,196 A 96,96 0 1,1 100,4 Z M 100,86 A 14,14 0 1,0 100,114 A 14,14 0 1,0 100,86 Z M 100,6 A 22,22 0 1,0 100,50 A 22,22 0 1,0 100,6 Z M 162.35,42 A 22,22 0 1,0 162.35,86 A 22,22 0 1,0 162.35,42 Z M 162.35,114 A 22,22 0 1,0 162.35,158 A 22,22 0 1,0 162.35,114 Z M 100,150 A 22,22 0 1,0 100,194 A 22,22 0 1,0 100,150 Z M 37.65,114 A 22,22 0 1,0 37.65,158 A 22,22 0 1,0 37.65,114 Z M 37.65,42 A 22,22 0 1,0 37.65,86 A 22,22 0 1,0 37.65,42 Z"></path></svg>`;
-                    const previewTitle = document.getElementById('preview-card-title'); if (previewTitle) previewTitle.innerText = t.menuRoulette;
-                } else if (mode === 'coin') {
-                    if(card) { card.style.borderColor = "#cbd5e1"; card.style.boxShadow = "0 0 10px rgba(255, 255, 255, 0.2)"; card.style.color = "#cbd5e1"; }
-                    const pcIcon = document.getElementById('preview-card-icon'); if(pcIcon) pcIcon.innerHTML = `<svg viewBox="0 0 100 100" style="height: 45px; width: auto;" fill="none" stroke="currentColor" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="50" cy="42" rx="40" ry="16"/><ellipse cx="50" cy="42" rx="24" ry="9" stroke-width="6"/><path d="M 10 42 v 16 a 40 16 0 0 0 80 0 v -16"/><path d="M 26 55 v 16 M 38 57 v 16 M 50 58 v 16 M 62 57 v 16 M 74 55 v 16" stroke-width="4"/></svg>`;
-                    const previewTitle = document.getElementById('preview-card-title'); if (previewTitle) previewTitle.innerText = t.menuCoin || "Грань Выбора";
-                } else if (mode === 'flower') {
-                    if(card) { card.style.borderColor = "var(--friendly-green)"; card.style.boxShadow = "0 0 10px rgba(250, 204, 21, 0.2)"; card.style.color = "var(--friendly-green)"; }
-                    const pcIcon = document.getElementById('preview-card-icon'); if(pcIcon) pcIcon.innerHTML = `<svg viewBox="0 0 100 100" style="height: 45px; width: auto;" fill="none" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"><path d="M50 15 Q60 30 50 50 Q40 30 50 15 M50 85 Q60 70 50 50 Q40 70 50 85 M15 50 Q30 60 50 50 Q30 40 15 50 M85 50 Q70 60 50 50 Q70 40 85 50 M25 25 Q40 35 50 50 Q35 40 25 25 M75 75 Q60 65 50 50 Q65 60 75 75 M25 75 Q40 65 50 50 Q35 60 25 75 M75 25 Q60 35 50 50 Q65 40 75 25"/><circle cx="50" cy="50" r="10" fill="currentColor"/></svg>`;
-                    const previewTitle = document.getElementById('preview-card-title'); if (previewTitle) previewTitle.innerText = t.menuFlower || "Лепестки";
-                } else if (mode === 'rps') {
-                    if(card) { card.style.borderColor = "#ff9f43"; card.style.boxShadow = "0 0 10px rgba(255, 159, 67, 0.2)"; card.style.color = "#ff9f43"; }
-                    const pcIcon = document.getElementById('preview-card-icon'); if(pcIcon) pcIcon.innerHTML = `<i class="fas fa-hand-peace"></i>`;
-                    const previewTitle = document.getElementById('preview-card-title'); if (previewTitle) previewTitle.innerText = t.menuRPS || "К-Н-Б";
-                } else if (mode === 'shop') {
-                    if(card) { card.style.borderColor = "var(--sun-gold)"; card.style.boxShadow = "0 0 10px rgba(255, 249, 174, 0.2)"; card.style.color = "var(--sun-gold)"; }
-                    const pcIcon = document.getElementById('preview-card-icon'); if(pcIcon) pcIcon.innerHTML = `<i class="fas fa-shopping-cart"></i>`;
-                    const previewTitle = document.getElementById('preview-card-title'); if (previewTitle) previewTitle.innerText = t.menuShop || "Магазин";
-                }
+    if (mode === 'dice') {
+        if(card) { card.style.borderColor = "var(--magic-color)"; card.style.boxShadow = "0 0 10px rgba(162, 155, 254, 0.2)"; card.style.color = "var(--magic-color)"; }
+        const pcIcon = document.getElementById('preview-card-icon'); if(pcIcon) pcIcon.innerHTML = `<i class="fas fa-dice-d6"></i>`;
+        const previewTitle = document.getElementById('preview-card-title'); if (previewTitle) previewTitle.innerText = t.menuDice;
+    } else if (mode === 'roulette') {
+        if(card) { card.style.borderColor = "var(--angry-red)"; card.style.boxShadow = "0 0 10px rgba(255, 102, 102, 0.2)"; card.style.color = "var(--angry-red)"; }
+        const pcIcon = document.getElementById('preview-card-icon'); if(pcIcon) pcIcon.innerHTML = `<svg viewBox="0 0 200 200" style="height: 45px; width: auto;" fill="currentColor"><path fill-rule="evenodd" d="M 100,4 A 96,96 0 1,1 100,196 A 96,96 0 1,1 100,4 Z M 100,86 A 14,14 0 1,0 100,114 A 14,14 0 1,0 100,86 Z M 100,6 A 22,22 0 1,0 100,50 A 22,22 0 1,0 100,6 Z M 162.35,42 A 22,22 0 1,0 162.35,86 A 22,22 0 1,0 162.35,42 Z M 162.35,114 A 22,22 0 1,0 162.35,158 A 22,22 0 1,0 162.35,114 Z M 100,150 A 22,22 0 1,0 100,194 A 22,22 0 1,0 100,150 Z M 37.65,114 A 22,22 0 1,0 37.65,158 A 22,22 0 1,0 37.65,114 Z M 37.65,42 A 22,22 0 1,0 37.65,86 A 22,22 0 1,0 37.65,42 Z"></path></svg>`;
+        const previewTitle = document.getElementById('preview-card-title'); if (previewTitle) previewTitle.innerText = t.menuRoulette;
+    } else if (mode === 'coin') {
+        if(card) { card.style.borderColor = "#cbd5e1"; card.style.boxShadow = "0 0 10px rgba(255, 255, 255, 0.2)"; card.style.color = "#cbd5e1"; }
+        const pcIcon = document.getElementById('preview-card-icon'); if(pcIcon) pcIcon.innerHTML = `<svg viewBox="0 0 100 100" style="height: 45px; width: auto;" fill="none" stroke="currentColor" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="50" cy="42" rx="40" ry="16"/><ellipse cx="50" cy="42" rx="24" ry="9" stroke-width="6"/><path d="M 10 42 v 16 a 40 16 0 0 0 80 0 v -16"/><path d="M 26 55 v 16 M 38 57 v 16 M 50 58 v 16 M 62 57 v 16 M 74 55 v 16" stroke-width="4"/></svg>`;
+        const previewTitle = document.getElementById('preview-card-title'); if (previewTitle) previewTitle.innerText = t.menuCoin || "Грань Выбора";
+    } else if (mode === 'flower') {
+        if(card) { card.style.borderColor = "var(--friendly-green)"; card.style.boxShadow = "0 0 10px rgba(250, 204, 21, 0.2)"; card.style.color = "var(--friendly-green)"; }
+        const pcIcon = document.getElementById('preview-card-icon'); if(pcIcon) pcIcon.innerHTML = `<svg viewBox="0 0 100 100" style="height: 45px; width: auto;" fill="none" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"><path d="M50 15 Q60 30 50 50 Q40 30 50 15 M50 85 Q60 70 50 50 Q40 70 50 85 M15 50 Q30 60 50 50 Q30 40 15 50 M85 50 Q70 60 50 50 Q70 40 85 50 M25 25 Q40 35 50 50 Q35 40 25 25 M75 75 Q60 65 50 50 Q65 60 75 75 M25 75 Q40 65 50 50 Q35 60 25 75 M75 25 Q60 35 50 50 Q65 40 75 25"/><circle cx="50" cy="50" r="10" fill="currentColor"/></svg>`;
+        const previewTitle = document.getElementById('preview-card-title'); if (previewTitle) previewTitle.innerText = t.menuFlower || "Лепестки";
+    } else if (mode === 'rps') {
+        if(card) { card.style.borderColor = "#ff9f43"; card.style.boxShadow = "0 0 10px rgba(255, 159, 67, 0.2)"; card.style.color = "#ff9f43"; }
+        const pcIcon = document.getElementById('preview-card-icon'); if(pcIcon) pcIcon.innerHTML = `<i class="fas fa-hand-peace"></i>`;
+        const previewTitle = document.getElementById('preview-card-title'); if (previewTitle) previewTitle.innerText = t.menuRPS || "К-Н-Б";
+    } else if (mode === 'shop') {
+        if(card) { card.style.borderColor = "var(--sun-gold)"; card.style.boxShadow = "0 0 10px rgba(255, 249, 174, 0.2)"; card.style.color = "var(--sun-gold)"; }
+        const pcIcon = document.getElementById('preview-card-icon'); if(pcIcon) pcIcon.innerHTML = `<i class="fas fa-shopping-cart"></i>`;
+        const previewTitle = document.getElementById('preview-card-title'); if (previewTitle) previewTitle.innerText = t.menuShop || "Магазин";
+    } else if (mode === 'sticks') {
+        if(card) { 
+            card.style.borderColor = "#00d2d3"; 
+            card.style.boxShadow = "0 0 10px rgba(0, 210, 211, 0.2)"; 
+            card.style.color = "#00d2d3"; 
+        }
+        const pcIcon = document.getElementById('preview-card-icon'); 
+        if(pcIcon) pcIcon.innerHTML = `<i class="fas fa-grip-lines-vertical"></i>`;
+        const previewTitle = document.getElementById('preview-card-title'); 
+        if (previewTitle) previewTitle.innerText = t.btnSticks || "ЖРЕБИЙ";
+    }
+    
+    // ВЫЗЫВАЕМ ПОДСВЕТКУ СРАЗУ (БЕЗ ТАЙМЕРОВ!)
+    if (typeof updateSubModeHighlights === 'function') {
+        updateSubModeHighlights(mode); // передаем mode, чтобы обновились именно нужные кнопки
+    }
 
-                // ВЫЗЫВАЕМ ПОДСВЕТКУ СРАЗУ (БЕЗ ТАЙМЕРОВ!)
-                updateSubModeHighlights();
-
-                if (tg.HapticFeedback && tg.HapticFeedback.selectionChanged) tg.HapticFeedback.selectionChanged();
-            }
+    if (typeof tg !== 'undefined' && tg.HapticFeedback && tg.HapticFeedback.selectionChanged) {
+        tg.HapticFeedback.selectionChanged();
+    } else if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.HapticFeedback) {
+        window.Telegram.WebApp.HapticFeedback.selectionChanged();
+    }
+}
 
             function selectGameMode() {
 			GameState.mode = GameState.previewMode || 'dice'; // ПЕРЕКЛЮЧАЕМ РЕЖИМ ТОЛЬКО ЗДЕС
@@ -2548,148 +2649,177 @@ setInterval(() => {
             }
 
             function mountActiveGame() {
-                const oldBtn = document.getElementById('rollBtn');
-                if (oldBtn) {
-                    const newBtn = oldBtn.cloneNode(true);
-                    oldBtn.parentNode.replaceChild(newBtn, oldBtn);
-                }
+    const oldBtn = document.getElementById('rollBtn');
+    if (oldBtn) {
+        const newBtn = oldBtn.cloneNode(true);
+        oldBtn.parentNode.replaceChild(newBtn, oldBtn);
+    }
 
-                const titleEl = document.getElementById('ui-title');
-                const t = LANG_DATA[GameState.lang];
-                
-                const rollBtn = document.getElementById('rollBtn');
-                if (rollBtn) {
-                    rollBtn.innerText = t.rollBtn;
-                    rollBtn.disabled = false;
-                    rollBtn.classList.remove('gold-text-active');
-                }
-                
-                let qhKey = GameState.mode + '_' + GameState.subModes[GameState.mode];
-                let targetHideState = GameState.questionHiddenMap[qhKey] !== undefined ? GameState.questionHiddenMap[qhKey] : GameState.isQuestionHidden;
-                
-                const uInput = document.getElementById('userQuestion');
-                if (uInput) uInput.value = GameState.questionDrafts[qhKey] || '';
-                
-                if(typeof DiceGame !== 'undefined') DiceGame.unmount();
-                if(typeof RouletteGame !== 'undefined') RouletteGame.unmount();
-                if(typeof CoinGame !== 'undefined') CoinGame.unmount();
-                if(typeof FlowerGame !== 'undefined') FlowerGame.unmount();
-                if(typeof RPSGame !== 'undefined') RPSGame.unmount();
-				if(typeof ShopGame !== 'undefined') ShopGame.unmount();
+    const titleEl = document.getElementById('ui-title');
+    const t = LANG_DATA[GameState.lang];
+    
+    const rollBtn = document.getElementById('rollBtn');
+    if (rollBtn) {
+        rollBtn.innerText = t.rollBtn;
+        rollBtn.disabled = false;
+        rollBtn.classList.remove('gold-text-active');
+    }
+    
+    let qhKey = GameState.mode + '_' + GameState.subModes[GameState.mode];
+    let targetHideState = GameState.questionHiddenMap[qhKey] !== undefined ? GameState.questionHiddenMap[qhKey] : GameState.isQuestionHidden;
+    
+    const uInput = document.getElementById('userQuestion');
+    if (uInput) uInput.value = GameState.questionDrafts[qhKey] || '';
+    
+    if(typeof DiceGame !== 'undefined') DiceGame.unmount();
+    if(typeof RouletteGame !== 'undefined') RouletteGame.unmount();
+    if(typeof CoinGame !== 'undefined') CoinGame.unmount();
+    if(typeof FlowerGame !== 'undefined') FlowerGame.unmount();
+    if(typeof RPSGame !== 'undefined') RPSGame.unmount();
+    if(typeof ShopGame !== 'undefined') ShopGame.unmount();
+    if(typeof SticksGame !== 'undefined' && SticksGame.unmount) SticksGame.unmount();
 
-                if (GameState.mode === 'roulette') {
-                    if (titleEl) titleEl.innerText = t.titleRoulette;
-                    const subNames = { standard: t.smRoulStd, bank: t.smBank, survival: t.smSurv };
-                    const disp = document.getElementById('current-mode-display');
-                    if (disp) { disp.innerText = subNames[GameState.subModes.roulette].toUpperCase(); disp.style.display = 'inline'; }
-                    
-                    let headTxt = t.histSurvHead;
-                    const tqBtn = document.getElementById('toggleQuestionBtn');
-                    
-                    if (GameState.subModes.roulette === 'survival') {
-                        headTxt = t.histLeadHead; if(tqBtn) tqBtn.style.display = 'none'; setQuestionState(true, true);
-                    } else if (GameState.subModes.roulette === 'bank') {
-                        headTxt = t.histBankHead; if(tqBtn) tqBtn.style.display = 'none'; setQuestionState(false, true);
-                    } else {
-                        if(tqBtn) tqBtn.style.display = 'flex'; setQuestionState(targetHideState, true);
-                    }
-                    
-                    const stHistHead = document.getElementById('st-hist-head');
-                    if(stHistHead) stHistHead.innerText = headTxt;
-                    if (GameState.subModes.roulette === 'bank') document.body.classList.add('bank-mode-active');
-                    else document.body.classList.remove('bank-mode-active');
-                    
-                    if (typeof RouletteGame !== 'undefined') RouletteGame.mount();
-                    if (GameState.subModes.roulette === 'bank') {
-                        const resStatus = document.getElementById('res-status'); const resCont = document.getElementById('res-content');
-                        if(resStatus && resCont && !resCont.classList.contains('visible')) resStatus.innerText = t.idleBet;
-                    }
-                    
-                } else if (GameState.mode === 'coin') {
-                    if (titleEl) titleEl.innerText = t.menuCoin || "Грань Выбора";
-                    const subNamesCoin = { standard: t.smCoinStd || "Бросок", question: t.smCoinQst || "Вопрос" };
-                    const disp = document.getElementById('current-mode-display');
-                    if (disp) { disp.innerText = subNamesCoin[GameState.subModes.coin].toUpperCase(); disp.style.display = 'inline'; }
+    if (GameState.mode === 'roulette') {
+        if (titleEl) titleEl.innerText = t.titleRoulette;
+        const subNames = { standard: t.smRoulStd, bank: t.smBank, survival: t.smSurv };
+        const disp = document.getElementById('current-mode-display');
+        if (disp) { disp.innerText = subNames[GameState.subModes.roulette].toUpperCase(); disp.style.display = 'inline'; }
+        
+        let headTxt = t.histSurvHead;
+        const tqBtn = document.getElementById('toggleQuestionBtn');
+        
+        if (GameState.subModes.roulette === 'survival') {
+            headTxt = t.histLeadHead; if(tqBtn) tqBtn.style.display = 'none'; setQuestionState(true, true);
+        } else if (GameState.subModes.roulette === 'bank') {
+            headTxt = t.histBankHead; if(tqBtn) tqBtn.style.display = 'none'; setQuestionState(false, true);
+        } else {
+            if(tqBtn) tqBtn.style.display = 'flex'; setQuestionState(targetHideState, true);
+        }
+        
+        const stHistHead = document.getElementById('st-hist-head');
+        if(stHistHead) stHistHead.innerText = headTxt;
+        if (GameState.subModes.roulette === 'bank') document.body.classList.add('bank-mode-active');
+        else document.body.classList.remove('bank-mode-active');
+        
+        if (typeof RouletteGame !== 'undefined') RouletteGame.mount();
+        if (GameState.subModes.roulette === 'bank') {
+            const resStatus = document.getElementById('res-status'); const resCont = document.getElementById('res-content');
+            if(resStatus && resCont && !resCont.classList.contains('visible')) resStatus.innerText = t.idleBet;
+        }
+        
+    } else if (GameState.mode === 'coin') {
+        if (titleEl) titleEl.innerText = t.menuCoin || "Грань Выбора";
+        const subNamesCoin = { standard: t.smCoinStd || "Бросок", question: t.smCoinQst || "Вопрос" };
+        const disp = document.getElementById('current-mode-display');
+        if (disp) { disp.innerText = subNamesCoin[GameState.subModes.coin].toUpperCase(); disp.style.display = 'inline'; }
 
-                    const stHistHead = document.getElementById('st-hist-head');
-                    if(stHistHead) stHistHead.innerText = t.histCoinHead || "Броски монеты";
-                    
-                    document.body.classList.remove('bank-mode-active');
-                    const tqBtn = document.getElementById('toggleQuestionBtn');
-                    if(tqBtn) tqBtn.style.display = 'none';
-                    if (typeof CoinGame !== 'undefined') CoinGame.mount();
-                    if (GameState.subModes.coin === 'standard') setQuestionState(true, true);
-                    else setQuestionState(false, true);
+        const stHistHead = document.getElementById('st-hist-head');
+        if(stHistHead) stHistHead.innerText = t.histCoinHead || "Броски монеты";
+        
+        document.body.classList.remove('bank-mode-active');
+        const tqBtn = document.getElementById('toggleQuestionBtn');
+        if(tqBtn) tqBtn.style.display = 'none';
+        if (typeof CoinGame !== 'undefined') CoinGame.mount();
+        if (GameState.subModes.coin === 'standard') setQuestionState(true, true);
+        else setQuestionState(false, true);
 
-                } else if (GameState.mode === 'flower') {
-                    if (titleEl) titleEl.innerText = t.menuFlower || "Лепестки";
-                    const disp = document.getElementById('current-mode-display');
-                    if (disp) { 
-                        const smNames = { standard: t.smFlowerStd || "Жребий", intuition: t.smFlowerInt || "Интуиция" };
-                        disp.innerText = (smNames[GameState.subModes.flower] || "Жребий").toUpperCase(); 
-                        disp.style.display = 'inline'; 
-                    }
+    } else if (GameState.mode === 'flower') {
+        if (titleEl) titleEl.innerText = t.menuFlower || "Лепестки";
+        const disp = document.getElementById('current-mode-display');
+        if (disp) { 
+            const smNames = { standard: t.smFlowerStd || "Жребий", intuition: t.smFlowerInt || "Интуиция" };
+            disp.innerText = (smNames[GameState.subModes.flower] || "Жребий").toUpperCase(); 
+            disp.style.display = 'inline'; 
+        }
 
-                    const stHistHead = document.getElementById('st-hist-head');
-                    if(stHistHead) stHistHead.innerText = t.histFlowerHead || "История лепестков";
-                    
-                    document.body.classList.remove('bank-mode-active');
-                    const tqBtn = document.getElementById('toggleQuestionBtn');
-                    if(tqBtn) tqBtn.style.display = 'flex';
-                    if (typeof FlowerGame !== 'undefined') FlowerGame.mount();
-                    setQuestionState(targetHideState, true);
+        const stHistHead = document.getElementById('st-hist-head');
+        if(stHistHead) stHistHead.innerText = t.histFlowerHead || "История лепестков";
+        
+        document.body.classList.remove('bank-mode-active');
+        const tqBtn = document.getElementById('toggleQuestionBtn');
+        if(tqBtn) tqBtn.style.display = 'flex';
+        if (typeof FlowerGame !== 'undefined') FlowerGame.mount();
+        setQuestionState(targetHideState, true);
 
-                } else if (GameState.mode === 'rps') {
-                    if (titleEl) titleEl.innerText = t.menuRPS || "К-Н-Б";
-                    const disp = document.getElementById('current-mode-display');
-                    if (disp) { 
-                        const smNames = { standard: t.smRPSStd || (GameState.lang === 'ru' ? "С Компьютером" : "VS PC") };
-                        disp.innerText = (smNames[GameState.subModes.rps] || "С КОМПЬЮТЕРОМ").toUpperCase(); 
-                        disp.style.display = 'inline'; 
-                    }
-                    const stHistHead = document.getElementById('st-hist-head');
-                    if(stHistHead) stHistHead.innerText = t.histRPSHead || (GameState.lang === 'ru' ? "История К-Н-Б" : "RPS History");
-                    
-                    document.body.classList.remove('bank-mode-active');
-                    const tqBtn = document.getElementById('toggleQuestionBtn');
-                    if(tqBtn) tqBtn.style.display = 'none'; 
-                    if (typeof RPSGame !== 'undefined') RPSGame.mount();
-                    setQuestionState(true, true); 
+    } else if (GameState.mode === 'rps') {
+        if (titleEl) titleEl.innerText = t.menuRPS || "К-Н-Б";
+        const disp = document.getElementById('current-mode-display');
+        if (disp) { 
+            const smNames = { standard: t.smRPSStd || (GameState.lang === 'ru' ? "С Компьютером" : "VS PC") };
+            disp.innerText = (smNames[GameState.subModes.rps] || "С КОМПЬЮТЕРОМ").toUpperCase(); 
+            disp.style.display = 'inline'; 
+        }
+        const stHistHead = document.getElementById('st-hist-head');
+        if(stHistHead) stHistHead.innerText = t.histRPSHead || (GameState.lang === 'ru' ? "История К-Н-Б" : "RPS History");
+        
+        document.body.classList.remove('bank-mode-active');
+        const tqBtn = document.getElementById('toggleQuestionBtn');
+        if(tqBtn) tqBtn.style.display = 'none'; 
+        if (typeof RPSGame !== 'undefined') RPSGame.mount();
+        setQuestionState(true, true); 
 
-                } else if (GameState.mode === 'shop') {
-                    if (titleEl) titleEl.innerText = t.menuShop || "МАГАЗИН";
-                    const disp = document.getElementById('current-mode-display');
-                    if (disp) {
-                        const shopSubNames = { standard: t.smShopStd || "СТИЛИ", perks: t.smShopPerks || "ПЕРКИ" };
-                        disp.innerText = (shopSubNames[GameState.subModes.shop] || "СТИЛИ").toUpperCase();
-                        disp.style.display = 'inline';
-                    }
-                    const stHistHead = document.getElementById('st-hist-head');
-                    if(stHistHead) stHistHead.innerText = t.histShopHead;
-                    
-                    document.body.classList.remove('bank-mode-active');
-                    const tqBtn = document.getElementById('toggleQuestionBtn');
-                    if(tqBtn) tqBtn.style.display = 'none';
-                    
-                    if (typeof ShopGame !== 'undefined') ShopGame.mount();
-                    setQuestionState(true, true);
+    } else if (GameState.mode === 'shop') {
+        if (titleEl) titleEl.innerText = t.menuShop || "МАГАЗИН";
+        const disp = document.getElementById('current-mode-display');
+        if (disp) {
+            const shopSubNames = { standard: t.smShopStd || "СТИЛИ", perks: t.smShopPerks || "ПЕРКИ", exchange: t.smShopExchange || "ОБМЕН" };
+            disp.innerText = (shopSubNames[GameState.subModes.shop] || "СТИЛИ").toUpperCase();
+            disp.style.display = 'inline';
+        }
+        const stHistHead = document.getElementById('st-hist-head');
+        if(stHistHead) stHistHead.innerText = t.histShopHead || "История покупок";
+        
+        document.body.classList.remove('bank-mode-active');
+        const tqBtn = document.getElementById('toggleQuestionBtn');
+        if(tqBtn) tqBtn.style.display = 'none';
+        
+        if (typeof ShopGame !== 'undefined') ShopGame.mount();
+        setQuestionState(true, true);
 
-                } else {
-                    if (titleEl) titleEl.innerText = t.menuDice;
-                    const stHistHead = document.getElementById('st-hist-head');
-                    if(stHistHead) stHistHead.innerText = t.histDiceHead;
-                    
-                    document.body.classList.remove('bank-mode-active');
-                    const tqBtn = document.getElementById('toggleQuestionBtn');
-                    if(tqBtn) tqBtn.style.display = 'flex';
-                    
-                    if (typeof DiceGame !== 'undefined') DiceGame.mount();
-                    setQuestionState(targetHideState, true);
-                }
+    // 🔴 НОВЫЙ БЛОК ДЛЯ ЖРЕБИЯ 🔴
+    } else if (GameState.mode === 'sticks') {
+        if (titleEl) titleEl.innerText = t.menuSticks || "ЖРЕБИЙ";
+        const disp = document.getElementById('current-mode-display');
+        if (disp) {
+            const sticksSubNames = { standard: t.smSticksStandard || "ОРАКУЛ", pvp: t.smSticksPvp || "ДВА ИГРОКА" };
+            disp.innerText = (sticksSubNames[GameState.subModes.sticks] || "ОРАКУЛ").toUpperCase();
+            disp.style.display = 'inline';
+        }
+        const stHistHead = document.getElementById('st-hist-head');
+        if(stHistHead) stHistHead.innerText = t.histSticksHead || (GameState.lang === 'ru' ? "История жребия" : "Draw History");
+        
+        document.body.classList.remove('bank-mode-active');
+        const tqBtn = document.getElementById('toggleQuestionBtn');
+        if(tqBtn) tqBtn.style.display = 'none'; // Поле для вопроса скрываем
+        
+        // ❗❗❗ ИСПРАВЛЕНИЕ: ПОКАЗЫВАЕМ СЦЕНУ ЖРЕБИЯ ❗❗❗
+        const sticksStage = document.getElementById('sticksStage');
+        if (sticksStage) sticksStage.style.display = 'flex';
+        
+        // ❗❗❗ ИСПРАВЛЕНИЕ: ПРЯЧЕМ ЛИШНЮЮ КНОПКУ (чтобы не было "ЗАРЯДИ ПАТРОН") ❗❗❗
+        const mainBtn = document.getElementById('rollBtn');
+        if (mainBtn) mainBtn.style.display = 'none';
+        
+        if (typeof SticksGame !== 'undefined') SticksGame.load(); // Вызываем запуск Жребия
+        setQuestionState(true, true); // Жестко прячем вопрос
 
-                updateStyleBtnIcon(); updateHistoryView();
-                if (typeof ShopGame !== 'undefined' && ShopGame.applyGameStyles) ShopGame.applyGameStyles();
-            }
+    } else {
+        if (titleEl) titleEl.innerText = t.menuDice;
+        const stHistHead = document.getElementById('st-hist-head');
+        if(stHistHead) stHistHead.innerText = t.histDiceHead;
+        
+        document.body.classList.remove('bank-mode-active');
+        const tqBtn = document.getElementById('toggleQuestionBtn');
+        if(tqBtn) tqBtn.style.display = 'flex';
+        
+        if (typeof DiceGame !== 'undefined') DiceGame.mount();
+        setQuestionState(targetHideState, true);
+    }
+
+    updateStyleBtnIcon(); updateHistoryView();
+    if (typeof ShopGame !== 'undefined' && ShopGame.applyGameStyles) ShopGame.applyGameStyles();
+	if (typeof updateDebugPanel === 'function') updateDebugPanel();
+}
 
             function getPlural(n, forms) {
                 if (GameState.lang === 'en') return n === 1 ? forms[0] : forms[1]; 
@@ -2802,31 +2932,40 @@ setInterval(() => {
                 }
             }
             
+			
+			function updateDebugPanel() {
+                const dp = document.getElementById('debugPanel');
+                if (!dp || !GameState.debugEnabled) return;
 
-            function toggleSound() {
-                // Стандартная логика звука
-                GameState.sound = !GameState.sound;
-                const btn = document.getElementById('soundToggleBtn');
-                if (btn) btn.innerText = GameState.sound ? "ВКЛ" : "ВЫКЛ";
+                // 1. ЖЕСТКО прячем ВООБЩЕ ВСЕ кнопки
+                Array.from(dp.children).forEach(child => {
+                    if (child.tagName === 'BUTTON') {
+                        child.style.display = 'none';
+                    }
+                });
+
+                // 2. Всегда показываем общую кнопку Ачивки (ищем по иконке кубка)
+                const achBtn = dp.querySelector('.fa-trophy');
+                if (achBtn && achBtn.closest('button')) achBtn.closest('button').style.display = 'inline-flex';
+
+                const mode = GameState.mode || 'dice';
+                const subMode = GameState.subModes ? GameState.subModes[mode] : 'standard';
+
+                // 3. Точечно включаем только кнопки текущей игры
+                let selector = '.debug-dice-btn'; // по умолчанию для Кубика, Рулетки, Монеты
                 
-                // === СЕКРЕТНЫЙ КОНАМИ КОД (6 кликов) ===
-                clearTimeout(toggleTimer);
-                toggleTimer = setTimeout(() => { debugClicks = 0; }, 1500); // Если пауза больше 1.5 сек - сброс
-                
-                debugClicks++;
-                
-                if (debugClicks >= 6 && !GameState.debugEnabled) {
-                    GameState.debugEnabled = true;
-                    const dp = document.getElementById('debugPanel'); 
-                    if (dp) dp.style.display = 'flex';
-                    
-                    playSoundEffect('achievement');
-                    if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
-                    debugClicks = 0;
+                if (mode === 'flower') {
+                    selector = (subMode === 'intuition') ? '.debug-flower-int' : '.debug-flower-std';
+                } else if (mode === 'rps') {
+                    selector = '.debug-rps-std';
+                } else if (mode === 'sticks') {
+                    selector = '.debug-sticks-btn';
+                } else if (mode === 'shop') {
+                    selector = '.shop-debug-btn';
                 }
-                // ======================================
-                
-                requestProfileSave();
+
+                // Показываем нужные кнопки
+                dp.querySelectorAll(selector).forEach(b => b.style.display = 'inline-flex');
             }
             
             function toggleCubeStyle() { 
@@ -3176,14 +3315,56 @@ setInterval(() => {
                 changeLanguage();
                 if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
             }
+			
+		// 1. АКТИВАЦИЯ ЧИТОВ ЧЕРЕЗ 10 КЛИКОВ ПО ЗВУКУ
+            function toggleSound() {
+                GameState.sound = !GameState.sound;
+                const btn = document.getElementById('soundToggleBtn');
+                if (btn) btn.innerText = GameState.sound ? "ВКЛ" : "ВЫКЛ";
+                
+                // === СЕКРЕТНЫЙ КОНАМИ КОД (10 кликов) ===
+                if (typeof GameState.debugClicks === 'undefined') GameState.debugClicks = 0;
+                
+                clearTimeout(GameState.toggleTimer);
+                GameState.toggleTimer = setTimeout(() => { GameState.debugClicks = 0; }, 1500); 
+                
+                GameState.debugClicks++;
+                
+                if (GameState.debugClicks >= 10 && !GameState.debugEnabled) {
+                    GameState.debugEnabled = true;
+                    const dp = document.getElementById('debugPanel'); 
+                    if (dp) {
+                        dp.style.display = 'flex';
+                        // Жестко вызываем фильтрацию кнопок
+                        if (typeof updateDebugPanel === 'function') updateDebugPanel(); 
+                    }
+                    
+                    if (typeof App !== 'undefined' && App.playSoundEffect) App.playSoundEffect('achievement');
+                    if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.HapticFeedback) {
+                        window.Telegram.WebApp.HapticFeedback.notificationOccurred('success');
+                    }
+                    GameState.debugClicks = 0; 
+                }
+                
+                if (typeof App !== 'undefined' && typeof App.requestProfileSave === 'function') {
+                    App.requestProfileSave();
+                }
+            }
 
+            // 2. АКТИВАЦИЯ ЧИТОВ ЧЕРЕЗ ПЕРЕКЛЮЧАТЕЛЬ В НАСТРОЙКАХ
             function toggleDebug() { 
                 const dt = document.getElementById('debugToggle');
-                if(dt) GameState.debugEnabled = dt.checked;
+                if (dt) GameState.debugEnabled = dt.checked;
                 const dp = document.getElementById('debugPanel');
-                if(dp) dp.style.display = GameState.debugEnabled ? 'flex' : 'none'; 
-                if(GameState.mode === 'roulette' && typeof RouletteGame !== 'undefined') RouletteGame.reset(); 
-            } 
+                if (dp) {
+                    dp.style.display = GameState.debugEnabled ? 'flex' : 'none'; 
+                    // Жестко вызываем фильтрацию кнопок при включении
+                    if (GameState.debugEnabled && typeof updateDebugPanel === 'function') {
+                        updateDebugPanel();
+                    }
+                }
+                if (GameState.mode === 'roulette' && typeof RouletteGame !== 'undefined') RouletteGame.reset(); 
+            }
 
  // 1. Умные искры с проверкой перков
             function createSparkle(targetStageId = null, requiredPerk = null) { 
@@ -3234,36 +3415,7 @@ setInterval(() => {
 
             // 2. Старая функция искр больше ничего не делает (оставляем пустышкой, чтобы не было ошибок)
             function handleSparkleToggle() {}
-
-            // 3. Звук + Секретный Конами-код (6 кликов)
-            function toggleSound() {
-                GameState.sound = !GameState.sound;
-                const btn = document.getElementById('soundToggleBtn');
-                if (btn) btn.innerText = GameState.sound ? "ВКЛ" : "ВЫКЛ";
-                
-                // === СЕКРЕТНЫЙ КОД ===
-                if (typeof GameState.debugClicks === 'undefined') GameState.debugClicks = 0;
-                
-                clearTimeout(GameState.toggleTimer);
-                GameState.toggleTimer = setTimeout(() => { GameState.debugClicks = 0; }, 1500); 
-                
-                GameState.debugClicks++;
-                
-                if (GameState.debugClicks >= 6 && !GameState.debugEnabled) {
-                    GameState.debugEnabled = true;
-                    const dp = document.getElementById('debugPanel'); 
-                    if (dp) dp.style.display = 'flex';
-                    
-                    if(typeof App !== 'undefined') App.playSoundEffect('achievement');
-                    if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
-                    GameState.debugClicks = 0; // Сбрасываем после активации
-                }
-                // =====================
-                
-                if(typeof App !== 'undefined' && typeof App.requestProfileSave === 'function') {
-                    App.requestProfileSave();
-                }
-            }           
+           
 
             function clearQuestionDraft() {
                 const uq = document.getElementById('userQuestion');
@@ -3315,7 +3467,7 @@ setInterval(() => {
                 openMainMenu, updateSubModeHighlights, updateMenuBankUI, toggleQuestionField, 
                 toggleCubeStyle, toggleSound, toggleSettings, toggleRules, changeLanguage, 
                 changeBackground, toggleDebug, toggleLanguage, updateHistoryView, previewGame, 
-                getPlural, showError, hideError, triggerButtonError, playSoundEffect, 
+                updateDebugPanel, getPlural, showError, hideError, triggerButtonError, playSoundEffect, 
                 createSparkle, askOracle, setQuestionState, addCrystal, updateTopBalances,
                 updateModeDisplay: () => { if(typeof DiceGame !== 'undefined') DiceGame.updateModeDisplay(); requestProfileSave(); }
             };
@@ -7598,6 +7750,512 @@ else if (pvpState === 4) {
 })();
 // --- КОНЕЦ СЕДЬМОЙ ЧАСТИ ---
 // --- НАЧАЛО ВОСЬМОЙ ЧАСТИ ---
+// =========================================================================
+// 🥢 ПЛАГИН 5: ЖРЕБИЙ (3D КОРОБОЧКА И ПАЛОЧКИ) v12.0 [STATE SAVING, CORE TEXT, CHEATS]
+// =========================================================================
+const SticksGame = (function() {
+    let isGameActive = false;
+    let isGameOver = false; // Флаг завершения игры
+    let mode = 'standard'; 
+    let currentTurn = 1; 
+    let sticks = []; 
+    let finalMessageHtml = ""; // Хранит финальный текст победы/поражения
+    
+    let rotY = 0;
+    let boxDrag = false;
+    let boxStartX = 0;
+    let boxStartRotY = 0;
+    let lastHapticRot = 0;
+
+    let draggedStick = null;
+    let startY = 0;
+    let isDragging = false;
+    let lastHapticY = 0;
+
+    const phrases = {
+        ru: {
+            p1: ["Тяни, Игрок 1!", "Твой ход, Первый!", "Первый, не робей!", "Ну же, Игрок 1!", "Удача с тобой, 1?", "Ход Первого!", "Игрок 1 в игре!", "Рискнешь, Первый?", "Твой шанс, Игрок 1!", "Тяни смелее, 1!"],
+            p2: ["Теперь ты, Игрок 2!", "Второй, твой выход!", "Смотри не проиграй, 2!", "Ход Второго!", "Игрок 2 вступает!", "Рискни, Второй!", "Второй, тяни!", "Удача Второго?", "Твоя очередь, 2!", "Не подведи, Второй!"]
+        },
+        en: {
+            p1: ["Draw, Player 1!", "Your turn, First!", "Don't be shy, P1!", "Come on, Player 1!", "Lucky, P1?", "First player's move!", "Player 1 is up!", "Take a risk, First!", "Your chance, P1!", "Pull it, P1!"],
+            p2: ["Now you, Player 2!", "Second, it's your stage!", "Don't lose, P2!", "Second player's move!", "Player 2 steps up!", "Risk it, Second!", "Pull, Second!", "Lucky, P2?", "Your turn, P2!", "Don't let us down, P2!"]
+        }
+    };
+
+    function hapticTick() {
+        if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.HapticFeedback) {
+            window.Telegram.WebApp.HapticFeedback.selectionChanged();
+        }
+    }
+
+    function playResultSound(isWin) {
+        if (typeof GameState !== 'undefined' && !GameState.sound) return;
+        try {
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            
+            if (isWin) {
+                osc.type = 'sine'; 
+                osc.frequency.setValueAtTime(400, ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(800, ctx.currentTime + 0.3);
+                gain.gain.setValueAtTime(0.5, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+                osc.start(); osc.stop(ctx.currentTime + 0.3);
+            } else {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(300, ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(100, ctx.currentTime + 0.4);
+                gain.gain.setValueAtTime(0.5, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.4);
+                osc.start(); osc.stop(ctx.currentTime + 0.4);
+            }
+        } catch(e) {}
+    }
+
+    function init() {
+        if (!GameState.subModes.sticks) GameState.subModes.sticks = 'standard';
+
+        const mainStage = document.getElementById('mainStage');
+        if (mainStage && !document.getElementById('sticksStage')) {
+            const stage = document.createElement('div');
+            stage.id = 'sticksStage';
+            stage.className = 'stage';
+            stage.style.display = 'none';
+            // ВАЖНО: Мы удалили локальный <div id="sticksStatus">, текст пойдет в res-status Ядра
+            stage.innerHTML = `
+                <div id="sticksDrawnUI"></div>
+                <div class="sticks-scene" id="sticksScene">
+                    <div class="sticks-box-wrapper" id="sticksBoxWrap">
+                        <div class="sticks-box" id="sticksBoxMain">
+                            <div class="box-face b-back"></div>
+                            <div class="box-face b-left"></div>
+                            <div class="box-face b-right"></div>
+                            <div class="box-face b-bottom"></div>
+                            <div id="sticksContainer"></div>
+                            <div class="box-face b-front"></div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            mainStage.parentNode.insertBefore(stage, document.getElementById('rouletteStage'));
+
+            const style = document.createElement('style');
+            style.innerHTML = `
+                #sticksStage { perspective: 800px; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; width: 100%; height: 100%; }
+                .sticks-scene { width: 100%; height: 280px; display: flex; align-items: flex-end; justify-content: center; touch-action: none; position: relative; padding-bottom: 30px; }
+                
+                .sticks-box-wrapper { width: 80px; height: 100px; position: relative; transform-style: preserve-3d; transform: rotateX(-15deg); cursor: grab; will-change: transform; }
+                .sticks-box { width: 100%; height: 100%; position: relative; transform-style: preserve-3d; }
+                
+                .box-face { position: absolute; background: linear-gradient(135deg, #3d2b1f, #1a110a); border: 1px solid #5a4030; box-shadow: inset 0 0 15px rgba(0,0,0,0.8); pointer-events: auto; }
+                
+                .b-front { width: 80px; height: 115px; transform: translateZ(40px); z-index: 10; }
+                .b-back { width: 80px; height: 115px; transform: translateZ(-40px) rotateY(180deg); }
+                .b-left { width: 80px; height: 115px; transform: translateX(-40px) rotateY(-90deg); }
+                .b-right { width: 80px; height: 115px; transform: translateX(40px) rotateY(90deg); }
+                .b-bottom { width: 80px; height: 80px; top: 25px; transform: translateY(50px) rotateX(-90deg); background: #1a110a; }
+                
+                #sticksContainer { position: absolute; inset: 0; transform-style: preserve-3d; pointer-events: none; }
+                
+                .stick { position: absolute; left: 33px; width: 14px; top: -40px; height: var(--h); transform-style: preserve-3d; transform: translateY(var(--py)) rotateY(var(--ry)) translateZ(22px); transition: transform 0.6s cubic-bezier(0.18, 0.89, 0.32, 1.28); cursor: pointer; pointer-events: auto; touch-action: none; }
+                .stick.dragging { transition: none; } 
+
+                .s-face { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 1px; clip-path: polygon(0 0, 100% 0, 100% calc(95px - var(--py)), 0 calc(95px - var(--py))); }
+                
+                .s-front { transform: translateZ(7px); background: linear-gradient(to bottom, #e63946 0%, #f5e1c0 30%, #d4a373 70%, #1a110a 100%); }
+                .s-back { transform: translateZ(-7px) rotateY(180deg); background: linear-gradient(to bottom, #e63946 0%, #e3c193 30%, #cca060 70%, #1a110a 100%); }
+                .s-left { transform: translateX(-7px) rotateY(-90deg); background: linear-gradient(to bottom, #c1121f 0%, #d4a373 30%, #a87a45 70%, #1a110a 100%); }
+                .s-right { transform: translateX(7px) rotateY(90deg); background: linear-gradient(to bottom, #c1121f 0%, #f5e1c0 30%, #d4a373 70%, #1a110a 100%); }
+                .s-top { position: absolute; top: 0; left: 0; width: 14px; height: 14px; transform: translateY(-7px) rotateX(90deg); background: #ff4d4d; border-radius: 2px; }
+
+                .stick.drawn .s-face, .stick.drawn .s-top { clip-path: none !important; }
+
+                #sticksDrawnUI { position: absolute; top: 15px; left: 15px; display: flex; gap: 5px; z-index: 100; max-width: 50%; flex-wrap: wrap; }
+                .mini-stick { width: 6px; border-radius: 3px; background: #e3c193; box-shadow: 0 0 5px rgba(0,0,0,0.5); }
+                .mini-stick.l { height: 35px; } .mini-stick.s { height: 18px; background: #ff4d4d; }
+
+            `;
+            document.head.appendChild(style);
+        }
+
+        window.addEventListener('mousemove', onMove);
+        window.addEventListener('touchmove', onMove, {passive: false});
+        window.addEventListener('mouseup', onUp);
+        window.addEventListener('touchend', onUp);
+
+        const scene = document.getElementById('sticksScene');
+        if (scene) {
+            const startBoxDrag = (e) => {
+                if (e.target.closest('.stick')) return; 
+                boxDrag = true;
+                boxStartX = e.clientX || (e.touches && e.touches.length > 0 ? e.touches[0].clientX : 0);
+                boxStartRotY = rotY;
+                lastHapticRot = rotY;
+            };
+            scene.addEventListener('mousedown', startBoxDrag);
+            scene.addEventListener('touchstart', startBoxDrag, {passive: false});
+        }
+    }
+
+    function load() {
+        let newMode = GameState.subModes.sticks || 'standard';
+        document.body.classList.add('sticks-active');
+        
+        // Восстановление состояния: сбрасываем, только если игра не активна или сменился режим
+        if (!isGameActive && !isGameOver || mode !== newMode) {
+            mode = newMode;
+            reset();
+        } else {
+            // Если мы вернулись в идущую игру, просто восстанавливаем надписи
+            setTimeout(updateUI, 50);
+        }
+    }
+
+    function reset() {
+        isGameActive = false; 
+        isGameOver = false;
+        currentTurn = 1; 
+        rotY = 0;
+        finalMessageHtml = "";
+        
+        document.getElementById('sticksDrawnUI').innerHTML = '';
+        document.getElementById('sticksBoxWrap').style.transform = `rotateX(-15deg) rotateY(0deg)`;
+
+        const container = document.getElementById('sticksContainer');
+        container.innerHTML = '';
+        sticks = [];
+
+        let types = [true, false, false, false, false, false]; 
+        types.sort(() => Math.random() - 0.5);
+
+        for (let i = 0; i < 6; i++) {
+            const s = document.createElement('div');
+            s.className = `stick ${types[i] ? 'short' : 'long'}`;
+            
+            s.style.setProperty('--h', types[i] ? '130px' : '180px');
+            let angle = i * 60;
+            s.style.setProperty('--ry', `${angle}deg`);
+            s.style.setProperty('--py', `120px`); 
+
+            s.innerHTML = `
+                <div class="s-face s-front" style="opacity: 0;"></div>
+                <div class="s-face s-back" style="opacity: 0;"></div>
+                <div class="s-face s-left" style="opacity: 0;"></div>
+                <div class="s-face s-right" style="opacity: 0;"></div>
+                <div class="s-top" style="opacity: 0;"></div>
+            `;
+            
+            container.appendChild(s);
+            let stickObj = { isShort: types[i], drawn: false, el: s, currentY: 120 };
+            sticks.push(stickObj);
+
+            s.addEventListener('mousedown', (e) => startDrag(e, stickObj));
+            s.addEventListener('touchstart', (e) => startDrag(e, stickObj), {passive: false});
+        }
+
+        updateUI(); // Выведет "НАЖМИ НА КОРОБКУ"
+        document.getElementById('sticksScene').onclick = startGame;
+    }
+
+    function updateUI() {
+        const status = document.getElementById('res-status');
+        if (!status) return;
+        status.classList.add('visible'); // Гарантируем, что текст видно
+        
+        if (isGameOver) {
+            status.innerHTML = finalMessageHtml;
+            return;
+        }
+        
+        const lang = GameState.lang || 'ru';
+        
+        if (!isGameActive) {
+            status.innerHTML = lang === 'ru' ? "НАЖМИ НА КОРОБКУ" : "TAP THE BOX";
+            return;
+        }
+        
+        if (mode === 'standard') {
+            status.innerHTML = currentTurn === 1 ? (lang === 'ru' ? "Твой ход!" : "Your turn!") : (lang === 'ru' ? "Оракул думает..." : "Oracle is thinking...");
+        } else {
+            const list = currentTurn === 1 ? phrases[lang].p1 : phrases[lang].p2;
+            status.innerHTML = list[Math.floor(Math.random() * list.length)];
+        }
+    }
+
+    function startGame() {
+        if (isGameActive || isGameOver) return;
+        if (boxDrag && Math.abs(rotY - boxStartRotY) > 5) return; 
+
+        isGameActive = true;
+        document.getElementById('sticksScene').onclick = null;
+        if (typeof App !== 'undefined') App.playSoundEffect('tick');
+
+        sticks.forEach((sObj, i) => {
+            setTimeout(() => {
+                Array.from(sObj.el.children).forEach(face => {
+                    face.style.transition = 'opacity 0.5s ease-in';
+                    face.style.opacity = '1';
+                });
+                sObj.currentY = 0; 
+                sObj.el.style.setProperty('--py', `0px`);
+                hapticTick(); 
+            }, i * 100);
+        });
+        setTimeout(updateUI, 800);
+    }
+
+    function startDrag(e, stickObj) {
+        if (!isGameActive || isGameOver || (mode === 'standard' && currentTurn === 2)) return;
+        if (stickObj.drawn) return;
+
+        draggedStick = stickObj;
+        isDragging = true;
+        startY = e.clientY || (e.touches && e.touches.length > 0 ? e.touches[0].clientY : 0);
+        draggedStick.startYOrigin = draggedStick.currentY;
+        
+        draggedStick.el.classList.add('dragging'); 
+        lastHapticY = startY;
+        e.stopPropagation();
+    }
+
+    function onMove(e) {
+        if (isDragging && draggedStick) {
+            e.preventDefault(); 
+            let y = e.clientY || (e.touches && e.touches.length > 0 ? e.touches[0].clientY : 0);
+            let dy = y - startY;
+            if (dy > 0) dy = 0; 
+            
+            let newY = draggedStick.startYOrigin + dy;
+            draggedStick.currentY = newY;
+            draggedStick.el.style.setProperty('--py', `${newY}px`);
+
+            if (Math.abs(y - lastHapticY) > 10) { hapticTick(); lastHapticY = y; }
+
+            if (newY <= -85) { 
+                finishPull(draggedStick);
+                isDragging = false; draggedStick = null;
+            }
+        }
+        
+        if (boxDrag && !isDragging) {
+            e.preventDefault(); 
+            let x = e.clientX || (e.touches && e.touches.length > 0 ? e.touches[0].clientX : 0);
+            rotY = boxStartRotY + (x - boxStartX) * 0.8; 
+            document.getElementById('sticksBoxWrap').style.transform = `rotateX(-15deg) rotateY(${rotY}deg)`;
+            
+            if (Math.abs(rotY - lastHapticRot) > 15) { hapticTick(); lastHapticRot = rotY; }
+        }
+    }
+
+    function onUp() {
+        if (isDragging && draggedStick) {
+            draggedStick.el.classList.remove('dragging'); 
+            if (draggedStick.currentY > -85) {
+                draggedStick.currentY = 0;
+                draggedStick.el.style.setProperty('--py', `0px`);
+                if (typeof App !== 'undefined') App.playSoundEffect('tick');
+            }
+        }
+        isDragging = false; draggedStick = null;
+        setTimeout(() => { boxDrag = false; }, 50);
+    }
+
+    function finishPull(sObj) {
+        sObj.drawn = true;
+        sObj.el.classList.remove('dragging');
+        sObj.el.classList.add('drawn');
+        
+        // БЛОКИРУЕМ ВЫХОД В МЕНЮ ВО ВРЕМЯ АНИМАЦИИ
+        if (typeof App !== 'undefined' && App.setTopNavLocked) App.setTopNavLocked(true);
+        if (typeof App !== 'undefined') App.playSoundEffect('coin_flip');
+
+        sObj.el.style.transition = 'transform 0.8s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.8s ease-in';
+        sObj.el.style.transform = `translateY(-220px) translateX(-120px) translateZ(0px) rotateY(0deg) rotateZ(-60deg) scale3d(0.3, 0.3, 0.3)`;
+        sObj.el.style.opacity = '0';
+
+        setTimeout(() => {
+            sObj.el.style.display = 'none'; 
+            addMiniStick(sObj.isShort);
+            if (sObj.isShort) {
+                endGame();
+            } else {
+                currentTurn = currentTurn === 1 ? 2 : 1;
+                updateUI();
+                if (mode === 'standard' && currentTurn === 2) {
+                    setTimeout(oracleTurn, 1000);
+                } else {
+                    // Разблокируем меню, так как теперь ход игрока
+                    if (typeof App !== 'undefined' && App.setTopNavLocked) App.setTopNavLocked(false);
+                }
+            }
+        }, 800); 
+    }
+
+    function oracleTurn() {
+        const available = sticks.filter(s => !s.drawn);
+        if (available.length === 0) return;
+        const pick = available[Math.floor(Math.random() * available.length)];
+        
+        pick.el.style.setProperty('--py', `-20px`); 
+        hapticTick();
+        
+        setTimeout(() => finishPull(pick), 600); 
+    }
+
+    function addMiniStick(isShort) {
+        const ui = document.getElementById('sticksDrawnUI');
+        if (!ui) return;
+        const m = document.createElement('div');
+        m.className = `mini-stick ${isShort ? 's' : 'l'}`;
+        ui.appendChild(m);
+    }
+
+    // === ЧИТ-КОДЫ: ЖЕЛЕЗОБЕТОННАЯ РАБОТА ===
+    function triggerCheat(outcome) {
+        if (isGameOver || boxDrag) return; 
+
+        if (outcome === 'achieve') {
+            if (typeof App !== 'undefined') App.playSoundEffect('achievement');
+            if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.HapticFeedback) window.Telegram.WebApp.HapticFeedback.notificationOccurred('success');
+            if (typeof Achievements !== 'undefined' && Achievements.unlock) Achievements.unlock('first_blood'); 
+            return;
+        }
+
+        if (!isGameActive) startGame(); 
+
+        // Мгновенно показываем все палочки
+        sticks.forEach(sObj => {
+            Array.from(sObj.el.children).forEach(face => { face.style.opacity = '1'; });
+            sObj.currentY = 0; 
+            sObj.el.style.setProperty('--py', `0px`);
+        });
+
+        setTimeout(() => {
+            let target = sticks.find(s => s.isShort);
+            if (!target) return;
+            
+            // Если нужна ПОБЕДА - заставляем Оракула/Второго игрока вытянуть короткую (Ход = 2)
+            // Если нужен ПРОИГРЫШ - заставляем Игрока 1 вытянуть короткую (Ход = 1)
+            currentTurn = (outcome === 'win') ? 2 : 1; 
+            finishPull(target);
+        }, 400);
+    }
+
+    function endGame() {
+        isGameActive = false;
+        isGameOver = true;
+        const lang = GameState.lang || 'ru';
+
+        let msg = "";
+        let isPlayerWin = false;
+
+        if (mode === 'standard') {
+            if (currentTurn === 1) { 
+                msg = lang === 'ru' ? "ПОБЕДИЛ ОРАКУЛ!" : "ORACLE WINS!";
+                isPlayerWin = false;
+            } else { 
+                msg = lang === 'ru' ? "ПОБЕДИЛ ИГРОК!" : "PLAYER WINS!";
+                isPlayerWin = true;
+            }
+        } else {
+            let winner = currentTurn === 1 ? 2 : 1;
+            msg = lang === 'ru' ? `ПОБЕДИЛ ИГРОК ${winner}!` : `PLAYER ${winner} WINS!`;
+            isPlayerWin = true; 
+        }
+
+        let color = isPlayerWin ? 'var(--friendly-green)' : 'var(--angry-red)';
+        if (mode !== 'standard') color = 'var(--magic-color)'; 
+        
+        finalMessageHtml = `<span style="color:${color}; font-size: 24px; text-shadow: 0 0 10px ${color};">${msg}</span>`;
+        updateUI(); // Выводим текст победы в res-status
+
+        playResultSound(isPlayerWin);
+
+        // 💎 ИСПРАВЛЕННОЕ НАЧИСЛЕНИЕ КРИСТАЛЛОВ (ЧЕРЕЗ ЯДРО) 💎
+        if (mode === 'standard' && isPlayerWin) {
+            if (typeof App !== 'undefined' && App.addCrystal) {
+                App.addCrystal('sticks', mode);
+            }
+        }
+
+        // Запись истории
+        const t = (typeof LANG_DATA !== 'undefined' && LANG_DATA[GameState.lang]) ? LANG_DATA[GameState.lang] : {};
+        const smName = mode === 'standard' ? (t.smSticksStandard || (lang === 'ru' ? "ОРАКУЛ" : "ORACLE")) : (t.smSticksPvp || (lang === 'ru' ? "ДВА ИГРОКА" : "PVP"));
+        
+        let finalAns = isPlayerWin ? (lang === 'ru' ? "ПОБЕДА!" : "WIN!") : (lang === 'ru' ? "ПРОИГРЫШ!" : "LOSS!");
+        if (mode !== 'standard') {
+            let winner = currentTurn === 1 ? 2 : 1;
+            finalAns = lang === 'ru' ? `ПОБЕДИЛ ИГРОК ${winner}!` : `PLAYER ${winner} WINS!`;
+        }
+
+        let subI = isPlayerWin ? '<i class="fas fa-crown"></i>' : '<i class="fas fa-skull"></i>';
+        if (mode !== 'standard') subI = '<i class="fas fa-crown"></i>';
+
+        const item = document.createElement('div'); 
+        item.className = `history-item hist-${mode}`;
+        item.innerHTML = `<span style="color:#fff; font-weight:bold; text-shadow: 0 0 8px #fff, 0 0 15px var(--magic-color);">🥢</span> Жребий <span style="color:#aaa; font-size:9px;">[${smName.toUpperCase()}]</span><br><span style="color:${color};">➔ ${subI} ${finalAns}</span>`;
+        
+        let hl = document.getElementById('historyListSticks');
+        if (!hl) {
+            const histBlock = document.getElementById('historyBlock');
+            if (histBlock) {
+                hl = document.createElement('div');
+                hl.id = 'historyListSticks';
+                histBlock.appendChild(hl);
+            }
+        }
+        
+        if (hl) {
+            hl.prepend(item);
+            hl.style.display = 'block'; 
+        }
+
+        const allLists = ['historyListDice', 'historyListRoulette', 'historyListSurvival', 'historyListBank', 'historyListCoin', 'historyListFlower', 'historyListRPS', 'historyListShop'];
+        allLists.forEach(id => {
+            let el = document.getElementById(id);
+            if (el) el.style.display = 'none';
+        });
+
+        if (typeof App !== 'undefined' && App.requestProfileSave) {
+            App.requestProfileSave(); 
+        }
+
+        if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.HapticFeedback) {
+            window.Telegram.WebApp.HapticFeedback.notificationOccurred(isPlayerWin ? 'success' : 'error');
+        }
+
+        // Разблокировка кнопки меню по окончанию игры
+        setTimeout(() => { 
+            document.getElementById('sticksScene').onclick = reset; 
+            if (typeof App !== 'undefined' && App.setTopNavLocked) App.setTopNavLocked(false);
+        }, 2500);
+    }
+
+    function unmount() {
+        const stage = document.getElementById('sticksStage');
+        if (stage) stage.style.display = 'none';
+        document.body.classList.remove('sticks-active');
+        
+        const scene = document.getElementById('sticksScene');
+        if (scene) {
+            scene.onmousedown = null;
+            scene.ontouchstart = null;
+        }
+    }
+
+    if (document.readyState === 'complete') init();
+    else window.addEventListener('load', init);
+
+    return { load, unmount, triggerCheat };
+})();
+// =========================================================================
+// =========================================================================
+// --- КОНЕЦ ВОСЬМОЙ ЧАСТИ ---
+// --- НАЧАЛО ДЕВЯТОЙ ЧАСТИ ---
 // ==============================================
 // 🛒 ПЛАГИН 6: МАГАЗИН (СТИЛИ И ПЕРКИ)
 // ==============================================
@@ -8120,6 +8778,8 @@ const ShopGame = (function() {
 
     return { init, mount, unmount, toggleInventory, renderShop, applyAllEquippedVisuals };
 })();
+
+// --- КОНЕЦ ДЕВЯТОЙ ЧАСТИ ---
 
 const invModal = document.getElementById('inventoryOverlay');
 if (invModal) {
