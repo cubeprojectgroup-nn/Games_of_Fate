@@ -751,11 +751,133 @@ body.is-rps-game-active:not(.rps-pvp-active) #debugPanel .debug-rps-std { displa
 
 /* 3. В режиме PvP чит-кнопки скрываются (остается только кубок) */
 body.is-rps-game-active.rps-pvp-active #debugPanel .debug-rps-std { display: none !important; }
+
+/* === ПЕРЕНОС ГЛОБУСА И ПОДЪЕМ ЗАГОЛОВКА В МЕНЮ === */
+
+/* 1. Отрываем заголовок от общего потока и прибиваем к верху */
+#mainMenuOverlay {
+    padding-top: 0 !important; /* Убираем старый отступ 10vh, который давил сверху */
+}
+
+.menu-title-main {
+    position: absolute !important;
+    top: 1vh !important; /* Настраиваемый отступ от самого верха экрана */
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    margin: 0 !important;
+    width: 100%;
+    text-align: center;
+}
+
+/* Сетка с играми теперь должна игнорировать отсутствие заголовка в потоке */
+#mainMenuCards {
+    margin-top: 10vh !important; /* Сдвигаем саму сетку вниз, чтобы она не наехала на заголовок */
+}
+
+/* 2. Отрываем глобус от правого верхнего угла и прибиваем вниз по центру */
+.menu-top-bar {
+    position: fixed !important;
+    top: auto !important;     /* Сбрасываем привязку к верху */
+    bottom: 1px !important;  /* Отступ снизу (чуть выше t.me/Antis_Corpus) */
+    right: auto !important;   /* Сбрасываем привязку к правому краю */
+    left: 50% !important;
+    transform: translateX(-50%) !important; /* Центрируем */
+    width: auto !important;
+    justify-content: center;
+    z-index: 500;
+}
+
+/* Чуть увеличим саму кнопку глобуса, чтобы снизу по центру она смотрелась солиднее */
+#langSwitchBtn i {
+    font-size: 20px !important; 
+    filter: drop-shadow(0 0 5px rgba(255,255,255,0.3));
+}
+
+/* === СТИЛИ ДЛЯ КНОПОК ФЛАГОВ === */
+.flag-btn {
+    background: rgba(0, 0, 0, 0.5);
+    border: 2px solid transparent;
+    border-radius: 8px;
+    font-size: 24px;
+    cursor: pointer;
+    padding: 4px 8px;
+    transition: all 0.3s ease;
+    /* Неактивный флаг: серый и полупрозрачный */
+    filter: grayscale(100%) opacity(0.4); 
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.flag-btn.active-flag {
+    /* Активный флаг: цветной, с неоновой рамкой и чуть больше */
+    border-color: var(--magic-color);
+    filter: grayscale(0%) opacity(1);
+    box-shadow: 0 0 10px rgba(162, 155, 254, 0.4);
+    transform: scale(1.1);
+    pointer-events: none; /* Запрещаем кликать на уже выбранный язык */
+}
 		
     </style>
 </head>
 
 <script>
+
+// === ЛОГИКА ФЛАГОВ ЯЗЫКА ===
+function setLangFlag(langCode) {
+    // 1. Убираем подсветку со всех флагов и ставим на выбранный
+    document.querySelectorAll('.flag-btn').forEach(btn => btn.classList.remove('active-flag'));
+    const activeBtn = document.getElementById('flag-' + langCode);
+    if (activeBtn) activeBtn.classList.add('active-flag');
+    
+    // 2. Передаем значение в скрытый список и даем команду ядру
+    const sel = document.getElementById('langSelect');
+    if (sel && sel.value !== langCode) {
+        sel.value = langCode;
+        sel.dispatchEvent(new Event('change')); // Имитируем выбор в списке
+    }
+}
+
+function setLangFlag(langCode) {
+    document.querySelectorAll('.flag-btn').forEach(btn => btn.classList.remove('active-flag'));
+    const activeBtn = document.getElementById('flag-' + langCode);
+    if (activeBtn) activeBtn.classList.add('active-flag');
+    
+    const sel = document.getElementById('langSelect');
+    if (sel && sel.value !== langCode) {
+        sel.value = langCode;
+        sel.dispatchEvent(new Event('change'));
+    }
+}
+
+// Синхронизация флагов с ядром
+setInterval(() => {
+    if (typeof GameState !== 'undefined') {
+        const currentLang = GameState.lang || 'ru';
+        const activeBtn = document.getElementById('flag-' + currentLang);
+        if (activeBtn && !activeBtn.classList.contains('active-flag')) {
+            document.querySelectorAll('.flag-btn').forEach(btn => btn.classList.remove('active-flag'));
+            activeBtn.classList.add('active-flag');
+            const sel = document.getElementById('langSelect');
+            if (sel) sel.value = currentLang;
+        }
+    }
+}, 300);
+
+// Авто-подхват языка при старте игры (железобетонная синхронизация)
+setInterval(() => {
+    if (typeof GameState !== 'undefined') {
+        const currentLang = GameState.lang || 'ru';
+        const activeBtn = document.getElementById('flag-' + currentLang);
+        if (activeBtn && !activeBtn.classList.contains('active-flag')) {
+            document.querySelectorAll('.flag-btn').forEach(btn => btn.classList.remove('active-flag'));
+            activeBtn.classList.add('active-flag');
+            
+            const sel = document.getElementById('langSelect');
+            if (sel) sel.value = currentLang;
+        }
+    }
+}, 300);
 
 // === АВТОМАТИЧЕСКИЙ ПЕРЕВОД КНОПОК МАГАЗИНА ===
 setInterval(() => {
@@ -778,8 +900,8 @@ setInterval(() => {
 
     <div id="mainMenuOverlay">
         <div class="version">v0.8.8.55</div> <div class="menu-top-bar">
-            <button class="menu-icon-btn" id="langSwitchBtn" onclick="App.toggleLanguage()"><i class="fas fa-globe"></i></button>
-        </div>
+    <button class="menu-icon-btn" onclick="App.toggleSettings(true)"><i class="fas fa-cog"></i></button>
+</div>
         <div id="mainMenuTitle" class="menu-title-main">Игры Судьбы</div>
         
         <div id="mainMenuCards" class="games-layout" style="display:flex; flex-direction:column; align-items: center; gap: 15px; width: 90%; max-width: 380px; transition: opacity 0.5s ease;">
@@ -1114,7 +1236,18 @@ setInterval(() => {
                 <div id="cubeToggleIcon" onclick="App.toggleCubeStyle()" style="cursor: pointer; font-size: 20px; color: var(--magic-color); transition: 0.3s; padding: 0 10px;"><i class="fas fa-desktop"></i></div>
             </div>
             
-            <div class="setting-item"><span id="st-label-lang">Язык</span><select class="st-select" id="langSelect" onchange="App.changeLanguage()"><option value="ru">Русский</option><option value="en">English</option></select></div>
+            <div class="setting-item">
+    <span id="st-label-lang">Язык</span>
+    <div style="display: flex; gap: 10px;">
+        <button class="flag-btn" id="flag-ru" onclick="setLangFlag('ru')">🇷🇺</button>
+        <button class="flag-btn" id="flag-en" onclick="setLangFlag('en')">🇺🇸</button>
+    </div>
+    
+    <select id="langSelect" style="display:none;" onchange="App.changeLanguage()">
+        <option value="ru">ru</option>
+        <option value="en">en</option>
+    </select>
+</div>
             <button class="close-btn" id="st-btn-close" onclick="App.toggleSettings(false)">Закрыть</button>
         </div>
     </div>
@@ -1154,7 +1287,7 @@ setInterval(() => {
                     'roulette_standard': true, 'roulette_bank': false, 'roulette_survival': true
                 },
                 isClassic: false,
-                mode: 'dice', 
+                mode: 'menu', 
                 previewMode: 'dice',
                 subModes: {
                     dice: 'standard',
@@ -2036,7 +2169,13 @@ setInterval(() => {
                 try { if (typeof RouletteGame !== 'undefined' && RouletteGame.getStats) p.rStats = RouletteGame.getStats(); } catch(e){}
 
                 localStorage.setItem('gof_profiles', JSON.stringify(GameState.profiles));
-            }
+        
+				// === МАГИЯ ДИНАМИЧЕСКОГО ОБНОВЛЕНИЯ ===
+				// При каждом сохранении профиля (трата монет/получение кристаллов) 
+				// моментально перерисовываем карточки игроков и верхний банк!
+				if (typeof renderProfiles === 'function') renderProfiles();
+				if (typeof updateMenuBankUI === 'function') updateMenuBankUI();
+			}
 
             // === 3. СОЗДАНИЕ ИГРОКА БЕЗ УТЕЧЕК ===
             function createNewProfile(e) {
@@ -2453,48 +2592,53 @@ function addCrystal(game = null, subMode = null, customAmount = null) {
 
 
             function openMainMenu() {
-                playSoundEffect('tick');
-                if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
+                if (typeof App !== 'undefined' && App.playSoundEffect) App.playSoundEffect('click');
+                if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.HapticFeedback) {
+                    window.Telegram.WebApp.HapticFeedback.impactOccurred('light');
+                }
 
-                // ЗАПОМИНАЕМ РЕЖИМ ПЕРЕД ВЫХОДОМ
-                GameState.previewMode = GameState.mode || 'dice';
-
-                if (typeof App !== 'undefined' && App.setTopNavLocked) App.setTopNavLocked(false);
-
+                // 1. Начинаем плавное исчезновение ВСЕГО интерфейса игры
                 const gui = document.getElementById('gameUI');
-                if(gui) gui.classList.remove('game-ui-visible');
+                if (gui) gui.classList.remove('game-ui-visible');
 
-                try {
-                    if (typeof RouletteGame !== 'undefined') RouletteGame.unmount();
-                    if (typeof DiceGame !== 'undefined') DiceGame.unmount();
-                    if (typeof CoinGame !== 'undefined') CoinGame.unmount();
-                    if (typeof FlowerGame !== 'undefined') FlowerGame.unmount();
-                    if (typeof RPSGame !== 'undefined') RPSGame.unmount();
-                    if (typeof ShopGame !== 'undefined') ShopGame.unmount();
-                } catch (e) {}
-
-                ['mainStage', 'rouletteStage', 'coinStage', 'flowerStage', 'rpsStage', 'shopStage', 'drumWrapper', 'bulletStash', 'rouletteStatusBtn', 'randomLoadBtn'].forEach(id => {
-                    const el = document.getElementById(id);
-                    if (el) el.style.display = 'none';
-                });
-
+                // 2. ЖДЕМ 400мс, пока интерфейс не станет прозрачным (чтобы избежать скачков)
                 setTimeout(() => {
-                    const mmo = document.getElementById('mainMenuOverlay');
-                    if(mmo) {
-                        mmo.style.display = 'flex';
-                        mmo.classList.remove('menu-fade-out');
+                    // ЗАПОМИНАЕМ РЕЖИМ ПЕРЕД ВЫХОДОМ
+                    GameState.lastMode = GameState.mode;
+
+                    // Отмонтируем текущую игру (она уже невидима, поэтому скачков не будет)
+                    if (GameState.mode === 'dice' && typeof DiceGame !== 'undefined') DiceGame.unmount();
+                    else if (GameState.mode === 'roulette' && typeof RouletteGame !== 'undefined') RouletteGame.unmount();
+                    else if (GameState.mode === 'coin' && typeof CoinGame !== 'undefined') CoinGame.unmount();
+                    else if (GameState.mode === 'flower' && typeof FlowerGame !== 'undefined') FlowerGame.unmount();
+                    else if (GameState.mode === 'rps' && typeof RPSGame !== 'undefined') RPSGame.unmount();
+                    else if (GameState.mode === 'shop' && typeof ShopGame !== 'undefined') ShopGame.unmount();
+                    else if (GameState.mode === 'sticks' && typeof SticksGame !== 'undefined') SticksGame.unmount();
+
+                    // Железобетонно прячем все контейнеры
+                    ['mainStage', 'rouletteStage', 'coinStage', 'flowerStage', 'rpsStage', 'shopStage', 'drumWrapper', 'bulletStash', 'rouletteStatusBtn', 'randomLoadBtn'].forEach(id => {
+                        const el = document.getElementById(id);
+                        if (el) el.style.display = 'none';
+                    });
+
+                    GameState.mode = 'menu';
+
+                    // === ВОТ ОН, ФИКС ПУСТОГО ЭКРАНА ===
+                    // Возвращаем Главное Меню на экран физически, а затем плавно проявляем
+                    const overlay = document.getElementById('mainMenuOverlay');
+                    if (overlay) {
+                        overlay.style.display = 'flex'; // Возвращаем в верстку!
+                        void overlay.offsetWidth; // Хак браузера для применения анимации
+                        overlay.classList.remove('menu-fade-out');
                     }
-                    
+
                     // ВЫЗЫВАЕМ ПРЕВЬЮ ПОСЛЕ ТОГО КАК МЕНЮ ОТКРЫТО
-                    previewGame(GameState.previewMode);
-                 
-                    // ФИКС БАГА 1: Откладываем подсветку на 50мс, чтобы она перебила 
-                    // внутренние таймеры превью-функции и железно закрепила класс
                     setTimeout(() => {
-                        if (typeof updateSubModeHighlights === 'function') updateSubModeHighlights();
-                        if (typeof updateMenuBankUI === 'function') updateMenuBankUI();
+                        if (GameState.lastMode) previewGame(GameState.lastMode);
                     }, 50);
-                }, 500);
+
+                    if (typeof updateHistoryView === 'function') updateHistoryView();
+                }, 400); // 400мс идеально совпадают с CSS-анимацией opacity
             }
 
             function updateSubModeHighlights() {
@@ -3391,7 +3535,7 @@ function addCrystal(game = null, subMode = null, customAmount = null) {
                 }
 
                 if (perkToCheck) {
-                    const p = GameState.profiles[GameState.currentProfile] || GameState.profiles[GameState.activeProfileIdx];
+                    const p = GameState.activeProfileIdx !== -1 ? GameState.profiles[GameState.activeProfileIdx] : null;
                     const equipped = p ? (p.equipped || {}) : {};
                     // Блокируем вылет искр, если галочка "АКТИВНО" на карточке не стоит
                     if (!equipped[perkToCheck]) return; 
@@ -3969,29 +4113,44 @@ function addCrystal(game = null, subMode = null, customAmount = null) {
                 if (typeof GameState === 'undefined' || !GameState.sound) return;
                 try {
                     const ctx = new (window.AudioContext || window.webkitAudioContext)();
-                    const osc = ctx.createOscillator(), g = ctx.createGain(), noise = ctx.createBufferSource();
-                    // Белый шум для эффекта распыления
-                    const bufferSize = ctx.sampleRate * 0.5, buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate), data = buffer.getChannelData(0);
+                    const t = ctx.currentTime;
+
+                    // 1. Звук "Распыления" (Шипящий шум, уходящий вниз)
+                    const noise = ctx.createBufferSource();
+                    const bufferSize = ctx.sampleRate * 0.4;
+                    const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+                    const data = buffer.getChannelData(0);
                     for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
                     noise.buffer = buffer;
-                    const filter = ctx.createBiquadFilter();
-                    filter.type = 'highpass'; filter.frequency.value = 1000;
-                    g.gain.setValueAtTime(0.2, ctx.currentTime);
-                    g.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.4);
-                    noise.connect(filter); filter.connect(g); g.connect(ctx.destination);
-                    noise.start(); noise.stop(ctx.currentTime + 0.4);
-                    // Дополнительный свистящий тон
-                    osc.type = 'sine'; osc.frequency.setValueAtTime(800, ctx.currentTime);
-                    osc.frequency.exponentialRampToValueAtTime(1600, ctx.currentTime + 0.3);
-                    const g2 = ctx.createGain(); g2.gain.setValueAtTime(0.1, ctx.currentTime);
-                    g2.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
-                    osc.connect(g2); g2.connect(ctx.destination);
-                    osc.start(); osc.stop(ctx.currentTime + 0.3);
+                    
+                    const noiseFilter = ctx.createBiquadFilter();
+                    noiseFilter.type = 'highpass';
+                    noiseFilter.frequency.setValueAtTime(4000, t);
+                    noiseFilter.frequency.exponentialRampToValueAtTime(300, t + 0.3); // Резко понижаем частоту
+
+                    const noiseGain = ctx.createGain();
+                    noiseGain.gain.setValueAtTime(0.6, t);
+                    noiseGain.gain.exponentialRampToValueAtTime(0.01, t + 0.3);
+                    
+                    noise.connect(noiseFilter); noiseFilter.connect(noiseGain); noiseGain.connect(ctx.destination);
+                    noise.start(t); noise.stop(t + 0.4);
+
+                    // 2. Звук "Схлопывания энергии" (Квадратная волна, падающая в бас)
+                    const osc = ctx.createOscillator();
+                    osc.type = 'square';
+                    osc.frequency.setValueAtTime(1200, t);
+                    osc.frequency.exponentialRampToValueAtTime(50, t + 0.25); // Эффект "Пиу!"
+
+                    const oscGain = ctx.createGain();
+                    oscGain.gain.setValueAtTime(0.15, t);
+                    oscGain.gain.exponentialRampToValueAtTime(0.001, t + 0.25);
+
+                    osc.connect(oscGain); oscGain.connect(ctx.destination);
+                    osc.start(t); osc.stop(t + 0.3);
                 } catch(e){}
             }
 
             function updateBoosterUI() {
-                // Ищем или создаем контейнер в rouletteStage, а не в body, чтобы он не терялся
                 const stage = document.getElementById('rouletteStage');
                 if (!stage) return;
 
@@ -3999,8 +4158,29 @@ function addCrystal(game = null, subMode = null, customAmount = null) {
                 if (!bUI) {
                     bUI = document.createElement('div');
                     bUI.id = 'active-booster-ui';
-                    bUI.style.cssText = 'position: absolute; top: 15px; left: 15px; z-index: 100; display: flex; align-items: center; justify-content: center; pointer-events: none; transition: all 0.4s ease;';
+                    // Подняли выше (было 85, стало 60)
+                    bUI.style.cssText = 'position: absolute; top: 60px; left: 15px; z-index: 100; display: flex; align-items: center; justify-content: center; pointer-events: none; transition: all 0.4s ease;';
                     stage.appendChild(bUI);
+
+                    if (!document.getElementById('booster-anim-styles')) {
+                        const st = document.createElement('style');
+                        st.id = 'booster-anim-styles';
+                        // Новая анимация взрыва (сжимается в ноль)
+                        st.innerHTML = `
+                            @keyframes b-shake {
+                                0%, 100% { transform: translate(0, 0); }
+                                20%, 60% { transform: translate(-4px, 3px); }
+                                40%, 80% { transform: translate(4px, -3px); }
+                            }
+                            @keyframes booster-explode {
+                                0% { transform: scale(1); filter: brightness(1); opacity: 1; }
+                                40% { transform: scale(1.3) rotate(-10deg); filter: brightness(2) blur(1px); opacity: 1; }
+                                100% { transform: scale(0) rotate(20deg); filter: brightness(3) blur(6px); opacity: 0; }
+                            }
+                            .booster-shake-anim { animation: b-shake 0.4s ease-in-out; }
+                        `;
+                        document.head.appendChild(st);
+                    }
                 }
 
                 if (GameState.subModes.roulette !== 'bank') {
@@ -4013,41 +4193,18 @@ function addCrystal(game = null, subMode = null, customAmount = null) {
                     const isSuper = !!p.equipped['perk_x2_super'];
                     const color = isSuper ? 'var(--sun-gold)' : 'var(--friendly-green)';
                     const icon = isSuper ? '🔥' : '🤑';
-                    const label = isSuper ? (GameState.lang === 'ru' ? 'Супер x2' : 'Super x2') : (GameState.lang === 'ru' ? 'x2 Выигрыш' : 'x2 Win');
+                    const label = 'X2';
 
                     bUI.innerHTML = `
-                        <div class="booster-icon" style="background: rgba(5,8,15,0.9); border: 1px solid ${color}; box-shadow: 0 0 15px ${color}; border-radius: 8px; padding: 6px 10px; display: flex; gap: 6px; align-items: center; transform: scale(1); opacity: 1; transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);">
+                        <div class="booster-icon" style="background: rgba(5,8,15,0.9); border: 1px solid ${color}; box-shadow: 0 0 15px ${color}; border-radius: 8px; padding: 6px 10px; display: flex; gap: 6px; align-items: center; transform: scale(1); opacity: 1; transition: opacity 0.5s;">
                             <span style="font-size: 18px; filter: drop-shadow(0 0 5px ${color});">${icon}</span>
-                            <span style="color: ${color}; font-weight: 900; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; text-shadow: 0 0 5px ${color};">${label}</span>
+                            <span style="color: ${color}; font-weight: 900; font-size: 13px; text-transform: uppercase; letter-spacing: 1px; text-shadow: 0 0 5px ${color};">${label}</span>
                         </div>`;
                     bUI.style.opacity = '1';
                 } else {
                     bUI.style.opacity = '0';
                     setTimeout(() => { if(bUI.style.opacity === '0') bUI.innerHTML = ''; }, 400);
                 }
-            }
-
-            function triggerBoosterBurnAnimation(type) {
-                const bUI = document.getElementById('active-booster-ui');
-                if (!bUI) return;
-                
-                const icon = bUI.querySelector('.booster-icon');
-                if (!icon) return;
-
-                // Добавляем тряску всему экрану
-                document.body.classList.add('booster-shake-anim');
-                playBoosterBurnSound();
-                if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('warning');
-
-                // Эффект распыления иконки
-                icon.style.transform = 'scale(1.6) rotate(10deg)';
-                icon.style.filter = type.includes('super') ? 'brightness(3) blur(4px) hue-rotate(45deg)' : 'brightness(3) blur(4px)';
-                icon.style.opacity = '0';
-
-                setTimeout(() => {
-                    document.body.classList.remove('booster-shake-anim');
-                    updateBoosterUI();
-                }, 600);
             }
 
             function init() {
@@ -4276,18 +4433,16 @@ function addCrystal(game = null, subMode = null, customAmount = null) {
             }
 			
 			function updateBoosterUI() {
-                if (GameState.subModes.roulette !== 'bank') {
-                    const el = document.getElementById('active-booster-ui');
-                    if (el) el.style.display = 'none';
-                    return;
-                }
-                const p = GameState.activeProfileIdx !== -1 ? GameState.profiles[GameState.activeProfileIdx] : null;
+                const stage = document.getElementById('rouletteStage');
+                if (!stage) return;
+
                 let bUI = document.getElementById('active-booster-ui');
                 if (!bUI) {
                     bUI = document.createElement('div');
                     bUI.id = 'active-booster-ui';
-                    bUI.style.cssText = 'position: absolute; top: 60px; left: 15px; z-index: 100; display: flex; align-items: center; justify-content: center; pointer-events: none;';
-                    document.body.appendChild(bUI);
+                    // ПОЗИЦИЯ: Подняли к ставке, сдвинули на +5px вправо и на +20px вниз от прошлого -40px
+                    bUI.style.cssText = 'position: absolute; top: -20px; left: 5px; z-index: 100; display: flex; align-items: center; justify-content: center; pointer-events: none; transition: all 0.4s ease;';
+                    stage.appendChild(bUI);
 
                     if (!document.getElementById('booster-anim-styles')) {
                         const st = document.createElement('style');
@@ -4298,44 +4453,90 @@ function addCrystal(game = null, subMode = null, customAmount = null) {
                                 20%, 60% { transform: translate(-4px, 3px); }
                                 40%, 80% { transform: translate(4px, -3px); }
                             }
+                            /* ЛОГИЧНАЯ АНИМАЦИЯ: Увеличение + Блюр + Исчезновение */
+                            @keyframes booster-explode {
+                                0% { transform: scale(1); filter: brightness(1) blur(0px); opacity: 1; }
+                                100% { transform: scale(2.2); filter: brightness(3) blur(12px); opacity: 0; }
+                            }
                             .booster-shake-anim { animation: b-shake 0.4s ease-in-out; }
                         `;
                         document.head.appendChild(st);
                     }
                 }
 
-                if (p && p.equipped) {
-                    if (p.equipped['perk_x2_super']) {
-                        bUI.innerHTML = `<div class="booster-icon super-booster" style="background: rgba(5,8,15,0.9); border: 1px solid var(--sun-gold); box-shadow: 0 0 10px var(--sun-gold); border-radius: 8px; padding: 4px 8px; display: flex; gap: 5px; align-items: center; transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);"><span style="font-size: 16px;">🔥</span> <span style="color: var(--sun-gold); font-weight: 900; font-size: 12px; text-transform: uppercase;">Супер x2</span></div>`;
-                        bUI.style.display = 'flex';
-                    } else if (p.equipped['perk_x2_win']) {
-                        bUI.innerHTML = `<div class="booster-icon normal-booster" style="background: rgba(5,8,15,0.9); border: 1px solid var(--friendly-green); box-shadow: 0 0 10px var(--friendly-green); border-radius: 8px; padding: 4px 8px; display: flex; gap: 5px; align-items: center; transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);"><span style="font-size: 16px;">🤑</span> <span style="color: var(--friendly-green); font-weight: 900; font-size: 12px; text-transform: uppercase;">x2 Выигрыш</span></div>`;
-                        bUI.style.display = 'flex';
-                    } else {
-                        bUI.style.display = 'none';
-                    }
+                if (GameState.subModes.roulette !== 'bank') {
+                    bUI.style.opacity = '0';
+                    return;
+                }
+
+                const p = GameState.activeProfileIdx !== -1 ? GameState.profiles[GameState.activeProfileIdx] : null;
+                if (p && p.equipped && (p.equipped['perk_x2_win'] || p.equipped['perk_x2_super'])) {
+                    const isSuper = !!p.equipped['perk_x2_super'];
+                    const color = isSuper ? 'var(--sun-gold)' : 'var(--friendly-green)';
+                    const icon = isSuper ? '🔥' : '🤑';
+                    
+                    bUI.innerHTML = `
+                        <div class="booster-icon" style="background: rgba(5,8,15,0.9); border: 1px solid ${color}; box-shadow: 0 0 15px ${color}; border-radius: 8px; padding: 6px 10px; display: flex; gap: 6px; align-items: center; transform: scale(1); opacity: 1;">
+                            <span style="font-size: 18px; filter: drop-shadow(0 0 5px ${color});">${icon}</span>
+                            <span style="color: ${color}; font-weight: 900; font-size: 13px; text-transform: uppercase; letter-spacing: 1px; text-shadow: 0 0 5px ${color};">X2</span>
+                        </div>`;
+                    bUI.style.opacity = '1';
                 } else {
-                    bUI.style.display = 'none';
+                    bUI.style.opacity = '0';
+                    setTimeout(() => { if(bUI.style.opacity === '0') bUI.innerHTML = ''; }, 400);
                 }
             }
 
             function triggerBoosterBurnAnimation(type) {
                 const bUI = document.getElementById('active-booster-ui');
                 if (!bUI) return;
-                document.body.classList.add('booster-shake-anim');
-                if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('heavy');
                 
                 const icon = bUI.querySelector('.booster-icon');
-                if (icon) {
-                    icon.style.transform = 'scale(1.3) translateY(-15px)';
-                    icon.style.opacity = '0';
-                    icon.style.filter = type === 'perk_x2_super' ? 'drop-shadow(0 0 30px #ff9f43) blur(2px)' : 'drop-shadow(0 0 30px #00ff00) blur(2px)';
-                }
-                if(typeof App !== 'undefined') App.playSoundEffect('achievement');
+                if (!icon) return;
+
+                // Снимаем координаты и цвет для правильного позиционирования искр
+                const rect = icon.getBoundingClientRect();
+                const centerX = rect.left + rect.width / 2;
+                const centerY = rect.top + rect.height / 2;
+                const color = type.includes('super') ? '#ff9f43' : '#00ff00';
+
+                document.body.classList.add('booster-shake-anim');
+                playBoosterBurnSound();
+                if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('warning');
+
+                // 1. Запускаем CSS анимацию (Увеличение + Блюр)
+                icon.style.animation = 'booster-explode 0.6s forwards ease-out';
+
+                // 2. ГЕНЕРАТОР ИСКР (10 тактов по 50мс = 500мс суммарно для долгого взрыва)
+                let particlesCreated = 0;
+                const spawnInterval = setInterval(() => {
+                    for(let i=0; i<25; i++) { // По 25 искр за раз
+                        const p = document.createElement('div');
+                        const isShard = Math.random() > 0.5; // Смешиваем круглые искры и квадратные обломки
+                        const size = 2 + Math.random() * 6;
+                        
+                        p.style.cssText = `position: fixed; top: ${centerY}px; left: ${centerX}px; width: ${size}px; height: ${size}px; background: ${color}; border-radius: ${isShard?'2px':'50%'}; pointer-events: none; z-index: 10000; box-shadow: 0 0 ${size*2}px ${color}; opacity: 1;`;
+                        document.body.appendChild(p);
+                        
+                        const angle = Math.random() * Math.PI * 2;
+                        const velocity = 40 + Math.random() * 120; // Разная скорость разлета
+                        const tx = Math.cos(angle) * velocity;
+                        const ty = Math.sin(angle) * velocity - 30; 
+                        
+                        p.animate([
+                            { transform: `translate(-50%, -50%) scale(1) rotate(0deg)`, opacity: 1 },
+                            { transform: `translate(calc(-50% + ${tx}px), calc(-50% + ${ty}px)) scale(0) rotate(${Math.random()*360}deg)`, opacity: 0 }
+                        ], { duration: 600 + Math.random() * 600, easing: 'cubic-bezier(0.1, 1, 0.3, 1)', fill: 'forwards' });
+                        
+                        setTimeout(() => p.remove(), 1200);
+                    }
+                    
+                    particlesCreated++;
+                    if (particlesCreated >= 3) clearInterval(spawnInterval);
+                }, 50);
 
                 setTimeout(() => {
                     document.body.classList.remove('booster-shake-anim');
-                    updateBoosterUI(); 
                 }, 600);
             }
 
@@ -5575,7 +5776,7 @@ function addCrystal(game = null, subMode = null, customAmount = null) {
                 getGuestBank: () => window.guestBank, getGuestPool: () => window.guestPool, 
                 loadStats: loadStats, isDragging: () => isDragging, isSpinning: () => isSpinningDrum, 
                 isBusy: () => isSpinningDrum || isWaitingResult || isBetting, 
-                saveCurrentSubState, loadCurrentSubState, restoreDrumVisuals 
+                saveCurrentSubState, loadCurrentSubState, restoreDrumVisuals, updateBoosterUI
             };
         })();
 
@@ -7083,7 +7284,7 @@ const FlowerGame = (function() {
             if(!stage) return;
 
             // === ИНТЕГРАЦИЯ СТИЛЕЙ ИЗ ИНВЕНТАРЯ ===
-            const p = GameState.profiles[GameState.currentProfile] || GameState.profiles[GameState.activeProfileIdx];
+            const p = GameState.activeProfileIdx !== -1 ? GameState.profiles[GameState.activeProfileIdx] : null;
             const equipped = p ? (p.equipped || {}) : {};
 
             // Сердцевины
@@ -8369,7 +8570,7 @@ const SticksGame = (function() {
             setInterval(() => {
                 const sStage = document.getElementById('sticksStage');
                 if (!sStage) return;
-                const p = GameState.profiles[GameState.currentProfile] || GameState.profiles[GameState.activeProfileIdx];
+                const p = GameState.activeProfileIdx !== -1 ? GameState.profiles[GameState.activeProfileIdx] : null;
                 const equipped = p ? (p.equipped || {}) : {};
 
                 const boxStyle = equipped.lotsBoxes || 'lots_box_original';
@@ -8900,8 +9101,12 @@ const ShopGame = (function() {
 
     function updateTopUI() {
         if (typeof App !== 'undefined' && App.updateMenuBankUI) App.updateMenuBankUI();
-        const p = GameState.profiles[GameState.currentProfile] || GameState.profiles[GameState.activeProfileIdx];
+        // Принудительно перерисовываем карточки в главном меню, чтобы видеть актуальные деньги/камни
+        if (typeof App !== 'undefined' && App.renderProfiles) App.renderProfiles(); 
+        
+        const p = GameState.activeProfileIdx !== -1 ? GameState.profiles[GameState.activeProfileIdx] : null;
         if (!p) return;
+        
         const coins = getPlayerCoins(p);
         const crystals = p.crystals || 0;
         const localWallet = document.getElementById('shop-local-wallet');
@@ -8938,7 +9143,7 @@ const ShopGame = (function() {
         const grid = document.getElementById('shopGrid');
         if (!stage || !grid) return;
         
-        const p = GameState.profiles[GameState.currentProfile] || GameState.profiles[GameState.activeProfileIdx];
+        const p = GameState.activeProfileIdx !== -1 ? GameState.profiles[GameState.activeProfileIdx] : null;
         const balanceCoins = getPlayerCoins(p);
         const balanceCrystals = p ? (p.crystals || 0) : 0;
         const lang = GameState.lang || 'ru';
@@ -8968,9 +9173,258 @@ const ShopGame = (function() {
         // === ВКЛАДКА: ОБМЕН ===
         if (GameState.subModes.shop === 'exchange') {
             grid.appendChild(createCategoryHeader(lang === 'ru' ? 'Обмен Валюты' : 'Currency Exchange', 'var(--sun-gold)'));
-            const exchangeItems = shopItems.perks.filter(i => i.id.startsWith('exchange_'));
-            appendItems(grid, exchangeItems, balanceCoins, balanceCrystals, lang);
-        } 
+
+            // Конфигурация 4-х динамических кнопок с описаниями
+            const exchDefs = [
+                { id: 'buy_coin', icon: '🪙', type: 'coin', mode: 'buy', desc: { ru: 'Конвертация Кристаллов в Монеты.<br><br>Комиссия Банка: 10%.', en: 'Convert Crystals to Coins.<br><br>Bank fee: 10%.' } },
+                { id: 'buy_cryst', icon: '💎', type: 'cryst', mode: 'buy', desc: { ru: 'Конвертация Монет в Кристаллы.<br><br>Комиссия Банка: 10%.', en: 'Convert Coins to Crystals.<br><br>Bank fee: 10%.' } },
+                { id: 'sell_coin', icon: '🪙', type: 'coin', mode: 'sell', desc: { ru: 'Продажа Монет Банку за Кристаллы.<br><br>Комиссия Банка: 10%.', en: 'Sell Coins for Crystals.<br><br>Bank fee: 10%.' } },
+                { id: 'sell_cryst', icon: '💎', type: 'cryst', mode: 'sell', desc: { ru: 'Продажа Кристаллов Банку за Монеты.<br><br>Комиссия Банка: 10%.', en: 'Sell Crystals for Coins.<br><br>Bank fee: 10%.' } }
+            ];
+
+            exchDefs.forEach(def => {
+                const card = document.createElement('div');
+                card.className = 'shop-item-card';
+                card.style.cssText = `padding: 8px 4px; min-height: 110px; display: flex; flex-direction: column; align-items: center; justify-content: space-between; border-radius: 8px; border: 1px solid rgba(255,249,174,0.3); background: rgba(5,8,15,0.8); position: relative;`;
+
+                const titleTxt = def.mode === 'buy' ? (lang==='ru'?'КУПИТЬ':'BUY') : (lang==='ru'?'ПРОДАТЬ':'SELL');
+                const color = def.mode === 'buy' ? 'var(--friendly-green)' : 'var(--angry-red)';
+                const headerName = titleTxt + ' ' + (def.type === 'coin' ? (lang==='ru'?'МОНЕТЫ':'COINS') : (lang==='ru'?'КРИСТАЛЛЫ':'CRYSTALS'));
+                
+                // ДИНАМИЧЕСКИЙ ТУЛТИП!
+                const tooltipHTML = getTooltipHTML(headerName, def.desc, lang);
+
+                card.innerHTML = `
+                    ${tooltipHTML}
+                    <div style="font-size: 24px; margin-bottom: 2px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));">${def.icon}</div>
+                    <div style="color: ${color}; font-size: 10px; font-weight: bold; text-transform: uppercase; margin-bottom: 4px; letter-spacing: 1px;">${titleTxt}</div>
+                    <input type="number" min="1" step="1" class="exch-input" placeholder="0" style="display: block !important; width: 85%; box-sizing: border-box; background: rgba(0,0,0,0.6); border: 1px solid rgba(255,255,255,0.2); color: #fff; text-align: center; border-radius: 4px; font-size: 13px; padding: 4px; outline: none; margin-bottom: 4px;">
+                    <div class="exch-result" style="font-size: 11px; font-weight: bold; color: #aaa; height: 14px; margin-bottom: 6px; transition: 0.2s;">...</div>
+                    <button class="exch-btn" disabled style="width: 85%; box-sizing: border-box; background: var(--sun-gold); color: #000; border: none; border-radius: 4px; font-weight: 900; font-size: 10px; padding: 5px; cursor: default; text-transform: uppercase; box-shadow: 0 0 5px rgba(255,249,174,0.5); opacity: 0.4; transition: 0.3s;">${lang === 'ru' ? 'ОБМЕН' : 'EXCHANGE'}</button>
+                `;
+
+                const input = card.querySelector('.exch-input');
+                const resDiv = card.querySelector('.exch-result');
+                const btn = card.querySelector('.exch-btn');
+
+                const updateCalc = () => {
+                    let val = parseInt(input.value);
+                    
+                    const disableBtn = () => {
+                        btn.disabled = true;
+                        btn.style.opacity = '0.4';
+                        btn.style.cursor = 'default';
+                    };
+
+                    if (isNaN(val) || val <= 0) { 
+                        resDiv.innerHTML = '...'; 
+                        disableBtn(); 
+                        return; 
+                    }
+
+                    const pActive = GameState.activeProfileIdx !== -1 ? GameState.profiles[GameState.activeProfileIdx] : null;
+                    if (!pActive) { disableBtn(); return; }
+
+                    const curCoins = getPlayerCoins(pActive);
+                    const curCryst = pActive.crystals || 0;
+
+                    let costCoins = 0, costCryst = 0;
+
+                    if (def.mode === 'buy' && def.type === 'coin') {
+                        costCryst = Math.ceil(val * 11);
+                        resDiv.innerHTML = `<span style="color:var(--angry-red)">-${costCryst} 💎</span>`;
+                    } else if (def.mode === 'buy' && def.type === 'cryst') {
+                        costCoins = val * 0.11;
+                        resDiv.innerHTML = `<span style="color:var(--angry-red)">-$${costCoins.toFixed(2)}</span>`;
+                    } else if (def.mode === 'sell' && def.type === 'coin') {
+                        costCoins = val;
+                        resDiv.innerHTML = `<span style="color:var(--friendly-green)">+${Math.floor(val * 9)} 💎</span>`;
+                    } else if (def.mode === 'sell' && def.type === 'cryst') {
+                        costCryst = val;
+                        resDiv.innerHTML = `<span style="color:var(--friendly-green)">+$${(val * 0.09).toFixed(2)}</span>`;
+                    }
+
+                    if (curCoins >= costCoins && curCryst >= costCryst) {
+                        btn.disabled = false;
+                        btn.style.opacity = '1';
+                        btn.style.cursor = 'pointer';
+                    } else {
+                        disableBtn();
+                    }
+                };
+
+                input.addEventListener('input', updateCalc);
+
+                btn.onclick = () => {
+                    let val = parseInt(input.value);
+                    if (isNaN(val) || val <= 0) {
+                        if (typeof App !== 'undefined' && App.showError) App.showError(lang === 'ru' ? 'Введите сумму!' : 'Enter amount!');
+                        if (typeof App !== 'undefined' && App.playSoundEffect) App.playSoundEffect('error', 'negative');
+                        return;
+                    }
+
+                    const pActive = GameState.activeProfileIdx !== -1 ? GameState.profiles[GameState.activeProfileIdx] : null;
+                    if (!pActive) return;
+
+                    const curCoins = getPlayerCoins(pActive);
+                    const curCryst = pActive.crystals || 0;
+
+                    let costCoins = 0, costCryst = 0;
+                    let gainCoins = 0, gainCryst = 0;
+
+                    if (def.mode === 'buy' && def.type === 'coin') {
+                        costCryst = Math.ceil(val * 11);
+                        gainCoins = val;
+                    } else if (def.mode === 'buy' && def.type === 'cryst') {
+                        costCoins = val * 0.11;
+                        gainCryst = val;
+                    } else if (def.mode === 'sell' && def.type === 'coin') {
+                        costCoins = val;
+                        gainCryst = Math.floor(val * 9);
+                    } else if (def.mode === 'sell' && def.type === 'cryst') {
+                        costCryst = val;
+                        gainCoins = val * 0.09;
+                    }
+
+                    if (curCoins < costCoins || curCryst < costCryst) {
+                        if (typeof App !== 'undefined' && App.showError) App.showError(lang === 'ru' ? 'Недостаточно средств!' : 'Not enough funds!');
+                        if (typeof App !== 'undefined' && App.playSoundEffect) App.playSoundEffect('error', 'negative');
+                        return;
+                    }
+
+                    if (costCoins > 0) deductPlayerCoins(pActive, costCoins);
+                    if (costCryst > 0) pActive.crystals = (pActive.crystals || 0) - costCryst;
+
+                    if (gainCoins > 0) {
+                        if (pActive.bank !== undefined) pActive.bank += gainCoins;
+                        else if (pActive.rStats && pActive.rStats.bank !== undefined) pActive.rStats.bank += gainCoins;
+                    }
+                    if (gainCryst > 0) pActive.crystals = (pActive.crystals || 0) + gainCryst;
+
+                    const actionName = lang === 'ru' ? "Обмен" : "Exchange";
+                    let logStr = '';
+                    if (costCoins > 0) logStr += `-$${costCoins.toFixed(2)} ➔ +${gainCryst}💎`;
+                    else if (costCryst > 0) logStr += `-${costCryst}💎 ➔ +$${gainCoins.toFixed(2)}`;
+
+                    const itemHTML = `
+                        <div class="history-item hist-exchange">
+                            <span style="color:var(--sun-gold); font-weight:bold;">[${actionName}]</span>
+                            <br><span style="color:#aaa; font-size:10px;">${logStr}</span>
+                        </div>`;
+                    
+                    pActive.historyShop = itemHTML + (pActive.historyShop || '');
+                    const hlShop = document.getElementById('historyListShop');
+                    if (hlShop) hlShop.innerHTML = pActive.historyShop;
+
+                    if (typeof App !== 'undefined' && App.requestProfileSave) App.requestProfileSave();
+                    if (typeof App !== 'undefined' && App.updateHistoryView) App.updateHistoryView();
+                    
+                    input.value = '';
+                    updateCalc();
+
+                    updateTopUI();
+                    renderShop();
+                    
+                    if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.HapticFeedback) window.Telegram.WebApp.HapticFeedback.notificationOccurred('success');
+                    if (typeof App !== 'undefined' && App.playSoundEffect) App.playSoundEffect('coins');
+                };
+
+                grid.appendChild(card);
+            });
+
+            // --- БЛОК ПРОДАЖИ ПРЕДМЕТОВ ИЗ ИНВЕНТАРЯ ---
+            const pActive = GameState.activeProfileIdx !== -1 ? GameState.profiles[GameState.activeProfileIdx] : null;
+            const inv = pActive ? (pActive.inventory || []) : [];
+            const stackableItems = shopItems.perks.filter(i => i.isStackable);
+            const ownedStackable = [];
+            
+            stackableItems.forEach(item => {
+                const count = inv.filter(id => id === item.id).length;
+                if (count > 0) ownedStackable.push({ item, count });
+            });
+
+            if (ownedStackable.length > 0) {
+                grid.appendChild(createCategoryHeader(lang === 'ru' ? 'Ваш Инвентарь' : 'Your Inventory', 'var(--magic-color)'));
+                
+                ownedStackable.forEach(data => {
+                    const item = data.item;
+                    const count = data.count;
+                    const sellCoins = item.priceCoins * 0.9;
+                    const sellCryst = Math.floor(item.priceCrystals * 0.9);
+
+                    const card = document.createElement('div');
+                    card.className = 'shop-item-card';
+                    card.style.cssText = `padding: 8px 4px; min-height: 100px; display: flex; flex-direction: column; align-items: center; justify-content: space-between; border-radius: 8px; border: 1px solid var(--magic-color); background: rgba(5,8,15,0.8); position: relative;`;
+                    
+                    let badgeHTML = `<div style="position: absolute; top: -2px; right: 2px; color: #ccffcc; text-shadow: 0 0 8px #ccffcc, 0 0 15px var(--friendly-green); font-size: 14px; font-weight: 900; z-index: 10; pointer-events: none;">${count}</div>`;
+                    const itemName = item.name[lang] || item.name.ru;
+
+                    let priceInnerHTML = '';
+                    if (sellCoins > 0 && sellCryst > 0) {
+                        priceInnerHTML = `<span style="color:var(--friendly-green)">+$${sellCoins.toFixed(2)}</span><br><span style="color:var(--magic-color)">+${sellCryst}💎</span>`;
+                    } else if (sellCryst > 0) {
+                        priceInnerHTML = `<span style="color:var(--magic-color)">+${sellCryst}💎</span>`;
+                    } else if (sellCoins > 0) {
+                        priceInnerHTML = `<span style="color:var(--friendly-green)">+$${sellCoins.toFixed(2)}</span>`;
+                    }
+
+                    // ДИНАМИЧЕСКИЙ ТУЛТИП!
+                    const tooltipHTML = getTooltipHTML(itemName, item.desc, lang);
+
+                    card.innerHTML = `
+                        ${badgeHTML}
+                        ${tooltipHTML}
+                        <div style="font-size: 24px; margin-bottom: 2px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));">${item.icon}</div>
+                        <div style="color: #fff; font-size: 9px; line-height: 1.1; margin-bottom: 6px; text-align: center; font-weight: bold; text-transform: uppercase;">${itemName}</div>
+                        <div style="font-size: 10px; font-weight: bold; background: rgba(0,0,0,0.5); padding: 4px; border-radius: 4px; margin-bottom: 6px; text-align: center; line-height: 1.2;">${priceInnerHTML}</div>
+                        <button class="exch-btn-sell" style="width: 85%; background: var(--angry-red); color: #fff; border: none; border-radius: 4px; font-weight: 900; font-size: 10px; padding: 5px; cursor: pointer; text-transform: uppercase; box-shadow: 0 0 5px rgba(255,102,102,0.4); margin-top: auto;">${lang === 'ru' ? 'ПРОДАТЬ' : 'SELL'}</button>
+                    `;
+
+                    const btn = card.querySelector('.exch-btn-sell');
+                    btn.onclick = () => {
+                        if (typeof consumePerk === 'function') {
+                            consumePerk(item.id); 
+                            
+                            const p = GameState.activeProfileIdx !== -1 ? GameState.profiles[GameState.activeProfileIdx] : null;
+                            if (p) {
+                                if (sellCoins > 0) {
+                                    if (p.bank !== undefined) p.bank += sellCoins;
+                                    else if (p.rStats && p.rStats.bank !== undefined) p.rStats.bank += sellCoins;
+                                }
+                                if (sellCryst > 0) {
+                                    p.crystals = (p.crystals || 0) + sellCryst;
+                                }
+
+                                const actionName = lang === 'ru' ? "Продажа" : "Sale";
+                                const logPrice = (sellCoins>0 && sellCryst>0) ? `+$${sellCoins.toFixed(2)} | +${sellCryst}💎` : (sellCryst>0 ? `+${sellCryst}💎` : `+$${sellCoins.toFixed(2)}`);
+                                
+                                const itemHTML = `
+                                    <div class="history-item hist-exchange">
+                                        <span style="color:var(--angry-red); font-weight:bold;">[${actionName}]</span> ${item.icon} ${itemName}
+                                        <br><span style="color:#aaa; font-size:10px;">${logPrice}</span>
+                                    </div>`;
+                                
+                                p.historyShop = itemHTML + (p.historyShop || '');
+                                const hlShop = document.getElementById('historyListShop');
+                                if (hlShop) hlShop.innerHTML = p.historyShop;
+
+                                if (typeof App !== 'undefined' && App.requestProfileSave) App.requestProfileSave();
+                                if (typeof App !== 'undefined' && App.updateHistoryView) App.updateHistoryView();
+                                
+                                updateTopUI();
+                                renderShop(); 
+                                
+                                if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.HapticFeedback) window.Telegram.WebApp.HapticFeedback.notificationOccurred('success');
+                                if (typeof App !== 'undefined' && App.playSoundEffect) App.playSoundEffect('coins');
+                            }
+                        }
+                    };
+
+                    grid.appendChild(card);
+                });
+            }
+        }
+		
         // === ВКЛАДКА: СТИЛИ ===
         else if (GameState.subModes.shop === 'standard') {
             
@@ -9053,7 +9507,24 @@ const ShopGame = (function() {
             appendItems(grid, coinSparkle, balanceCoins, balanceCrystals, lang);
         }
     }
-
+	
+	// === ГЛОБАЛЬНЫЙ ГЕНЕРАТОР ПОДСКАЗОК (ТУЛТИПОВ) ===
+    function getTooltipHTML(itemName, descObj, lang) {
+        if (!descObj) return ''; // Если описания нет, вопросик не выводим
+        const descText = descObj[lang] || descObj.ru;
+        
+        // ВАЖНО: Добавлена умная проверка границ экрана при клике!
+        return `
+            <div class="info-icon-btn" style="position: absolute; top: 4px; left: 4px; z-index: 20;" onclick="event.stopPropagation(); const tt = this.nextElementSibling; const isVis = tt.style.opacity === '1'; document.querySelectorAll('.shop-tt').forEach(el => el.style.opacity = '0'); if(!isVis) { tt.style.opacity = '1'; tt.style.left = '15px'; tt.style.right = 'auto'; if(tt.getBoundingClientRect().right > window.innerWidth - 10) { tt.style.left = 'auto'; tt.style.right = '10px'; } }">
+                <div style="background: rgba(255,249,174,0.1); border: 1px solid var(--sun-gold); color: var(--sun-gold); border-radius: 4px; width: 14px; height: 14px; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: bold; cursor: pointer; box-shadow: 0 0 5px rgba(255,249,174,0.3);">?</div>
+            </div>
+            <div class="shop-tt" style="position: absolute; top: 25px; left: 15px; background: rgba(5, 8, 15, 0.98); border: 1px solid var(--sun-gold); padding: 8px 10px; border-radius: 8px; color: white; font-size: 10px; width: 150px; opacity: 0; pointer-events: none; transition: opacity 0.2s; z-index: 9999; box-shadow: 0 0 15px rgba(255, 249, 174, 0.3); text-align: left; text-transform: none; font-weight: normal; line-height: 1.3;">
+                <div style="color: var(--sun-gold); font-weight: bold; margin-bottom: 5px; text-transform: uppercase; font-size: 10px;">${itemName}</div>
+                ${descText}
+            </div>
+        `;
+    }
+	
     function createCategoryHeader(title, color = 'var(--sun-gold)', isSub = false) {
         const h = document.createElement('div');
         h.style.gridColumn = '1 / -1';
@@ -9083,7 +9554,7 @@ const ShopGame = (function() {
     }
 
     function appendItems(grid, items, balanceCoins, balanceCrystals, lang) {
-        const p = GameState.profiles[GameState.currentProfile] || GameState.profiles[GameState.activeProfileIdx];
+        const p = GameState.activeProfileIdx !== -1 ? GameState.profiles[GameState.activeProfileIdx] : null;
         const inv = p ? (p.inventory || []) : [];
 
         items.forEach(item => {
@@ -9098,7 +9569,7 @@ const ShopGame = (function() {
             card.style.alignItems = 'center';
             card.style.justifyContent = 'space-between';
             card.style.borderRadius = '8px';
-            card.style.position = 'relative'; // ВАЖНО: для тултипов и бейджиков
+            card.style.position = 'relative'; 
             
             if (isBought) {
                 card.style.border = '1px solid var(--friendly-green)';
@@ -9141,29 +9612,8 @@ const ShopGame = (function() {
 
             const itemName = item.name[lang] || item.name.ru || item.name;
 
-            // === КРАСИВЫЙ СВЕТЯЩИЙСЯ БЕЙДЖИК СЧЕТЧИКА ===
-            let badgeHTML = '';
-            if (item.isStackable) {
-                const count = inv.filter(id => id === item.id).length;
-                if (count > 0) {
-                    badgeHTML = `<div style="position: absolute; top: -2px; right: 2px; color: #ccffcc; text-shadow: 0 0 8px #ccffcc, 0 0 15px var(--friendly-green); font-size: 14px; font-weight: 900; z-index: 10; pointer-events: none;">${count}</div>`;
-                }
-            }
-
-            // === ЛОГИКА ТУЛТИПА С ОПИСАНИЕМ ===
-            let tooltipHTML = '';
-            if (item.desc) {
-                const descText = item.desc[lang] || item.desc.ru;
-                tooltipHTML = `
-                    <div class="info-icon-btn" style="position: absolute; top: 4px; left: 4px; z-index: 20;" onclick="event.stopPropagation(); const tt = this.nextElementSibling; const isVis = tt.style.opacity === '1'; document.querySelectorAll('.shop-tt').forEach(el => el.style.opacity = '0'); if(!isVis) tt.style.opacity = '1';">
-                        <div style="background: rgba(255,249,174,0.1); border: 1px solid var(--sun-gold); color: var(--sun-gold); border-radius: 4px; width: 16px; height: 16px; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold; cursor: pointer; box-shadow: 0 0 5px rgba(255,249,174,0.3);">?</div>
-                    </div>
-                    <div class="shop-tt" style="position: absolute; top: 25px; left: 15px; background: rgba(5, 8, 15, 0.98); border: 1px solid var(--sun-gold); padding: 8px 10px; border-radius: 8px; color: white; font-size: 10px; width: 150px; opacity: 0; pointer-events: none; transition: 0.2s; z-index: 9999; box-shadow: 0 0 15px rgba(255, 249, 174, 0.3); text-align: left; text-transform: none; font-weight: normal; line-height: 1.3;">
-                        <div style="color: var(--sun-gold); font-weight: bold; margin-bottom: 5px; text-transform: uppercase; font-size: 10px;">${itemName}</div>
-                        ${descText}
-                    </div>
-                `;
-            }
+            // === ВЫЗЫВАЕМ НАШ ДИНАМИЧЕСКИЙ ТУЛТИП ===
+            const tooltipHTML = getTooltipHTML(itemName, item.desc, lang);
 
             card.innerHTML = `
                 ${tooltipHTML}
@@ -9239,144 +9689,212 @@ const ShopGame = (function() {
         });
     }
 
-    function renderInventoryList() {
+    // === ИДЕАЛЬНЫЙ FLEX-ИНВЕНТАРЬ ===
+    function renderInventoryList(skipAnimation = false) {
         const list = document.getElementById('inventoryList');
         if (!list) return;
-        list.innerHTML = '';
-        
-        const p = GameState.profiles[GameState.currentProfile] || GameState.profiles[GameState.activeProfileIdx];
+
+        const p = GameState.activeProfileIdx !== -1 ? GameState.profiles[GameState.activeProfileIdx] : null;
         const inv = p ? (p.inventory || []) : [];
         const equipped = p ? (p.equipped || {}) : {};
         const lang = GameState.lang || 'ru';
         
+        // КРИТИЧНО: list теперь гибкий (flex: 1). Он займет всё свободное место, не выталкивая кнопку Закрыть!
+        list.style.cssText = 'flex: 1; min-height: 0; display: flex; flex-direction: column; overflow: hidden; padding-top: 15px; margin-bottom: 10px;';
+        list.innerHTML = '';
+        
         if (inv.length === 0) {
             const emptyTxt = lang === 'ru' ? 'Инвентарь пуст' : 'Inventory is empty';
-            list.innerHTML = `<div style="color:rgba(255,255,255,0.4); text-align:center; padding: 20px;">${emptyTxt}</div>`;
+            list.innerHTML = `<div style="color:rgba(255,255,255,0.4); text-align:center; padding: 20px; flex-shrink: 0;">${emptyTxt}</div>`;
             return;
         }
 
         const mapItems = (arr, cat, subRu, subEn) => arr.map(i => ({ ...i, _cat: cat, _subRu: subRu, _subEn: subEn }));
+        const rouletteSVG = `<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10" stroke-width="2"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="5.5" r="2.5"/><circle cx="12" cy="5.5" r="1.2" fill="currentColor" stroke="none"/><circle cx="17.6" cy="8.8" r="2.5"/><circle cx="17.6" cy="15.2" r="2.5"/><circle cx="12" cy="18.5" r="2.5"/><circle cx="6.4" cy="15.2" r="2.5"/><circle cx="6.4" cy="8.8" r="2.5"/></svg>`;
+        const coinSVG = `<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 6.5l5.5 5.5-5.5 5.5-5.5-5.5z"/><circle cx="12" cy="12" r="2" fill="currentColor" stroke="none"/></svg>`;
 
-        // Перегруппировка для Инвентаря: по Играм -> по Подразделам
         const categories = [
-            // --- БУСТЕРЫ ТЕПЕРЬ НА ПЕРВОМ МЕСТЕ ---
-            { 
-                key: 'boosters', title: { ru: 'Перки', en: 'Perks' }, color: 'var(--angry-red)',
-                items: mapItems(shopItems.perks.filter(i => i.id.startsWith('perk_x2_')), 'perks', 'Бустеры Ставок', 'Bet Boosters') 
-            },
-            { 
-                key: 'dice', title: { ru: 'Кость Истины', en: 'Dice of Fate' }, color: 'var(--magic-color)',
-                items: [
-                    ...mapItems(shopItems.gameStyles.filter(i=>i.id.startsWith('style_dice')), 'gameStyles', 'Тема интерфейса', 'UI Theme'),
-                    ...mapItems(shopItems.diceModes, 'diceModes', 'Облик кости', 'Dice Faces'),
-                    ...mapItems(shopItems.perks.filter(i => i.id === 'perk_sparkle_dice'), 'perks', 'Дополнительные функции', 'Extra Features')
-                ] 
-            },
-            { 
-                key: 'roulette', title: { ru: 'Русская Рулетка', en: 'Russian Roulette' }, color: 'var(--angry-red)',
-                items: mapItems(shopItems.gameStyles.filter(i=>i.id.startsWith('roulette_')), 'gameStyles', 'Тема интерфейса', 'UI Theme') 
-            },
-            { 
-                key: 'coin', title: { ru: 'Грань Выбора', en: 'Edge of Choice' }, color: 'var(--sun-gold)',
-                items: [
-                    ...mapItems(shopItems.gameStyles.filter(i=>i.id.startsWith('style_coin')), 'gameStyles', 'Облик монеты', 'Coin Styles'),
-                    ...mapItems(shopItems.perks.filter(i => i.id === 'perk_sparkle_coin'), 'perks', 'Дополнительные функции', 'Extra Features')
-                ] 
-            },
-            { 
-                key: 'flower', title: { ru: 'Лепестки', en: 'Petals' }, color: 'var(--friendly-green)',
-                items: [
-                    ...mapItems(shopItems.gameStyles.filter(i=>i.id.startsWith('style_flower')), 'gameStyles', 'Тема интерфейса', 'UI Theme'),
-                    ...mapItems(shopItems.flowerCores, 'flowerCores', 'Облик сердцевины', 'Core Styles'),
-                    ...mapItems(shopItems.flowerPetals, 'flowerPetals', 'Цвет лепестков', 'Petal Colors')
-                ] 
-            },
-            { 
-                key: 'lots', title: { ru: 'Жребий', en: 'Lots' }, color: '#ff9f43',
-                items: [
-                    ...mapItems(shopItems.gameStyles.filter(i=>i.id.startsWith('style_lots')), 'gameStyles', 'Тема интерфейса', 'UI Theme'),
-                    ...mapItems(shopItems.lotsBoxes, 'lotsBoxes', 'Облик коробки', 'Box Styles'),
-                    ...mapItems(shopItems.lotsSticks, 'lotsSticks', 'Вид палочек', 'Stick Styles')
-                ] 
-            },
-            { 
-                key: 'rps', title: { ru: 'К-Н-Б', en: 'R-P-S' }, color: '#44aaff',
-                items: mapItems(shopItems.gameStyles.filter(i=>i.id.startsWith('style_rps')), 'gameStyles', 'Тема интерфейса', 'UI Theme') 
-            },
-            { 
-                key: 'backgrounds', title: { ru: 'Глобальные Фоны', en: 'Global Backgrounds' }, color: 'var(--magic-color)',
-                items: mapItems(shopItems.backgrounds, 'backgrounds', '', '') 
-            }
+            { key: 'boosters', icon: '<i class="fas fa-gift"></i>', title: { ru: 'Перки и Бустеры', en: 'Perks' }, color: 'var(--angry-red)', items: mapItems(shopItems.perks.filter(i => i.id.startsWith('perk_x2_')), 'perks', 'Бустеры Ставок', 'Bet Boosters') },
+            { key: 'dice', icon: '<i class="fas fa-cube"></i>', title: { ru: 'Кость Истины', en: 'Dice of Fate' }, color: 'var(--magic-color)', items: [ ...mapItems(shopItems.gameStyles.filter(i=>i.id.startsWith('style_dice')), 'gameStyles', 'Тема интерфейса', 'UI Theme'), ...mapItems(shopItems.diceModes, 'diceModes', 'Облик кости', 'Dice Faces'), ...mapItems(shopItems.perks.filter(i => i.id === 'perk_sparkle_dice'), 'perks', 'Дополнительные функции', 'Extra Features') ] },
+            { key: 'roulette', icon: rouletteSVG, title: { ru: 'Русская Рулетка', en: 'Russian Roulette' }, color: 'var(--angry-red)', items: mapItems(shopItems.gameStyles.filter(i=>i.id.startsWith('roulette_')), 'gameStyles', 'Тема интерфейса', 'UI Theme') },
+            { key: 'coin', icon: coinSVG, title: { ru: 'Грань Выбора', en: 'Edge of Choice' }, color: 'var(--sun-gold)', items: [ ...mapItems(shopItems.gameStyles.filter(i=>i.id.startsWith('style_coin')), 'gameStyles', 'Облик монеты', 'Coin Styles'), ...mapItems(shopItems.perks.filter(i => i.id === 'perk_sparkle_coin'), 'perks', 'Дополнительные функции', 'Extra Features') ] },
+            { key: 'flower', icon: '<i class="fas fa-seedling"></i>', title: { ru: 'Лепестки', en: 'Petals' }, color: 'var(--friendly-green)', items: [ ...mapItems(shopItems.gameStyles.filter(i=>i.id.startsWith('style_flower')), 'gameStyles', 'Тема интерфейса', 'UI Theme'), ...mapItems(shopItems.flowerCores, 'flowerCores', 'Облик сердцевины', 'Core Styles'), ...mapItems(shopItems.flowerPetals, 'flowerPetals', 'Цвет лепестков', 'Petal Colors') ] },
+            { key: 'lots', icon: '<i class="fas fa-pause"></i>', title: { ru: 'Жребий', en: 'Lots' }, color: '#00d2d3', items: [ ...mapItems(shopItems.gameStyles.filter(i=>i.id.startsWith('style_lots')), 'gameStyles', 'Тема интерфейса', 'UI Theme'), ...mapItems(shopItems.lotsBoxes, 'lotsBoxes', 'Облик коробки', 'Box Styles'), ...mapItems(shopItems.lotsSticks, 'lotsSticks', 'Вид палочек', 'Stick Styles') ] },
+            { key: 'rps', icon: '<i class="fas fa-hand-rock"></i>', title: { ru: 'К-Н-Б', en: 'R-P-S' }, color: '#ff9f43', items: mapItems(shopItems.gameStyles.filter(i=>i.id.startsWith('style_rps')), 'gameStyles', 'Тема интерфейса', 'UI Theme') },
+            { key: 'backgrounds', icon: '<i class="fas fa-image"></i>', title: { ru: 'Глобальные Фоны', en: 'Global Backgrounds' }, color: 'var(--magic-color)', items: mapItems(shopItems.backgrounds, 'backgrounds', '', '') }
         ];
 
-        categories.forEach(catDef => {
-            const ownedItems = catDef.items.filter(item => inv.includes(item.id));
-            if (ownedItems.length > 0) {
-                // Главный заголовок Игры
-                list.appendChild(createCategoryHeader(catDef.title[lang] || catDef.title.ru, catDef.color));
+        categories.forEach(cat => cat.ownedItems = cat.items.filter(item => inv.includes(item.id)));
+
+        let activeTabKey = list.dataset.activeTab;
+        let activeCat = categories.find(c => c.key === activeTabKey && c.ownedItems.length > 0) || categories.find(c => c.ownedItems.length > 0);
+        if (activeCat) list.dataset.activeTab = activeCat.key;
+
+        if (!document.getElementById('inv-tab-anim')) {
+            const style = document.createElement('style');
+            style.id = 'inv-tab-anim';
+            style.innerHTML = `
+                @keyframes tabContentFadeIn {
+                    from { opacity: 0; transform: translateY(10px); }
+                    to { opacity: 1; transform: translateY(0); }
+                }
+                .inv-content-active { animation: tabContentFadeIn 0.3s ease forwards; }
                 
-                // Группируем предметы внутри игры по подзаголовкам
-                const groups = {};
-                ownedItems.forEach(item => {
-                    const subLabel = lang === 'ru' ? item._subRu : item._subEn;
-                    if (!groups[subLabel]) groups[subLabel] = [];
-                    groups[subLabel].push(item);
-                });
+                .inv-mask-wrapper {
+                    -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 5%, black 90%, transparent 100%);
+                    mask-image: linear-gradient(to bottom, transparent 0%, black 5%, black 90%, transparent 100%);
+                }
+                
+                .inv-scroll-container {
+                    scrollbar-width: none;
+                    -webkit-overflow-scrolling: touch;
+                }
+                .inv-scroll-container::-webkit-scrollbar { display: none; }
+            `;
+            document.head.appendChild(style);
+        }
 
-                Object.keys(groups).forEach(subLabel => {
-                    if (subLabel) {
-                        list.appendChild(createCategoryHeader(subLabel, '#ffffff', true));
-                    }
-                    
-                    const grid = document.createElement('div');
-                    grid.style.display = 'grid';
-                    grid.style.gridTemplateColumns = 'repeat(4, 1fr)';
-                    grid.style.gap = '4px';
-                    grid.style.marginBottom = '10px';
-                    
-                    groups[subLabel].forEach(item => {
-                        let isEquipped = false;
-                        if (item._cat === 'gameStyles' || item._cat === 'perks') isEquipped = !!equipped[item.id];
-                        else isEquipped = equipped[item._cat] === item.id;
+        // --- 1. СТАТИЧНЫЙ БЛОК ВКЛАДОК ---
+        const staticBlock = document.createElement('div');
+        staticBlock.style.cssText = 'flex-shrink: 0; padding-bottom: 10px; margin-bottom: 5px; border-bottom: 1px solid rgba(255,255,255,0.1); z-index: 10;';
+        
+        const tabBar = document.createElement('div');
+        tabBar.style.cssText = 'display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px;';
 
-                        const borderStyle = isEquipped ? '1px solid var(--friendly-green)' : '1px solid rgba(255,249,174,0.3)';
-                        const bgStyle = isEquipped ? 'rgba(204,255,204,0.1)' : 'rgba(5,8,15,0.8)';
+        categories.forEach(cat => {
+            const btn = document.createElement('div');
+            const isActive = cat.key === list.dataset.activeTab;
+            const hasItems = cat.ownedItems.length > 0;
+            
+            btn.style.cssText = `
+                padding: 12px 0; background: ${isActive ? 'rgba(255,255,255,0.15)' : 'rgba(5,8,15,0.8)'};
+                border: 1px solid ${isActive ? cat.color : 'rgba(255,255,255,0.15)'}; border-radius: 8px;
+                display: flex; justify-content: center; align-items: center; font-size: 22px;
+                cursor: ${hasItems ? 'pointer' : 'default'}; opacity: ${hasItems ? (isActive ? '1' : '0.85') : '0.15'};
+                filter: ${hasItems ? (isActive ? `drop-shadow(0 0 12px ${cat.color})` : 'none') : 'grayscale(1)'};
+                transform: ${isActive ? 'scale(1.05)' : 'scale(1)'}; transition: all 0.3s ease;
+            `;
+            btn.innerHTML = cat.icon;
 
-                        const card = document.createElement('div');
-                        card.className = 'shop-item-card';
-                        card.style.cssText = `padding: 6px 2px; min-height: 75px; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: space-between; border-radius: 8px; border: ${borderStyle}; background: ${bgStyle}; transition: 0.3s;`;
-                        
-                        const activeTxt = lang === 'ru' ? 'АКТИВНО' : 'ACTIVE';
-                        const statusHTML = isEquipped 
-                            ? `<div style="color: var(--friendly-green); font-size: 8px; font-weight: bold; background: rgba(0,0,0,0.5); padding: 3px 0; border-radius: 4px; width: 90%; text-align: center; margin-top: auto;"><i class="fas fa-check"></i> ${activeTxt}</div>` 
-                            : `<div style="height: 14px; margin-top: auto;"></div>`;
-
-                        const itemName = item.name[lang] || item.name.ru;
-
-                        // Считаем количество для бейджика в инвентаре (если стакается)
-                        let badgeHTML = '';
-                        if (item.isStackable) {
-                            const count = inv.filter(id => id === item.id).length;
-                            if (count > 0) {
-                                badgeHTML = `<div style="position: absolute; top: -2px; right: 2px; color: #ccffcc; text-shadow: 0 0 8px #ccffcc, 0 0 15px var(--friendly-green); font-size: 14px; font-weight: 900; z-index: 10; pointer-events: none;">${count}</div>`;
-                            }
-                        }
-
-                        card.style.position = 'relative';
-
-                        card.innerHTML = `
-                            ${badgeHTML}
-                            <div style="font-size: 22px; margin-bottom: 4px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));">${item.icon}</div>
-                            <div style="color: #fff; font-size: 8px; line-height: 1.1; margin-bottom: 6px; word-break: break-word; opacity: 0.9; text-align: center; font-weight: bold; text-transform: uppercase;">${itemName}</div>
-                            ${statusHTML}
-                        `;
-                        card.onclick = () => equipItem(item._cat, item.id);
-                        grid.appendChild(card);
-                    });
-                    list.appendChild(grid);
-                });
+            if (hasItems && !isActive) {
+                btn.onclick = () => {
+                    if (typeof App !== 'undefined' && App.playSoundEffect) App.playSoundEffect('tick');
+                    list.dataset.activeTab = cat.key;
+                    renderInventoryList(false); 
+                };
             }
+            tabBar.appendChild(btn);
         });
+
+        staticBlock.appendChild(tabBar);
+        list.appendChild(staticBlock);
+
+        // --- 2. СКРОЛЛ КОНТЕНТА ---
+        if (activeCat) {
+            const wrapper = document.createElement('div');
+            wrapper.className = 'inv-mask-wrapper' + (skipAnimation ? '' : ' inv-content-active');
+            wrapper.style.cssText = 'flex: 1; display: flex; flex-direction: column; min-height: 0; position: relative;';
+            
+            const scrollContainer = document.createElement('div');
+            scrollContainer.className = 'inv-scroll-container';
+            // flex: 1 гарантирует, что скролл займет ровно ту высоту, которую ему отдал родитель, и не выдавит ничего наружу
+            scrollContainer.style.cssText = 'flex: 1; overflow-y: auto; touch-action: pan-y; padding-top: 5px; padding-bottom: 80px;';
+            
+            scrollContainer.appendChild(createCategoryHeader(activeCat.title[lang] || activeCat.title.ru, activeCat.color));
+
+            const groups = {};
+            activeCat.ownedItems.forEach(item => {
+                const subLabel = lang === 'ru' ? item._subRu : item._subEn;
+                if (!groups[subLabel]) groups[subLabel] = [];
+                groups[subLabel].push(item);
+            });
+
+            Object.keys(groups).forEach(subLabel => {
+                if (subLabel) scrollContainer.appendChild(createCategoryHeader(subLabel, '#ffffff', true));
+                
+                const grid = document.createElement('div');
+                grid.style.cssText = 'display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; margin-bottom: 10px;';
+                
+                groups[subLabel].forEach(item => {
+                    let isEquipped = (item._cat === 'gameStyles' || item._cat === 'perks') ? !!equipped[item.id] : equipped[item._cat] === item.id;
+                    const borderStyle = isEquipped ? '1px solid var(--friendly-green)' : '1px solid rgba(255,249,174,0.3)';
+                    const bgStyle = isEquipped ? 'rgba(204,255,204,0.15)' : 'rgba(5,8,15,0.8)';
+
+                    const card = document.createElement('div');
+                    card.style.cssText = `padding: 8px 4px; min-height: 55px; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 8px; border: ${borderStyle}; background: ${bgStyle}; position: relative; transition: 0.3s;`;
+                    
+                    const itemName = item.name[lang] || item.name.ru;
+                    let badgeHTML = item.isStackable ? `<div style="position: absolute; top: -2px; right: 2px; color: #ccffcc; text-shadow: 0 0 8px #ccffcc; font-size: 14px; font-weight: 900;">${inv.filter(id => id === item.id).length}</div>` : '';
+
+                    card.innerHTML = `
+                        ${badgeHTML}
+                        ${typeof getTooltipHTML === 'function' ? getTooltipHTML(itemName, item.desc, lang) : ''}
+                        <div style="font-size: 20px; margin-bottom: 4px;">${item.icon}</div>
+                        <div style="color: #fff; font-size: 8px; font-weight: bold; text-align: center; text-transform: uppercase;">${itemName}</div>
+                    `;
+                    
+                    card.onclick = (e) => {
+                        e.stopPropagation();
+                        if (typeof equipItem === 'function') equipItem(item._cat, item.id);
+                    };
+                    grid.appendChild(card);
+                });
+                scrollContainer.appendChild(grid);
+            });
+            wrapper.appendChild(scrollContainer);
+            list.appendChild(wrapper);
+        }
+    }
+
+    // === ЖЕЛЕЗОБЕТОННОЕ ПОЗИЦИОНИРОВАНИЕ ОКНА ===
+    function toggleInventory(show) {
+        const inv = document.getElementById('inventoryOverlay');
+        if (inv) {
+            inv.style.display = show ? 'flex' : 'none';
+            
+            // ФИКС ПРЫЖКОВ: Прижимаем строго к верху (flex-start) с отступом 20px
+            inv.style.flexDirection = 'column';
+            inv.style.alignItems = 'center';         // По центру горизонтально
+            inv.style.justifyContent = 'flex-start'; // ПРИЖИМАЕМ К ВЕРХУ, чтобы не прыгало!
+            inv.style.padding = '20px 0 0 0';        // Отступ 20px только сверху
+            inv.style.boxSizing = 'border-box';
+            
+            if (show) {
+                document.body.style.overflow = 'hidden';
+                document.body.style.touchAction = 'none'; 
+                
+                // Настраиваем саму коробку модалки
+                const list = document.getElementById('inventoryList');
+                if (list && list.parentElement) {
+                    const modal = list.parentElement;
+                    modal.style.boxSizing = 'border-box';
+                    modal.style.width = 'calc(100% - 16px)'; // Отступ по 8px по бокам
+                    modal.style.maxWidth = '400px';
+                    modal.style.maxHeight = 'calc(100vh - 40px)'; // Чтобы снизу тоже оставался зазор
+                    modal.style.padding = '20px 10px';
+                    modal.style.display = 'flex';
+                    modal.style.flexDirection = 'column';
+                    modal.style.margin = '0'; // margin больше не нужен
+                }
+            } else {
+                document.body.style.overflow = '';
+                document.body.style.touchAction = '';
+            }
+        }
+        
+        if (show) {
+            renderInventoryList();
+        } else {
+            if (pendingVisualUpdates) {
+                applyAllEquippedVisuals();
+                pendingVisualUpdates = false;
+            }
+        }
+
+        const mainStage = document.getElementById('mainStage');
+        const rouletteStage = document.getElementById('rouletteStage');
+        if (mainStage) mainStage.style.visibility = show ? 'hidden' : 'visible';
+        if (rouletteStage) rouletteStage.style.visibility = show ? 'hidden' : 'visible';
     }
 
     function unmount() {
@@ -9399,7 +9917,7 @@ const ShopGame = (function() {
 
     // --- ЕДИНЫЙ ЦЕНТР ПРИМЕНЕНИЯ СТИЛЕЙ ---
     function applyAllEquippedVisuals() {
-        const p = GameState.profiles[GameState.currentProfile] || GameState.profiles[GameState.activeProfileIdx];
+        const p = GameState.activeProfileIdx !== -1 ? GameState.profiles[GameState.activeProfileIdx] : null;
         if (!p) return;
 
         const equipped = p.equipped || {};
@@ -9427,7 +9945,7 @@ const ShopGame = (function() {
         }
         if (typeof App !== 'undefined' && App.changeBackground) App.changeBackground(true);
 
-        // 3. Железобетонно вешаем/снимаем классы стилей интерфейса для ВСЕХ визуальных элементов (включая детали лепестков и жребия)
+        // 3. Железобетонно вешаем/снимаем классы стилей интерфейса для ВСЕХ визуальных элементов
         let allVisualItems = [];
         ['gameStyles', 'flowerCores', 'flowerPetals', 'lotsBoxes', 'lotsSticks', 'perks'].forEach(cat => {
             if (shopItems[cat]) allVisualItems = allVisualItems.concat(shopItems[cat].map(i => i.id));
@@ -9442,31 +9960,16 @@ const ShopGame = (function() {
             if (isItemEquipped) document.body.classList.add(`theme-${id}`);
             else document.body.classList.remove(`theme-${id}`);
         });
-    }
 
-    function toggleInventory(show) {
-        const inv = document.getElementById('inventoryOverlay');
-        if (inv) inv.style.display = show ? 'flex' : 'none';
-        
-        if (show) {
-            renderInventoryList();
-        } else {
-            if (pendingVisualUpdates) {
-                applyAllEquippedVisuals();
-                pendingVisualUpdates = false;
-            }
+        // 4. ДИНАМИЧЕСКОЕ ОБНОВЛЕНИЕ БУСТЕРОВ В ПУЛЕ
+        if (typeof RouletteGame !== 'undefined' && typeof RouletteGame.updateBoosterUI === 'function') {
+            RouletteGame.updateBoosterUI();
         }
-
-        const mainStage = document.getElementById('mainStage');
-        const rouletteStage = document.getElementById('rouletteStage');
-        if (mainStage) mainStage.style.visibility = show ? 'hidden' : 'visible';
-        if (rouletteStage) rouletteStage.style.visibility = show ? 'hidden' : 'visible';
     }
 
-    // === УМНАЯ СИСТЕМА ЭКИПИРОВКИ (ВЗАИМОИСКЛЮЧЕНИЯ) ===
     // === УМНАЯ СИСТЕМА ЭКИПИРОВКИ (ВЗАИМОИСКЛЮЧЕНИЯ) ===
     function equipItem(cat, id) {
-        const p = GameState.profiles[GameState.currentProfile] || GameState.profiles[GameState.activeProfileIdx];
+        const p = GameState.activeProfileIdx !== -1 ? GameState.profiles[GameState.activeProfileIdx] : null;
         if (!p) return;
         if (!p.equipped) p.equipped = {};
         
@@ -9507,10 +10010,26 @@ const ShopGame = (function() {
                     delete p.equipped['lotsSticks'];
                 }
             }
+        } else {
+            // Запрещаем снимать базовые элементы кликом по ним же
+            if (p.equipped[cat] === id && cat !== 'diceModes' && cat !== 'flowerCores' && cat !== 'flowerPetals' && cat !== 'lotsBoxes' && cat !== 'lotsSticks') {
+                delete p.equipped[cat];
+            } else {
+                p.equipped[cat] = id; // Надеваем деталь
+                
+                // АВТО-СНЯТИЕ ТЕМЫ ПРИ ВЫБОРЕ ДЕТАЛЕЙ
+                if (cat === 'flowerCores' || cat === 'flowerPetals') {
+                    delete p.equipped['style_flower'];
+                } else if (cat === 'lotsBoxes' || cat === 'lotsSticks') {
+                    delete p.equipped['style_lots'];
+                }
+            }
         }
         
         if (typeof App !== 'undefined' && App.requestProfileSave) App.requestProfileSave();
-        renderInventoryList(); // Моментально обновляем интерфейс инвентаря
+        
+        // ФИКС 4: Передаем true, чтобы пропустить анимацию появления, когда мы просто переодеваем шмотку!
+        renderInventoryList(true); 
         
         pendingVisualUpdates = true;
         
@@ -9520,15 +10039,16 @@ const ShopGame = (function() {
 
     // ЭКСПОРТ ДЛЯ ДРУГИХ ПЛАГИНОВ: Позволяет безопасно "сжечь" 1 штуку перка
     function consumePerk(perkId) {
-        const p = GameState.profiles[GameState.currentProfile] || GameState.profiles[GameState.activeProfileIdx];
+        const p = GameState.activeProfileIdx !== -1 ? GameState.profiles[GameState.activeProfileIdx] : null;
         if (!p || !p.inventory) return false;
         
         const idx = p.inventory.indexOf(perkId);
         if (idx > -1) {
-            p.inventory.splice(idx, 1); // Удаляем одну копию
+            p.inventory.splice(idx, 1); // Удаляем одну копию из кармана
             
-            // Если копий больше не осталось — снимаем экипировку
-            if (!p.inventory.includes(perkId)) {
+            // === НОВОЕ ПРАВИЛО ===
+            // Бустер СГОРЕЛ, значит слот освободился! Всегда снимаем его, даже если в инвентаре есть еще.
+            if (p.equipped && p.equipped[perkId]) {
                 delete p.equipped[perkId];
             }
             
