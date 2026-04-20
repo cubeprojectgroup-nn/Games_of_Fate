@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Игры Судьбы. v0.8.8.52</title>
+    <title>Игры Судьбы. v0.8.8.55</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
@@ -777,7 +777,7 @@ setInterval(() => {
     <div id="stars" class="stars-layer stars-active bg1-stars"></div>
 
     <div id="mainMenuOverlay">
-        <div class="version">v0.8.8.52</div> <div class="menu-top-bar">
+        <div class="version">v0.8.8.55</div> <div class="menu-top-bar">
             <button class="menu-icon-btn" id="langSwitchBtn" onclick="App.toggleLanguage()"><i class="fas fa-globe"></i></button>
         </div>
         <div id="mainMenuTitle" class="menu-title-main">Игры Судьбы</div>
@@ -3965,6 +3965,91 @@ function addCrystal(game = null, subMode = null, customAmount = null) {
                 } catch(e){}
             }
 
+			function playBoosterBurnSound() {
+                if (typeof GameState === 'undefined' || !GameState.sound) return;
+                try {
+                    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                    const osc = ctx.createOscillator(), g = ctx.createGain(), noise = ctx.createBufferSource();
+                    // Белый шум для эффекта распыления
+                    const bufferSize = ctx.sampleRate * 0.5, buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate), data = buffer.getChannelData(0);
+                    for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+                    noise.buffer = buffer;
+                    const filter = ctx.createBiquadFilter();
+                    filter.type = 'highpass'; filter.frequency.value = 1000;
+                    g.gain.setValueAtTime(0.2, ctx.currentTime);
+                    g.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.4);
+                    noise.connect(filter); filter.connect(g); g.connect(ctx.destination);
+                    noise.start(); noise.stop(ctx.currentTime + 0.4);
+                    // Дополнительный свистящий тон
+                    osc.type = 'sine'; osc.frequency.setValueAtTime(800, ctx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(1600, ctx.currentTime + 0.3);
+                    const g2 = ctx.createGain(); g2.gain.setValueAtTime(0.1, ctx.currentTime);
+                    g2.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
+                    osc.connect(g2); g2.connect(ctx.destination);
+                    osc.start(); osc.stop(ctx.currentTime + 0.3);
+                } catch(e){}
+            }
+
+            function updateBoosterUI() {
+                // Ищем или создаем контейнер в rouletteStage, а не в body, чтобы он не терялся
+                const stage = document.getElementById('rouletteStage');
+                if (!stage) return;
+
+                let bUI = document.getElementById('active-booster-ui');
+                if (!bUI) {
+                    bUI = document.createElement('div');
+                    bUI.id = 'active-booster-ui';
+                    bUI.style.cssText = 'position: absolute; top: 15px; left: 15px; z-index: 100; display: flex; align-items: center; justify-content: center; pointer-events: none; transition: all 0.4s ease;';
+                    stage.appendChild(bUI);
+                }
+
+                if (GameState.subModes.roulette !== 'bank') {
+                    bUI.style.opacity = '0';
+                    return;
+                }
+
+                const p = GameState.activeProfileIdx !== -1 ? GameState.profiles[GameState.activeProfileIdx] : null;
+                if (p && p.equipped && (p.equipped['perk_x2_win'] || p.equipped['perk_x2_super'])) {
+                    const isSuper = !!p.equipped['perk_x2_super'];
+                    const color = isSuper ? 'var(--sun-gold)' : 'var(--friendly-green)';
+                    const icon = isSuper ? '🔥' : '🤑';
+                    const label = isSuper ? (GameState.lang === 'ru' ? 'Супер x2' : 'Super x2') : (GameState.lang === 'ru' ? 'x2 Выигрыш' : 'x2 Win');
+
+                    bUI.innerHTML = `
+                        <div class="booster-icon" style="background: rgba(5,8,15,0.9); border: 1px solid ${color}; box-shadow: 0 0 15px ${color}; border-radius: 8px; padding: 6px 10px; display: flex; gap: 6px; align-items: center; transform: scale(1); opacity: 1; transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);">
+                            <span style="font-size: 18px; filter: drop-shadow(0 0 5px ${color});">${icon}</span>
+                            <span style="color: ${color}; font-weight: 900; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; text-shadow: 0 0 5px ${color};">${label}</span>
+                        </div>`;
+                    bUI.style.opacity = '1';
+                } else {
+                    bUI.style.opacity = '0';
+                    setTimeout(() => { if(bUI.style.opacity === '0') bUI.innerHTML = ''; }, 400);
+                }
+            }
+
+            function triggerBoosterBurnAnimation(type) {
+                const bUI = document.getElementById('active-booster-ui');
+                if (!bUI) return;
+                
+                const icon = bUI.querySelector('.booster-icon');
+                if (!icon) return;
+
+                // Добавляем тряску всему экрану
+                document.body.classList.add('booster-shake-anim');
+                playBoosterBurnSound();
+                if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('warning');
+
+                // Эффект распыления иконки
+                icon.style.transform = 'scale(1.6) rotate(10deg)';
+                icon.style.filter = type.includes('super') ? 'brightness(3) blur(4px) hue-rotate(45deg)' : 'brightness(3) blur(4px)';
+                icon.style.opacity = '0';
+
+                setTimeout(() => {
+                    document.body.classList.remove('booster-shake-anim');
+                    updateBoosterUI();
+                }, 600);
+            }
+
             function init() {
                 const wrapper = document.getElementById('drumWrapper');
                 if(!wrapper) return;
@@ -4190,6 +4275,91 @@ function addCrystal(game = null, subMode = null, customAmount = null) {
                 restoreDrumVisuals(); 
             }
 			
+			function updateBoosterUI() {
+                if (GameState.subModes.roulette !== 'bank') {
+                    const el = document.getElementById('active-booster-ui');
+                    if (el) el.style.display = 'none';
+                    return;
+                }
+                const p = GameState.activeProfileIdx !== -1 ? GameState.profiles[GameState.activeProfileIdx] : null;
+                let bUI = document.getElementById('active-booster-ui');
+                if (!bUI) {
+                    bUI = document.createElement('div');
+                    bUI.id = 'active-booster-ui';
+                    bUI.style.cssText = 'position: absolute; top: 60px; left: 15px; z-index: 100; display: flex; align-items: center; justify-content: center; pointer-events: none;';
+                    document.body.appendChild(bUI);
+
+                    if (!document.getElementById('booster-anim-styles')) {
+                        const st = document.createElement('style');
+                        st.id = 'booster-anim-styles';
+                        st.innerHTML = `
+                            @keyframes b-shake {
+                                0%, 100% { transform: translate(0, 0); }
+                                20%, 60% { transform: translate(-4px, 3px); }
+                                40%, 80% { transform: translate(4px, -3px); }
+                            }
+                            .booster-shake-anim { animation: b-shake 0.4s ease-in-out; }
+                        `;
+                        document.head.appendChild(st);
+                    }
+                }
+
+                if (p && p.equipped) {
+                    if (p.equipped['perk_x2_super']) {
+                        bUI.innerHTML = `<div class="booster-icon super-booster" style="background: rgba(5,8,15,0.9); border: 1px solid var(--sun-gold); box-shadow: 0 0 10px var(--sun-gold); border-radius: 8px; padding: 4px 8px; display: flex; gap: 5px; align-items: center; transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);"><span style="font-size: 16px;">🔥</span> <span style="color: var(--sun-gold); font-weight: 900; font-size: 12px; text-transform: uppercase;">Супер x2</span></div>`;
+                        bUI.style.display = 'flex';
+                    } else if (p.equipped['perk_x2_win']) {
+                        bUI.innerHTML = `<div class="booster-icon normal-booster" style="background: rgba(5,8,15,0.9); border: 1px solid var(--friendly-green); box-shadow: 0 0 10px var(--friendly-green); border-radius: 8px; padding: 4px 8px; display: flex; gap: 5px; align-items: center; transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);"><span style="font-size: 16px;">🤑</span> <span style="color: var(--friendly-green); font-weight: 900; font-size: 12px; text-transform: uppercase;">x2 Выигрыш</span></div>`;
+                        bUI.style.display = 'flex';
+                    } else {
+                        bUI.style.display = 'none';
+                    }
+                } else {
+                    bUI.style.display = 'none';
+                }
+            }
+
+            function triggerBoosterBurnAnimation(type) {
+                const bUI = document.getElementById('active-booster-ui');
+                if (!bUI) return;
+                document.body.classList.add('booster-shake-anim');
+                if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('heavy');
+                
+                const icon = bUI.querySelector('.booster-icon');
+                if (icon) {
+                    icon.style.transform = 'scale(1.3) translateY(-15px)';
+                    icon.style.opacity = '0';
+                    icon.style.filter = type === 'perk_x2_super' ? 'drop-shadow(0 0 30px #ff9f43) blur(2px)' : 'drop-shadow(0 0 30px #00ff00) blur(2px)';
+                }
+                if(typeof App !== 'undefined') App.playSoundEffect('achievement');
+
+                setTimeout(() => {
+                    document.body.classList.remove('booster-shake-anim');
+                    updateBoosterUI(); 
+                }, 600);
+            }
+
+            function updateBankUI() {
+                if (GameState.subModes.roulette === 'bank') {
+                    const stats = getStats();
+                    canCashout = stats.pool > 0;
+                    const bVal = document.getElementById('bankVal'); 
+                    if(bVal) bVal.innerText = stats.bank.toFixed(2);
+                    
+                    const pVal = document.getElementById('poolVal'); 
+                    if(pVal) pVal.innerText = stats.pool.toFixed(2);
+                    
+                    const bInp = document.getElementById('betInput'); 
+                    if(bInp) bInp.value = '';
+                    
+                    updateButtonStates();
+                    updateBoosterUI(); // Вызываем прорисовку карточки
+                } else {
+                    const bUI = document.getElementById('active-booster-ui');
+                    if (bUI) bUI.style.display = 'none';
+                }
+            }
+			
             function updateBankUI() {
                 if (GameState.subModes.roulette === 'bank') {
                     const stats = getStats();
@@ -4301,7 +4471,7 @@ function addCrystal(game = null, subMode = null, customAmount = null) {
                     const newBtn = rBtn.cloneNode(true);
                     rBtn.parentNode.replaceChild(newBtn, rBtn);
                     newBtn.style.display = 'flex';
-					newBtn.style.alignItems = 'center';
+                    newBtn.style.alignItems = 'center';
                     newBtn.style.justifyContent = 'center';
                     newBtn.addEventListener('click', () => {
                         // Исправлено: используем правильные переменные плагина
@@ -4325,11 +4495,12 @@ function addCrystal(game = null, subMode = null, customAmount = null) {
                     });
                 }
 
+                // === ФИНАЛЬНЫЕ ОБНОВЛЕНИЯ ИНТЕРФЕЙСА ===
                 if (typeof updateGlobalCounters === 'function') updateGlobalCounters();
                 if (typeof updateBankUI === 'function') updateBankUI(); 
+                if (typeof updateBoosterUI === 'function') updateBoosterUI();
                 
                 // === ФИКС 3: ПРИЗРАКИ КОСТИ ===
-                // Убрали несуществующие функции, которые ломали инициализацию
                 loadCurrentSubState();
                 restoreDrumVisuals();
             }
@@ -4999,6 +5170,17 @@ function addCrystal(game = null, subMode = null, customAmount = null) {
             function finalizeRoll(topChamberIdx, isGunshotResult, originalQuestion, t, mode, currentPoolForHist) {
                 totalPlaysThisSession++;
 
+                // === ИНИЦИАЛИЗАЦИЯ БУСТЕРА ДЛЯ ЛОГОВ ===
+                let pProf = GameState.activeProfileIdx !== -1 ? GameState.profiles[GameState.activeProfileIdx] : null;
+                let activeBooster = null;
+                if (pProf && pProf.equipped) {
+                    if (pProf.equipped['perk_x2_win']) activeBooster = 'normal';
+                    else if (pProf.equipped['perk_x2_super']) activeBooster = 'super';
+                }
+                let boosterTag = '';
+                if (activeBooster === 'normal') boosterTag = ' <span class="glow-green" style="font-weight: bold; font-size: 14px;">x2</span>';
+                else if (activeBooster === 'super') boosterTag = ' <span class="glow-gold" style="font-weight: bold; font-size: 14px;">x2</span>';
+
                 let uiColor = "", snd = "", mainSubI = "", histSubI = "", histDispTxt = "";
                 const resSub = document.getElementById('res-sub');
                 if (resSub) resSub.classList.remove('heart-pulse', 'skull-aura');
@@ -5079,6 +5261,14 @@ function addCrystal(game = null, subMode = null, customAmount = null) {
                     if (mode === 'bank') {
                         let stats = getStats();
                         let lostAmount = stats.pool;
+                        
+                        // === ЛОГИКА СГОРАНИЯ БУСТЕРА ПРИ ПРОИГРЫШЕ ===
+                        if (activeBooster === 'normal') {
+                            if (typeof ShopGame !== 'undefined' && ShopGame.consumePerk) {
+                                ShopGame.consumePerk('perk_x2_win');
+                                triggerBoosterBurnAnimation('perk_x2_win');
+                            }
+                        }
                         
                         histDispTxt = t.shotMsg + ` (-$${lostAmount.toFixed(2)})`;
 
@@ -5173,33 +5363,93 @@ function addCrystal(game = null, subMode = null, customAmount = null) {
                     if (mode === 'bank') {
                         let stats = getStats();
                         let multipliers = {1: 1.25, 2: 1.50, 3: 2.00, 4: 2.50, 5: 3.00};
-                        let mult = multipliers[loadedBullets] || 1;
-                        let oldPool = stats.pool;
-                        let newPool = oldPool * mult;
-                        let earnedAmount = newPool - oldPool;
+                        let baseMult = multipliers[loadedBullets] || 1;
                         
-                        stats.pool = newPool;
-                        if (GameState.activeProfileIdx !== -1) { 
-                            GameState.profiles[GameState.activeProfileIdx].pool = newPool;
-                        } else { 
-                            window.guestPool = newPool;
-                        }
-                        canCashout = true;
-                        let dur = 1000, start = performance.now();
-                        let lastCoinTime = 0;
-                        const pEl = document.getElementById('poolVal');
-                        function animPool(time) {
-                            let p = Math.min((time - start) / dur, 1);
-                            if (pEl) pEl.innerText = (oldPool + (newPool - oldPool) * p).toFixed(2);
-                            if (time - lastCoinTime > 100) {
-                                if(typeof App !== 'undefined') App.playSoundEffect('coins');
-                                lastCoinTime = time;
+                        let oldPool = stats.pool;
+                        let baseNewPool = oldPool * baseMult;
+                        let baseEarned = baseNewPool - oldPool;
+                        
+                        let usedBoosterStr = '';
+
+                        // Функция для универсальной анимации цифр
+                        function runPoolAnim(startVal, endVal, dur, onComplete) {
+                            let startTime = performance.now();
+                            let lastCoinTime = 0;
+                            const pEl = document.getElementById('poolVal');
+                            function anim(time) {
+                                let progress = Math.min((time - startTime) / dur, 1);
+                                if (pEl) pEl.innerText = (startVal + (endVal - startVal) * progress).toFixed(2);
+                                if (time - lastCoinTime > 100) {
+                                    if(typeof App !== 'undefined') App.playSoundEffect('coins');
+                                    if(tg.HapticFeedback && Math.random() > 0.5) tg.HapticFeedback.impactOccurred('light');
+                                    lastCoinTime = time;
+                                }
+                                if (progress < 1) requestAnimationFrame(anim);
+                                else {
+                                    if (pEl) pEl.innerText = endVal.toFixed(2);
+                                    if (onComplete) onComplete();
+                                }
                             }
-                            if (p < 1) requestAnimationFrame(animPool);
-                            else updateBankUI();
+                            requestAnimationFrame(anim);
                         }
-                        requestAnimationFrame(animPool);
-                        histDispTxt = t.clickMsg + ` (+$${earnedAmount.toFixed(2)})`;
+
+                        if (activeBooster) {
+                            let finalNewPool = oldPool * (baseMult * 2);
+                            let totalEarned = finalNewPool - oldPool;
+                            
+                            // Собираем строку истории: сначала сумма, потом светящийся x2
+                            const boosterColor = activeBooster === 'super' ? 'var(--sun-gold)' : 'var(--friendly-green)';
+                            const x2Label = `<span style="color:${boosterColor}; font-weight:bold; text-shadow: 0 0 8px ${boosterColor}; margin-left: 5px;">x2</span>`;
+                            
+                            if (typeof ShopGame !== 'undefined' && ShopGame.consumePerk) {
+                                if (activeBooster === 'normal') {
+                                    ShopGame.consumePerk('perk_x2_win');
+                                    usedBoosterStr = ' <span style="color:var(--angry-red); font-size:9px; font-weight:bold;">[СГОРЕЛ]</span>';
+                                } else {
+                                    ShopGame.consumePerk('perk_x2_super');
+                                    usedBoosterStr = ' <span style="color:var(--sun-gold); font-size:9px; font-weight:bold;">[ИСПОЛЬЗОВАН]</span>';
+                                }
+                            }
+
+                            // 1 ЭТАП: Базовый выигрыш
+                            stats.pool = baseNewPool;
+                            if (GameState.activeProfileIdx !== -1) GameState.profiles[GameState.activeProfileIdx].pool = baseNewPool;
+                            else window.guestPool = baseNewPool;
+                            
+                            canCashout = true;
+                            // В историю пишем сразу финальную сумму и яркий x2
+                            histDispTxt = t.clickMsg + ` (+$${totalEarned.toFixed(2)})${x2Label}${usedBoosterStr}`;
+
+                            runPoolAnim(oldPool, baseNewPool, 1000, () => {
+                                // 2 ЭТАП: Сжигание бустера
+                                triggerBoosterBurnAnimation(activeBooster === 'super' ? 'perk_x2_super' : 'perk_x2_win');
+                                
+                                setTimeout(() => {
+                                    // 3 ЭТАП: Добавление "бонусной" части от x2
+                                    stats.pool = finalNewPool;
+                                    if (GameState.activeProfileIdx !== -1) GameState.profiles[GameState.activeProfileIdx].pool = finalNewPool;
+                                    else window.guestPool = finalNewPool;
+                                    
+                                    runPoolAnim(baseNewPool, finalNewPool, 800, () => {
+                                        updateBankUI();
+                                        if(typeof App !== 'undefined') App.requestProfileSave();
+                                    });
+                                }, 500);
+                            });
+                        } else {
+                            // Обычный выигрыш без бустеров
+                            stats.pool = baseNewPool;
+                            if (GameState.activeProfileIdx !== -1) GameState.profiles[GameState.activeProfileIdx].pool = baseNewPool;
+                            else window.guestPool = baseNewPool;
+                            
+                            canCashout = true;
+                            histDispTxt = t.clickMsg + ` (+$${baseEarned.toFixed(2)})`;
+                            
+                            runPoolAnim(oldPool, baseNewPool, 1000, () => {
+                                updateBankUI();
+                                if(typeof App !== 'undefined') App.requestProfileSave();
+                            });
+                        }
                     } else {
                         histDispTxt = t.clickMsg;
                     }
@@ -5236,7 +5486,8 @@ function addCrystal(game = null, subMode = null, customAmount = null) {
                 const bulletsTag = `<span style="color:#aaa; font-size:9px;">[${loadedBullets}/6]</span>`;
                 
                 if (mode === 'bank') {
-                    histHeader = `<span style="color:var(--sun-gold); font-weight:bold; text-shadow: 0 0 5px var(--sun-gold);">$${currentPoolForHist.toFixed(2)}</span> ${bulletsTag}`;
+                    // Здесь мы вставляем наш boosterTag (x2) прямо после суммы!
+                    histHeader = `<span style="color:var(--sun-gold); font-weight:bold; text-shadow: 0 0 5px var(--sun-gold);">$${currentPoolForHist.toFixed(2)}</span>${boosterTag} ${bulletsTag}`;
                 } else if (mode === 'survival') {
                      histHeader = `<span style="color:var(--friendly-green); font-weight:bold;">Попытка ${survivalCount > 0 ? survivalCount : 'провалена'}</span> ${bulletsTag}`;
                 } else {
@@ -5289,6 +5540,9 @@ function addCrystal(game = null, subMode = null, customAmount = null) {
                         }
                     }, mode === 'bank' ? 3500 : 2200); 
                 } else {
+                    let unlockDelay = 1200;
+                    if (mode === 'bank' && activeBooster) unlockDelay = 2600; // Ждем завершения анимации бустера
+
                     setTimeout(() => { 
                         isWaitingResult = false;
                         updateButtonStates();
@@ -5302,7 +5556,7 @@ function addCrystal(game = null, subMode = null, customAmount = null) {
                             rs.classList.add('visible'); 
                         }
                         if(typeof App !== 'undefined') App.requestProfileSave();
-                    }, 1200);
+                    }, unlockDelay);
                 }
             }
 
@@ -7680,17 +7934,35 @@ else if (pvpState === 4) {
             .rps-hand.right-hand.loser { transform: scaleX(-1) scale(0.9); }
             .rps-hand.draw { filter: grayscale(1) brightness(1.5) drop-shadow(0 0 15px #cbd5e1); }
 
-            /* === ЖЕЛТЫЕ ЭМОДЖИ ПРИ АКТИВНОМ СТИЛЕ ОТОБРАЖЕНИЯ === */
-            body.classic-mode-active .rps-choice-btn { filter: drop-shadow(0 0 8px rgba(255,255,255,0.15)); }
-            body.classic-mode-active .rps-choice-btn:hover { filter: drop-shadow(0 0 20px var(--magic-color)); transform: scale(1.1); }
-            body.classic-mode-active .rps-hand { filter: drop-shadow(0 0 15px rgba(255,255,255,0.2)); }
-            
-            /* Желтые замки и руки в PvP */
-            body.classic-mode-active .rps-hand.active-lock { filter: drop-shadow(0 0 15px var(--magic-color)) !important; }
-            body.classic-mode-active .rps-hand.winner { filter: drop-shadow(0 0 30px var(--friendly-green)); }
-            body.classic-mode-active .rps-hand.winner-p2 { filter: drop-shadow(0 0 30px var(--magic-color)); }
-            body.classic-mode-active .rps-hand.loser { filter: drop-shadow(0 0 5px rgba(255, 102, 102, 0.4)); }
-            body.classic-mode-active .rps-hand.draw { filter: drop-shadow(0 0 15px #cbd5e1); }
+            /* === ЖЕЛТЫЕ ЭМОДЖИ (КЛАССИКА) === */
+            body.theme-style_rps .rps-choice-btn { filter: drop-shadow(0 0 8px rgba(255,255,255,0.15)); }
+            body.theme-style_rps .rps-choice-btn:hover { filter: drop-shadow(0 0 20px var(--sun-gold)); transform: scale(1.1); }
+            body.theme-style_rps .rps-hand { filter: drop-shadow(0 0 15px rgba(255,255,255,0.2)); }
+            body.theme-style_rps .rps-hand.active-lock { filter: drop-shadow(0 0 15px var(--sun-gold)) !important; }
+            body.theme-style_rps .rps-hand.winner { filter: drop-shadow(0 0 30px var(--friendly-green)); }
+            body.theme-style_rps .rps-hand.winner-p2 { filter: drop-shadow(0 0 30px var(--sun-gold)); }
+            body.theme-style_rps .rps-hand.loser { filter: drop-shadow(0 0 5px rgba(255, 102, 102, 0.4)); }
+            body.theme-style_rps .rps-hand.draw { filter: drop-shadow(0 0 15px #cbd5e1); }
+
+            /* === КИБЕР НЕОН === */
+            body.theme-style_rps_neon .rps-choice-btn { filter: hue-rotate(90deg) brightness(1.2) drop-shadow(0 0 10px #00ffff); }
+            body.theme-style_rps_neon .rps-choice-btn:hover { filter: hue-rotate(90deg) brightness(1.5) drop-shadow(0 0 25px #ff00ff); transform: scale(1.1); }
+            body.theme-style_rps_neon .rps-hand { filter: hue-rotate(90deg) brightness(1.2) drop-shadow(0 0 15px #00ffff); }
+            body.theme-style_rps_neon .rps-hand.active-lock { filter: hue-rotate(90deg) brightness(1.5) drop-shadow(0 0 20px #ff00ff) !important; }
+            body.theme-style_rps_neon .rps-hand.winner { filter: drop-shadow(0 0 30px #00ff00) hue-rotate(120deg) brightness(1.5); }
+            body.theme-style_rps_neon .rps-hand.winner-p2 { filter: drop-shadow(0 0 30px #ff00ff) hue-rotate(270deg) brightness(1.5); }
+            body.theme-style_rps_neon .rps-hand.loser { filter: grayscale(1) brightness(0.4) drop-shadow(0 0 5px #ff0000); }
+            body.theme-style_rps_neon .rps-hand.draw { filter: drop-shadow(0 0 15px #00ffff) brightness(0.8); }
+
+            /* === ТЕМНАЯ МАТЕРИЯ === */
+            body.theme-style_rps_dark .rps-choice-btn { filter: invert(1) hue-rotate(180deg) drop-shadow(0 0 10px #8a2be2); }
+            body.theme-style_rps_dark .rps-choice-btn:hover { filter: invert(1) hue-rotate(180deg) drop-shadow(0 0 25px #ff1493); transform: scale(1.1); }
+            body.theme-style_rps_dark .rps-hand { filter: invert(1) hue-rotate(180deg) drop-shadow(0 0 15px #8a2be2); }
+            body.theme-style_rps_dark .rps-hand.active-lock { filter: invert(1) hue-rotate(180deg) drop-shadow(0 0 20px #ff1493) !important; }
+            body.theme-style_rps_dark .rps-hand.winner { filter: invert(1) drop-shadow(0 0 30px #00fa9a) brightness(1.2); }
+            body.theme-style_rps_dark .rps-hand.winner-p2 { filter: invert(1) drop-shadow(0 0 30px #ff1493) brightness(1.2); }
+            body.theme-style_rps_dark .rps-hand.loser { filter: grayscale(1) opacity(0.3); }
+            body.theme-style_rps_dark .rps-hand.draw { filter: invert(1) hue-rotate(180deg) drop-shadow(0 0 15px #4b0082); }
             
             /* Анимация тряски кулаков */
             @keyframes rps-bounce {
@@ -7811,7 +8083,7 @@ else if (pvpState === 4) {
 // --- КОНЕЦ СЕДЬМОЙ ЧАСТИ ---
 // --- НАЧАЛО ВОСЬМОЙ ЧАСТИ ---
 // =========================================================================
-// 🥢 ПЛАГИН 5: ЖРЕБИЙ (3D КОРОБОЧКА И ПАЛОЧКИ) v12.5 [NEON FIX]
+// 🥢 ПЛАГИН 5: ЖРЕБИЙ (3D КОРОБОЧКА И ПАЛОЧКИ) v12.8 [THIN BOX & NEON GLOW FIX]
 // =========================================================================
 const SticksGame = (function() {
     let isGameActive = false;
@@ -7965,10 +8237,11 @@ const SticksGame = (function() {
                 .b-left { width: 80px; height: 115px; transform: translateX(-40px) rotateY(-90deg); }
                 .b-right { width: 80px; height: 115px; transform: translateX(40px) rotateY(90deg); }
                 .b-bottom { width: 80px; height: 80px; top: 25px; transform: translateY(50px) rotateX(-90deg); background: #1a110a; }
-                
+
                 #sticksContainer { position: absolute; inset: 0; transform-style: preserve-3d; pointer-events: none; }
                 
-                .stick { position: absolute; left: 33px; width: 14px; top: -40px; height: var(--h); transform-style: preserve-3d; transform: translateY(var(--py)) rotateY(var(--ry)) translateZ(22px); transition: transform 0.6s cubic-bezier(0.18, 0.89, 0.32, 1.28); cursor: pointer; pointer-events: auto; touch-action: none; }
+                /* РАДИУС ПАЛОЧЕК ОСТАЛСЯ 20px ДЛЯ СВОБОДЫ */
+                .stick { position: absolute; left: 33px; width: 14px; top: -40px; height: var(--h); transform-style: preserve-3d; transform: translateY(var(--py)) rotateY(var(--ry)) translateZ(20px); transition: transform 0.6s cubic-bezier(0.18, 0.89, 0.32, 1.28); cursor: pointer; pointer-events: auto; touch-action: none; }
                 .stick.dragging { transition: none; }
                 
                 .s-face { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 1px; clip-path: polygon(0 0, 100% 0, 100% calc(95px - var(--py)), 0 calc(95px - var(--py))); }
@@ -7978,8 +8251,16 @@ const SticksGame = (function() {
                 .s-left { transform: translateX(-7px) rotateY(-90deg); background: linear-gradient(to bottom, #c1121f 0%, #d4a373 30%, #a87a45 70%, #1a110a 100%); }
                 .s-right { transform: translateX(7px) rotateY(90deg); background: linear-gradient(to bottom, #c1121f 0%, #f5e1c0 30%, #d4a373 70%, #1a110a 100%); }
                 .s-top { position: absolute; top: 0; left: 0; width: 14px; height: 14px; transform: translateY(-7px) rotateX(90deg); background: #ff4d4d; border-radius: 2px; }
+                .s-bottom { position: absolute; bottom: 0; left: 0; width: 14px; height: 14px; transform: translateY(7px) rotateX(-90deg); background: #1a110a; border-radius: 2px; }
 
-                .stick.drawn .s-face, .stick.drawn .s-top { clip-path: none !important; }
+                .stick.drawn .s-face, .stick.drawn .s-top, .stick.drawn .s-bottom { clip-path: none !important; }
+
+                /* --- ВИЗУАЛЬНЫЙ АКЦЕНТ КОРОТКОЙ ПАЛОЧКИ --- */
+                .stick.short .s-bottom { background: #2a0800 !important; box-shadow: inset 0 0 8px #000 !important; }
+                .stick.short .s-front::after, .stick.short .s-back::after, .stick.short .s-left::after, .stick.short .s-right::after {
+                    content: ''; position: absolute; bottom: 0; left: 0; width: 100%; height: 10px;
+                    background: linear-gradient(to top, rgba(42,8,0,0.95) 0%, transparent 100%);
+                }
 
                 /* === ИНТЕГРАЦИЯ С МАГАЗИНОМ: СТИЛИ КОРОБОК === */
                 #sticksStage.box-steel .box-face { background: linear-gradient(135deg, #71717a, #3f3f46) !important; border: 1px solid #a1a1aa !important; box-shadow: inset 0 0 15px rgba(0,0,0,0.5) !important; }
@@ -8021,6 +8302,8 @@ const SticksGame = (function() {
                     transform: translateY(-8px) rotateX(90deg) !important; 
                     box-shadow: inset 0 0 3px rgba(0,0,0,0.5); 
                 }
+                #sticksStage.stick-nails .s-bottom { width: 8px !important; height: 8px !important; transform: translateY(4px) rotateX(-90deg) !important; left: 0 !important; background: #18181b !important; box-shadow: inset 0 0 3px rgba(0,0,0,0.5); }
+                #sticksStage.stick-nails .stick.short .s-bottom { background: #2a0800 !important; }
                 
                 /* 3. Неоновые (Замена палочек мороженого) */
                 #sticksStage.stick-neon .stick { width: 10px !important; left: 35px !important; }
@@ -8038,6 +8321,14 @@ const SticksGame = (function() {
                     transform: translateY(-5px) rotateX(90deg) !important; 
                     box-shadow: 0 0 15px 4px #0ff !important; 
                 }
+                
+                /* МЯГКОЕ СВЕЧЕНИЕ НА ДНЕ, ЧТОБЫ НЕ ПРОБИВАЛО СТЕНКИ */
+                #sticksStage.stick-neon .s-bottom { width: 10px !important; height: 10px !important; left: 0 !important; transform: translateY(5px) rotateX(-90deg) !important; background: #fff !important; box-shadow: 0 0 3px 1px #0ff !important; border-radius: 50% !important; }
+                #sticksStage.stick-neon .stick.short .s-bottom { box-shadow: 0 0 4px 1px #f00 !important; background: #fff !important; }
+                
+                #sticksStage.stick-neon .stick.short .s-front::after, #sticksStage.stick-neon .stick.short .s-back::after, #sticksStage.stick-neon .stick.short .s-left::after, #sticksStage.stick-neon .stick.short .s-right::after {
+                    background: linear-gradient(to top, rgba(255,0,0,0.6) 0%, transparent 100%) !important;
+                }
 
                 /* === ГЛОБАЛЬНАЯ ТЕМА ВУДУ === */
                 #sticksStage.theme-style_lots .box-face { background: linear-gradient(135deg, #2e1065, #000000) !important; border: 1px solid #8b5cf6 !important; box-shadow: inset 0 0 20px rgba(139,92,246,0.8), 0 0 10px rgba(139,92,246,0.4) !important; }
@@ -8047,6 +8338,10 @@ const SticksGame = (function() {
                     background: radial-gradient(circle, #f3f4f6 20%, #8b5cf6 90%) !important; 
                     border-radius: 4px !important; 
                     box-shadow: 0 0 8px #8b5cf6 !important;
+                }
+                #sticksStage.theme-style_lots .stick.short .s-bottom { background: #4c1d95 !important; box-shadow: inset 0 0 10px #000 !important; }
+                #sticksStage.theme-style_lots .stick.short .s-front::after, #sticksStage.theme-style_lots .stick.short .s-back::after, #sticksStage.theme-style_lots .stick.short .s-left::after, #sticksStage.theme-style_lots .stick.short .s-right::after {
+                    background: linear-gradient(to top, rgba(76,29,149,0.9) 0%, transparent 100%) !important;
                 }
 
                 /* === UI МИНИ-ПАЛОЧКИ === */
@@ -8084,7 +8379,6 @@ const SticksGame = (function() {
                 else if (boxStyle === 'lots_box_leather') sStage.classList.add('box-leather');
 
                 const stickStyle = equipped.lotsSticks || 'lots_stick_original';
-                // ТУТ ИСПРАВЛЕНА ПРОВЕРКА НА stick-neon
                 sStage.classList.remove('stick-matches', 'stick-nails', 'stick-neon');
                 if (stickStyle === 'lots_stick_matches') sStage.classList.add('stick-matches');
                 else if (stickStyle === 'lots_stick_nails') sStage.classList.add('stick-nails');
@@ -8154,10 +8448,11 @@ const SticksGame = (function() {
             const s = document.createElement('div');
             s.className = `stick ${types[i] ? 'short' : 'long'}`;
             
-            s.style.setProperty('--h', types[i] ? '130px' : '180px');
+            // ТВОИ РАЗМЕРЫ ПАЛОЧЕК
+            s.style.setProperty('--h', types[i] ? '110px' : '150px');
             let angle = i * 60;
             s.style.setProperty('--ry', `${angle}deg`);
-            s.style.setProperty('--py', `120px`); 
+            s.style.setProperty('--py', `45px`); 
 
             s.innerHTML = `
                 <div class="s-face s-front" style="opacity: 0;"></div>
@@ -8165,10 +8460,11 @@ const SticksGame = (function() {
                 <div class="s-face s-left" style="opacity: 0;"></div>
                 <div class="s-face s-right" style="opacity: 0;"></div>
                 <div class="s-top" style="opacity: 0;"></div>
+                <div class="s-bottom" style="opacity: 0;"></div>
             `;
             
             container.appendChild(s);
-            let stickObj = { isShort: types[i], drawn: false, el: s, currentY: 120 };
+            let stickObj = { isShort: types[i], drawn: false, el: s, currentY: 45 };
             sticks.push(stickObj);
 
             s.addEventListener('mousedown', (e) => startDrag(e, stickObj));
@@ -8250,7 +8546,7 @@ const SticksGame = (function() {
 
             if (Math.abs(y - lastHapticY) > 10) { hapticTick(); lastHapticY = y; }
 
-            if (newY <= -85) { 
+            if (newY <= -60) { 
                 finishPull(draggedStick);
                 isDragging = false; draggedStick = null;
             }
@@ -8272,7 +8568,7 @@ const SticksGame = (function() {
     function onUp() {
         if (isDragging && draggedStick) {
             draggedStick.el.classList.remove('dragging'); 
-            if (draggedStick.currentY > -85) {
+            if (draggedStick.currentY > -60) {
                 draggedStick.currentY = 0;
                 draggedStick.el.style.setProperty('--py', `0px`);
                 if (typeof App !== 'undefined') App.playSoundEffect('tick');
@@ -8313,26 +8609,33 @@ const SticksGame = (function() {
         if (typeof App !== 'undefined' && App.setTopNavLocked) App.setTopNavLocked(true);
         playSoftSound('whoosh');
 
-        sObj.el.style.transition = 'transform 0.8s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.8s ease-in';
-        sObj.el.style.transform = `translateY(-220px) translateX(-120px) translateZ(0px) rotateY(0deg) rotateZ(-60deg) scale3d(0.3, 0.3, 0.3)`;
-        sObj.el.style.opacity = '0';
+        // --- ФАЗА 1: Подвешиваем палочку, чтобы показать надлом ---
+        sObj.el.style.transition = 'transform 0.5s ease-out';
+        sObj.el.style.setProperty('--py', '-140px'); 
 
         setTimeout(() => {
-            sObj.el.style.display = 'none'; 
-            addMiniStick(sObj.isShort);
-            if (sObj.isShort) {
-                endGame();
-            } else {
-                currentTurn = currentTurn === 1 ? 2 : 1;
-                updateUI();
-                if (mode === 'standard' && currentTurn === 2) {
-                    setTimeout(oracleTurn, 1000);
+            // --- ФАЗА 2: Отлет в интерфейс ---
+            sObj.el.style.transition = 'transform 0.8s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.8s ease-in';
+            sObj.el.style.transform = `translateY(-220px) translateX(-120px) translateZ(0px) rotateY(0deg) rotateZ(-60deg) scale3d(0.3, 0.3, 0.3)`;
+            sObj.el.style.opacity = '0';
+
+            setTimeout(() => {
+                sObj.el.style.display = 'none'; 
+                addMiniStick(sObj.isShort);
+                if (sObj.isShort) {
+                    endGame();
                 } else {
-                    if (typeof App !== 'undefined' && App.setTopNavLocked) App.setTopNavLocked(false);
-                    isAnimating = false; 
+                    currentTurn = currentTurn === 1 ? 2 : 1;
+                    updateUI();
+                    if (mode === 'standard' && currentTurn === 2) {
+                        setTimeout(oracleTurn, 1000);
+                    } else {
+                        if (typeof App !== 'undefined' && App.setTopNavLocked) App.setTopNavLocked(false);
+                        isAnimating = false; 
+                    }
                 }
-            }
-        }, 800); 
+            }, 800); 
+        }, 500); 
     }
 
     function oracleTurn() {
@@ -8530,13 +8833,21 @@ const ShopGame = (function() {
             { id: 'bg_ethereal', name: { ru: 'Эфирное Сияние', en: 'Ethereal Glow' }, priceCoins: 1000, priceCrystals: 300, icon: '💠' }
         ],
         gameStyles: [
-            { id: 'style_dice', name: { ru: 'Кость Истины', en: 'Dice of Fate' }, priceCoins: 50, priceCrystals: 15, icon: '🎲' },
-            { id: 'roulette_bullets', name: { ru: 'Кровавые Патроны', en: 'Blood Bullets' }, priceCoins: 50, priceCrystals: 15, icon: '🩸' },
+            { id: 'style_dice_orig', name: { ru: 'Индиго Канон', en: 'Indigo Canon' }, priceCoins: 0, priceCrystals: 0, icon: '🟪' },
+            { id: 'style_dice', name: { ru: 'Белая Кость', en: 'White Bone' }, priceCoins: 50, priceCrystals: 15, icon: '🎲' },
+            { id: 'roulette_orig', name: { ru: 'Сталь Канон', en: 'Steel Canon' }, priceCoins: 0, priceCrystals: 0, icon: '<svg viewBox="0 0 24 24" width="22" height="22" fill="#a0aec0" style="filter: drop-shadow(0 2px 2px rgba(0,0,0,0.5));"><path d="M12 2C10 2 8 4 8 8v10c0 1.1.9 2 2 2h4c1.1 0 2-.9 2-2V8c0-4-2-6-4-6z"/></svg>' },
+            { id: 'roulette_bullets', name: { ru: 'Кровавые Патроны', en: 'Blood Bullets' }, priceCoins: 50, priceCrystals: 15, icon: '<svg viewBox="0 0 24 24" width="22" height="22" fill="#ff4444" style="filter: drop-shadow(0 2px 2px rgba(255,0,0,0.3));"><path d="M12 2C10 2 8 4 8 8v10c0 1.1.9 2 2 2h4c1.1 0 2-.9 2-2V8c0-4-2-6-4-6z"/></svg>' },
             { id: 'roulette_drum', name: { ru: 'Светлый Барабан', en: 'Light Drum' }, priceCoins: 60, priceCrystals: 20, icon: '🔄' },
-            { id: 'style_coin', name: { ru: 'Грань Выбора', en: 'Edge of Choice' }, priceCoins: 50, priceCrystals: 15, icon: '🪙' },
+            { id: 'style_coin_orig', name: { ru: 'Серебро Канон', en: 'Silver Canon' }, priceCoins: 0, priceCrystals: 0, icon: '⚪' },
+            { id: 'style_coin', name: { ru: 'Медная Грань', en: 'Copper Edge' }, priceCoins: 50, priceCrystals: 15, icon: '🪙' },
+            { id: 'style_flower_orig', name: { ru: 'Ромашка Канон', en: 'Chamomile Canon' }, priceCoins: 0, priceCrystals: 0, icon: '🌼' },
             { id: 'style_flower', name: { ru: 'Фелиция', en: 'Felicia' }, priceCoins: 50, priceCrystals: 15, icon: '🦋' },
+            { id: 'style_lots_orig', name: { ru: 'Дерево Канон', en: 'Wood Canon' }, priceCoins: 0, priceCrystals: 0, icon: '🪵' },
             { id: 'style_lots', name: { ru: 'Магия Вуду', en: 'Voodoo Magic' }, priceCoins: 50, priceCrystals: 15, icon: '🪬' },
-            { id: 'style_rps', name: { ru: 'К-Н-Б', en: 'R-P-S' }, priceCoins: 50, priceCrystals: 15, icon: '✌️' }
+            { id: 'style_rps_orig', name: { ru: 'Белый Канон', en: 'White Canon' }, priceCoins: 0, priceCrystals: 0, icon: '✋🏻' },
+            { id: 'style_rps', name: { ru: 'Симпсоны', en: 'Simpsons' }, priceCoins: 50, priceCrystals: 15, icon: '✌️' },
+            { id: 'style_rps_neon', name: { ru: 'Кибер Неон', en: 'Cyber Neon' }, priceCoins: 100, priceCrystals: 25, icon: '⚡' },
+            { id: 'style_rps_dark', name: { ru: 'Темная Материя', en: 'Dark Matter' }, priceCoins: 150, priceCrystals: 30, icon: '🌌' }
         ],
         diceModes: [
             { id: 'dice_dots', name: { ru: 'Точки', en: 'Dots' }, priceCoins: 0, priceCrystals: 0, icon: '🔢' },
@@ -8546,23 +8857,23 @@ const ShopGame = (function() {
             { id: 'dice_alco', name: { ru: 'Алконавт', en: 'Alco' }, priceCoins: 50, priceCrystals: 15, icon: '🍹' }
         ],
         flowerCores: [
-            { id: 'flower_core_original', name: { ru: 'Желтая (Ориг.)', en: 'Yellow (Orig.)' }, priceCoins: 0, priceCrystals: 0, icon: '🌼' },
+            { id: 'flower_core_original', name: { ru: 'Желтая Канон', en: 'Yellow Canon' }, priceCoins: 0, priceCrystals: 0, icon: '🌼' },
             { id: 'flower_core_amethyst', name: { ru: 'Аметист', en: 'Amethyst' }, priceCoins: 50, priceCrystals: 15, icon: '🔮' },
             { id: 'flower_core_emerald', name: { ru: 'Изумруд', en: 'Emerald' }, priceCoins: 50, priceCrystals: 15, icon: '❇️' }
         ],
         flowerPetals: [
-            { id: 'flower_petal_original', name: { ru: 'Белые (Ориг.)', en: 'White (Orig.)' }, priceCoins: 0, priceCrystals: 0, icon: '💮' },
+            { id: 'flower_petal_original', name: { ru: 'Белые Канон', en: 'White Canon' }, priceCoins: 0, priceCrystals: 0, icon: '💮' },
             { id: 'flower_petal_sakura', name: { ru: 'Сакура', en: 'Sakura' }, priceCoins: 50, priceCrystals: 15, icon: '🌸' },
             { id: 'flower_petal_blood', name: { ru: 'Кровавая Роза', en: 'Blood Rose' }, priceCoins: 50, priceCrystals: 15, icon: '🥀' }
         ],
         lotsBoxes: [
-            { id: 'lots_box_original', name: { ru: 'Деревянная (Ориг.)', en: 'Wooden (Orig.)' }, priceCoins: 0, priceCrystals: 0, icon: '📦' },
+            { id: 'lots_box_original', name: { ru: 'Деревянная Канон', en: 'Wooden Canon' }, priceCoins: 0, priceCrystals: 0, icon: '📦' },
             { id: 'lots_box_steel', name: { ru: 'Стальная', en: 'Steel' }, priceCoins: 50, priceCrystals: 15, icon: '🗄️' },
             { id: 'lots_box_porcelain', name: { ru: 'Фарфоровая', en: 'Porcelain' }, priceCoins: 50, priceCrystals: 15, icon: '🏺' },
             { id: 'lots_box_leather', name: { ru: 'Кожаный тубус', en: 'Leather Tube' }, priceCoins: 50, priceCrystals: 15, icon: '📜' }
         ],
         lotsSticks: [
-            { id: 'lots_stick_original', name: { ru: 'Бамбуковые (Ориг.)', en: 'Bamboo (Orig.)' }, priceCoins: 0, priceCrystals: 0, icon: '🥢' },
+            { id: 'lots_stick_original', name: { ru: 'Бамбуковые Канон', en: 'Bamboo Canon' }, priceCoins: 0, priceCrystals: 0, icon: '🥢' },
             { id: 'lots_stick_matches', name: { ru: 'Спички', en: 'Matches' }, priceCoins: 50, priceCrystals: 15, icon: '🧨' },
             { id: 'lots_stick_nails', name: { ru: 'Гвозди', en: 'Nails' }, priceCoins: 50, priceCrystals: 15, icon: '📌' },
             { id: 'lots_stick_neon', name: { ru: 'Неоновые', en: 'Neon' }, priceCoins: 100, priceCrystals: 25, icon: '⚡' }
@@ -8579,7 +8890,11 @@ const ShopGame = (function() {
             
             // --- НОВЫЕ КАРТОЧКИ ИСКР ---
             { id: 'perk_sparkle_dice', name: { ru: 'Искры: Кость', en: 'Sparkles: Dice' }, priceCoins: 150, priceCrystals: 30, icon: '✨' },
-            { id: 'perk_sparkle_coin', name: { ru: 'Искры: Монета', en: 'Sparkles: Coin' }, priceCoins: 150, priceCrystals: 30, icon: '🌟' }
+            { id: 'perk_sparkle_coin', name: { ru: 'Искры: Монета', en: 'Sparkles: Coin' }, priceCoins: 150, priceCrystals: 30, icon: '🌟' },
+            
+            // --- НОВЫЕ КАРТОЧКИ УМНОЖЕНИЯ (с описанием для тултипов) ---
+            { id: 'perk_x2_win', name: { ru: 'Х2 Выигрыш', en: 'x2 Win' }, priceCoins: 100, priceCrystals: 20, icon: '🤑', isStackable: true, desc: { ru: 'Умножает выигрыш в Банке х2.<br><br><span style="color:#ff6666; font-weight:bold;">Сгорает после 1 игры (победа или поражение).</span>', en: 'Multiplies Bank win x2.<br><br><span style="color:#ff6666; font-weight:bold;">Burns after 1 game (win or loss).</span>' } },
+            { id: 'perk_x2_super', name: { ru: 'Супер Х2', en: 'Super x2' }, priceCoins: 200, priceCrystals: 40, icon: '🔥', isStackable: true, desc: { ru: 'Умножает выигрыш в Банке х2.<br><br><span style="color:var(--friendly-green); font-weight:bold;">Не сгорает при проигрыше.</span> Тратится только при успешном умножении.', en: 'Multiplies Bank win x2.<br><br><span style="color:var(--friendly-green); font-weight:bold;">Does not burn on loss.</span> Only consumed on a successful win.' } }
         ]
     };
 
@@ -8660,51 +8975,59 @@ const ShopGame = (function() {
         else if (GameState.subModes.shop === 'standard') {
             
             // --- КОСТЬ ИСТИНЫ ---
-            grid.appendChild(createCategoryHeader(lang === 'ru' ? 'Кость Истины' : 'Dice of Fate', 'var(--friendly-green)'));
+            grid.appendChild(createCategoryHeader(lang === 'ru' ? 'Кость Истины' : 'Dice of Fate', 'var(--magic-color)'));
             grid.appendChild(createCategoryHeader(lang === 'ru' ? 'Тема интерфейса' : 'UI Theme', '#ffffff', true));
-            appendItems(grid, shopItems.gameStyles.filter(i => i.id === 'style_dice'), balanceCoins, balanceCrystals, lang);
+            appendItems(grid, shopItems.gameStyles.filter(i => i.id.startsWith('style_dice')), balanceCoins, balanceCrystals, lang);
+            grid.appendChild(createCategoryHeader(lang === 'ru' ? 'Облик кости' : 'Dice Faces', '#ffffff', true));
+            appendItems(grid, shopItems.diceModes, balanceCoins, balanceCrystals, lang);
+            grid.appendChild(createCategoryHeader(lang === 'ru' ? 'Дополнительные функции' : 'Extra Features', '#ffffff', true));
+            appendItems(grid, shopItems.perks.filter(i => i.id === 'perk_sparkle_dice'), balanceCoins, balanceCrystals, lang);
 
             // --- РУССКАЯ РУЛЕТКА ---
-            grid.appendChild(createCategoryHeader(lang === 'ru' ? 'Русская Рулетка' : 'Russian Roulette', '#ff4444'));
+            grid.appendChild(createCategoryHeader(lang === 'ru' ? 'Русская Рулетка' : 'Russian Roulette', 'var(--angry-red)'));
             grid.appendChild(createCategoryHeader(lang === 'ru' ? 'Тема интерфейса' : 'UI Theme', '#ffffff', true));
             appendItems(grid, shopItems.gameStyles.filter(i => i.id.startsWith('roulette_')), balanceCoins, balanceCrystals, lang);
 
             // --- ГРАНЬ ВЫБОРА ---
             grid.appendChild(createCategoryHeader(lang === 'ru' ? 'Грань Выбора' : 'Edge of Choice', 'var(--sun-gold)'));
-            grid.appendChild(createCategoryHeader(lang === 'ru' ? 'Тема интерфейса' : 'UI Theme', '#ffffff', true));
-            appendItems(grid, shopItems.gameStyles.filter(i => i.id === 'style_coin'), balanceCoins, balanceCrystals, lang);
+            grid.appendChild(createCategoryHeader(lang === 'ru' ? 'Облик монеты' : 'Coin Styles', '#ffffff', true));
+            appendItems(grid, shopItems.gameStyles.filter(i => i.id.startsWith('style_coin')), balanceCoins, balanceCrystals, lang);
+            grid.appendChild(createCategoryHeader(lang === 'ru' ? 'Дополнительные функции' : 'Extra Features', '#ffffff', true));
+            appendItems(grid, shopItems.perks.filter(i => i.id === 'perk_sparkle_coin'), balanceCoins, balanceCrystals, lang);
 
             // --- ЛЕПЕСТКИ ---
-            grid.appendChild(createCategoryHeader(lang === 'ru' ? 'Лепестки' : 'Petals', '#ffaa00'));
+            grid.appendChild(createCategoryHeader(lang === 'ru' ? 'Лепестки' : 'Petals', 'var(--friendly-green)'));
             grid.appendChild(createCategoryHeader(lang === 'ru' ? 'Тема интерфейса' : 'UI Theme', '#ffffff', true));
-            appendItems(grid, shopItems.gameStyles.filter(i => i.id === 'style_flower'), balanceCoins, balanceCrystals, lang);
-
+            appendItems(grid, shopItems.gameStyles.filter(i => i.id.startsWith('style_flower')), balanceCoins, balanceCrystals, lang);
             grid.appendChild(createCategoryHeader(lang === 'ru' ? 'Облик сердцевины' : 'Core Styles', '#ffffff', true));
             appendItems(grid, shopItems.flowerCores, balanceCoins, balanceCrystals, lang);
-
             grid.appendChild(createCategoryHeader(lang === 'ru' ? 'Цвет лепестков' : 'Petal Colors', '#ffffff', true));
             appendItems(grid, shopItems.flowerPetals, balanceCoins, balanceCrystals, lang);
 
             // --- ЖРЕБИЙ ---
-            grid.appendChild(createCategoryHeader(lang === 'ru' ? 'Жребий' : 'Draw Lots', '#b58900'));
+            grid.appendChild(createCategoryHeader(lang === 'ru' ? 'Жребий' : 'Draw Lots', '#ff9f43'));
             grid.appendChild(createCategoryHeader(lang === 'ru' ? 'Тема интерфейса' : 'UI Theme', '#ffffff', true));
-            appendItems(grid, shopItems.gameStyles.filter(i => i.id === 'style_lots'), balanceCoins, balanceCrystals, lang);
-
+            appendItems(grid, shopItems.gameStyles.filter(i => i.id.startsWith('style_lots')), balanceCoins, balanceCrystals, lang);
             grid.appendChild(createCategoryHeader(lang === 'ru' ? 'Облик коробки' : 'Box Styles', '#ffffff', true));
             appendItems(grid, shopItems.lotsBoxes, balanceCoins, balanceCrystals, lang);
-
             grid.appendChild(createCategoryHeader(lang === 'ru' ? 'Вид палочек' : 'Stick Styles', '#ffffff', true));
             appendItems(grid, shopItems.lotsSticks, balanceCoins, balanceCrystals, lang);
 
             // --- КАМЕНЬ-НОЖНИЦЫ-БУМАГА ---
             grid.appendChild(createCategoryHeader(lang === 'ru' ? 'К-Н-Б' : 'R-P-S', '#44aaff'));
             grid.appendChild(createCategoryHeader(lang === 'ru' ? 'Тема интерфейса' : 'UI Theme', '#ffffff', true));
-            appendItems(grid, shopItems.gameStyles.filter(i => i.id === 'style_rps'), balanceCoins, balanceCrystals, lang);
+            appendItems(grid, shopItems.gameStyles.filter(i => i.id.startsWith('style_rps')), balanceCoins, balanceCrystals, lang);
 
             // --- ФОНЫ ---
             grid.appendChild(createCategoryHeader(lang === 'ru' ? 'Глобальные Фоны' : 'Global Backgrounds', 'var(--magic-color)'));
             appendItems(grid, shopItems.backgrounds, balanceCoins, balanceCrystals, lang);
         } 
+        // === ВКЛАДКА: ПЕРКИ ===
+        else if (GameState.subModes.shop === 'perks') {
+            grid.appendChild(createCategoryHeader(lang === 'ru' ? 'Бустеры Ставок' : 'Bet Boosters', 'var(--angry-red)'));
+            const boosterItems = shopItems.perks.filter(i => i.id.startsWith('perk_x2_'));
+            appendItems(grid, boosterItems, balanceCoins, balanceCrystals, lang);
+        }
         // === ВКЛАДКА: ПЕРКИ ===
         else if (GameState.subModes.shop === 'perks') {
             
@@ -8764,7 +9087,7 @@ const ShopGame = (function() {
         const inv = p ? (p.inventory || []) : [];
 
         items.forEach(item => {
-            const isBought = item.isConsumable ? false : inv.includes(item.id);
+            const isBought = (item.isConsumable || item.isStackable) ? false : inv.includes(item.id);
             const card = document.createElement('div');
             card.className = 'shop-item-card';
             card.style.padding = '6px 2px';
@@ -8775,6 +9098,7 @@ const ShopGame = (function() {
             card.style.alignItems = 'center';
             card.style.justifyContent = 'space-between';
             card.style.borderRadius = '8px';
+            card.style.position = 'relative'; // ВАЖНО: для тултипов и бейджиков
             
             if (isBought) {
                 card.style.border = '1px solid var(--friendly-green)';
@@ -8817,7 +9141,32 @@ const ShopGame = (function() {
 
             const itemName = item.name[lang] || item.name.ru || item.name;
 
+            // === КРАСИВЫЙ СВЕТЯЩИЙСЯ БЕЙДЖИК СЧЕТЧИКА ===
+            let badgeHTML = '';
+            if (item.isStackable) {
+                const count = inv.filter(id => id === item.id).length;
+                if (count > 0) {
+                    badgeHTML = `<div style="position: absolute; top: -2px; right: 2px; color: #ccffcc; text-shadow: 0 0 8px #ccffcc, 0 0 15px var(--friendly-green); font-size: 14px; font-weight: 900; z-index: 10; pointer-events: none;">${count}</div>`;
+                }
+            }
+
+            // === ЛОГИКА ТУЛТИПА С ОПИСАНИЕМ ===
+            let tooltipHTML = '';
+            if (item.desc) {
+                const descText = item.desc[lang] || item.desc.ru;
+                tooltipHTML = `
+                    <div class="info-icon-btn" style="position: absolute; top: 4px; left: 4px; z-index: 20;" onclick="event.stopPropagation(); const tt = this.nextElementSibling; const isVis = tt.style.opacity === '1'; document.querySelectorAll('.shop-tt').forEach(el => el.style.opacity = '0'); if(!isVis) tt.style.opacity = '1';">
+                        <div style="background: rgba(255,249,174,0.1); border: 1px solid var(--sun-gold); color: var(--sun-gold); border-radius: 4px; width: 16px; height: 16px; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold; cursor: pointer; box-shadow: 0 0 5px rgba(255,249,174,0.3);">?</div>
+                    </div>
+                    <div class="shop-tt" style="position: absolute; top: 25px; left: 15px; background: rgba(5, 8, 15, 0.98); border: 1px solid var(--sun-gold); padding: 8px 10px; border-radius: 8px; color: white; font-size: 10px; width: 150px; opacity: 0; pointer-events: none; transition: 0.2s; z-index: 9999; box-shadow: 0 0 15px rgba(255, 249, 174, 0.3); text-align: left; text-transform: none; font-weight: normal; line-height: 1.3;">
+                        <div style="color: var(--sun-gold); font-weight: bold; margin-bottom: 5px; text-transform: uppercase; font-size: 10px;">${itemName}</div>
+                        ${descText}
+                    </div>
+                `;
+            }
+
             card.innerHTML = `
+                ${tooltipHTML}
                 <div style="font-size: 22px; margin-bottom: 4px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));">${item.icon}</div>
                 <div style="color: #fff; font-size: 8px; line-height: 1.1; margin-bottom: 6px; word-break: break-word; opacity: 0.9; text-align: center; font-weight: bold; text-transform: uppercase;">${itemName}</div>
                 ${priceSection}
@@ -8906,57 +9255,126 @@ const ShopGame = (function() {
             return;
         }
 
+        const mapItems = (arr, cat, subRu, subEn) => arr.map(i => ({ ...i, _cat: cat, _subRu: subRu, _subEn: subEn }));
+
+        // Перегруппировка для Инвентаря: по Играм -> по Подразделам
         const categories = [
-            { key: 'backgrounds', title: { ru: 'Стили заднего фона', en: 'Background Styles' } },
-            { key: 'gameStyles', title: { ru: 'Темы интерфейса', en: 'UI Themes' } },
-            { key: 'diceModes', title: { ru: 'Кость Истины: Грани', en: 'Dice of Fate: Faces' } },
-            { key: 'flowerCores', title: { ru: 'Лепестки: Сердцевина', en: 'Petals: Core' } },
-            { key: 'flowerPetals', title: { ru: 'Лепестки: Цвет', en: 'Petals: Color' } },
-            { key: 'lotsBoxes', title: { ru: 'Жребий: Коробка', en: 'Lots: Box' } },
-            { key: 'lotsSticks', title: { ru: 'Жребий: Палочки', en: 'Lots: Sticks' } },
-            { key: 'perks', title: { ru: 'Перки и Эффекты', en: 'Perks & Effects' } } 
+            // --- БУСТЕРЫ ТЕПЕРЬ НА ПЕРВОМ МЕСТЕ ---
+            { 
+                key: 'boosters', title: { ru: 'Перки', en: 'Perks' }, color: 'var(--angry-red)',
+                items: mapItems(shopItems.perks.filter(i => i.id.startsWith('perk_x2_')), 'perks', 'Бустеры Ставок', 'Bet Boosters') 
+            },
+            { 
+                key: 'dice', title: { ru: 'Кость Истины', en: 'Dice of Fate' }, color: 'var(--magic-color)',
+                items: [
+                    ...mapItems(shopItems.gameStyles.filter(i=>i.id.startsWith('style_dice')), 'gameStyles', 'Тема интерфейса', 'UI Theme'),
+                    ...mapItems(shopItems.diceModes, 'diceModes', 'Облик кости', 'Dice Faces'),
+                    ...mapItems(shopItems.perks.filter(i => i.id === 'perk_sparkle_dice'), 'perks', 'Дополнительные функции', 'Extra Features')
+                ] 
+            },
+            { 
+                key: 'roulette', title: { ru: 'Русская Рулетка', en: 'Russian Roulette' }, color: 'var(--angry-red)',
+                items: mapItems(shopItems.gameStyles.filter(i=>i.id.startsWith('roulette_')), 'gameStyles', 'Тема интерфейса', 'UI Theme') 
+            },
+            { 
+                key: 'coin', title: { ru: 'Грань Выбора', en: 'Edge of Choice' }, color: 'var(--sun-gold)',
+                items: [
+                    ...mapItems(shopItems.gameStyles.filter(i=>i.id.startsWith('style_coin')), 'gameStyles', 'Облик монеты', 'Coin Styles'),
+                    ...mapItems(shopItems.perks.filter(i => i.id === 'perk_sparkle_coin'), 'perks', 'Дополнительные функции', 'Extra Features')
+                ] 
+            },
+            { 
+                key: 'flower', title: { ru: 'Лепестки', en: 'Petals' }, color: 'var(--friendly-green)',
+                items: [
+                    ...mapItems(shopItems.gameStyles.filter(i=>i.id.startsWith('style_flower')), 'gameStyles', 'Тема интерфейса', 'UI Theme'),
+                    ...mapItems(shopItems.flowerCores, 'flowerCores', 'Облик сердцевины', 'Core Styles'),
+                    ...mapItems(shopItems.flowerPetals, 'flowerPetals', 'Цвет лепестков', 'Petal Colors')
+                ] 
+            },
+            { 
+                key: 'lots', title: { ru: 'Жребий', en: 'Lots' }, color: '#ff9f43',
+                items: [
+                    ...mapItems(shopItems.gameStyles.filter(i=>i.id.startsWith('style_lots')), 'gameStyles', 'Тема интерфейса', 'UI Theme'),
+                    ...mapItems(shopItems.lotsBoxes, 'lotsBoxes', 'Облик коробки', 'Box Styles'),
+                    ...mapItems(shopItems.lotsSticks, 'lotsSticks', 'Вид палочек', 'Stick Styles')
+                ] 
+            },
+            { 
+                key: 'rps', title: { ru: 'К-Н-Б', en: 'R-P-S' }, color: '#44aaff',
+                items: mapItems(shopItems.gameStyles.filter(i=>i.id.startsWith('style_rps')), 'gameStyles', 'Тема интерфейса', 'UI Theme') 
+            },
+            { 
+                key: 'backgrounds', title: { ru: 'Глобальные Фоны', en: 'Global Backgrounds' }, color: 'var(--magic-color)',
+                items: mapItems(shopItems.backgrounds, 'backgrounds', '', '') 
+            }
         ];
 
         categories.forEach(catDef => {
-            const ownedItems = shopItems[catDef.key].filter(item => inv.includes(item.id));
+            const ownedItems = catDef.items.filter(item => inv.includes(item.id));
             if (ownedItems.length > 0) {
-                list.appendChild(createCategoryHeader(catDef.title[lang] || catDef.title.ru));
+                // Главный заголовок Игры
+                list.appendChild(createCategoryHeader(catDef.title[lang] || catDef.title.ru, catDef.color));
                 
-                const grid = document.createElement('div');
-                grid.style.display = 'grid';
-                grid.style.gridTemplateColumns = 'repeat(4, 1fr)';
-                grid.style.gap = '4px';
-                grid.style.marginBottom = '10px';
-                
+                // Группируем предметы внутри игры по подзаголовкам
+                const groups = {};
                 ownedItems.forEach(item => {
-                    let isEquipped = false;
-                    
-                    if (catDef.key === 'gameStyles' || catDef.key === 'perks') isEquipped = !!equipped[item.id];
-                    else isEquipped = equipped[catDef.key] === item.id;
-
-                    const borderStyle = isEquipped ? '1px solid var(--friendly-green)' : '1px solid rgba(255,249,174,0.3)';
-                    const bgStyle = isEquipped ? 'rgba(204,255,204,0.1)' : 'rgba(5,8,15,0.8)';
-
-                    const card = document.createElement('div');
-                    card.className = 'shop-item-card';
-                    card.style.cssText = `padding: 6px 2px; min-height: 75px; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: space-between; border-radius: 8px; border: ${borderStyle}; background: ${bgStyle}; transition: 0.3s;`;
-                    
-                    const activeTxt = lang === 'ru' ? 'АКТИВНО' : 'ACTIVE';
-                    const statusHTML = isEquipped 
-                        ? `<div style="color: var(--friendly-green); font-size: 8px; font-weight: bold; background: rgba(0,0,0,0.5); padding: 3px 0; border-radius: 4px; width: 90%; text-align: center; margin-top: auto;"><i class="fas fa-check"></i> ${activeTxt}</div>` 
-                        : `<div style="height: 14px; margin-top: auto;"></div>`;
-
-                    const itemName = item.name[lang] || item.name.ru;
-
-                    card.innerHTML = `
-                        <div style="font-size: 22px; margin-bottom: 4px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));">${item.icon}</div>
-                        <div style="color: #fff; font-size: 8px; line-height: 1.1; margin-bottom: 6px; word-break: break-word; opacity: 0.9; text-align: center; font-weight: bold; text-transform: uppercase;">${itemName}</div>
-                        ${statusHTML}
-                    `;
-                    card.onclick = () => equipItem(catDef.key, item.id);
-                    grid.appendChild(card);
+                    const subLabel = lang === 'ru' ? item._subRu : item._subEn;
+                    if (!groups[subLabel]) groups[subLabel] = [];
+                    groups[subLabel].push(item);
                 });
-                list.appendChild(grid);
+
+                Object.keys(groups).forEach(subLabel => {
+                    if (subLabel) {
+                        list.appendChild(createCategoryHeader(subLabel, '#ffffff', true));
+                    }
+                    
+                    const grid = document.createElement('div');
+                    grid.style.display = 'grid';
+                    grid.style.gridTemplateColumns = 'repeat(4, 1fr)';
+                    grid.style.gap = '4px';
+                    grid.style.marginBottom = '10px';
+                    
+                    groups[subLabel].forEach(item => {
+                        let isEquipped = false;
+                        if (item._cat === 'gameStyles' || item._cat === 'perks') isEquipped = !!equipped[item.id];
+                        else isEquipped = equipped[item._cat] === item.id;
+
+                        const borderStyle = isEquipped ? '1px solid var(--friendly-green)' : '1px solid rgba(255,249,174,0.3)';
+                        const bgStyle = isEquipped ? 'rgba(204,255,204,0.1)' : 'rgba(5,8,15,0.8)';
+
+                        const card = document.createElement('div');
+                        card.className = 'shop-item-card';
+                        card.style.cssText = `padding: 6px 2px; min-height: 75px; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: space-between; border-radius: 8px; border: ${borderStyle}; background: ${bgStyle}; transition: 0.3s;`;
+                        
+                        const activeTxt = lang === 'ru' ? 'АКТИВНО' : 'ACTIVE';
+                        const statusHTML = isEquipped 
+                            ? `<div style="color: var(--friendly-green); font-size: 8px; font-weight: bold; background: rgba(0,0,0,0.5); padding: 3px 0; border-radius: 4px; width: 90%; text-align: center; margin-top: auto;"><i class="fas fa-check"></i> ${activeTxt}</div>` 
+                            : `<div style="height: 14px; margin-top: auto;"></div>`;
+
+                        const itemName = item.name[lang] || item.name.ru;
+
+                        // Считаем количество для бейджика в инвентаре (если стакается)
+                        let badgeHTML = '';
+                        if (item.isStackable) {
+                            const count = inv.filter(id => id === item.id).length;
+                            if (count > 0) {
+                                badgeHTML = `<div style="position: absolute; top: -2px; right: 2px; color: #ccffcc; text-shadow: 0 0 8px #ccffcc, 0 0 15px var(--friendly-green); font-size: 14px; font-weight: 900; z-index: 10; pointer-events: none;">${count}</div>`;
+                            }
+                        }
+
+                        card.style.position = 'relative';
+
+                        card.innerHTML = `
+                            ${badgeHTML}
+                            <div style="font-size: 22px; margin-bottom: 4px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));">${item.icon}</div>
+                            <div style="color: #fff; font-size: 8px; line-height: 1.1; margin-bottom: 6px; word-break: break-word; opacity: 0.9; text-align: center; font-weight: bold; text-transform: uppercase;">${itemName}</div>
+                            ${statusHTML}
+                        `;
+                        card.onclick = () => equipItem(item._cat, item.id);
+                        grid.appendChild(card);
+                    });
+                    list.appendChild(grid);
+                });
             }
         });
     }
@@ -9009,10 +9427,19 @@ const ShopGame = (function() {
         }
         if (typeof App !== 'undefined' && App.changeBackground) App.changeBackground(true);
 
-        // 3. Железобетонно вешаем/снимаем классы стилей интерфейса
-        const styleIds = ['style_dice', 'roulette_bullets', 'roulette_drum', 'style_coin', 'style_flower', 'style_lots', 'style_rps'];
-        styleIds.forEach(id => {
-            if (equipped[id]) document.body.classList.add(`theme-${id}`);
+        // 3. Железобетонно вешаем/снимаем классы стилей интерфейса для ВСЕХ визуальных элементов (включая детали лепестков и жребия)
+        let allVisualItems = [];
+        ['gameStyles', 'flowerCores', 'flowerPetals', 'lotsBoxes', 'lotsSticks', 'perks'].forEach(cat => {
+            if (shopItems[cat]) allVisualItems = allVisualItems.concat(shopItems[cat].map(i => i.id));
+        });
+
+        allVisualItems.forEach(id => {
+            let isItemEquipped = false;
+            // Проверяем оба варианта записи в профиле (для тем и перков значение = true, для деталей = ID строкой)
+            if (equipped[id] === true) isItemEquipped = true;
+            else if (Object.values(equipped).includes(id)) isItemEquipped = true;
+
+            if (isItemEquipped) document.body.classList.add(`theme-${id}`);
             else document.body.classList.remove(`theme-${id}`);
         });
     }
@@ -9047,29 +9474,37 @@ const ShopGame = (function() {
             if (p.equipped[id]) {
                 delete p.equipped[id]; // Снимаем
             } else {
+                // --- СИСТЕМА ВЗАИМОИСКЛЮЧЕНИЙ ДЛЯ ТЕМ И ПЕРКОВ ---
+                if (cat === 'gameStyles') {
+                    const prefixMatch = id.match(/^(style_dice|roulette|style_coin|style_flower|style_lots|style_rps)/);
+                    if (prefixMatch) {
+                        const prefix = prefixMatch[1];
+                        Object.keys(p.equipped).forEach(eqId => {
+                            if (eqId.startsWith(prefix) && shopItems.gameStyles.find(i => i.id === eqId)) {
+                                delete p.equipped[eqId];
+                            }
+                        });
+                    }
+                } else if (cat === 'perks') {
+                    // Если надеваем бустер, снимаем другие бустеры
+                    if (id.startsWith('perk_x2_')) {
+                        Object.keys(p.equipped).forEach(eqId => {
+                            if (eqId.startsWith('perk_x2_')) {
+                                delete p.equipped[eqId];
+                            }
+                        });
+                    }
+                }
+
                 p.equipped[id] = true; // Надеваем
                 
                 // АВТО-СНЯТИЕ ДЕТАЛЕЙ ПРИ ВЫБОРЕ ТЕМЫ
-                if (id === 'style_flower') {
+                if (id.startsWith('style_flower')) {
                     delete p.equipped['flowerCores'];
                     delete p.equipped['flowerPetals'];
-                } else if (id === 'style_lots') {
+                } else if (id.startsWith('style_lots')) {
                     delete p.equipped['lotsBoxes'];
                     delete p.equipped['lotsSticks'];
-                }
-            }
-        } else {
-            // Запрещаем снимать базовые элементы кликом по ним же
-            if (p.equipped[cat] === id && cat !== 'diceModes' && cat !== 'flowerCores' && cat !== 'flowerPetals' && cat !== 'lotsBoxes' && cat !== 'lotsSticks') {
-                delete p.equipped[cat];
-            } else {
-                p.equipped[cat] = id; // Надеваем деталь
-                
-                // АВТО-СНЯТИЕ ТЕМЫ ПРИ ВЫБОРЕ ДЕТАЛЕЙ
-                if (cat === 'flowerCores' || cat === 'flowerPetals') {
-                    delete p.equipped['style_flower'];
-                } else if (cat === 'lotsBoxes' || cat === 'lotsSticks') {
-                    delete p.equipped['style_lots'];
                 }
             }
         }
@@ -9083,14 +9518,42 @@ const ShopGame = (function() {
         if (typeof App !== 'undefined' && App.playSoundEffect) App.playSoundEffect('click');
     }
 
+    // ЭКСПОРТ ДЛЯ ДРУГИХ ПЛАГИНОВ: Позволяет безопасно "сжечь" 1 штуку перка
+    function consumePerk(perkId) {
+        const p = GameState.profiles[GameState.currentProfile] || GameState.profiles[GameState.activeProfileIdx];
+        if (!p || !p.inventory) return false;
+        
+        const idx = p.inventory.indexOf(perkId);
+        if (idx > -1) {
+            p.inventory.splice(idx, 1); // Удаляем одну копию
+            
+            // Если копий больше не осталось — снимаем экипировку
+            if (!p.inventory.includes(perkId)) {
+                delete p.equipped[perkId];
+            }
+            
+            if (typeof App !== 'undefined' && App.requestProfileSave) App.requestProfileSave();
+            renderInventoryList();
+            return true;
+        }
+        return false;
+    }
+
     function init() {
         if (!GameState.subModes.shop) GameState.subModes.shop = 'exchange';
         setTimeout(() => {
             applyAllEquippedVisuals(); 
         }, 300);
+
+        // Глобальный слушатель для закрытия тултипов по клику мимо
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.shop-tt') && !e.target.closest('.info-icon-btn')) {
+                document.querySelectorAll('.shop-tt').forEach(el => el.style.opacity = '0');
+            }
+        });
     }
 
-    return { init, mount, unmount, toggleInventory, renderShop, applyAllEquippedVisuals };
+    return { init, mount, unmount, toggleInventory, renderShop, applyAllEquippedVisuals, consumePerk };
 })();
 // --- КОНЕЦ ДЕВЯТОЙ ЧАСТИ ---
 
