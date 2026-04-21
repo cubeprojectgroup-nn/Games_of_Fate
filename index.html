@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Игры Судьбы. v0.8.8.55</title>
+    <title>Игры Судьбы. v0.8.8.56</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
@@ -16,6 +16,19 @@
             --glass: rgba(255, 255, 255, 0.1);
             --bg-text: #111b27;
         }
+	
+		/* Скрываем нашу обертку с вопросиком по умолчанию */
+		.inv-card .smart-info-wrap {
+		opacity: 0;
+		pointer-events: none;
+		transition: opacity 0.2s ease;
+		}
+
+		/* Показываем её только на активной карточке (которая надета) */
+		.inv-card.active .smart-info-wrap {
+		opacity: 1;
+		pointer-events: auto;
+		}
 	
 		
 		/* === ЗАПРЕТ ВЫДЕЛЕНИЯ ИНТЕРФЕЙСА === */
@@ -82,6 +95,14 @@
             transform: scale(1.05);
             z-index: 10 !important;
         }
+
+		/* ЭФФЕКТ ПЛАВНОЙ СМЕНЫ ПРИ ЗАКРЫТИИ ИНВЕНТАРЯ */
+		body.visual-transitioning .stage, 
+		body.visual-transitioning .stage *, 
+		body.visual-transitioning .rps-hand,
+		body.visual-transitioning .dice-side {
+		transition: all 1.0s cubic-bezier(0.4, 0, 0.2, 1) !important;
+		}
 
         /* === ИНДИВИДУАЛЬНЫЕ ЦВЕТА КНОПОК (Спокойное состояние + Активное) === */
 
@@ -899,7 +920,7 @@ setInterval(() => {
     <div id="stars" class="stars-layer stars-active bg1-stars"></div>
 
     <div id="mainMenuOverlay">
-        <div class="version">v0.8.8.55</div> <div class="menu-top-bar">
+        <div class="version">v0.8.8.56</div> <div class="menu-top-bar">
     <button class="menu-icon-btn" onclick="App.toggleSettings(true)"><i class="fas fa-cog"></i></button>
 </div>
         <div id="mainMenuTitle" class="menu-title-main">Игры Судьбы</div>
@@ -1021,13 +1042,14 @@ setInterval(() => {
     </div>
 
 	<div id="gameUI">
-        <button class="menu-icon-btn" id="gameSettingsBtn" onclick="App.toggleSettings(true)" style="position: absolute; top: 10px; right: 10px; z-index: 500; opacity: 0.8;"><i class="fas fa-cog"></i></button>
-        <button class="menu-icon-btn" id="mainInvBtn" id="shopOverlayBtn" onclick="ShopGame.toggleInventory(true)" 
-		style="position: absolute; top: 50px; right: 8px; z-index: 500; opacity: 0.8; color: var(--sun-gold);">
-		<i class="fas fa-box-open"></i>
-		</button>
-		</button>
-		<button class="menu-icon-btn" id="homeBtn" onclick="App.openMainMenu()" style="position: absolute; top: 10px; left: 10px; z-index: 500; opacity: 0.8;"><i class="fas fa-home"></i></button>
+    <button class="menu-icon-btn" id="gameSettingsBtn" onclick="App.toggleSettings(true)" style="position: absolute; top: 10px; right: 10px; z-index: 500; opacity: 0.8;"><i class="fas fa-cog"></i></button>
+    
+    <button class="menu-icon-btn" id="mainInvBtn" onclick="ShopGame.toggleInventory(true)" 
+    style="position: absolute; top: 50px; right: 8px; z-index: 500; opacity: 0.8; color: var(--sun-gold);">
+    <i class="fas fa-box-open"></i>
+    </button>
+
+    <button class="menu-icon-btn" id="homeBtn" onclick="App.openMainMenu()" style="position: absolute; top: 10px; left: 10px; z-index: 500; opacity: 0.8;"><i class="fas fa-home"></i></button>
 
         <div class="header-wrapper">
             <h1 id="ui-title">Кость Истины</h1>
@@ -2033,80 +2055,92 @@ setInterval(() => {
             let isSwitchingProfile = false;
 
             // === 1. ЗАГРУЗКА ПРОФИЛЯ ===
-            function loadProfileData(idx) {
-                isSwitchingProfile = true; 
-                const uq = document.getElementById('userQuestion');
-                if (uq) uq.value = '';
-                GameState.questionDrafts = {};
+function loadProfileData(idx) {
+    isSwitchingProfile = true; 
+    const uq = document.getElementById('userQuestion');
+    if (uq) uq.value = '';
+    GameState.questionDrafts = {};
 
-                try { if (typeof FlowerGame !== 'undefined' && FlowerGame.resetAll) FlowerGame.resetAll(); } catch(e){}
-                try { if (typeof RPSGame !== 'undefined' && RPSGame.resetAll) RPSGame.resetAll(); } catch(e){}
-                try { if (typeof RouletteGame !== 'undefined' && RouletteGame.reset) RouletteGame.reset(); } catch(e){}
+    try { if (typeof FlowerGame !== 'undefined' && FlowerGame.resetAll) FlowerGame.resetAll(); } catch(e){}
+    try { if (typeof RPSGame !== 'undefined' && RPSGame.resetAll) RPSGame.resetAll(); } catch(e){}
+    try { if (typeof RouletteGame !== 'undefined' && RouletteGame.reset) RouletteGame.reset(); } catch(e){}
 
-                // 🛡️ ГАРАНТИЯ КОНТЕЙНЕРОВ: Создаем их до загрузки, если их нет в HTML
-                const histBlock = document.getElementById('historyBlock');
-                const lists = ['historyListDice', 'historyListRoulette', 'historyListBank', 'historyListSurvival', 'historyListCoin', 'historyListFlower', 'historyListRPS', 'historyListShop', 'historyListSticks'];
-                if (histBlock) {
-                    lists.forEach(id => {
-                        if (!document.getElementById(id)) {
-                            const el = document.createElement('div');
-                            el.id = id;
-                            el.style.display = 'none';
-                            histBlock.appendChild(el);
-                        }
-                    });
-                }
-
-                // ЮВЕЛИРНАЯ ЗАГРУЗКА
-                const setH = (id, val) => { 
-                    const el = document.getElementById(id);
-                    if (el) {
-                        Array.from(el.children).forEach(child => {
-                            if (child.classList.contains('history-item') || child.classList.contains('history-header')) {
-                                child.remove();
-                            }
-                        });
-                        if (val && val.trim() !== '') {
-                            const temp = document.createElement('div');
-                            temp.innerHTML = val;
-                            Array.from(temp.children).reverse().forEach(child => {
-                                el.prepend(child);
-                            });
-                        }
-                    }
-                };
-
-                lists.forEach(id => { const el = document.getElementById(id); if(el) el.innerHTML = ''; });
-
-                if (idx !== -1 && GameState.profiles[idx]) {
-                    const p = GameState.profiles[idx];
-                    
-                    setH('historyListDice', p.historyDice);
-                    setH('historyListRoulette', p.historyRoulette);
-                    setH('historyListBank', p.historyBank); 
-                    setH('historyListSurvival', p.historySurvival);
-                    setH('historyListCoin', p.historyCoin);
-                    setH('historyListFlower', p.historyFlower);
-                    setH('historyListRPS', p.historyRPS);
-                    setH('historyListShop', p.historyShop);
-                    setH('historyListSticks', p.historySticks);
-
-                    GameState.subModes = (p.settings && p.settings.subModes) ? JSON.parse(JSON.stringify(p.settings.subModes)) : { dice: 'standard', roulette: 'standard', coin: 'standard', flower: 'standard', rps: 'standard', shop: 'standard', sticks: 'standard' };
-
-                    try { if(typeof Achievements !== 'undefined' && Achievements.load) Achievements.load(p.unlocked, p.order); } catch(e){}
-                    try { if(typeof RouletteGame !== 'undefined' && RouletteGame.loadStats) RouletteGame.loadStats(p.rStats); } catch(e){}
-                    
-                    if (typeof changeBackground === 'function') changeBackground(true);
-                    if (p.settings && typeof applySettings === 'function') applySettings(p.settings);
-                } else {
-                    GameState.subModes = { dice: 'standard', roulette: 'standard', coin: 'standard', flower: 'standard', rps: 'standard', shop: 'standard', sticks: 'standard' };
-                }
-
-                updateHistoryView();
-                if (typeof updateSubModeHighlights === 'function') updateSubModeHighlights();
-
-                setTimeout(() => { isSwitchingProfile = false; }, 100);
+    const histBlock = document.getElementById('historyBlock');
+    const lists = ['historyListDice', 'historyListRoulette', 'historyListBank', 'historyListSurvival', 'historyListCoin', 'historyListFlower', 'historyListRPS', 'historyListShop', 'historyListSticks'];
+    if (histBlock) {
+        lists.forEach(id => {
+            if (!document.getElementById(id)) {
+                const el = document.createElement('div');
+                el.id = id;
+                el.style.display = 'none';
+                histBlock.appendChild(el);
             }
+        });
+    }
+
+    const setH = (id, val) => { 
+        const el = document.getElementById(id);
+        if (el) {
+            Array.from(el.children).forEach(child => {
+                if (child.classList.contains('history-item') || child.classList.contains('history-header')) {
+                    child.remove();
+                }
+            });
+            if (val && val.trim() !== '') {
+                const temp = document.createElement('div');
+                temp.innerHTML = val;
+                Array.from(temp.children).reverse().forEach(child => {
+                    el.prepend(child);
+                });
+            }
+        }
+    };
+
+    lists.forEach(id => { const el = document.getElementById(id); if(el) el.innerHTML = ''; });
+
+    if (idx !== -1 && GameState.profiles[idx]) {
+        const p = GameState.profiles[idx];
+        
+        setH('historyListDice', p.historyDice);
+        setH('historyListRoulette', p.historyRoulette);
+        setH('historyListBank', p.historyBank); 
+        setH('historyListSurvival', p.historySurvival);
+        setH('historyListCoin', p.historyCoin);
+        setH('historyListFlower', p.historyFlower);
+        setH('historyListRPS', p.historyRPS);
+        setH('historyListShop', p.historyShop);
+        setH('historyListSticks', p.historySticks);
+
+        // 1. Восстанавливаем подрежимы 
+        GameState.subModes = (p.settings && p.settings.subModes) 
+            ? JSON.parse(JSON.stringify(p.settings.subModes)) 
+            : { dice: 'standard', roulette: 'standard', coin: 'standard', flower: 'standard', rps: 'standard', shop: 'standard', sticks: 'standard' };
+
+        // 2. ВОССТАНАВЛИВАЕМ ИНДИВИДУАЛЬНУЮ ИГРУ 
+        // Берем именно из текущего объекта профиля (p), а не из глобального стейта
+        const profileLastGame = p.lastMode || 'dice';
+        
+        // 3. Обновляем визуальную часть меню (флаг true = не сохранять!)
+        if (typeof previewGame === 'function') {
+            previewGame(profileLastGame, true);
+        }
+
+        try { if(typeof Achievements !== 'undefined' && Achievements.load) Achievements.load(p.unlocked, p.order); } catch(e){}
+        try { if(typeof RouletteGame !== 'undefined' && RouletteGame.loadStats) RouletteGame.loadStats(p.rStats); } catch(e){}
+        
+        if (typeof changeBackground === 'function') changeBackground(true);
+        if (p.settings && typeof applySettings === 'function') applySettings(p.settings);
+
+    } else {
+        GameState.subModes = { dice: 'standard', roulette: 'standard', coin: 'standard', flower: 'standard', rps: 'standard', shop: 'standard', sticks: 'standard' };
+        if (typeof previewGame === 'function') previewGame('dice', true);
+    }
+
+    updateHistoryView();
+    if (typeof updateSubModeHighlights === 'function') updateSubModeHighlights();
+
+    setTimeout(() => { isSwitchingProfile = false; }, 150);
+}
 
             // === 2. СОХРАНЕНИЕ ПРОФИЛЯ ===
             function requestProfileSave() {
@@ -2179,56 +2213,55 @@ setInterval(() => {
 
             // === 3. СОЗДАНИЕ ИГРОКА БЕЗ УТЕЧЕК ===
             function createNewProfile(e) {
-                if (e) e.stopPropagation();
-                isSwitchingProfile = true; 
-                
-                // ИСПРАВЛЕНИЕ: Добавлен historyListBank в массив очистки
-                const lists = ['historyListDice', 'historyListRoulette', 'historyListBank', 'historyListSurvival', 'historyListCoin', 'historyListFlower', 'historyListRPS', 'historyListShop', 'historyListSticks'];
-                lists.forEach(id => { const el = document.getElementById(id); if (el) el.innerHTML = ''; });
+    if (e) e.stopPropagation();
+    isSwitchingProfile = true; 
+    
+    const lists = ['historyListDice', 'historyListRoulette', 'historyListBank', 'historyListSurvival', 'historyListCoin', 'historyListFlower', 'historyListRPS', 'historyListShop', 'historyListSticks'];
+    lists.forEach(id => { const el = document.getElementById(id); if (el) el.innerHTML = ''; });
 
-                const newIdx = GameState.profiles.length;
-                const newPlayer = {
-                    name: (GameState.lang === 'ru' ? 'Игрок ' : 'Player ') + (newIdx + 1),
-                    bank: 50.00, 
-                    pool: 0.00, 
-                    crystals: 0, 
-                    equipped: {}, 
-                    unlocked: {}, 
-                    order: [],
-                    settings: {
-                        lang: GameState.lang || 'ru', 
-                        sound: GameState.sound !== false, 
-                        isClassic: GameState.isClassic || false,
-                        diceMode: 'standard', 
-                        bgTheme: 'bg1', 
-                        sparkles: true,
-                        subModes: { dice: 'standard', roulette: 'standard', coin: 'standard', flower: 'standard', rps: 'standard', shop: 'standard', sticks: 'standard' }
-                    },
-                    historyDice: '', 
-                    historyRoulette: '', 
-                    historySurvival: '', 
-                    historyBank: '', // ИСПРАВЛЕНИЕ: Добавлен Банк
-                    historyCoin: '', 
-                    historyFlower: '', 
-                    historyRPS: '', 
-                    historyShop: '', 
-                    historySticks: ''
-                };
-                
-                GameState.profiles.push(newPlayer);
-                GameState.activeProfileIdx = newIdx;
-                localStorage.setItem('gof_active_profile', GameState.activeProfileIdx);
-                
-                GameState.subModes = JSON.parse(JSON.stringify(newPlayer.settings.subModes));
+    const newIdx = GameState.profiles.length;
+    const newPlayer = {
+        name: (GameState.lang === 'ru' ? 'Игрок ' : 'Player ') + (newIdx + 1),
+        bank: 50.00, 
+        pool: 0.00, 
+        crystals: 0, 
+        lastMode: 'dice', // Инициализация последней игры
+        equipped: {}, 
+        unlocked: {}, 
+        order: [],
+        settings: {
+            lang: GameState.lang || 'ru', 
+            sound: GameState.sound !== false, 
+            isClassic: GameState.isClassic || false,
+            bgTheme: 'bg1', 
+            sparkles: true,
+            subModes: { dice: 'standard', roulette: 'standard', coin: 'standard', flower: 'standard', rps: 'standard', shop: 'standard', sticks: 'standard' }
+        },
+        historyDice: '', 
+        historyRoulette: '', 
+        historySurvival: '', 
+        historyBank: '',
+        historyCoin: '', 
+        historyFlower: '', 
+        historyRPS: '', 
+        historyShop: '', 
+        historySticks: ''
+    };
+    
+    GameState.profiles.push(newPlayer);
+    GameState.activeProfileIdx = newIdx;
+    localStorage.setItem('gof_active_profile', GameState.activeProfileIdx);
+    
+    GameState.subModes = JSON.parse(JSON.stringify(newPlayer.settings.subModes));
 
-                loadProfileData(newIdx);
-                renderProfiles();
-                showRenameModal({stopPropagation:()=>{}}, newIdx);
-                updateMenuBankUI();
-                
-                if (typeof updateSubModeHighlights === 'function') updateSubModeHighlights();
-                if (typeof ShopGame !== 'undefined' && ShopGame.applyAllEquippedVisuals) ShopGame.applyAllEquippedVisuals();
-            }
+    loadProfileData(newIdx);
+    renderProfiles();
+    showRenameModal({stopPropagation:()=>{}}, newIdx);
+    updateMenuBankUI();
+    
+    if (typeof updateSubModeHighlights === 'function') updateSubModeHighlights();
+    if (typeof ShopGame !== 'undefined' && ShopGame.applyAllEquippedVisuals) ShopGame.applyAllEquippedVisuals();
+}
         
             function updateHistoryView() {
                 // ==========================================
@@ -2664,14 +2697,28 @@ function addCrystal(game = null, subMode = null, customAmount = null) {
     });
 }
 
-            function previewGame(mode) {
+		function previewGame(mode, isLoading = false) {
+    // 1. Определяем режим (берем из памяти или ставим Кость)
     if (!mode) mode = GameState.mode || 'dice'; 
+    
+    // 2. ЗАПИСЫВАЕМ В ПАМЯТЬ ПРОФИЛЯ только если это не загрузка и не переключение
+    // Это критически важно, чтобы старый режим не перезаписал данные нового профиля
+    if (!isLoading && !isSwitchingProfile) {
+        const p = (GameState.activeProfileIdx !== -1) ? GameState.profiles[GameState.activeProfileIdx] : null;
+        if (p) {
+            p.lastMode = mode; // Сохраняем индивидуально для профиля
+            if (typeof App !== 'undefined' && App.requestProfileSave) App.requestProfileSave();
+        }
+    }
+    
+    GameState.mode = mode; 
     GameState.previewMode = mode; 
 
+    // 3. ВИЗУАЛЬНОЕ ПЕРЕКЛЮЧЕНИЕ МЕНЮ 
     const card = document.getElementById('menuPreviewCard');
     const t = LANG_DATA[GameState.lang];
 
-    // Синхронно прячем всё (ДОБАВЛЕН 'sticks' в массив)
+    // Синхронно прячем все игры и подменю
     ['dice', 'roulette', 'coin', 'flower', 'rps', 'shop', 'sticks'].forEach(id => {
         const el = document.getElementById('sel-game-' + id);
         if (el) el.classList.remove('active-preview');
@@ -2679,7 +2726,7 @@ function addCrystal(game = null, subMode = null, customAmount = null) {
         if (sub) sub.style.display = 'none';
     });
 
-    // Синхронно включаем нужное
+    // Включаем активную
     const activeBtn = document.getElementById('sel-game-' + mode);
     if(activeBtn) activeBtn.classList.add('active-preview');
     const subBlock = document.getElementById('submodes-' + mode);
@@ -2721,15 +2768,13 @@ function addCrystal(game = null, subMode = null, customAmount = null) {
         if (previewTitle) previewTitle.innerText = t.btnSticks || "ЖРЕБИЙ";
     }
     
-    // ВЫЗЫВАЕМ ПОДСВЕТКУ СРАЗУ (БЕЗ ТАЙМЕРОВ!)
+    // ВЫЗЫВАЕМ ПОДСВЕТКУ СРАЗУ (передаем mode!)
     if (typeof updateSubModeHighlights === 'function') {
-        updateSubModeHighlights(mode); // передаем mode, чтобы обновились именно нужные кнопки
+        updateSubModeHighlights();
     }
 
     if (typeof tg !== 'undefined' && tg.HapticFeedback && tg.HapticFeedback.selectionChanged) {
         tg.HapticFeedback.selectionChanged();
-    } else if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.HapticFeedback) {
-        window.Telegram.WebApp.HapticFeedback.selectionChanged();
     }
 }
 
@@ -2779,18 +2824,22 @@ function addCrystal(game = null, subMode = null, customAmount = null) {
             }
             
             function selectSubMode(game, mode, e) {
-                if (e) e.stopPropagation();
-                
-                if (!GameState.subModes) GameState.subModes = {};
-                GameState.subModes[game] = mode;
-                
-                if (typeof updateSubModeHighlights === 'function') updateSubModeHighlights();
-                if (typeof playSoundEffect === 'function') playSoundEffect('tick');
-                if (typeof tg !== 'undefined' && tg.HapticFeedback) tg.HapticFeedback.selectionChanged();
-                
-                // ИСПРАВЛЕНИЕ: Мгновенно сохраняем нажатие кнопки в жесткий диск профиля!
-                if (typeof requestProfileSave === 'function') requestProfileSave();
-            }
+    if (e) e.stopPropagation();
+    
+    if (!GameState.subModes) GameState.subModes = {};
+    GameState.subModes[game] = mode;
+
+    // СИНХРОНИЗАЦИЯ С ПРОФИЛЕМ
+    const p = GameState.profiles[GameState.activeProfileIdx];
+    if (p) {
+        if (!p.settings) p.settings = {};
+        if (!p.settings.subModes) p.settings.subModes = {};
+        p.settings.subModes[game] = mode; // Пишем прямо в настройки профиля
+    }
+    
+    if (typeof updateSubModeHighlights === 'function') updateSubModeHighlights();
+    if (typeof requestProfileSave === 'function') requestProfileSave();
+}
             
             function showSubModeRules(e, game, mode) {
                 if(e) e.stopPropagation();
@@ -5817,43 +5866,85 @@ function addCrystal(game = null, subMode = null, customAmount = null) {
                         pointer-events: none;
                     }
 
-                    .drum-top-layer circle { fill: url(#drum-metal); stroke: #475569; stroke-width: 1.5; }
-                    
-                    body:not(.classic-mode-active) {
-                        --mid-layer-dark: #1e293b;
-                        --mid-layer-light: #0f172a;
+                    /* === ПЛАВНЫЕ ПЕРЕХОДЫ ДЛЯ ВСЕХ СЛОЕВ === */
+                    .drum-mid-layer { transition: fill 1.0s ease !important; }
+                    .drum-top-layer circle { transition: fill 1.0s ease !important; }
+                    .hole-num { fill: rgba(255,255,255,0.7); transition: fill 1.0s ease; }
+                    .chamber-floor { fill: #000; opacity: 0; transition: opacity 0.3s, fill 1.0s ease; }
+                    .chamber-floor.filled { opacity: 1; }
+                    .bullet-outer { fill: url(#bullet-chrome-highlight); stroke: #ccc; stroke-width: 1px; transition: all 1.0s ease; }
+                    .bullet-inner { fill: url(#bullet-primer-chrome-highlight) !important; stroke: #4a5568; stroke-width: 1px; transition: all 1.0s ease; }
+                    .stash-bullet path { fill: url(#bullet-chrome-highlight); transition: all 1.0s ease; }
+                    .chamber-slot.fired .bullet-inner { fill: url(#bullet-primer-fired) !important; stroke: #000; }
+
+                    /* === БАЗОВЫЕ ЦВЕТА (Индиго/Темный) === */
+                    body { 
+                        --mid-layer-dark: #1e293b; 
+                        --mid-layer-light: #0f172a; 
                     }
-                    body.classic-mode-active {
+                    
+                    /* Плавная смена цвета для всех слоев "бутерброда" */
+                    .drum-mid-layer { transition: fill 1.0s ease !important; }
+                    .drum-top-layer circle { transition: fill 1.0s ease !important; }
+                    .hole-num { fill: rgba(255,255,255,0.7); transition: fill 1.0s ease !important; }
+
+                    /* ТЕМА: ИНДИГО (Дефолт) */
+                    body.theme-roulette_drum_indigo { 
+                        --mid-layer-dark: #1e293b; 
+                        --mid-layer-light: #0f172a; 
+                    }
+                    body.theme-roulette_drum_indigo .drum-top-layer circle { 
+                        fill: url(#drum-metal) !important; 
+                        stroke: #475569 !important; 
+                    }
+
+                    /* ТЕМА: СВЕТЛЫЙ БАРАБАН (Light Drum) */
+                    body.theme-roulette_drum_light { 
                         --mid-layer-dark: #a1a1aa; 
                         --mid-layer-light: #d1d5db; 
                     }
+                    body.theme-roulette_drum_light .drum-top-layer circle { 
+                        fill: url(#drum-metal-classic) !important; 
+                        stroke: #ccc !important; 
+                    }
+                    body.theme-roulette_drum_light .hole-num { fill: #1f2937 !important; }
 
-                    body.classic-mode-active .drum-top-layer circle { fill: url(#drum-metal-classic) !important; stroke: #ccc !important; }
-
-                    .hole-num { fill: rgba(255,255,255,0.7); transition: fill 0.3s; }
-                    body.classic-mode-active .hole-num { fill: #1f2937 !important; }
-
-                    .bullet-outer { fill: url(#bullet-chrome-highlight); stroke: #ccc; stroke-width: 1px; }
-                    
-                    .bullet-inner { fill: url(#bullet-primer-chrome-highlight) !important; stroke: #4a5568; stroke-width: 1px; }
-                    .chamber-slot.fired .bullet-inner { fill: url(#bullet-primer-fired) !important; stroke: #000; }
-
-                    body.classic-mode-active .bullet-outer { fill: url(#bullet-chrome-classic) !important; stroke: #991b1b; stroke-width: 1px; }
-                    body.classic-mode-active .chamber-slot.fired .bullet-inner { fill: var(--angry-red) !important; stroke: #991b1b; }
-
-                    .chamber-floor { fill: #000; opacity: 0; transition: opacity 0.3s; }
-                    body.classic-mode-active .chamber-floor { fill: #111; }
-                    .chamber-floor.filled { opacity: 1; }
-
-                    .stash-bullet path { fill: url(#bullet-chrome-highlight); }
-                    body.classic-mode-active .stash-bullet path { fill: url(#bullet-chrome-classic) !important; }
+                    /* === КРОВАВЫЕ ПУЛИ === */
+                    body.theme-roulette_bullet_blood .bullet-outer { fill: url(#bullet-chrome-classic) !important; stroke: #991b1b; stroke-width: 1px; }
+                    body.theme-roulette_bullet_blood .chamber-slot.fired .bullet-inner { fill: var(--angry-red) !important; stroke: #991b1b; }
+                    body.theme-roulette_bullet_blood .stash-bullet path { fill: url(#bullet-chrome-classic) !important; }
 
                     .target-marker {
-                        position: absolute; left: 50%; top: -20px;
+                        position: absolute;
+                        left: 50%; top: -20px;
                         transform: translateX(-50%) translateZ(30px);
                         color: var(--angry-red); font-size: 32px;
                         filter: drop-shadow(0 0 10px var(--angry-red));
                         z-index: 60; pointer-events: none;
+                    }
+
+                    /* Плавная смена цвета для всех слоев "бутерброда" */
+                    .drum-mid-layer { transition: fill 1.0s ease !important; }
+                    .drum-top-layer circle { transition: fill 1.0s ease !important; }
+
+                    /* Цвета для ИНДИГО (Темного) барабана */
+                    body.theme-roulette_drum_indigo { 
+                        --mid-layer-dark: #1e293b; 
+                        --mid-layer-light: #0f172a; 
+                    }
+                    body.theme-roulette_drum_indigo .drum-top-layer circle { 
+                        fill: url(#drum-metal) !important; 
+                        stroke: #475569 !important; 
+                    }
+
+                    /* Цвета для СВЕТЛОГО барабана */
+                    body.theme-roulette_drum_light { 
+                        --mid-layer-dark: #a1a1aa; 
+                        --mid-layer-light: #d1d5db; 
+                    }
+                    body.theme-roulette_drum_light .drum-top-layer circle { 
+                        fill: url(#drum-metal-classic) !important; 
+                        stroke: #ccc !important; 
                     }
                 `;
                 document.head.appendChild(style);
@@ -8153,7 +8244,7 @@ else if (pvpState === 4) {
             body.theme-style_rps_neon .rps-hand.winner { filter: drop-shadow(0 0 30px #00ff00) hue-rotate(120deg) brightness(1.5); }
             body.theme-style_rps_neon .rps-hand.winner-p2 { filter: drop-shadow(0 0 30px #ff00ff) hue-rotate(270deg) brightness(1.5); }
             body.theme-style_rps_neon .rps-hand.loser { filter: grayscale(1) brightness(0.4) drop-shadow(0 0 5px #ff0000); }
-            body.theme-style_rps_neon .rps-hand.draw { filter: drop-shadow(0 0 15px #00ffff) brightness(0.8); }
+            body.theme-style_rps_neon .rps-hand.draw { filter: hue-rotate(90deg) drop-shadow(0 0 15px #00ffff) brightness(0.8); }
 
             /* === ТЕМНАЯ МАТЕРИЯ === */
             body.theme-style_rps_dark .rps-choice-btn { filter: invert(1) hue-rotate(180deg) drop-shadow(0 0 10px #8a2be2); }
@@ -9037,8 +9128,10 @@ const ShopGame = (function() {
             { id: 'style_dice_orig', name: { ru: 'Индиго Канон', en: 'Indigo Canon' }, priceCoins: 0, priceCrystals: 0, icon: '🟪' },
             { id: 'style_dice', name: { ru: 'Белая Кость', en: 'White Bone' }, priceCoins: 50, priceCrystals: 15, icon: '🎲' },
             { id: 'roulette_orig', name: { ru: 'Сталь Канон', en: 'Steel Canon' }, priceCoins: 0, priceCrystals: 0, icon: '<svg viewBox="0 0 24 24" width="22" height="22" fill="#a0aec0" style="filter: drop-shadow(0 2px 2px rgba(0,0,0,0.5));"><path d="M12 2C10 2 8 4 8 8v10c0 1.1.9 2 2 2h4c1.1 0 2-.9 2-2V8c0-4-2-6-4-6z"/></svg>' },
-            { id: 'roulette_bullets', name: { ru: 'Кровавые Патроны', en: 'Blood Bullets' }, priceCoins: 50, priceCrystals: 15, icon: '<svg viewBox="0 0 24 24" width="22" height="22" fill="#ff4444" style="filter: drop-shadow(0 2px 2px rgba(255,0,0,0.3));"><path d="M12 2C10 2 8 4 8 8v10c0 1.1.9 2 2 2h4c1.1 0 2-.9 2-2V8c0-4-2-6-4-6z"/></svg>' },
-            { id: 'roulette_drum', name: { ru: 'Светлый Барабан', en: 'Light Drum' }, priceCoins: 60, priceCrystals: 20, icon: '🔄' },
+            { id: 'roulette_drum_indigo', name: { ru: 'Индиго Барабан', en: 'Indigo Canon' }, priceCoins: 0, priceCrystals: 0, icon: '🌀' },
+            { id: 'roulette_bullet_orig', name: { ru: 'Сталь Канон', en: 'Steel Canon' }, priceCoins: 0, priceCrystals: 0, icon: '<svg viewBox="0 0 24 24" width="22" height="22" fill="#a0aec0" style="filter: drop-shadow(0 2px 2px rgba(0,0,0,0.5));"><path d="M12 2C10 2 8 4 8 8v10c0 1.1.9 2 2 2h4c1.1 0 2-.9 2-2V8c0-4-2-6-4-6z"/></svg>', free: true },
+			{ id: 'roulette_bullet_blood', name: { ru: 'Кровавые Патроны', en: 'Blood Bullets' }, priceCoins: 50, priceCrystals: 15, icon: '<svg viewBox="0 0 24 24" width="22" height="22" fill="#ff4444" style="filter: drop-shadow(0 2px 2px rgba(255,0,0,0.3));"><path d="M12 2C10 2 8 4 8 8v10c0 1.1.9 2 2 2h4c1.1 0 2-.9 2-2V8c0-4-2-6-4-6z"/></svg>' },
+            { id: 'roulette_drum_light', name: { ru: 'Светлый Барабан', en: 'Light Drum' }, priceCoins: 60, priceCrystals: 20, icon: '🔄' },
             { id: 'style_coin_orig', name: { ru: 'Серебро Канон', en: 'Silver Canon' }, priceCoins: 0, priceCrystals: 0, icon: '⚪' },
             { id: 'style_coin', name: { ru: 'Медная Грань', en: 'Copper Edge' }, priceCoins: 50, priceCrystals: 15, icon: '🪙' },
             { id: 'style_flower_orig', name: { ru: 'Ромашка Канон', en: 'Chamomile Canon' }, priceCoins: 0, priceCrystals: 0, icon: '🌼' },
@@ -9438,9 +9531,13 @@ const ShopGame = (function() {
             appendItems(grid, shopItems.perks.filter(i => i.id === 'perk_sparkle_dice'), balanceCoins, balanceCrystals, lang);
 
             // --- РУССКАЯ РУЛЕТКА ---
-            grid.appendChild(createCategoryHeader(lang === 'ru' ? 'Русская Рулетка' : 'Russian Roulette', 'var(--angry-red)'));
-            grid.appendChild(createCategoryHeader(lang === 'ru' ? 'Тема интерфейса' : 'UI Theme', '#ffffff', true));
-            appendItems(grid, shopItems.gameStyles.filter(i => i.id.startsWith('roulette_')), balanceCoins, balanceCrystals, lang);
+			grid.appendChild(createCategoryHeader(lang === 'ru' ? 'Роковая Пуля' : 'Fatal Bullet', 'var(--angry-red)'));
+
+			grid.appendChild(createCategoryHeader(lang === 'ru' ? 'Барабаны' : 'Drums', '#ffffff', true));
+			appendItems(grid, shopItems.gameStyles.filter(i => i.id.startsWith('roulette_drum_')), balanceCoins, balanceCrystals, lang);
+
+			grid.appendChild(createCategoryHeader(lang === 'ru' ? 'Пули' : 'Bullets', '#ffffff', true));
+			appendItems(grid, shopItems.gameStyles.filter(i => i.id.startsWith('roulette_bullet_')), balanceCoins, balanceCrystals, lang);
 
             // --- ГРАНЬ ВЫБОРА ---
             grid.appendChild(createCategoryHeader(lang === 'ru' ? 'Грань Выбора' : 'Edge of Choice', 'var(--sun-gold)'));
@@ -9716,7 +9813,10 @@ const ShopGame = (function() {
         const categories = [
             { key: 'boosters', icon: '<i class="fas fa-gift"></i>', title: { ru: 'Перки и Бустеры', en: 'Perks' }, color: 'var(--angry-red)', items: mapItems(shopItems.perks.filter(i => i.id.startsWith('perk_x2_')), 'perks', 'Бустеры Ставок', 'Bet Boosters') },
             { key: 'dice', icon: '<i class="fas fa-cube"></i>', title: { ru: 'Кость Истины', en: 'Dice of Fate' }, color: 'var(--magic-color)', items: [ ...mapItems(shopItems.gameStyles.filter(i=>i.id.startsWith('style_dice')), 'gameStyles', 'Тема интерфейса', 'UI Theme'), ...mapItems(shopItems.diceModes, 'diceModes', 'Облик кости', 'Dice Faces'), ...mapItems(shopItems.perks.filter(i => i.id === 'perk_sparkle_dice'), 'perks', 'Дополнительные функции', 'Extra Features') ] },
-            { key: 'roulette', icon: rouletteSVG, title: { ru: 'Русская Рулетка', en: 'Russian Roulette' }, color: 'var(--angry-red)', items: mapItems(shopItems.gameStyles.filter(i=>i.id.startsWith('roulette_')), 'gameStyles', 'Тема интерфейса', 'UI Theme') },
+            { key: 'roulette', icon: rouletteSVG, title: { ru: 'Роковая Пуля', en: 'Fatal Bullet' }, color: 'var(--angry-red)', items: [ 
+    ...mapItems(shopItems.gameStyles.filter(i => i.id.startsWith('roulette_drum_')), 'gameStyles', 'Барабаны', 'Drums'), 
+    ...mapItems(shopItems.gameStyles.filter(i => i.id.startsWith('roulette_bullet_')), 'gameStyles', 'Пули', 'Bullets') 
+] },
             { key: 'coin', icon: coinSVG, title: { ru: 'Грань Выбора', en: 'Edge of Choice' }, color: 'var(--sun-gold)', items: [ ...mapItems(shopItems.gameStyles.filter(i=>i.id.startsWith('style_coin')), 'gameStyles', 'Облик монеты', 'Coin Styles'), ...mapItems(shopItems.perks.filter(i => i.id === 'perk_sparkle_coin'), 'perks', 'Дополнительные функции', 'Extra Features') ] },
             { key: 'flower', icon: '<i class="fas fa-seedling"></i>', title: { ru: 'Лепестки', en: 'Petals' }, color: 'var(--friendly-green)', items: [ ...mapItems(shopItems.gameStyles.filter(i=>i.id.startsWith('style_flower')), 'gameStyles', 'Тема интерфейса', 'UI Theme'), ...mapItems(shopItems.flowerCores, 'flowerCores', 'Облик сердцевины', 'Core Styles'), ...mapItems(shopItems.flowerPetals, 'flowerPetals', 'Цвет лепестков', 'Petal Colors') ] },
             { key: 'lots', icon: '<i class="fas fa-pause"></i>', title: { ru: 'Жребий', en: 'Lots' }, color: '#00d2d3', items: [ ...mapItems(shopItems.gameStyles.filter(i=>i.id.startsWith('style_lots')), 'gameStyles', 'Тема интерфейса', 'UI Theme'), ...mapItems(shopItems.lotsBoxes, 'lotsBoxes', 'Облик коробки', 'Box Styles'), ...mapItems(shopItems.lotsSticks, 'lotsSticks', 'Вид палочек', 'Stick Styles') ] },
@@ -9821,17 +9921,23 @@ const ShopGame = (function() {
                     const bgStyle = isEquipped ? 'rgba(204,255,204,0.15)' : 'rgba(5,8,15,0.8)';
 
                     const card = document.createElement('div');
-                    card.style.cssText = `padding: 8px 4px; min-height: 55px; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 8px; border: ${borderStyle}; background: ${bgStyle}; position: relative; transition: 0.3s;`;
+					// ДОБАВЛЯЕМ КЛАССЫ:
+					card.className = isEquipped ? 'inv-card active' : 'inv-card';
+
+					card.style.cssText = `padding: 8px 4px; min-height: 55px; cursor: pointer; display: flex; flex-direction: column; align-items: center;
+					justify-content: center; border-radius: 8px; border: ${borderStyle}; background: ${bgStyle}; position: relative; transition: 0.3s;`;
                     
                     const itemName = item.name[lang] || item.name.ru;
                     let badgeHTML = item.isStackable ? `<div style="position: absolute; top: -2px; right: 2px; color: #ccffcc; text-shadow: 0 0 8px #ccffcc; font-size: 14px; font-weight: 900;">${inv.filter(id => id === item.id).length}</div>` : '';
 
                     card.innerHTML = `
-                        ${badgeHTML}
-                        ${typeof getTooltipHTML === 'function' ? getTooltipHTML(itemName, item.desc, lang) : ''}
-                        <div style="font-size: 20px; margin-bottom: 4px;">${item.icon}</div>
-                        <div style="color: #fff; font-size: 8px; font-weight: bold; text-align: center; text-transform: uppercase;">${itemName}</div>
-                    `;
+					${badgeHTML}
+					<div class="smart-info-wrap">
+					${typeof getTooltipHTML === 'function' ? getTooltipHTML(itemName, item.desc, lang) : ''}
+					</div>
+					<div style="font-size: 20px; margin-bottom: 4px;">${item.icon}</div>
+					<div style="color: #fff; font-size: 8px; font-weight: bold; text-align: center; text-transform: uppercase;">${itemName}</div>
+				`;
                     
                     card.onclick = (e) => {
                         e.stopPropagation();
@@ -9846,35 +9952,39 @@ const ShopGame = (function() {
         }
     }
 
-    // === ЖЕЛЕЗОБЕТОННОЕ ПОЗИЦИОНИРОВАНИЕ ОКНА ===
+    // === ЗАКРЫТИЕ ИНВЕНТАРЯ И ПЛАВНЫЙ СТАРТ ===
     function toggleInventory(show) {
         const inv = document.getElementById('inventoryOverlay');
         if (inv) {
             inv.style.display = show ? 'flex' : 'none';
-            
-            // ФИКС ПРЫЖКОВ: Прижимаем строго к верху (flex-start) с отступом 20px
             inv.style.flexDirection = 'column';
-            inv.style.alignItems = 'center';         // По центру горизонтально
-            inv.style.justifyContent = 'flex-start'; // ПРИЖИМАЕМ К ВЕРХУ, чтобы не прыгало!
-            inv.style.padding = '20px 0 0 0';        // Отступ 20px только сверху
+            inv.style.alignItems = 'center';
+            inv.style.justifyContent = 'flex-start';
+            inv.style.padding = '20px 0 0 0';
             inv.style.boxSizing = 'border-box';
             
             if (show) {
                 document.body.style.overflow = 'hidden';
                 document.body.style.touchAction = 'none'; 
-                
-                // Настраиваем саму коробку модалки
                 const list = document.getElementById('inventoryList');
                 if (list && list.parentElement) {
                     const modal = list.parentElement;
                     modal.style.boxSizing = 'border-box';
-                    modal.style.width = 'calc(100% - 16px)'; // Отступ по 8px по бокам
+                    modal.style.width = 'calc(100% - 16px)';
                     modal.style.maxWidth = '400px';
-                    modal.style.maxHeight = 'calc(100vh - 40px)'; // Чтобы снизу тоже оставался зазор
+                    modal.style.maxHeight = 'calc(100vh - 40px)';
                     modal.style.padding = '20px 10px';
                     modal.style.display = 'flex';
                     modal.style.flexDirection = 'column';
-                    modal.style.margin = '0'; // margin больше не нужен
+                    modal.style.margin = '0';
+                }
+
+                // --- УМНЫЕ ВКЛАДКИ (ПАМЯТЬ ИГРЫ) ---
+                if (list && typeof GameState !== 'undefined' && GameState.mode) {
+                    const modeMap = { 'dice': 'dice', 'roulette': 'roulette', 'coin': 'coin', 'flower': 'flower', 'rps': 'rps', 'sticks': 'lots' };
+                    if (modeMap[GameState.mode]) {
+                        list.dataset.activeTab = modeMap[GameState.mode];
+                    }
                 }
             } else {
                 document.body.style.overflow = '';
@@ -9885,8 +9995,9 @@ const ShopGame = (function() {
         if (show) {
             renderInventoryList();
         } else {
+            // КОГДА МЕНЮ ЗАКРЫВАЕТСЯ - ЗАПУСКАЕМ ОБНОВЛЕНИЕ ВИЗУАЛА
             if (pendingVisualUpdates) {
-                applyAllEquippedVisuals();
+                if (typeof applyAllEquippedVisuals === 'function') applyAllEquippedVisuals();
                 pendingVisualUpdates = false;
             }
         }
@@ -9895,6 +10006,59 @@ const ShopGame = (function() {
         const rouletteStage = document.getElementById('rouletteStage');
         if (mainStage) mainStage.style.visibility = show ? 'hidden' : 'visible';
         if (rouletteStage) rouletteStage.style.visibility = show ? 'hidden' : 'visible';
+    }
+
+    // --- ЕДИНЫЙ ЦЕНТР ПРИМЕНЕНИЯ СТИЛЕЙ ---
+    function applyAllEquippedVisuals() {
+        const p = GameState.activeProfileIdx !== -1 ? GameState.profiles[GameState.activeProfileIdx] : null;
+        if (!p) return;
+
+        const equipped = p.equipped || {};
+
+        // Включаем режим плавной смены на 1 секунду
+        document.body.classList.add('visual-transitioning');
+        setTimeout(() => document.body.classList.remove('visual-transitioning'), 1000);
+
+        // 1. КОСТЬ ИСТИНЫ (Теперь не сбрасывает режим игрока!)
+        let actualMode = (GameState.subModes && GameState.subModes.dice) ? GameState.subModes.dice : 'dots';
+        if (equipped.diceModes) {
+            actualMode = equipped.diceModes.replace('dice_', '');
+            if (actualMode === 'nums') actualMode = 'numbers'; 
+        }
+        
+        if (!GameState.subModes) GameState.subModes = { dice: actualMode, roulette: 'standard', coin: 'standard', flower: 'standard', rps: 'standard', shop: 'exchange' };
+        else GameState.subModes.dice = actualMode;
+        
+        const sel = document.getElementById('modeSelect');
+        if (sel) sel.value = actualMode;
+        try { if (typeof DiceGame !== 'undefined' && typeof DiceGame.updateModeDisplay === 'function') DiceGame.updateModeDisplay(); } catch(e){}
+
+        // 2. Глобальный Фон
+        if (typeof App !== 'undefined' && App.changeBackground) App.changeBackground(true);
+
+        // 3. Подготовка и сброс классов
+        let allVisualItems = [];
+        ['gameStyles', 'flowerCores', 'flowerPetals', 'lotsBoxes', 'lotsSticks', 'perks'].forEach(cat => {
+            if (shopItems[cat]) allVisualItems = allVisualItems.concat(shopItems[cat].map(i => i.id));
+        });
+
+        allVisualItems.forEach(id => document.body.classList.remove(`theme-${id}`));
+
+        // 4. Применение новых классов шмоток
+        Object.keys(equipped).forEach(id => {
+            if (equipped[id]) document.body.classList.add(`theme-${id}`);
+        });
+
+        // 5. ДЕФОЛТЫ РУЛЕТКИ (Индиго барабан и Стальные пули, если ничего не надето)
+        const hasDrum = Object.keys(equipped).some(k => k.startsWith('roulette_drum_'));
+        const hasBullet = Object.keys(equipped).some(k => k.startsWith('roulette_bullet_'));
+
+        if (!hasDrum) document.body.classList.add('theme-roulette_drum_indigo');
+        if (!hasBullet) document.body.classList.add('theme-roulette_bullet_orig');
+
+        if (typeof RouletteGame !== 'undefined' && typeof RouletteGame.updateBoosterUI === 'function') {
+            RouletteGame.updateBoosterUI();
+        }
     }
 
     function unmount() {
@@ -9922,7 +10086,11 @@ const ShopGame = (function() {
 
         const equipped = p.equipped || {};
 
-        // 1. Кость
+        // Включаем режим ПЛАВНОЙ смены цветов на 1 секунду
+        document.body.classList.add('visual-transitioning');
+        setTimeout(() => document.body.classList.remove('visual-transitioning'), 1000);
+
+        // 1. Смена граней Кости Истины (Сработает только сейчас, при закрытии!)
         let actualMode = 'dots';
         if (equipped.diceModes) {
             actualMode = equipped.diceModes.replace('dice_', '');
@@ -9933,35 +10101,40 @@ const ShopGame = (function() {
         
         const sel = document.getElementById('modeSelect');
         if (sel) sel.value = actualMode;
+        
+        // Даем команду движку Кости поменять точки на числа/алко
         try {
-            if (typeof DiceGame !== 'undefined' && typeof DiceGame.updateModeDisplay === 'function') DiceGame.updateModeDisplay();
-            else if (typeof App !== 'undefined' && typeof App.updateModeDisplay === 'function') App.updateModeDisplay();
+            if (typeof DiceGame !== 'undefined' && typeof DiceGame.updateModeDisplay === 'function') {
+                DiceGame.updateModeDisplay();
+            }
         } catch(e){}
 
-        // 2. Фон
-        const bgSel = document.getElementById('bgSelect');
-        if (bgSel) {
-            bgSel.value = equipped.backgrounds || 'bg_space'; 
-        }
+        // 2. Глобальный Фон
         if (typeof App !== 'undefined' && App.changeBackground) App.changeBackground(true);
 
-        // 3. Железобетонно вешаем/снимаем классы стилей интерфейса для ВСЕХ визуальных элементов
+        // 3. Подготовка и сброс классов
         let allVisualItems = [];
         ['gameStyles', 'flowerCores', 'flowerPetals', 'lotsBoxes', 'lotsSticks', 'perks'].forEach(cat => {
             if (shopItems[cat]) allVisualItems = allVisualItems.concat(shopItems[cat].map(i => i.id));
         });
 
+        allVisualItems.forEach(id => document.body.classList.remove(`theme-${id}`));
+
+        // 4. Применение новых классов
         allVisualItems.forEach(id => {
             let isItemEquipped = false;
-            // Проверяем оба варианта записи в профиле (для тем и перков значение = true, для деталей = ID строкой)
             if (equipped[id] === true) isItemEquipped = true;
             else if (Object.values(equipped).includes(id)) isItemEquipped = true;
-
             if (isItemEquipped) document.body.classList.add(`theme-${id}`);
-            else document.body.classList.remove(`theme-${id}`);
         });
 
-        // 4. ДИНАМИЧЕСКОЕ ОБНОВЛЕНИЕ БУСТЕРОВ В ПУЛЕ
+        // 5. Дефолты Рулетки (Чтобы не было белого барабана)
+        const hasDrum = Object.keys(equipped).some(k => k.startsWith('roulette_drum_'));
+        const hasBullet = Object.keys(equipped).some(k => k.startsWith('roulette_bullet_'));
+
+        if (!hasDrum) document.body.classList.add('theme-roulette_drum_indigo');
+        if (!hasBullet) document.body.classList.add('theme-roulette_bullet_orig');
+
         if (typeof RouletteGame !== 'undefined' && typeof RouletteGame.updateBoosterUI === 'function') {
             RouletteGame.updateBoosterUI();
         }
@@ -9977,11 +10150,16 @@ const ShopGame = (function() {
             if (p.equipped[id]) {
                 delete p.equipped[id]; // Снимаем
             } else {
-                // --- СИСТЕМА ВЗАИМОИСКЛЮЧЕНИЙ ДЛЯ ТЕМ И ПЕРКОВ ---
                 if (cat === 'gameStyles') {
-                    const prefixMatch = id.match(/^(style_dice|roulette|style_coin|style_flower|style_lots|style_rps)/);
-                    if (prefixMatch) {
-                        const prefix = prefixMatch[1];
+                    let prefix = null;
+                    if (id.startsWith('roulette_drum_')) prefix = 'roulette_drum_';
+                    else if (id.startsWith('roulette_bullet_')) prefix = 'roulette_bullet_';
+                    else {
+                        const prefixMatch = id.match(/^(style_dice|roulette|style_coin|style_flower|style_lots|style_rps)/);
+                        if (prefixMatch) prefix = prefixMatch[1];
+                    }
+
+                    if (prefix) {
                         Object.keys(p.equipped).forEach(eqId => {
                             if (eqId.startsWith(prefix) && shopItems.gameStyles.find(i => i.id === eqId)) {
                                 delete p.equipped[eqId];
@@ -9989,51 +10167,36 @@ const ShopGame = (function() {
                         });
                     }
                 } else if (cat === 'perks') {
-                    // Если надеваем бустер, снимаем другие бустеры
                     if (id.startsWith('perk_x2_')) {
                         Object.keys(p.equipped).forEach(eqId => {
-                            if (eqId.startsWith('perk_x2_')) {
-                                delete p.equipped[eqId];
-                            }
+                            if (eqId.startsWith('perk_x2_')) delete p.equipped[eqId];
                         });
                     }
                 }
-
                 p.equipped[id] = true; // Надеваем
                 
-                // АВТО-СНЯТИЕ ДЕТАЛЕЙ ПРИ ВЫБОРЕ ТЕМЫ
                 if (id.startsWith('style_flower')) {
-                    delete p.equipped['flowerCores'];
-                    delete p.equipped['flowerPetals'];
+                    delete p.equipped['flowerCores']; delete p.equipped['flowerPetals'];
                 } else if (id.startsWith('style_lots')) {
-                    delete p.equipped['lotsBoxes'];
-                    delete p.equipped['lotsSticks'];
+                    delete p.equipped['lotsBoxes']; delete p.equipped['lotsSticks'];
                 }
             }
         } else {
-            // Запрещаем снимать базовые элементы кликом по ним же
-            if (p.equipped[cat] === id && cat !== 'diceModes' && cat !== 'flowerCores' && cat !== 'flowerPetals' && cat !== 'lotsBoxes' && cat !== 'lotsSticks') {
+            if (p.equipped[cat] === id && !['diceModes', 'flowerCores', 'flowerPetals', 'lotsBoxes', 'lotsSticks'].includes(cat)) {
                 delete p.equipped[cat];
             } else {
-                p.equipped[cat] = id; // Надеваем деталь
-                
-                // АВТО-СНЯТИЕ ТЕМЫ ПРИ ВЫБОРЕ ДЕТАЛЕЙ
-                if (cat === 'flowerCores' || cat === 'flowerPetals') {
-                    delete p.equipped['style_flower'];
-                } else if (cat === 'lotsBoxes' || cat === 'lotsSticks') {
-                    delete p.equipped['style_lots'];
-                }
+                p.equipped[cat] = id;
+                if (cat === 'flowerCores' || cat === 'flowerPetals') delete p.equipped['style_flower'];
+                else if (cat === 'lotsBoxes' || cat === 'lotsSticks') delete p.equipped['style_lots'];
             }
         }
         
         if (typeof App !== 'undefined' && App.requestProfileSave) App.requestProfileSave();
-        
-        // ФИКС 4: Передаем true, чтобы пропустить анимацию появления, когда мы просто переодеваем шмотку!
         renderInventoryList(true); 
         
-        pendingVisualUpdates = true;
+        pendingVisualUpdates = true; 
         
-        if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.HapticFeedback) window.Telegram.WebApp.HapticFeedback.impactOccurred('light');
+        if (window.Telegram?.WebApp?.HapticFeedback) window.Telegram.WebApp.HapticFeedback.impactOccurred('light');
         if (typeof App !== 'undefined' && App.playSoundEffect) App.playSoundEffect('click');
     }
 
@@ -10044,16 +10207,14 @@ const ShopGame = (function() {
         
         const idx = p.inventory.indexOf(perkId);
         if (idx > -1) {
-            p.inventory.splice(idx, 1); // Удаляем одну копию из кармана
-            
-            // === НОВОЕ ПРАВИЛО ===
-            // Бустер СГОРЕЛ, значит слот освободился! Всегда снимаем его, даже если в инвентаре есть еще.
+            p.inventory.splice(idx, 1); 
             if (p.equipped && p.equipped[perkId]) {
                 delete p.equipped[perkId];
             }
-            
             if (typeof App !== 'undefined' && App.requestProfileSave) App.requestProfileSave();
-            renderInventoryList();
+            if (typeof renderInventoryList === 'function') {
+                renderInventoryList();
+            }
             return true;
         }
         return false;
@@ -10062,10 +10223,11 @@ const ShopGame = (function() {
     function init() {
         if (!GameState.subModes.shop) GameState.subModes.shop = 'exchange';
         setTimeout(() => {
-            applyAllEquippedVisuals(); 
+            if (typeof applyAllEquippedVisuals === 'function') {
+                applyAllEquippedVisuals(); 
+            }
         }, 300);
 
-        // Глобальный слушатель для закрытия тултипов по клику мимо
         document.addEventListener('click', (e) => {
             if (!e.target.closest('.shop-tt') && !e.target.closest('.info-icon-btn')) {
                 document.querySelectorAll('.shop-tt').forEach(el => el.style.opacity = '0');
