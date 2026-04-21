@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Игры Судьбы. v0.8.8.56</title>
+    <title>Игры Судьбы. v0.8.8.58</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
@@ -823,22 +823,34 @@ body.is-rps-game-active.rps-pvp-active #debugPanel .debug-rps-std { display: non
     cursor: pointer;
     padding: 4px 8px;
     transition: all 0.3s ease;
-    /* Неактивный флаг: серый и полупрозрачный */
+    
+    /* Добавляем цвет текста и жирность */
+    color: #ffffff; 
+    font-weight: bold;
+    font-family: inherit; /* Чтобы шрифт был как во всей игре */
+
+    /* Неактивный флаг: полупрозрачный */
     filter: grayscale(100%) opacity(0.4); 
     display: flex;
     align-items: center;
     justify-content: center;
 }
 
+/* Обязательно добавляем стиль для ВЫБРАННОГО языка */
 .flag-btn.active-flag {
-    /* Активный флаг: цветной, с неоновой рамкой и чуть больше */
-    border-color: var(--magic-color);
-    filter: grayscale(0%) opacity(1);
-    box-shadow: 0 0 10px rgba(162, 155, 254, 0.4);
-    transform: scale(1.1);
-    pointer-events: none; /* Запрещаем кликать на уже выбранный язык */
+    filter: grayscale(0%) opacity(1); /* Убираем прозрачность */
+    color: var(--magic-color); /* Или просто #ffffff, если хочешь белый */
+    border-color: var(--magic-color); /* Добавит красивую неоновую рамку */
+    text-shadow: 0 0 10px var(--magic-color); /* Свечение текста */
 }
 		
+
+/* УБИРАЕМ СИНЕЕ ВЫДЕЛЕНИЕ ПРИ ТАПЕ НА МОБИЛЬНЫХ УСТРОЙСТВАХ */
+* {
+    -webkit-tap-highlight-color: transparent !important;
+    outline: none !important;
+}
+
     </style>
 </head>
 
@@ -920,8 +932,14 @@ setInterval(() => {
     <div id="stars" class="stars-layer stars-active bg1-stars"></div>
 
     <div id="mainMenuOverlay">
-        <div class="version">v0.8.8.56</div> <div class="menu-top-bar">
-    <button class="menu-icon-btn" onclick="App.toggleSettings(true)"><i class="fas fa-cog"></i></button>
+        <div class="version">v0.8.8.58</div> 
+		<div class="menu-top-bar">
+    <button class="menu-icon-btn" style="margin-right: 15px;" onclick="if(typeof App !== 'undefined' && App.playSoundEffect) App.playSoundEffect('click'); if(typeof ShopGame !== 'undefined') ShopGame.toggleInventory(true);">
+        <i class="fas fa-box-open" style="color: var(--sun-gold); filter: drop-shadow(0 0 5px rgba(255,249,174,0.4));"></i>
+    </button>
+    <button class="menu-icon-btn" onclick="App.toggleSettings(true)">
+        <i class="fas fa-cog"></i>
+    </button>
 </div>
         <div id="mainMenuTitle" class="menu-title-main">Игры Судьбы</div>
         
@@ -963,20 +981,6 @@ setInterval(() => {
                         </button>
                     </div>
                     
-                    <div id="submodes-shop" style="display: none; flex-direction: column; gap: 8px; width: 100%;">
-                        <button class="sub-mode-btn active-sub" onclick="App.selectSubMode('shop', 'exchange', event)" id="sm-shop-exchange">
-                            <div class="float-corner-btn info-mode-btn" onclick="event.stopPropagation(); App.showSubModeRules(event, 'shop', 'exchange')" style="z-index: 20; pointer-events: auto;"><i class="fas fa-question"></i></div>
-                            <span id="sm-shop-exchange-lbl">ОБМЕН</span>
-                        </button>
-                        <button class="sub-mode-btn" onclick="App.selectSubMode('shop', 'standard', event)" id="sm-shop-standard">
-                            <div class="float-corner-btn info-mode-btn" onclick="event.stopPropagation(); App.showSubModeRules(event, 'shop', 'standard')" style="z-index: 20; pointer-events: auto;"><i class="fas fa-question"></i></div>
-                            <span id="sm-shop-standard-lbl">СТИЛИ</span>
-                        </button>
-                        <button class="sub-mode-btn" onclick="App.selectSubMode('shop', 'perks', event)" id="sm-shop-perks">
-                            <div class="float-corner-btn info-mode-btn" onclick="event.stopPropagation(); App.showSubModeRules(event, 'shop', 'perks')" style="z-index: 20; pointer-events: auto;"><i class="fas fa-question"></i></div>
-                            <span id="sm-shop-perks-lbl">ПЕРКИ</span>
-                        </button>
-                    </div>
 
                     <div id="submodes-sticks" style="display: none; flex-direction: column; gap: 8px; width: 100%;">
     <button class="sub-mode-btn active-sub" onclick="App.selectSubMode('sticks', 'standard', event)" id="sm-sticks-standard">
@@ -1010,10 +1014,10 @@ setInterval(() => {
 
                  <button class="square-game-btn" id="sel-game-sticks" onclick="App.previewGame('sticks')"><i class="fas fa-grip-lines-vertical"></i><span id="sel-sticks-txt">Жребий</span></button>
                  
-                 <button class="square-game-btn" id="sel-game-shop" onclick="App.previewGame('shop')">
+                 <button class="square-game-btn" id="sel-game-shop" onclick="if(typeof App !== 'undefined' && App.playSoundEffect) App.playSoundEffect('tick'); GameState.previewMode = 'shop'; App.selectGameMode();">
                     <i class="fas fa-shopping-cart" style="color:var(--sun-gold)"></i>
                     <span id="sel-shop-txt">МАГАЗИН</span>
-                 </button>
+</button>
             </div>
         </div>
         
@@ -1226,19 +1230,18 @@ setInterval(() => {
     <button class="debug-btn std-debug-btn shop-debug-btn" style="display: none; border-color: var(--magic-color); color: var(--magic-color);" onclick="App.addDebugCrystals()"><i class="fas fa-gem"></i></button>
 </div>
 
-        <div class="history-header" id="st-hist-head">История предсказаний</div>
-<div class="history" id="historyBlock">
+        <div class="history" id="historyBlock">
             <div id="historyListDice"></div>
             <div id="historyListRoulette" style="display: none;"></div>
-			<div id="historyListBank" style="display: none;"></div>
+            <div id="historyListBank" style="display: none;"></div>
             <div id="historyListSurvival" style="display: none;"></div>
             <div id="historyListCoin" style="display: none;"></div>
             <div id="historyListFlower" style="display: none;"></div>
             <div id="historyListRPS" style="display: none;"></div>
             <div id="historyListShop" style="display: none;"></div>
         </div>
-    
-    <div class="settings-overlay" id="settingsOverlay">
+
+    </div> <div class="settings-overlay" id="settingsOverlay">
         <div class="settings-modal" id="settingsModalInside">
             <h2 id="st-title-h2" style="margin-top:0; color:var(--magic-color)">Настройки</h2>
             
@@ -1248,6 +1251,7 @@ setInterval(() => {
                 <div class="setting-item"><span id="st-label-sparkles">Магические искры</span><label class="switch"><input type="checkbox" id="sparkleToggle" checked onchange="App.handleSparkleToggle()"><span class="slider"></span></label></div>
                 <div class="setting-item" id="st-debug-row"><span id="st-label-debug">Сила Оракула</span><label class="switch"><input type="checkbox" id="debugToggle" onchange="App.toggleDebug()"><span class="slider"></span></label></div>
             </div>
+            
             <div class="setting-item">
                 <span id="st-label-sound">Звук</span>
                 <button id="soundToggleBtn" onclick="App.toggleSound()" style="background: rgba(0,0,0,0.5); border: 1px solid var(--magic-color); color: var(--magic-color); border-radius: 10px; padding: 4px 12px; font-family: inherit; font-size: 14px; font-weight: bold; cursor: pointer; transition: 0.3s; min-width: 65px; text-align: center;">ВКЛ</button>
@@ -1261,8 +1265,8 @@ setInterval(() => {
             <div class="setting-item">
     <span id="st-label-lang">Язык</span>
     <div style="display: flex; gap: 10px;">
-        <button class="flag-btn" id="flag-ru" onclick="setLangFlag('ru')">🇷🇺</button>
-        <button class="flag-btn" id="flag-en" onclick="setLangFlag('en')">🇺🇸</button>
+        <button class="flag-btn" id="flag-ru" onclick="setLangFlag('ru')">RU</button>
+        <button class="flag-btn" id="flag-en" onclick="setLangFlag('en')">EN</button>
     </div>
     
     <select id="langSelect" style="display:none;" onchange="App.changeLanguage()">
@@ -1270,6 +1274,7 @@ setInterval(() => {
         <option value="en">en</option>
     </select>
 </div>
+            
             <button class="close-btn" id="st-btn-close" onclick="App.toggleSettings(false)">Закрыть</button>
         </div>
     </div>
@@ -1283,8 +1288,8 @@ setInterval(() => {
     </div>
 
     <script>
-            const tg = window.Telegram.WebApp; 
-            tg.expand();
+        const tg = window.Telegram.WebApp; 
+        tg.expand();
 
             // === БЕЗОПАСНАЯ ЗАГРУЗКА ===
             let savedProfiles = [];
@@ -2625,203 +2630,199 @@ function addCrystal(game = null, subMode = null, customAmount = null) {
 
 
             function openMainMenu() {
-                if (typeof App !== 'undefined' && App.playSoundEffect) App.playSoundEffect('click');
-                if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.HapticFeedback) {
-                    window.Telegram.WebApp.HapticFeedback.impactOccurred('light');
-                }
+    if (typeof App !== 'undefined' && App.playSoundEffect) App.playSoundEffect('click');
+    if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.HapticFeedback) {
+        window.Telegram.WebApp.HapticFeedback.impactOccurred('light');
+    }
 
-                // 1. Начинаем плавное исчезновение ВСЕГО интерфейса игры
-                const gui = document.getElementById('gameUI');
-                if (gui) gui.classList.remove('game-ui-visible');
+    // 1. Начинаем плавное исчезновение ВСЕГО интерфейса игры
+    const gui = document.getElementById('gameUI');
+    if (gui) {
+        gui.classList.remove('game-ui-visible');
+        gui.style.opacity = '0'; // Дополнительная страховка
+    }
 
-                // 2. ЖДЕМ 400мс, пока интерфейс не станет прозрачным (чтобы избежать скачков)
-                setTimeout(() => {
-                    // ЗАПОМИНАЕМ РЕЖИМ ПЕРЕД ВЫХОДОМ
-                    GameState.lastMode = GameState.mode;
+    // 2. ЖДЕМ 400мс, пока интерфейс не станет прозрачным
+    setTimeout(() => {
+        // 🛡️ ЗАЩИТА: Если мы выходим из магазина, принудительно восстанавливаем последнюю игру
+        if (GameState.previewMode === 'shop' || GameState.mode === 'shop') {
+            const p = (GameState.activeProfileIdx !== -1) ? GameState.profiles[GameState.activeProfileIdx] : null;
+            // Убеждаемся, что не восстанавливаем shop как последнюю игру
+            GameState.previewMode = (p && p.lastMode && p.lastMode !== 'shop') ? p.lastMode : 'dice';
+            GameState.mode = GameState.previewMode;
+        }
 
-                    // Отмонтируем текущую игру (она уже невидима, поэтому скачков не будет)
-                    if (GameState.mode === 'dice' && typeof DiceGame !== 'undefined') DiceGame.unmount();
-                    else if (GameState.mode === 'roulette' && typeof RouletteGame !== 'undefined') RouletteGame.unmount();
-                    else if (GameState.mode === 'coin' && typeof CoinGame !== 'undefined') CoinGame.unmount();
-                    else if (GameState.mode === 'flower' && typeof FlowerGame !== 'undefined') FlowerGame.unmount();
-                    else if (GameState.mode === 'rps' && typeof RPSGame !== 'undefined') RPSGame.unmount();
-                    else if (GameState.mode === 'shop' && typeof ShopGame !== 'undefined') ShopGame.unmount();
-                    else if (GameState.mode === 'sticks' && typeof SticksGame !== 'undefined') SticksGame.unmount();
-
-                    // Железобетонно прячем все контейнеры
-                    ['mainStage', 'rouletteStage', 'coinStage', 'flowerStage', 'rpsStage', 'shopStage', 'drumWrapper', 'bulletStash', 'rouletteStatusBtn', 'randomLoadBtn'].forEach(id => {
-                        const el = document.getElementById(id);
-                        if (el) el.style.display = 'none';
-                    });
-
-                    GameState.mode = 'menu';
-
-                    // === ВОТ ОН, ФИКС ПУСТОГО ЭКРАНА ===
-                    // Возвращаем Главное Меню на экран физически, а затем плавно проявляем
-                    const overlay = document.getElementById('mainMenuOverlay');
-                    if (overlay) {
-                        overlay.style.display = 'flex'; // Возвращаем в верстку!
-                        void overlay.offsetWidth; // Хак браузера для применения анимации
-                        overlay.classList.remove('menu-fade-out');
-                    }
-
-                    // ВЫЗЫВАЕМ ПРЕВЬЮ ПОСЛЕ ТОГО КАК МЕНЮ ОТКРЫТО
-                    setTimeout(() => {
-                        if (GameState.lastMode) previewGame(GameState.lastMode);
-                    }, 50);
-
-                    if (typeof updateHistoryView === 'function') updateHistoryView();
-                }, 400); // 400мс идеально совпадают с CSS-анимацией opacity
-            }
+        // 3. Вызываем превью с уже исправленным режимом (isLoading = true для корректной отрисовки)
+        previewGame(GameState.previewMode, true); 
+        
+        // 4. ОЖИВЛЯЕМ ГЛАВНОЕ МЕНЮ
+        const menu = document.getElementById('mainMenuOverlay');
+        if (menu) {
+            menu.classList.remove('menu-fade-out'); // КРИТИЧЕСКИЙ ФИКС: Снимаем блокировку видимости
+            menu.style.display = 'flex';
+            setTimeout(() => {
+                menu.style.opacity = '1';
+                menu.style.pointerEvents = 'auto'; // Возвращаем кликабельность
+            }, 10);
+        }
+        
+        // 5. Отмонтируем текущую игру (включая магазин)
+        if (typeof unmountActiveGame === 'function') unmountActiveGame();
+        
+        // Дополнительно прячем все стационарные сцены
+        ['mainStage', 'rouletteStage', 'shopStage', 'flowerStage', 'rpsStage'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.style.display = 'none';
+        });
+        
+    }, 400);
+}
 
             function updateSubModeHighlights() {
-    if (!GameState.subModes) GameState.subModes = {};
-    
-    // АВТО-КОРРЕКТОР
-    if (GameState.subModes.dice === 'dots') GameState.subModes.dice = 'standard';
-    if (GameState.subModes.roulette === 'dots') GameState.subModes.roulette = 'standard';
-    
     const games = ['dice', 'roulette', 'coin', 'flower', 'rps', 'shop', 'sticks'];
-    
     games.forEach(g => {
-        if (!GameState.subModes[g]) GameState.subModes[g] = 'standard';
-    });
+        const subContainer = document.getElementById(`submodes-${g}`);
+        if (!subContainer) return; // Если контейнера нет (как теперь у магазина), просто идем дальше
 
-    // Снимаем классы
-    document.querySelectorAll('.sub-mode-btn').forEach(b => b.classList.remove('active-sub'));
-    
-    // Ставим нужные
-    games.forEach(g => {
-        const btn = document.getElementById(`sm-${g}-${GameState.subModes[g]}`);
-        if (btn) btn.classList.add('active-sub');
+        // Снимаем подсветку со всех кнопок в этом блоке
+        const btns = subContainer.querySelectorAll('.sub-mode-btn');
+        btns.forEach(b => b.classList.remove('active-sub'));
+
+        // Подсвечиваем только ту, что реально есть в памяти
+        const activeBtn = document.getElementById(`sm-${g}-${GameState.subModes[g]}`);
+        if (activeBtn) activeBtn.classList.add('active-sub');
     });
 }
 
 		function previewGame(mode, isLoading = false) {
-    // 1. Определяем режим (берем из памяти или ставим Кость)
-    if (!mode) mode = GameState.mode || 'dice'; 
-    
-    // 2. ЗАПИСЫВАЕМ В ПАМЯТЬ ПРОФИЛЯ только если это не загрузка и не переключение
-    // Это критически важно, чтобы старый режим не перезаписал данные нового профиля
-    if (!isLoading && !isSwitchingProfile) {
-        const p = (GameState.activeProfileIdx !== -1) ? GameState.profiles[GameState.activeProfileIdx] : null;
-        if (p) {
-            p.lastMode = mode; // Сохраняем индивидуально для профиля
-            if (typeof App !== 'undefined' && App.requestProfileSave) App.requestProfileSave();
+        // 🛑 Запрещаем "Магазину" ломать главную карточку
+        if (mode === 'shop' && !isLoading) return; 
+
+        if (!mode) mode = GameState.mode || 'dice'; 
+        
+        // 💾 Сохраняем в профиль только реальные игры
+        if (!isLoading && typeof isSwitchingProfile !== 'undefined' && !isSwitchingProfile && mode !== 'shop') {
+            const p = (GameState.activeProfileIdx !== -1) ? GameState.profiles[GameState.activeProfileIdx] : null;
+            if (p) {
+                p.lastMode = mode; 
+                if (typeof App !== 'undefined' && App.requestProfileSave) App.requestProfileSave();
+            }
+        }
+        
+        if (mode !== 'shop') {
+            GameState.mode = mode; 
+            GameState.previewMode = mode; 
+        }
+
+        const card = document.getElementById('menuPreviewCard');
+        const pcIcon = document.getElementById('preview-card-icon');
+        const previewTitle = document.getElementById('preview-card-title');
+        const t = (typeof LANG_DATA !== 'undefined' && GameState.lang && LANG_DATA[GameState.lang]) 
+                    ? LANG_DATA[GameState.lang] 
+                    : {};
+
+        // 1. Сбрасываем активные состояния со всех кнопок в сетке
+        ['dice', 'roulette', 'coin', 'flower', 'rps', 'shop', 'sticks', 'lots'].forEach(id => {
+            const el = document.getElementById('sel-game-' + id);
+            if (el) el.classList.remove('active-preview');
+            const sub = document.getElementById('submodes-' + id);
+            if (sub) sub.style.display = 'none';
+        });
+
+        // 2. Включаем выбранную игру (подсветка в сетке и показ её подрежимов)
+        const activeBtn = document.getElementById('sel-game-' + mode);
+        if (activeBtn) activeBtn.classList.add('active-preview');
+        
+        const subBlock = document.getElementById('submodes-' + mode);
+        if (subBlock && mode !== 'shop') subBlock.style.display = 'flex';
+
+        // 3. 🛠 ОБНОВЛЕННЫЙ ДВИЖОК КАРТОЧКИ (Без глючных if / else)
+        const cardConfigs = {
+            'dice': { color: 'var(--magic-color)', shadow: 'rgba(162, 155, 254, 0.2)', icon: '<i class="fas fa-dice-d6"></i>', title: t.menuDice || 'Кость Истины' },
+            'roulette': { color: 'var(--angry-red)', shadow: 'rgba(255, 102, 102, 0.2)', icon: '<svg viewBox="0 0 200 200" style="height: 45px; width: auto;" fill="currentColor"><path fill-rule="evenodd" d="M 100,4 A 96,96 0 1,1 100,196 A 96,96 0 1,1 100,4 Z M 100,86 A 14,14 0 1,0 100,114 A 14,14 0 1,0 100,86 Z M 100,6 A 22,22 0 1,0 100,50 A 22,22 0 1,0 100,6 Z M 162.35,42 A 22,22 0 1,0 162.35,86 A 22,22 0 1,0 162.35,42 Z M 162.35,114 A 22,22 0 1,0 162.35,158 A 22,22 0 1,0 162.35,114 Z M 100,150 A 22,22 0 1,0 100,194 A 22,22 0 1,0 100,150 Z M 37.65,114 A 22,22 0 1,0 37.65,158 A 22,22 0 1,0 37.65,114 Z M 37.65,42 A 22,22 0 1,0 37.65,86 A 22,22 0 1,0 37.65,42 Z"></path></svg>', title: t.menuRoulette || 'Роковая Пуля' },
+            'coin': { color: '#cbd5e1', shadow: 'rgba(255, 255, 255, 0.2)', icon: '<svg viewBox="0 0 100 100" style="height: 45px; width: auto;" fill="none" stroke="currentColor" stroke-width="8"><circle cx="50" cy="50" r="40"/><rect x="38" y="38" width="24" height="24" rx="4" stroke-width="6" transform="rotate(45 50 50)"/></svg>', title: t.menuCoin || 'Грань Выбора' },
+            'flower': { color: 'var(--friendly-green)', shadow: 'rgba(204, 255, 204, 0.2)', icon: '<i class="fas fa-seedling"></i>', title: t.menuFlower || 'Лепестки' },
+            'rps': { color: '#ff9f43', shadow: 'rgba(255, 159, 67, 0.2)', icon: '<i class="fas fa-hand-rock"></i>', title: t.menuRPS || 'К-Н-Б' },
+            'lots': { color: '#00d2d3', shadow: 'rgba(0, 210, 211, 0.2)', icon: '<i class="fas fa-grip-lines-vertical"></i>', title: t.btnSticks || 'Жребий' },
+            'sticks': { color: '#00d2d3', shadow: 'rgba(0, 210, 211, 0.2)', icon: '<i class="fas fa-grip-lines-vertical"></i>', title: t.btnSticks || 'Жребий' }
+        };
+
+        // Гарантированное применение стилей к карточке
+        const conf = cardConfigs[mode];
+        if (conf && mode !== 'shop') {
+            if (card) {
+                card.style.borderColor = conf.color;
+                card.style.boxShadow = `0 0 10px ${conf.shadow}`;
+                card.style.color = conf.color;
+            }
+            if (pcIcon) pcIcon.innerHTML = conf.icon;
+            if (previewTitle) previewTitle.innerText = conf.title;
+        }
+
+        // Синхронизация подсветки
+        if (typeof updateSubModeHighlights === 'function') {
+            updateSubModeHighlights();
+        }
+
+        if (typeof tg !== 'undefined' && tg.HapticFeedback && tg.HapticFeedback.selectionChanged) {
+            tg.HapticFeedback.selectionChanged();
         }
     }
-    
-    GameState.mode = mode; 
-    GameState.previewMode = mode; 
-
-    // 3. ВИЗУАЛЬНОЕ ПЕРЕКЛЮЧЕНИЕ МЕНЮ 
-    const card = document.getElementById('menuPreviewCard');
-    const t = LANG_DATA[GameState.lang];
-
-    // Синхронно прячем все игры и подменю
-    ['dice', 'roulette', 'coin', 'flower', 'rps', 'shop', 'sticks'].forEach(id => {
-        const el = document.getElementById('sel-game-' + id);
-        if (el) el.classList.remove('active-preview');
-        const sub = document.getElementById('submodes-' + id);
-        if (sub) sub.style.display = 'none';
-    });
-
-    // Включаем активную
-    const activeBtn = document.getElementById('sel-game-' + mode);
-    if(activeBtn) activeBtn.classList.add('active-preview');
-    const subBlock = document.getElementById('submodes-' + mode);
-    if(subBlock) subBlock.style.display = 'flex';
-
-    if (mode === 'dice') {
-        if(card) { card.style.borderColor = "var(--magic-color)"; card.style.boxShadow = "0 0 10px rgba(162, 155, 254, 0.2)"; card.style.color = "var(--magic-color)"; }
-        const pcIcon = document.getElementById('preview-card-icon'); if(pcIcon) pcIcon.innerHTML = `<i class="fas fa-dice-d6"></i>`;
-        const previewTitle = document.getElementById('preview-card-title'); if (previewTitle) previewTitle.innerText = t.menuDice;
-    } else if (mode === 'roulette') {
-        if(card) { card.style.borderColor = "var(--angry-red)"; card.style.boxShadow = "0 0 10px rgba(255, 102, 102, 0.2)"; card.style.color = "var(--angry-red)"; }
-        const pcIcon = document.getElementById('preview-card-icon'); if(pcIcon) pcIcon.innerHTML = `<svg viewBox="0 0 200 200" style="height: 45px; width: auto;" fill="currentColor"><path fill-rule="evenodd" d="M 100,4 A 96,96 0 1,1 100,196 A 96,96 0 1,1 100,4 Z M 100,86 A 14,14 0 1,0 100,114 A 14,14 0 1,0 100,86 Z M 100,6 A 22,22 0 1,0 100,50 A 22,22 0 1,0 100,6 Z M 162.35,42 A 22,22 0 1,0 162.35,86 A 22,22 0 1,0 162.35,42 Z M 162.35,114 A 22,22 0 1,0 162.35,158 A 22,22 0 1,0 162.35,114 Z M 100,150 A 22,22 0 1,0 100,194 A 22,22 0 1,0 100,150 Z M 37.65,114 A 22,22 0 1,0 37.65,158 A 22,22 0 1,0 37.65,114 Z M 37.65,42 A 22,22 0 1,0 37.65,86 A 22,22 0 1,0 37.65,42 Z"></path></svg>`;
-        const previewTitle = document.getElementById('preview-card-title'); if (previewTitle) previewTitle.innerText = t.menuRoulette;
-    } else if (mode === 'coin') {
-        if(card) { card.style.borderColor = "#cbd5e1"; card.style.boxShadow = "0 0 10px rgba(255, 255, 255, 0.2)"; card.style.color = "#cbd5e1"; }
-        const pcIcon = document.getElementById('preview-card-icon'); if(pcIcon) pcIcon.innerHTML = `<svg viewBox="0 0 100 100" style="height: 45px; width: auto;" fill="none" stroke="currentColor" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="50" cy="42" rx="40" ry="16"/><ellipse cx="50" cy="42" rx="24" ry="9" stroke-width="6"/><path d="M 10 42 v 16 a 40 16 0 0 0 80 0 v -16"/><path d="M 26 55 v 16 M 38 57 v 16 M 50 58 v 16 M 62 57 v 16 M 74 55 v 16" stroke-width="4"/></svg>`;
-        const previewTitle = document.getElementById('preview-card-title'); if (previewTitle) previewTitle.innerText = t.menuCoin || "Грань Выбора";
-    } else if (mode === 'flower') {
-        if(card) { card.style.borderColor = "var(--friendly-green)"; card.style.boxShadow = "0 0 10px rgba(250, 204, 21, 0.2)"; card.style.color = "var(--friendly-green)"; }
-        const pcIcon = document.getElementById('preview-card-icon'); if(pcIcon) pcIcon.innerHTML = `<svg viewBox="0 0 100 100" style="height: 45px; width: auto;" fill="none" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"><path d="M50 15 Q60 30 50 50 Q40 30 50 15 M50 85 Q60 70 50 50 Q40 70 50 85 M15 50 Q30 60 50 50 Q30 40 15 50 M85 50 Q70 60 50 50 Q70 40 85 50 M25 25 Q40 35 50 50 Q35 40 25 25 M75 75 Q60 65 50 50 Q65 60 75 75 M25 75 Q40 65 50 50 Q35 60 25 75 M75 25 Q60 35 50 50 Q65 40 75 25"/><circle cx="50" cy="50" r="10" fill="currentColor"/></svg>`;
-        const previewTitle = document.getElementById('preview-card-title'); if (previewTitle) previewTitle.innerText = t.menuFlower || "Лепестки";
-    } else if (mode === 'rps') {
-        if(card) { card.style.borderColor = "#ff9f43"; card.style.boxShadow = "0 0 10px rgba(255, 159, 67, 0.2)"; card.style.color = "#ff9f43"; }
-        const pcIcon = document.getElementById('preview-card-icon'); if(pcIcon) pcIcon.innerHTML = `<i class="fas fa-hand-peace"></i>`;
-        const previewTitle = document.getElementById('preview-card-title'); if (previewTitle) previewTitle.innerText = t.menuRPS || "К-Н-Б";
-    } else if (mode === 'shop') {
-        if(card) { card.style.borderColor = "var(--sun-gold)"; card.style.boxShadow = "0 0 10px rgba(255, 249, 174, 0.2)"; card.style.color = "var(--sun-gold)"; }
-        const pcIcon = document.getElementById('preview-card-icon'); if(pcIcon) pcIcon.innerHTML = `<i class="fas fa-shopping-cart"></i>`;
-        const previewTitle = document.getElementById('preview-card-title'); if (previewTitle) previewTitle.innerText = t.menuShop || "Магазин";
-    } else if (mode === 'sticks') {
-        if(card) { 
-            card.style.borderColor = "#00d2d3"; 
-            card.style.boxShadow = "0 0 10px rgba(0, 210, 211, 0.2)"; 
-            card.style.color = "#00d2d3"; 
-        }
-        const pcIcon = document.getElementById('preview-card-icon'); 
-        if(pcIcon) pcIcon.innerHTML = `<i class="fas fa-grip-lines-vertical"></i>`;
-        const previewTitle = document.getElementById('preview-card-title'); 
-        if (previewTitle) previewTitle.innerText = t.btnSticks || "ЖРЕБИЙ";
-    }
-    
-    // ВЫЗЫВАЕМ ПОДСВЕТКУ СРАЗУ (передаем mode!)
-    if (typeof updateSubModeHighlights === 'function') {
-        updateSubModeHighlights();
-    }
-
-    if (typeof tg !== 'undefined' && tg.HapticFeedback && tg.HapticFeedback.selectionChanged) {
-        tg.HapticFeedback.selectionChanged();
-    }
-}
 
             function selectGameMode() {
-			GameState.mode = GameState.previewMode || 'dice'; // ПЕРЕКЛЮЧАЕМ РЕЖИМ ТОЛЬКО ЗДЕС
-                playSoundEffect('tick');
-                if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
+    // 🛡️ ГАРАНТИЯ ВИДИМОСТИ: Включаем слой игры СРАЗУ, без задержек
+    const gui = document.getElementById('gameUI');
+    if (gui) {
+        gui.classList.add('game-ui-visible');
+        gui.style.opacity = '1'; // Сбрасываем ручную блокировку
+        gui.style.pointerEvents = 'auto';
+    }
 
-                // РОДНАЯ ЛОГИКА v39: Прячем вообще ВСЕ возможные элементы игр
-                ['mainStage', 'rouletteStage', 'coinStage', 'flowerStage', 'rpsStage', 'shopStage', 'drumWrapper', 'bulletStash', 'rouletteStatusBtn', 'randomLoadBtn'].forEach(id => {
-                    const el = document.getElementById(id);
-                    if (el) el.style.display = 'none';
-                });
+    GameState.mode = GameState.previewMode || 'dice'; 
+    if (typeof playSoundEffect === 'function') playSoundEffect('tick');
+    if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
 
-                const rollBtn = document.getElementById('rollBtn');
-                if (rollBtn) {
-                    const newBtn = rollBtn.cloneNode(true);
-                    rollBtn.parentNode.replaceChild(newBtn, rollBtn);
-                    newBtn.disabled = false;
-                    newBtn.style.display = ''; 
-                    newBtn.innerText = ''; 
-                }
+    // Прячем вообще ВСЕ возможные элементы старых сцен
+    ['mainStage', 'rouletteStage', 'coinStage', 'flowerStage', 'rpsStage', 'shopStage', 'drumWrapper', 'bulletStash', 'rouletteStatusBtn', 'randomLoadBtn'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.style.display = 'none';
+    });
 
-                if (GameState.activeProfileIdx !== -1 && GameState.profiles[GameState.activeProfileIdx]) {
-                    const p = GameState.profiles[GameState.activeProfileIdx];
-                    if (p.equipped) {
-                        ['style_dice', 'roulette_drum', 'roulette_bullets', 'style_coin', 'style_flower', 'style_rps'].forEach(id => {
-                            if (p.equipped[id]) document.body.classList.add(`theme-${id}`);
-                            else document.body.classList.remove(`theme-${id}`);
-                        });
-                    }
-                }
+    // Пересоздаем кнопку броска, чтобы очистить старые обработчики
+    const rollBtn = document.getElementById('rollBtn');
+    if (rollBtn) {
+        const newBtn = rollBtn.cloneNode(true);
+        rollBtn.parentNode.replaceChild(newBtn, rollBtn);
+        newBtn.disabled = false;
+        newBtn.style.display = ''; 
+        newBtn.innerText = ''; 
+    }
 
-                const mmo = document.getElementById('mainMenuOverlay');
-                if(mmo) mmo.classList.add('menu-fade-out');
+    // Применяем экипированные стили из профиля
+    if (GameState.activeProfileIdx !== -1 && GameState.profiles[GameState.activeProfileIdx]) {
+        const p = GameState.profiles[GameState.activeProfileIdx];
+        if (p.equipped) {
+            ['style_dice', 'roulette_drum', 'roulette_bullets', 'style_coin', 'style_flower', 'style_rps'].forEach(id => {
+                if (p.equipped[id]) document.body.classList.add(`theme-${id}`);
+                else document.body.classList.remove(`theme-${id}`);
+            });
+        }
+    }
 
-                GameState.mode = GameState.previewMode || 'dice';
+    // Скрываем главное меню
+    const mmo = document.getElementById('mainMenuOverlay');
+    if(mmo) mmo.classList.add('menu-fade-out');
 
-                setTimeout(() => {
-                    if(mmo) mmo.style.display = 'none';
-                    try {
-                        if (typeof mountActiveGame === 'function') mountActiveGame();
-                    } catch(e) {}
-                    const gui = document.getElementById('gameUI');
-                    if(gui) gui.classList.add('game-ui-visible');
-                }, 500);
-            }
+    // Запускаем логику конкретной игры
+    setTimeout(() => {
+        if(mmo) mmo.style.display = 'none';
+        try {
+            if (typeof mountActiveGame === 'function') mountActiveGame();
+        } catch(e) {
+            console.error("Ошибка при монтировании игры:", e);
+        }
+    }, 500);
+}
             
             function selectSubMode(game, mode, e) {
     if (e) e.stopPropagation();
@@ -3936,104 +3937,112 @@ function addCrystal(game = null, subMode = null, customAmount = null) {
 
             // ЗАМЕНИТЬ начало функции finalizeRoll в ПЛАГИНЕ 1: Кость Истины (DiceGame)
             function finalizeRoll(rIdx, originalQuestion, t) {
-                // 1. Читаем унифицированный режим standard
-                let dMode = (typeof GameState !== 'undefined' && GameState.subModes && GameState.subModes.dice) ? GameState.subModes.dice : 'standard';
-                if (dMode === 'dots') dMode = 'standard'; // Коррекция для старых профилей
+        // 1. Читаем унифицированный режим
+        let dMode = (typeof GameState !== 'undefined' && GameState.subModes && GameState.subModes.dice) ? GameState.subModes.dice : 'standard';
+        if (dMode === 'dots' || dMode === 'numbers') dMode = 'standard'; 
 
-                let isSuccess = (rIdx % 2 !== 0), uiColor = isSuccess ? "#00cc66" : "#ff6666", snd = 'positive';
-                let resT = "", resD = "", subI = "", histDispTxt = "", mTag = "";
-                let displaySubI = ""; 
+        let isSuccess = (rIdx % 2 !== 0), uiColor = isSuccess ? "#00cc66" : "#ff6666", snd = 'positive';
+        let resT = "", resD = "", subI = "", histDispTxt = "", mTag = "", displaySubI = ""; 
 
-                const resSub = document.getElementById('res-sub');
-                if(resSub) resSub.classList.remove('heart-pulse', 'skull-aura');
-                
-                const modeTitles = { standard: t.smDiceStd || "Обычная", trader: t.smDiceTrad || "Трейдер", alco: t.smDiceAlco || "Алко", yesno: "Да/Нет" };
-                let histModeStrengthHistory = `[${modeTitles[dMode] || dMode.toUpperCase()}]`;
+        const resSub = document.getElementById('res-sub');
+        if (resSub) resSub.classList.remove('heart-pulse', 'skull-aura');
+        
+        const modeTitles = { standard: t.smDiceStd || "Обычная", trader: t.smDiceTrad || "Трейдер", alco: t.smDiceAlco || "Алко", yesno: "Да/Нет" };
+        let histModeStrengthHistory = `[${modeTitles[dMode] || dMode.toUpperCase()}]`;
 
-                if (dMode === 'trader') { 
-                    uiColor = (rIdx === 0 || rIdx === 2 || rIdx === 4) ? "#ccffcc" : "#ff6666"; 
-                    if (rIdx === 4) uiColor = "#ffffff"; 
-                    if (rIdx === 5) { uiColor = "#ff0000"; snd = 'scam'; } else snd = (rIdx === 0 || rIdx === 2 || rIdx === 4) ? 'positive' : 'negative'; 
-                    subI = traderIcons[rIdx]; resT = t.traderFaces[rIdx]; resD = ""; histDispTxt = t.traderFaces[rIdx]; displaySubI = ""; 
-                } 
-                else if (dMode === 'alco') { 
-                    uiColor = ["#ff5e62", "#ffbd69", "#d4fc79", "#f9f586", "#96fbc4", "#a29bfe"][rIdx]; 
-                    snd = (rIdx === 5) ? 'water' : 'alco'; 
-                    subI = alcoIcons[rIdx]; resT = t.alcoFaces[rIdx]; resD = ""; histDispTxt = t.alcoFaces[rIdx]; displaySubI = ""; 
-                } 
-                else if (dMode === 'yesno') { 
-                    snd = isSuccess ? 'positive' : 'negative'; subI = isSuccess ? '<i class="fas fa-check"></i>' : '<i class="fas fa-times"></i>'; resT = resData[GameState.lang][rIdx].t; resD = resData[GameState.lang][rIdx].s; 
-                    const ynOrder = GameState.lang === 'ru' ? ["НЕТ", "ДА", "НЕТ", "ДА", "НЕТ", "ДА"] : ["NO", "YES", "NO", "YES", "NO", "YES"];
-                    histDispTxt = ynOrder[rIdx]; displaySubI = subI;
-                    histModeStrengthHistory += ` [<span style="color:#ffffff; font-weight:bold;">${resData[GameState.lang][rIdx].s}</span>]`; 
-                } else { 
-                    snd = isSuccess ? 'positive' : 'negative'; resT = resData[GameState.lang][rIdx].t; resD = resData[GameState.lang][rIdx].s; 
-                    histDispTxt = `${resData[GameState.lang][rIdx].t} (<span style="color:${uiColor};">${resData[GameState.lang][rIdx].s}</span>)`; 
-                    histModeStrengthHistory += ` [<span style="color:#ffffff; font-weight:bold;">${currentFaces[rIdx]}</span>]`; 
-                    displaySubI = subI;
-                }
-                
-                mTag = ` <span style="color:#aaa; font-size:9px;">${histModeStrengthHistory} [${currentFaces[rIdx]}]</span>`;
+        if (dMode === 'trader') { 
+            uiColor = (rIdx === 0 || rIdx === 2 || rIdx === 4) ? "#ccffcc" : "#ff6666"; 
+            if (rIdx === 4) uiColor = "#ffffff"; 
+            if (rIdx === 5) { uiColor = "#ff0000"; snd = 'scam'; } else snd = (rIdx === 0 || rIdx === 2 || rIdx === 4) ? 'positive' : 'negative'; 
+            subI = traderIcons[rIdx]; 
+            // ЗАЩИТА: Если словаря нет, ставим дефолт
+            resT = (t.traderFaces && t.traderFaces[rIdx]) ? t.traderFaces[rIdx] : ['🚀 Туземун', '📉 Дамп', '📈 Памп', '📉 Шорт', '↔️ Флэт', '💀 Скам'][rIdx]; 
+            resD = ""; histDispTxt = resT; displaySubI = ""; 
+        } 
+        else if (dMode === 'alco') { 
+            uiColor = ["#ff5e62", "#ffbd69", "#d4fc79", "#f9f586", "#96fbc4", "#a29bfe"][rIdx]; 
+            snd = (rIdx === 5) ? 'water' : 'alco'; 
+            subI = alcoIcons[rIdx]; 
+            // ЗАЩИТА: Если словаря нет, ставим дефолт
+            resT = (t.alcoFaces && t.alcoFaces[rIdx]) ? t.alcoFaces[rIdx] : ['Выпей шот', 'Пиво', 'Коктейль', 'Виски', 'Спирт', 'Вода (Пронесло)'][rIdx]; 
+            resD = ""; histDispTxt = resT; displaySubI = ""; 
+        } 
+        else if (dMode === 'yesno') { 
+            snd = isSuccess ? 'positive' : 'negative'; subI = isSuccess ? '<i class="fas fa-check"></i>' : '<i class="fas fa-times"></i>'; 
+            resT = resData[GameState.lang][rIdx].t; resD = resData[GameState.lang][rIdx].s; 
+            const ynOrder = GameState.lang === 'ru' ? ["НЕТ", "ДА", "НЕТ", "ДА", "НЕТ", "ДА"] : ["NO", "YES", "NO", "YES", "NO", "YES"];
+            histDispTxt = ynOrder[rIdx]; displaySubI = subI;
+            histModeStrengthHistory += ` [<span style="color:#ffffff; font-weight:bold;">${resData[GameState.lang][rIdx].s}</span>]`; 
+        } 
+        else { 
+            snd = isSuccess ? 'positive' : 'negative'; 
+            resT = resData[GameState.lang][rIdx].t; resD = resData[GameState.lang][rIdx].s; 
+            histDispTxt = `${resData[GameState.lang][rIdx].t} (<span style="color:${uiColor};">${resData[GameState.lang][rIdx].s}</span>)`; 
+            histModeStrengthHistory += ` [<span style="color:#ffffff; font-weight:bold;">${currentFaces[rIdx]}</span>]`; 
+            displaySubI = subI;
+        }
+        
+        mTag = ` <span style="color:#aaa; font-size:9px;">${histModeStrengthHistory} [${currentFaces[rIdx]}]</span>`;
 
-                const f = document.getElementById(`face${rIdx + 1}`); 
-                if(f) { 
-                    f.style.setProperty('color', uiColor, 'important'); 
-                    f.style.setProperty('text-shadow', `0 0 25px ${uiColor}, 0 0 10px ${uiColor}`, 'important');
-                    f.style.removeProperty('border-color');
-                    f.style.removeProperty('box-shadow');
-                    const dots = f.querySelectorAll('.dot');
-                    dots.forEach(dot => {
-                        dot.style.setProperty('background-color', uiColor, 'important');
-                        dot.style.setProperty('box-shadow', `0 0 15px ${uiColor}, 0 0 5px ${uiColor}`, 'important'); 
-                    });
-                }
+        const f = document.getElementById(`face${rIdx + 1}`); 
+        if(f) { 
+            f.style.setProperty('color', uiColor, 'important'); 
+            f.style.setProperty('text-shadow', `0 0 25px ${uiColor}, 0 0 10px ${uiColor}`, 'important');
+            f.style.removeProperty('border-color');
+            f.style.removeProperty('box-shadow');
+            const dots = f.querySelectorAll('.dot');
+            dots.forEach(dot => {
+                dot.style.setProperty('background-color', uiColor, 'important');
+                dot.style.setProperty('box-shadow', `0 0 15px ${uiColor}, 0 0 5px ${uiColor}`, 'important'); 
+            });
+        }
 
-                if (tg.HapticFeedback) { if (snd === 'scam') { tg.HapticFeedback.notificationOccurred('error'); } else if (snd === 'water') { [0,200,400].forEach(delay=>setTimeout(()=>tg.HapticFeedback.impactOccurred('medium'),delay)); } else { tg.HapticFeedback.impactOccurred('light'); } }
+        if (tg.HapticFeedback) { if (snd === 'scam') { tg.HapticFeedback.notificationOccurred('error'); } else if (snd === 'water') { [0,200,400].forEach(delay=>setTimeout(()=>tg.HapticFeedback.impactOccurred('medium'),delay)); } else { tg.HapticFeedback.impactOccurred('light'); } }
 
-                const rm = document.getElementById('res-main'); if(rm) rm.innerHTML = resT; 
-                if(resSub) { resSub.innerHTML = displaySubI; resSub.style.color = uiColor; resSub.style.textShadow = `0 0 25px ${uiColor}`; }
-                const rd = document.getElementById('res-desc'); if(rd) rd.innerHTML = resD;
-                
-                const rCont = document.getElementById('res-content');
-                if(rCont) {
-                    rCont.style.color = uiColor; rCont.style.textShadow = `0 0 15px ${uiColor}`;
-                    void rCont.offsetWidth; rCont.classList.add('visible');
-                }
-                if(typeof App !== 'undefined') App.playSoundEffect('result', snd);
+        const rm = document.getElementById('res-main'); if(rm) rm.innerHTML = resT; 
+        if(resSub) { resSub.innerHTML = displaySubI; resSub.style.color = uiColor; resSub.style.textShadow = `0 0 25px ${uiColor}`; }
+        const rd = document.getElementById('res-desc'); if(rd) rd.innerHTML = resD;
+        
+        const rCont = document.getElementById('res-content');
+        if(rCont) {
+            rCont.style.color = uiColor; rCont.style.textShadow = `0 0 15px ${uiColor}`;
+            void rCont.offsetWidth; rCont.classList.add('visible');
+        }
+        
+        if(typeof App !== 'undefined') App.playSoundEffect('result', snd);
 
-                // 2. ИМЕННО ЗДЕСЬ ФОРМИРУЕТСЯ КЛАСС hist-standard ДЛЯ ИММУННОЙ СИСТЕМЫ
-                const item = document.createElement('div'); 
-                item.className = 'history-item hist-' + dMode; // БУДЕТ 'hist-standard'
-                
-                const qMark = `<span style="color:#fff; font-weight:bold; text-shadow: 0 0 8px #fff, 0 0 15px var(--magic-color);">?</span>`;
-                item.innerHTML = `${qMark} ${GameState.isQuestionHidden?'---':originalQuestion}${mTag}<br><span style="color:${uiColor};">➔ ${subI} ${histDispTxt}</span>`;
-                
-                const hlDice = document.getElementById('historyListDice');
-                if(hlDice) hlDice.prepend(item);
+        const item = document.createElement('div'); 
+        item.className = 'history-item hist-' + dMode;
+        
+        const qMark = `<span style="color:#fff; font-weight:bold; text-shadow: 0 0 8px #fff, 0 0 15px var(--magic-color);">?</span>`;
+        item.innerHTML = `${qMark} ${GameState.isQuestionHidden?'---':originalQuestion}${mTag}<br><span style="color:${uiColor};">➔ ${subI} ${histDispTxt}</span>`;
+        
+        const hlDice = document.getElementById('historyListDice');
+        if(hlDice) hlDice.prepend(item);
 
-                if(typeof App !== 'undefined') { 
-                    let isWin = false;
-                    if (dMode === 'trader') isWin = (rIdx === 0 || rIdx === 2 || rIdx === 4);
-                    else if (dMode === 'alco') isWin = (rIdx !== 5);
-                    else isWin = isSuccess;
-                    
-                    if (isWin) App.addCrystal('dice', dMode); 
-                    App.requestProfileSave(); 
-                }
+        if(typeof App !== 'undefined') { 
+            let isWin = false;
+            if (dMode === 'trader') isWin = (rIdx === 0 || rIdx === 2 || rIdx === 4);
+            else if (dMode === 'alco') isWin = (rIdx !== 5);
+            else isWin = isSuccess;
+            
+            if (isWin) App.addCrystal('dice', dMode); 
+            App.requestProfileSave(); 
+        }
 
-                const uq = document.getElementById('userQuestion');
-                if (!GameState.isQuestionHidden && uq) uq.value = '';
-                if (typeof App !== 'undefined' && typeof App.clearQuestionDraft === 'function') App.clearQuestionDraft();
+        const uq = document.getElementById('userQuestion');
+        if (!GameState.isQuestionHidden && uq) uq.value = '';
+        if (typeof App !== 'undefined' && typeof App.clearQuestionDraft === 'function') App.clearQuestionDraft();
 
-                const rollBtn = document.getElementById('rollBtn');
-                if(rollBtn) { rollBtn.disabled = false; rollBtn.innerText = t.rollBtn; rollBtn.classList.remove('gold-text-active'); }
-                if (typeof App !== 'undefined' && App.setTopNavLocked) App.setTopNavLocked(false); 
+        const rollBtn = document.getElementById('rollBtn');
+        if(rollBtn) { rollBtn.disabled = false; rollBtn.innerText = t.rollBtn; rollBtn.classList.remove('gold-text-active'); }
+        if (typeof App !== 'undefined' && App.setTopNavLocked) App.setTopNavLocked(false); 
 
-                setTimeout(() => { if(rollBtn && !rollBtn.disabled) { 
-                    const rs = document.getElementById('res-status');
-                    if(rs) { rs.innerText = GameState.isQuestionHidden ? t.idleNoQ : t.idle; rs.classList.add('visible'); }
-                } }, 3000);
-            }
+        setTimeout(() => { if(rollBtn && !rollBtn.disabled) { 
+            const rs = document.getElementById('res-status');
+            if(rs) { rs.innerText = GameState.isQuestionHidden ? t.idleNoQ : t.idle; rs.classList.add('visible'); }
+        } }, 3000);
+    }
 
             return { init, mount, unmount, play, updateModeDisplay, isDragging: () => isDragging };
         })();
@@ -5830,7 +5839,7 @@ function addCrystal(game = null, subMode = null, customAmount = null) {
         })();
 
         // ==============================================
-        // ИНЖЕКЦИЯ 3D-МЕТАЛЛИЧЕСКОГО БАРАБАНА (v27 - Hollow Drum & Fixed Light Mode)
+        // ИНЖЕКЦИЯ 3D-МЕТАЛЛИЧЕСКОГО БАРАБАНА (v35 - Holy Stash Pattern Fix)
         // ==============================================
         (function injectRoulette3DPlugin() {
             try {
@@ -5869,6 +5878,7 @@ function addCrystal(game = null, subMode = null, customAmount = null) {
                     /* === ПЛАВНЫЕ ПЕРЕХОДЫ ДЛЯ ВСЕХ СЛОЕВ === */
                     .drum-mid-layer { transition: fill 1.0s ease !important; }
                     .drum-top-layer circle { transition: fill 1.0s ease !important; }
+                    .drum-texture-layer circle { fill: transparent; transition: fill 1.0s ease !important; }
                     .hole-num { fill: rgba(255,255,255,0.7); transition: fill 1.0s ease; }
                     .chamber-floor { fill: #000; opacity: 0; transition: opacity 0.3s, fill 1.0s ease; }
                     .chamber-floor.filled { opacity: 1; }
@@ -5876,75 +5886,63 @@ function addCrystal(game = null, subMode = null, customAmount = null) {
                     .bullet-inner { fill: url(#bullet-primer-chrome-highlight) !important; stroke: #4a5568; stroke-width: 1px; transition: all 1.0s ease; }
                     .stash-bullet path { fill: url(#bullet-chrome-highlight); transition: all 1.0s ease; }
                     .chamber-slot.fired .bullet-inner { fill: url(#bullet-primer-fired) !important; stroke: #000; }
-
-                    /* === БАЗОВЫЕ ЦВЕТА (Индиго/Темный) === */
-                    body { 
-                        --mid-layer-dark: #1e293b; 
-                        --mid-layer-light: #0f172a; 
-                    }
                     
-                    /* Плавная смена цвета для всех слоев "бутерброда" */
-                    .drum-mid-layer { transition: fill 1.0s ease !important; }
-                    .drum-top-layer circle { transition: fill 1.0s ease !important; }
-                    .hole-num { fill: rgba(255,255,255,0.7); transition: fill 1.0s ease !important; }
-
-                    /* ТЕМА: ИНДИГО (Дефолт) */
-                    body.theme-roulette_drum_indigo { 
-                        --mid-layer-dark: #1e293b; 
-                        --mid-layer-light: #0f172a; 
-                    }
-                    body.theme-roulette_drum_indigo .drum-top-layer circle { 
-                        fill: url(#drum-metal) !important; 
-                        stroke: #475569 !important; 
-                    }
-
-                    /* ТЕМА: СВЕТЛЫЙ БАРАБАН (Light Drum) */
-                    body.theme-roulette_drum_light { 
-                        --mid-layer-dark: #a1a1aa; 
-                        --mid-layer-light: #d1d5db; 
-                    }
-                    body.theme-roulette_drum_light .drum-top-layer circle { 
-                        fill: url(#drum-metal-classic) !important; 
-                        stroke: #ccc !important; 
-                    }
-                    body.theme-roulette_drum_light .hole-num { fill: #1f2937 !important; }
-
-                    /* === КРОВАВЫЕ ПУЛИ === */
-                    body.theme-roulette_bullet_blood .bullet-outer { fill: url(#bullet-chrome-classic) !important; stroke: #991b1b; stroke-width: 1px; }
-                    body.theme-roulette_bullet_blood .chamber-slot.fired .bullet-inner { fill: var(--angry-red) !important; stroke: #991b1b; }
-                    body.theme-roulette_bullet_blood .stash-bullet path { fill: url(#bullet-chrome-classic) !important; }
-
+                    /* === СДВИГ МАРКЕРА НА 5px ВПРАВО === */
                     .target-marker {
                         position: absolute;
                         left: 50%; top: -20px;
-                        transform: translateX(-50%) translateZ(30px);
+                        transform: translateX(calc(-50% + 5px)) translateZ(30px);
                         color: var(--angry-red); font-size: 32px;
                         filter: drop-shadow(0 0 10px var(--angry-red));
                         z-index: 60; pointer-events: none;
                     }
 
-                    /* Плавная смена цвета для всех слоев "бутерброда" */
-                    .drum-mid-layer { transition: fill 1.0s ease !important; }
-                    .drum-top-layer circle { transition: fill 1.0s ease !important; }
+                    /* === ТЕМЫ БАРАБАНОВ === */
+                    body { --mid-layer-dark: #1e293b; --mid-layer-light: #0f172a; }
 
-                    /* Цвета для ИНДИГО (Темного) барабана */
-                    body.theme-roulette_drum_indigo { 
-                        --mid-layer-dark: #1e293b; 
-                        --mid-layer-light: #0f172a; 
-                    }
-                    body.theme-roulette_drum_indigo .drum-top-layer circle { 
-                        fill: url(#drum-metal) !important; 
-                        stroke: #475569 !important; 
-                    }
+                    body.theme-roulette_drum_indigo { --mid-layer-dark: #1e293b; --mid-layer-light: #0f172a; }
+                    body.theme-roulette_drum_indigo .drum-top-layer circle { fill: url(#drum-metal) !important; stroke: #475569 !important; }
 
-                    /* Цвета для СВЕТЛОГО барабана */
-                    body.theme-roulette_drum_light { 
-                        --mid-layer-dark: #a1a1aa; 
-                        --mid-layer-light: #d1d5db; 
-                    }
-                    body.theme-roulette_drum_light .drum-top-layer circle { 
-                        fill: url(#drum-metal-classic) !important; 
-                        stroke: #ccc !important; 
+                    body.theme-roulette_drum_light { --mid-layer-dark: #a1a1aa; --mid-layer-light: #d1d5db; }
+                    body.theme-roulette_drum_light .drum-top-layer circle { fill: url(#drum-metal-classic) !important; stroke: #ccc !important; }
+                    body.theme-roulette_drum_light .hole-num { fill: #1f2937 !important; }
+
+                    body.theme-roulette_drum_gold { --mid-layer-dark: #78350f; --mid-layer-light: #b45309; }
+                    body.theme-roulette_drum_gold .drum-top-layer circle { fill: url(#drum-metal-gold) !important; stroke: #f59e0b !important; }
+                    body.theme-roulette_drum_gold .hole-num { fill: #fffbeb !important; text-shadow: 0 0 5px rgba(245,158,11,0.5); }
+
+                    body.theme-roulette_drum_khaki { --mid-layer-dark: #24362d; --mid-layer-light: #3a5a40; }
+                    body.theme-roulette_drum_khaki .drum-top-layer circle { fill: url(#drum-metal-khaki) !important; stroke: #a3b18a !important; }
+                    body.theme-roulette_drum_khaki .drum-texture-layer circle { fill: url(#camo-pattern) !important; opacity: 0.85; }
+
+                    /* === ТЕМЫ ПУЛЬ === */
+                    body.theme-roulette_bullet_blood .bullet-outer { fill: url(#bullet-chrome-classic) !important; stroke: #991b1b !important; }
+                    body.theme-roulette_bullet_blood .chamber-slot.fired .bullet-inner { fill: var(--angry-red) !important; stroke: #991b1b !important; filter: drop-shadow(0 0 5px var(--angry-red)); }
+                    body.theme-roulette_bullet_blood .stash-bullet path { fill: url(#bullet-chrome-classic) !important; }
+
+                    body.theme-roulette_bullet_toxic .bullet-outer { fill: url(#bullet-toxic) !important; stroke: #14532d !important; }
+                    body.theme-roulette_bullet_toxic .chamber-slot.fired .bullet-inner { fill: #4ade80 !important; stroke: #052e16 !important; filter: drop-shadow(0 0 8px #4ade80); }
+                    body.theme-roulette_bullet_toxic .stash-bullet path { fill: url(#bullet-toxic) !important; }
+
+                    /* === СВЯТАЯ ИНКВИЗИЦИЯ === */
+                    body.theme-roulette_bullet_inquisition .bullet-outer { fill: url(#bullet-inquisition) !important; stroke: #000 !important; }
+                    body.theme-roulette_bullet_inquisition .bullet-inner { fill: #0f172a !important; stroke: #000 !important; }
+                    
+                    /* Крест на донышке капсюля (внутри барабана) */
+                    .bullet-cross { display: none; transition: fill 0.5s ease, filter 0.5s ease, opacity 0.5s ease; pointer-events: none; }
+                    body.theme-roulette_bullet_inquisition .bullet-cross { display: block; fill: #ffebb5; filter: drop-shadow(0 0 6px #facc15); }
+                    body.theme-roulette_bullet_inquisition .chamber-slot.fired .bullet-cross { fill: #b91c1c; opacity: 0.9; filter: drop-shadow(0 0 6px #991b1b); }
+                    body.theme-roulette_bullet_inquisition .chamber-slot.fired .bullet-inner { fill: #000 !important; }
+
+                    /* === БЕЛЫЙ КРЕСТ НА ПУЛЯХ В ОБОЙМЕ (STASH) === */
+                    /* Прячем скучные цифры */
+                    body.theme-roulette_bullet_inquisition .stash-bullet text,
+                    body.theme-roulette_bullet_inquisition .stash-bullet span { display: none !important; }
+                    
+                    /* НАКЛАДЫВАЕМ НАШ ИДЕАЛЬНЫЙ ПАТТЕРН НА ПУЛЮ ВНИЗУ */
+                    body.theme-roulette_bullet_inquisition .stash-bullet path { 
+                        fill: url(#stash-inq-pattern) !important; 
+                        stroke: #000 !important; 
                     }
                 `;
                 document.head.appendChild(style);
@@ -5970,6 +5968,26 @@ function addCrystal(game = null, subMode = null, customAmount = null) {
                                     <circle cx="46" cy="6.5" r="22" fill="black" /> 
                                     <circle cx="154" cy="6.5" r="22" fill="black" /> 
                                 </mask>
+
+                                <pattern id="camo-pattern" width="120" height="120" patternUnits="userSpaceOnUse" patternTransform="rotate(25)">
+                                    <path d="M10,20 C30,-10 60,30 50,50 C40,70 10,60 0,40 Z" fill="#3a5a40" opacity="0.95"/>
+                                    <path d="M80,80 C110,70 120,100 100,120 C80,140 60,110 70,90 Z" fill="#3a5a40" opacity="0.95"/>
+                                    <path d="M-10,100 C10,90 30,120 10,130 C-10,140 -30,110 -20,90 Z" fill="#3a5a40" opacity="0.95"/>
+                                    <path d="M20,80 C40,70 60,100 40,110 C20,120 0,90 10,70 Z" fill="#4b3e35" opacity="0.9"/>
+                                    <path d="M100,30 C120,20 140,50 120,60 C100,70 80,40 90,20 Z" fill="#4b3e35" opacity="0.9"/>
+                                    <path d="M50,10 C70,0 90,20 80,40 C70,60 40,40 50,20 Z" fill="#2d2926" opacity="0.8"/>
+                                    <path d="M90,120 C110,110 130,140 120,150 C100,160 80,130 90,120 Z" fill="#2d2926" opacity="0.8"/>
+                                </pattern>
+
+                                <filter id="cross-glow-filter" x="-20%" y="-20%" width="140%" height="140%">
+                                    <feDropShadow dx="0" dy="0" stdDeviation="2" flood-color="#facc15" flood-opacity="1"/>
+                                    <feDropShadow dx="0" dy="0" stdDeviation="5" flood-color="#facc15" flood-opacity="0.6"/>
+                                </filter>
+                                
+                                <pattern id="stash-inq-pattern" width="1" height="1" viewBox="0 0 100 100" preserveAspectRatio="none">
+                                    <rect width="100" height="100" fill="url(#bullet-inquisition)"/>
+                                    <path d="M 44 25 L 56 25 L 56 40 L 72 40 L 72 48 L 56 48 L 56 80 L 44 80 L 44 48 L 28 48 L 28 40 L 44 40 Z" fill="#ffffff" filter="url(#cross-glow-filter)"/>
+                                </pattern>
                                 
                                 <radialGradient id="drum-metal" cx="30%" cy="30%" r="70%">
                                     <stop offset="0%" stop-color="#64748b"/>
@@ -5981,18 +5999,39 @@ function addCrystal(game = null, subMode = null, customAmount = null) {
                                     <stop offset="60%" stop-color="#d1d5db"/>
                                     <stop offset="100%" stop-color="#94a3b8"/> 
                                 </radialGradient>
+                                <radialGradient id="drum-metal-gold" cx="30%" cy="30%" r="70%">
+                                    <stop offset="0%" stop-color="#fcd34d"/>
+                                    <stop offset="50%" stop-color="#b45309"/>
+                                    <stop offset="100%" stop-color="#78350f"/>
+                                </radialGradient>
+                                <radialGradient id="drum-metal-khaki" cx="30%" cy="30%" r="70%">
+                                    <stop offset="0%" stop-color="#a3b18a"/>
+                                    <stop offset="50%" stop-color="#588157"/>
+                                    <stop offset="100%" stop-color="#3a5a40"/>
+                                </radialGradient>
                                 
                                 <radialGradient id="bullet-chrome-highlight" cx="35%" cy="35%" r="65%">
                                     <stop offset="0%" stop-color="#ffffff"/>
                                     <stop offset="50%" stop-color="#cbd5e1"/>
                                     <stop offset="100%" stop-color="#475569"/>
                                 </radialGradient>
-                                
                                 <radialGradient id="bullet-chrome-classic" cx="35%" cy="35%" r="65%">
                                     <stop offset="0%" stop-color="#fca5a5"/>
                                     <stop offset="40%" stop-color="#ef4444"/>
                                     <stop offset="80%" stop-color="#b91c1c"/>
                                     <stop offset="100%" stop-color="#7f1d1d"/>
+                                </radialGradient>
+                                <radialGradient id="bullet-toxic" cx="35%" cy="35%" r="65%">
+                                    <stop offset="0%" stop-color="#bbf7d0"/>
+                                    <stop offset="40%" stop-color="#22c55e"/>
+                                    <stop offset="80%" stop-color="#166534"/>
+                                    <stop offset="100%" stop-color="#052e16"/>
+                                </radialGradient>
+                                
+                                <radialGradient id="bullet-inquisition" cx="35%" cy="35%" r="65%">
+                                    <stop offset="0%" stop-color="#4b5563"/>
+                                    <stop offset="50%" stop-color="#1f2937"/>
+                                    <stop offset="100%" stop-color="#020617"/>
                                 </radialGradient>
                                 
                                 <radialGradient id="bullet-primer-chrome-highlight" cx="35%" cy="35%" r="65%">
@@ -6000,7 +6039,6 @@ function addCrystal(game = null, subMode = null, customAmount = null) {
                                     <stop offset="50%" stop-color="#cbd5e1"/>
                                     <stop offset="100%" stop-color="#64748b"/>
                                 </radialGradient>
-
                                 <radialGradient id="bullet-primer-fired" cx="50%" cy="50%" r="50%">
                                     <stop offset="0%" stop-color="#334155"/>
                                     <stop offset="100%" stop-color="#000000"/>
@@ -6038,6 +6076,12 @@ function addCrystal(game = null, subMode = null, customAmount = null) {
                     </svg>
                 `;
 
+                layersHTML += `
+                    <svg class="drum-layer drum-texture-layer" style="transform: translateZ(2.1px)" viewBox="0 0 200 200">
+                        <circle cx="100" cy="100" r="96" mask="url(#main-drum-thru-mask)" />
+                    </svg>
+                `;
+
                 const nums = [3, 4, 5, 6, 1, 2];
                 const ty = [34, 70, 142, 178, 142, 70];
 
@@ -6048,6 +6092,7 @@ function addCrystal(game = null, subMode = null, customAmount = null) {
                         <g class="chamber-slot" id="ch-${i}">
                             <circle cx="${cx[i]}" cy="${cy[i]}" r="20" class="bullet-outer"/>
                             <circle cx="${cx[i]}" cy="${cy[i]}" r="8" class="bullet-inner"/>
+                            <path class="bullet-cross" d="M -1.5 -7 L 1.5 -7 L 1.5 -2.5 L 5.5 -2.5 L 5.5 0.5 L 1.5 0.5 L 1.5 9 L -1.5 9 L -1.5 0.5 L -5.5 0.5 L -5.5 -2.5 L -1.5 -2.5 Z" transform="translate(${cx[i]}, ${cy[i]})"/>
                         </g>
                     `;
                 }
@@ -6073,7 +6118,7 @@ function addCrystal(game = null, subMode = null, customAmount = null) {
                 }
 
             } catch(e) { console.error("3D Drum Injection Error: ", e); }
-        })();		
+        })();	
 // --- КОНЕЦ ЧЕТВЕРТОЙ ЧАСТИ ---
 // --- НАЧАЛО ПЯТОЙ ЧАСТИ ---
 // ==============================================
@@ -9130,8 +9175,18 @@ const ShopGame = (function() {
             { id: 'roulette_orig', name: { ru: 'Сталь Канон', en: 'Steel Canon' }, priceCoins: 0, priceCrystals: 0, icon: '<svg viewBox="0 0 24 24" width="22" height="22" fill="#a0aec0" style="filter: drop-shadow(0 2px 2px rgba(0,0,0,0.5));"><path d="M12 2C10 2 8 4 8 8v10c0 1.1.9 2 2 2h4c1.1 0 2-.9 2-2V8c0-4-2-6-4-6z"/></svg>' },
             { id: 'roulette_drum_indigo', name: { ru: 'Индиго Барабан', en: 'Indigo Canon' }, priceCoins: 0, priceCrystals: 0, icon: '🌀' },
             { id: 'roulette_bullet_orig', name: { ru: 'Сталь Канон', en: 'Steel Canon' }, priceCoins: 0, priceCrystals: 0, icon: '<svg viewBox="0 0 24 24" width="22" height="22" fill="#a0aec0" style="filter: drop-shadow(0 2px 2px rgba(0,0,0,0.5));"><path d="M12 2C10 2 8 4 8 8v10c0 1.1.9 2 2 2h4c1.1 0 2-.9 2-2V8c0-4-2-6-4-6z"/></svg>', free: true },
-			{ id: 'roulette_bullet_blood', name: { ru: 'Кровавые Патроны', en: 'Blood Bullets' }, priceCoins: 50, priceCrystals: 15, icon: '<svg viewBox="0 0 24 24" width="22" height="22" fill="#ff4444" style="filter: drop-shadow(0 2px 2px rgba(255,0,0,0.3));"><path d="M12 2C10 2 8 4 8 8v10c0 1.1.9 2 2 2h4c1.1 0 2-.9 2-2V8c0-4-2-6-4-6z"/></svg>' },
+            { id: 'roulette_bullet_blood', name: { ru: 'Кровавые Патроны', en: 'Blood Bullets' }, priceCoins: 50, priceCrystals: 15, icon: '<svg viewBox="0 0 24 24" width="22" height="22" fill="#ff4444" style="filter: drop-shadow(0 2px 2px rgba(255,0,0,0.3));"><path d="M12 2C10 2 8 4 8 8v10c0 1.1.9 2 2 2h4c1.1 0 2-.9 2-2V8c0-4-2-6-4-6z"/></svg>' },
             { id: 'roulette_drum_light', name: { ru: 'Светлый Барабан', en: 'Light Drum' }, priceCoins: 60, priceCrystals: 20, icon: '🔄' },
+            { id: 'roulette_drum_gold', name: { ru: 'Золото Богов', en: 'Gold Drum' }, priceCoins: 150, priceCrystals: 40, icon: '👑' },
+            { id: 'roulette_drum_khaki', name: { ru: 'Тактический Хаки', en: 'Tactical Khaki' }, priceCoins: 60, priceCrystals: 20, icon: '🪖' },
+            { id: 'roulette_bullet_toxic', name: { ru: 'Токсичный Мутаген', en: 'Toxic Mutagen' }, priceCoins: 100, priceCrystals: 25, icon: '🧪' },
+            { 
+                id: 'roulette_bullet_inquisition', 
+                name: { ru: 'Святая Инквизиция', en: 'Holy Inquisition' }, 
+                priceCoins: 150, 
+                priceCrystals: 40, 
+                icon: '<svg viewBox="0 0 24 24" width="22" height="22" style="filter: drop-shadow(0 2px 2px rgba(0,0,0,0.5));"><path d="M12 2C10 2 8 4 8 8v10c0 1.1.9 2 2 2h4c1.1 0 2-.9 2-2V8c0-4-2-6-4-6z" fill="#1f2937"/><path d="M10 21V11H4V7H10V3H14V7H20V11H14V21H10Z" fill="#ffebb5" style="filter: drop-shadow(0 0 4px #facc15);"/></svg>' 
+            },
             { id: 'style_coin_orig', name: { ru: 'Серебро Канон', en: 'Silver Canon' }, priceCoins: 0, priceCrystals: 0, icon: '⚪' },
             { id: 'style_coin', name: { ru: 'Медная Грань', en: 'Copper Edge' }, priceCoins: 50, priceCrystals: 15, icon: '🪙' },
             { id: 'style_flower_orig', name: { ru: 'Ромашка Канон', en: 'Chamomile Canon' }, priceCoins: 0, priceCrystals: 0, icon: '🌼' },
@@ -9181,12 +9236,8 @@ const ShopGame = (function() {
             { id: 'exchange_gem_45', name: { ru: '45 Кристаллов', en: '45 Gems' }, priceCoins: 5, priceCrystals: 0, icon: '🔮', isConsumable: true, rewardCoins: 0, rewardCrystals: 45 },
             { id: 'exchange_gem_95', name: { ru: '95 Кристаллов', en: '95 Gems' }, priceCoins: 10, priceCrystals: 0, icon: '✨', isConsumable: true, rewardCoins: 0, rewardCrystals: 95 },
             { id: 'exchange_gem_240', name: { ru: '240 Кристаллов', en: '240 Gems' }, priceCoins: 25, priceCrystals: 0, icon: '👑', isConsumable: true, rewardCoins: 0, rewardCrystals: 240 },
-            
-            // --- НОВЫЕ КАРТОЧКИ ИСКР ---
             { id: 'perk_sparkle_dice', name: { ru: 'Искры: Кость', en: 'Sparkles: Dice' }, priceCoins: 150, priceCrystals: 30, icon: '✨' },
             { id: 'perk_sparkle_coin', name: { ru: 'Искры: Монета', en: 'Sparkles: Coin' }, priceCoins: 150, priceCrystals: 30, icon: '🌟' },
-            
-            // --- НОВЫЕ КАРТОЧКИ УМНОЖЕНИЯ (с описанием для тултипов) ---
             { id: 'perk_x2_win', name: { ru: 'Х2 Выигрыш', en: 'x2 Win' }, priceCoins: 100, priceCrystals: 20, icon: '🤑', isStackable: true, desc: { ru: 'Умножает выигрыш в Банке х2.<br><br><span style="color:#ff6666; font-weight:bold;">Сгорает после 1 игры (победа или поражение).</span>', en: 'Multiplies Bank win x2.<br><br><span style="color:#ff6666; font-weight:bold;">Burns after 1 game (win or loss).</span>' } },
             { id: 'perk_x2_super', name: { ru: 'Супер Х2', en: 'Super x2' }, priceCoins: 200, priceCrystals: 40, icon: '🔥', isStackable: true, desc: { ru: 'Умножает выигрыш в Банке х2.<br><br><span style="color:var(--friendly-green); font-weight:bold;">Не сгорает при проигрыше.</span> Тратится только при успешном умножении.', en: 'Multiplies Bank win x2.<br><br><span style="color:var(--friendly-green); font-weight:bold;">Does not burn on loss.</span> Only consumed on a successful win.' } }
         ]
@@ -9194,7 +9245,6 @@ const ShopGame = (function() {
 
     function updateTopUI() {
         if (typeof App !== 'undefined' && App.updateMenuBankUI) App.updateMenuBankUI();
-        // Принудительно перерисовываем карточки в главном меню, чтобы видеть актуальные деньги/камни
         if (typeof App !== 'undefined' && App.renderProfiles) App.renderProfiles(); 
         
         const p = GameState.activeProfileIdx !== -1 ? GameState.profiles[GameState.activeProfileIdx] : null;
@@ -9211,8 +9261,9 @@ const ShopGame = (function() {
     function mount() {
         isGameActive = true;
         document.body.classList.add('is-shop-active'); 
-        if (typeof App !== 'undefined' && App.setTopNavLocked) App.setTopNavLocked(false);
         if (!GameState.subModes.shop) GameState.subModes.shop = 'exchange';
+        if (!GameState.shopStyleCategory) GameState.shopStyleCategory = 'dice';
+        
         const stage = document.getElementById('shopStage');
         if (stage) stage.style.display = 'flex';
         const rollBtn = document.getElementById('rollBtn');
@@ -9231,6 +9282,27 @@ const ShopGame = (function() {
         syncInterval = setInterval(updateTopUI, 1000);
     }
 
+    function unmount() {
+        isGameActive = false;
+        document.body.classList.remove('is-shop-active'); 
+        if (syncInterval) clearInterval(syncInterval);
+        const stage = document.getElementById('shopStage');
+        if (stage) stage.style.display = 'none';
+        const rollBtn = document.getElementById('rollBtn');
+        if (rollBtn) rollBtn.style.display = '';
+        const resStatus = document.getElementById('res-status');
+        if (resStatus) resStatus.style.display = '';
+        document.querySelectorAll('.std-debug-btn').forEach(el => el.style.display = 'flex');
+        document.querySelectorAll('.shop-debug-btn').forEach(el => el.style.display = 'none');
+        document.querySelectorAll('#ui-top-money, #ui-bank, .top-bank-val').forEach(el => {
+            el.style.display = '';
+            el.style.opacity = '1';
+        });
+    }
+
+    // ========================================================
+    // ГЛАВНЫЙ ОРКЕСТРАТОР РЕНДЕРА
+    // ========================================================
     function renderShop() {
         const stage = document.getElementById('shopStage');
         const grid = document.getElementById('shopGrid');
@@ -9241,376 +9313,224 @@ const ShopGame = (function() {
         const balanceCrystals = p ? (p.crystals || 0) : 0;
         const lang = GameState.lang || 'ru';
 
-        let balHeader = document.getElementById('shopFixedBalances');
-        if (!balHeader) {
-            balHeader = document.createElement('div');
-            balHeader.id = 'shopFixedBalances';
-            stage.insertBefore(balHeader, stage.firstChild);
-        }
-        
-        balHeader.style.display = 'flex';
-        balHeader.style.cssText = 'position: sticky; top: 0; display: flex; justify-content: center; width: 100%; padding-top: 15px; padding-bottom: 10px; z-index: 100; flex-shrink: 0; transform: scale(0.95); pointer-events: none;';
-        
-        balHeader.innerHTML = `
-            <div style="background: rgba(10, 15, 25, 0.95); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); padding: 6px 20px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.15); font-size: 15px; display: inline-flex; align-items: center; gap: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.8); pointer-events: auto;">
-                <span id="shop-local-wallet" style="color: var(--friendly-green); font-weight: bold;"><i class="fas fa-wallet"></i> ${balanceCoins.toFixed(2)}</span>
-                <span style="color: rgba(255,255,255,0.2);">|</span>
-                <span id="shop-local-crystals" style="color: var(--magic-color); font-weight: bold; text-shadow: 0 0 8px rgba(162,155,254,0.5);"><i class="fas fa-gem"></i> ${balanceCrystals}</span>
-            </div>
-        `;
+        renderShopStructure(stage, grid, balanceCoins, balanceCrystals);
 
         grid.innerHTML = '';
         grid.style.gridTemplateColumns = 'repeat(4, 1fr)';
         grid.style.gap = '4px';
 
-        // === ВКЛАДКА: ОБМЕН ===
-        if (GameState.subModes.shop === 'exchange') {
-            grid.appendChild(createCategoryHeader(lang === 'ru' ? 'Обмен Валюты' : 'Currency Exchange', 'var(--sun-gold)'));
-
-            // Конфигурация 4-х динамических кнопок с описаниями
-            const exchDefs = [
-                { id: 'buy_coin', icon: '🪙', type: 'coin', mode: 'buy', desc: { ru: 'Конвертация Кристаллов в Монеты.<br><br>Комиссия Банка: 10%.', en: 'Convert Crystals to Coins.<br><br>Bank fee: 10%.' } },
-                { id: 'buy_cryst', icon: '💎', type: 'cryst', mode: 'buy', desc: { ru: 'Конвертация Монет в Кристаллы.<br><br>Комиссия Банка: 10%.', en: 'Convert Coins to Crystals.<br><br>Bank fee: 10%.' } },
-                { id: 'sell_coin', icon: '🪙', type: 'coin', mode: 'sell', desc: { ru: 'Продажа Монет Банку за Кристаллы.<br><br>Комиссия Банка: 10%.', en: 'Sell Coins for Crystals.<br><br>Bank fee: 10%.' } },
-                { id: 'sell_cryst', icon: '💎', type: 'cryst', mode: 'sell', desc: { ru: 'Продажа Кристаллов Банку за Монеты.<br><br>Комиссия Банка: 10%.', en: 'Sell Crystals for Coins.<br><br>Bank fee: 10%.' } }
-            ];
-
-            exchDefs.forEach(def => {
-                const card = document.createElement('div');
-                card.className = 'shop-item-card';
-                card.style.cssText = `padding: 8px 4px; min-height: 110px; display: flex; flex-direction: column; align-items: center; justify-content: space-between; border-radius: 8px; border: 1px solid rgba(255,249,174,0.3); background: rgba(5,8,15,0.8); position: relative;`;
-
-                const titleTxt = def.mode === 'buy' ? (lang==='ru'?'КУПИТЬ':'BUY') : (lang==='ru'?'ПРОДАТЬ':'SELL');
-                const color = def.mode === 'buy' ? 'var(--friendly-green)' : 'var(--angry-red)';
-                const headerName = titleTxt + ' ' + (def.type === 'coin' ? (lang==='ru'?'МОНЕТЫ':'COINS') : (lang==='ru'?'КРИСТАЛЛЫ':'CRYSTALS'));
-                
-                // ДИНАМИЧЕСКИЙ ТУЛТИП!
-                const tooltipHTML = getTooltipHTML(headerName, def.desc, lang);
-
-                card.innerHTML = `
-                    ${tooltipHTML}
-                    <div style="font-size: 24px; margin-bottom: 2px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));">${def.icon}</div>
-                    <div style="color: ${color}; font-size: 10px; font-weight: bold; text-transform: uppercase; margin-bottom: 4px; letter-spacing: 1px;">${titleTxt}</div>
-                    <input type="number" min="1" step="1" class="exch-input" placeholder="0" style="display: block !important; width: 85%; box-sizing: border-box; background: rgba(0,0,0,0.6); border: 1px solid rgba(255,255,255,0.2); color: #fff; text-align: center; border-radius: 4px; font-size: 13px; padding: 4px; outline: none; margin-bottom: 4px;">
-                    <div class="exch-result" style="font-size: 11px; font-weight: bold; color: #aaa; height: 14px; margin-bottom: 6px; transition: 0.2s;">...</div>
-                    <button class="exch-btn" disabled style="width: 85%; box-sizing: border-box; background: var(--sun-gold); color: #000; border: none; border-radius: 4px; font-weight: 900; font-size: 10px; padding: 5px; cursor: default; text-transform: uppercase; box-shadow: 0 0 5px rgba(255,249,174,0.5); opacity: 0.4; transition: 0.3s;">${lang === 'ru' ? 'ОБМЕН' : 'EXCHANGE'}</button>
-                `;
-
-                const input = card.querySelector('.exch-input');
-                const resDiv = card.querySelector('.exch-result');
-                const btn = card.querySelector('.exch-btn');
-
-                const updateCalc = () => {
-                    let val = parseInt(input.value);
-                    
-                    const disableBtn = () => {
-                        btn.disabled = true;
-                        btn.style.opacity = '0.4';
-                        btn.style.cursor = 'default';
-                    };
-
-                    if (isNaN(val) || val <= 0) { 
-                        resDiv.innerHTML = '...'; 
-                        disableBtn(); 
-                        return; 
-                    }
-
-                    const pActive = GameState.activeProfileIdx !== -1 ? GameState.profiles[GameState.activeProfileIdx] : null;
-                    if (!pActive) { disableBtn(); return; }
-
-                    const curCoins = getPlayerCoins(pActive);
-                    const curCryst = pActive.crystals || 0;
-
-                    let costCoins = 0, costCryst = 0;
-
-                    if (def.mode === 'buy' && def.type === 'coin') {
-                        costCryst = Math.ceil(val * 11);
-                        resDiv.innerHTML = `<span style="color:var(--angry-red)">-${costCryst} 💎</span>`;
-                    } else if (def.mode === 'buy' && def.type === 'cryst') {
-                        costCoins = val * 0.11;
-                        resDiv.innerHTML = `<span style="color:var(--angry-red)">-$${costCoins.toFixed(2)}</span>`;
-                    } else if (def.mode === 'sell' && def.type === 'coin') {
-                        costCoins = val;
-                        resDiv.innerHTML = `<span style="color:var(--friendly-green)">+${Math.floor(val * 9)} 💎</span>`;
-                    } else if (def.mode === 'sell' && def.type === 'cryst') {
-                        costCryst = val;
-                        resDiv.innerHTML = `<span style="color:var(--friendly-green)">+$${(val * 0.09).toFixed(2)}</span>`;
-                    }
-
-                    if (curCoins >= costCoins && curCryst >= costCryst) {
-                        btn.disabled = false;
-                        btn.style.opacity = '1';
-                        btn.style.cursor = 'pointer';
-                    } else {
-                        disableBtn();
-                    }
-                };
-
-                input.addEventListener('input', updateCalc);
-
-                btn.onclick = () => {
-                    let val = parseInt(input.value);
-                    if (isNaN(val) || val <= 0) {
-                        if (typeof App !== 'undefined' && App.showError) App.showError(lang === 'ru' ? 'Введите сумму!' : 'Enter amount!');
-                        if (typeof App !== 'undefined' && App.playSoundEffect) App.playSoundEffect('error', 'negative');
-                        return;
-                    }
-
-                    const pActive = GameState.activeProfileIdx !== -1 ? GameState.profiles[GameState.activeProfileIdx] : null;
-                    if (!pActive) return;
-
-                    const curCoins = getPlayerCoins(pActive);
-                    const curCryst = pActive.crystals || 0;
-
-                    let costCoins = 0, costCryst = 0;
-                    let gainCoins = 0, gainCryst = 0;
-
-                    if (def.mode === 'buy' && def.type === 'coin') {
-                        costCryst = Math.ceil(val * 11);
-                        gainCoins = val;
-                    } else if (def.mode === 'buy' && def.type === 'cryst') {
-                        costCoins = val * 0.11;
-                        gainCryst = val;
-                    } else if (def.mode === 'sell' && def.type === 'coin') {
-                        costCoins = val;
-                        gainCryst = Math.floor(val * 9);
-                    } else if (def.mode === 'sell' && def.type === 'cryst') {
-                        costCryst = val;
-                        gainCoins = val * 0.09;
-                    }
-
-                    if (curCoins < costCoins || curCryst < costCryst) {
-                        if (typeof App !== 'undefined' && App.showError) App.showError(lang === 'ru' ? 'Недостаточно средств!' : 'Not enough funds!');
-                        if (typeof App !== 'undefined' && App.playSoundEffect) App.playSoundEffect('error', 'negative');
-                        return;
-                    }
-
-                    if (costCoins > 0) deductPlayerCoins(pActive, costCoins);
-                    if (costCryst > 0) pActive.crystals = (pActive.crystals || 0) - costCryst;
-
-                    if (gainCoins > 0) {
-                        if (pActive.bank !== undefined) pActive.bank += gainCoins;
-                        else if (pActive.rStats && pActive.rStats.bank !== undefined) pActive.rStats.bank += gainCoins;
-                    }
-                    if (gainCryst > 0) pActive.crystals = (pActive.crystals || 0) + gainCryst;
-
-                    const actionName = lang === 'ru' ? "Обмен" : "Exchange";
-                    let logStr = '';
-                    if (costCoins > 0) logStr += `-$${costCoins.toFixed(2)} ➔ +${gainCryst}💎`;
-                    else if (costCryst > 0) logStr += `-${costCryst}💎 ➔ +$${gainCoins.toFixed(2)}`;
-
-                    const itemHTML = `
-                        <div class="history-item hist-exchange">
-                            <span style="color:var(--sun-gold); font-weight:bold;">[${actionName}]</span>
-                            <br><span style="color:#aaa; font-size:10px;">${logStr}</span>
-                        </div>`;
-                    
-                    pActive.historyShop = itemHTML + (pActive.historyShop || '');
-                    const hlShop = document.getElementById('historyListShop');
-                    if (hlShop) hlShop.innerHTML = pActive.historyShop;
-
-                    if (typeof App !== 'undefined' && App.requestProfileSave) App.requestProfileSave();
-                    if (typeof App !== 'undefined' && App.updateHistoryView) App.updateHistoryView();
-                    
-                    input.value = '';
-                    updateCalc();
-
-                    updateTopUI();
-                    renderShop();
-                    
-                    if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.HapticFeedback) window.Telegram.WebApp.HapticFeedback.notificationOccurred('success');
-                    if (typeof App !== 'undefined' && App.playSoundEffect) App.playSoundEffect('coins');
-                };
-
-                grid.appendChild(card);
-            });
-
-            // --- БЛОК ПРОДАЖИ ПРЕДМЕТОВ ИЗ ИНВЕНТАРЯ ---
-            const pActive = GameState.activeProfileIdx !== -1 ? GameState.profiles[GameState.activeProfileIdx] : null;
-            const inv = pActive ? (pActive.inventory || []) : [];
-            const stackableItems = shopItems.perks.filter(i => i.isStackable);
-            const ownedStackable = [];
-            
-            stackableItems.forEach(item => {
-                const count = inv.filter(id => id === item.id).length;
-                if (count > 0) ownedStackable.push({ item, count });
-            });
-
-            if (ownedStackable.length > 0) {
-                grid.appendChild(createCategoryHeader(lang === 'ru' ? 'Ваш Инвентарь' : 'Your Inventory', 'var(--magic-color)'));
-                
-                ownedStackable.forEach(data => {
-                    const item = data.item;
-                    const count = data.count;
-                    const sellCoins = item.priceCoins * 0.9;
-                    const sellCryst = Math.floor(item.priceCrystals * 0.9);
-
-                    const card = document.createElement('div');
-                    card.className = 'shop-item-card';
-                    card.style.cssText = `padding: 8px 4px; min-height: 100px; display: flex; flex-direction: column; align-items: center; justify-content: space-between; border-radius: 8px; border: 1px solid var(--magic-color); background: rgba(5,8,15,0.8); position: relative;`;
-                    
-                    let badgeHTML = `<div style="position: absolute; top: -2px; right: 2px; color: #ccffcc; text-shadow: 0 0 8px #ccffcc, 0 0 15px var(--friendly-green); font-size: 14px; font-weight: 900; z-index: 10; pointer-events: none;">${count}</div>`;
-                    const itemName = item.name[lang] || item.name.ru;
-
-                    let priceInnerHTML = '';
-                    if (sellCoins > 0 && sellCryst > 0) {
-                        priceInnerHTML = `<span style="color:var(--friendly-green)">+$${sellCoins.toFixed(2)}</span><br><span style="color:var(--magic-color)">+${sellCryst}💎</span>`;
-                    } else if (sellCryst > 0) {
-                        priceInnerHTML = `<span style="color:var(--magic-color)">+${sellCryst}💎</span>`;
-                    } else if (sellCoins > 0) {
-                        priceInnerHTML = `<span style="color:var(--friendly-green)">+$${sellCoins.toFixed(2)}</span>`;
-                    }
-
-                    // ДИНАМИЧЕСКИЙ ТУЛТИП!
-                    const tooltipHTML = getTooltipHTML(itemName, item.desc, lang);
-
-                    card.innerHTML = `
-                        ${badgeHTML}
-                        ${tooltipHTML}
-                        <div style="font-size: 24px; margin-bottom: 2px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));">${item.icon}</div>
-                        <div style="color: #fff; font-size: 9px; line-height: 1.1; margin-bottom: 6px; text-align: center; font-weight: bold; text-transform: uppercase;">${itemName}</div>
-                        <div style="font-size: 10px; font-weight: bold; background: rgba(0,0,0,0.5); padding: 4px; border-radius: 4px; margin-bottom: 6px; text-align: center; line-height: 1.2;">${priceInnerHTML}</div>
-                        <button class="exch-btn-sell" style="width: 85%; background: var(--angry-red); color: #fff; border: none; border-radius: 4px; font-weight: 900; font-size: 10px; padding: 5px; cursor: pointer; text-transform: uppercase; box-shadow: 0 0 5px rgba(255,102,102,0.4); margin-top: auto;">${lang === 'ru' ? 'ПРОДАТЬ' : 'SELL'}</button>
-                    `;
-
-                    const btn = card.querySelector('.exch-btn-sell');
-                    btn.onclick = () => {
-                        if (typeof consumePerk === 'function') {
-                            consumePerk(item.id); 
-                            
-                            const p = GameState.activeProfileIdx !== -1 ? GameState.profiles[GameState.activeProfileIdx] : null;
-                            if (p) {
-                                if (sellCoins > 0) {
-                                    if (p.bank !== undefined) p.bank += sellCoins;
-                                    else if (p.rStats && p.rStats.bank !== undefined) p.rStats.bank += sellCoins;
-                                }
-                                if (sellCryst > 0) {
-                                    p.crystals = (p.crystals || 0) + sellCryst;
-                                }
-
-                                const actionName = lang === 'ru' ? "Продажа" : "Sale";
-                                const logPrice = (sellCoins>0 && sellCryst>0) ? `+$${sellCoins.toFixed(2)} | +${sellCryst}💎` : (sellCryst>0 ? `+${sellCryst}💎` : `+$${sellCoins.toFixed(2)}`);
-                                
-                                const itemHTML = `
-                                    <div class="history-item hist-exchange">
-                                        <span style="color:var(--angry-red); font-weight:bold;">[${actionName}]</span> ${item.icon} ${itemName}
-                                        <br><span style="color:#aaa; font-size:10px;">${logPrice}</span>
-                                    </div>`;
-                                
-                                p.historyShop = itemHTML + (p.historyShop || '');
-                                const hlShop = document.getElementById('historyListShop');
-                                if (hlShop) hlShop.innerHTML = p.historyShop;
-
-                                if (typeof App !== 'undefined' && App.requestProfileSave) App.requestProfileSave();
-                                if (typeof App !== 'undefined' && App.updateHistoryView) App.updateHistoryView();
-                                
-                                updateTopUI();
-                                renderShop(); 
-                                
-                                if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.HapticFeedback) window.Telegram.WebApp.HapticFeedback.notificationOccurred('success');
-                                if (typeof App !== 'undefined' && App.playSoundEffect) App.playSoundEffect('coins');
-                            }
-                        }
-                    };
-
-                    grid.appendChild(card);
-                });
-            }
-        }
-		
-        // === ВКЛАДКА: СТИЛИ ===
-        else if (GameState.subModes.shop === 'standard') {
-            
-            // --- КОСТЬ ИСТИНЫ ---
-            grid.appendChild(createCategoryHeader(lang === 'ru' ? 'Кость Истины' : 'Dice of Fate', 'var(--magic-color)'));
-            grid.appendChild(createCategoryHeader(lang === 'ru' ? 'Тема интерфейса' : 'UI Theme', '#ffffff', true));
-            appendItems(grid, shopItems.gameStyles.filter(i => i.id.startsWith('style_dice')), balanceCoins, balanceCrystals, lang);
-            grid.appendChild(createCategoryHeader(lang === 'ru' ? 'Облик кости' : 'Dice Faces', '#ffffff', true));
-            appendItems(grid, shopItems.diceModes, balanceCoins, balanceCrystals, lang);
-            grid.appendChild(createCategoryHeader(lang === 'ru' ? 'Дополнительные функции' : 'Extra Features', '#ffffff', true));
-            appendItems(grid, shopItems.perks.filter(i => i.id === 'perk_sparkle_dice'), balanceCoins, balanceCrystals, lang);
-
-            // --- РУССКАЯ РУЛЕТКА ---
-			grid.appendChild(createCategoryHeader(lang === 'ru' ? 'Роковая Пуля' : 'Fatal Bullet', 'var(--angry-red)'));
-
-			grid.appendChild(createCategoryHeader(lang === 'ru' ? 'Барабаны' : 'Drums', '#ffffff', true));
-			appendItems(grid, shopItems.gameStyles.filter(i => i.id.startsWith('roulette_drum_')), balanceCoins, balanceCrystals, lang);
-
-			grid.appendChild(createCategoryHeader(lang === 'ru' ? 'Пули' : 'Bullets', '#ffffff', true));
-			appendItems(grid, shopItems.gameStyles.filter(i => i.id.startsWith('roulette_bullet_')), balanceCoins, balanceCrystals, lang);
-
-            // --- ГРАНЬ ВЫБОРА ---
-            grid.appendChild(createCategoryHeader(lang === 'ru' ? 'Грань Выбора' : 'Edge of Choice', 'var(--sun-gold)'));
-            grid.appendChild(createCategoryHeader(lang === 'ru' ? 'Облик монеты' : 'Coin Styles', '#ffffff', true));
-            appendItems(grid, shopItems.gameStyles.filter(i => i.id.startsWith('style_coin')), balanceCoins, balanceCrystals, lang);
-            grid.appendChild(createCategoryHeader(lang === 'ru' ? 'Дополнительные функции' : 'Extra Features', '#ffffff', true));
-            appendItems(grid, shopItems.perks.filter(i => i.id === 'perk_sparkle_coin'), balanceCoins, balanceCrystals, lang);
-
-            // --- ЛЕПЕСТКИ ---
-            grid.appendChild(createCategoryHeader(lang === 'ru' ? 'Лепестки' : 'Petals', 'var(--friendly-green)'));
-            grid.appendChild(createCategoryHeader(lang === 'ru' ? 'Тема интерфейса' : 'UI Theme', '#ffffff', true));
-            appendItems(grid, shopItems.gameStyles.filter(i => i.id.startsWith('style_flower')), balanceCoins, balanceCrystals, lang);
-            grid.appendChild(createCategoryHeader(lang === 'ru' ? 'Облик сердцевины' : 'Core Styles', '#ffffff', true));
-            appendItems(grid, shopItems.flowerCores, balanceCoins, balanceCrystals, lang);
-            grid.appendChild(createCategoryHeader(lang === 'ru' ? 'Цвет лепестков' : 'Petal Colors', '#ffffff', true));
-            appendItems(grid, shopItems.flowerPetals, balanceCoins, balanceCrystals, lang);
-
-            // --- ЖРЕБИЙ ---
-            grid.appendChild(createCategoryHeader(lang === 'ru' ? 'Жребий' : 'Draw Lots', '#ff9f43'));
-            grid.appendChild(createCategoryHeader(lang === 'ru' ? 'Тема интерфейса' : 'UI Theme', '#ffffff', true));
-            appendItems(grid, shopItems.gameStyles.filter(i => i.id.startsWith('style_lots')), balanceCoins, balanceCrystals, lang);
-            grid.appendChild(createCategoryHeader(lang === 'ru' ? 'Облик коробки' : 'Box Styles', '#ffffff', true));
-            appendItems(grid, shopItems.lotsBoxes, balanceCoins, balanceCrystals, lang);
-            grid.appendChild(createCategoryHeader(lang === 'ru' ? 'Вид палочек' : 'Stick Styles', '#ffffff', true));
-            appendItems(grid, shopItems.lotsSticks, balanceCoins, balanceCrystals, lang);
-
-            // --- КАМЕНЬ-НОЖНИЦЫ-БУМАГА ---
-            grid.appendChild(createCategoryHeader(lang === 'ru' ? 'К-Н-Б' : 'R-P-S', '#44aaff'));
-            grid.appendChild(createCategoryHeader(lang === 'ru' ? 'Тема интерфейса' : 'UI Theme', '#ffffff', true));
-            appendItems(grid, shopItems.gameStyles.filter(i => i.id.startsWith('style_rps')), balanceCoins, balanceCrystals, lang);
-
-            // --- ФОНЫ ---
-            grid.appendChild(createCategoryHeader(lang === 'ru' ? 'Глобальные Фоны' : 'Global Backgrounds', 'var(--magic-color)'));
-            appendItems(grid, shopItems.backgrounds, balanceCoins, balanceCrystals, lang);
-        } 
-        // === ВКЛАДКА: ПЕРКИ ===
-        else if (GameState.subModes.shop === 'perks') {
-            grid.appendChild(createCategoryHeader(lang === 'ru' ? 'Бустеры Ставок' : 'Bet Boosters', 'var(--angry-red)'));
-            const boosterItems = shopItems.perks.filter(i => i.id.startsWith('perk_x2_'));
-            appendItems(grid, boosterItems, balanceCoins, balanceCrystals, lang);
-        }
-        // === ВКЛАДКА: ПЕРКИ ===
-        else if (GameState.subModes.shop === 'perks') {
-            
-            // --- РАЗДЕЛ 1: КОСТЬ ИСТИНЫ ---
-            grid.appendChild(createCategoryHeader(lang === 'ru' ? 'Кость Истины' : 'Dice of Fate', 'var(--magic-color)'));
-            
-            // Подраздел: Грани кости
-            grid.appendChild(createCategoryHeader(lang === 'ru' ? 'Облик кости' : 'Dice Faces', '#ffffff', true));
-            appendItems(grid, shopItems.diceModes, balanceCoins, balanceCrystals, lang);
-            
-            // Подраздел: Дополнительные функции (Искры)
-            grid.appendChild(createCategoryHeader(lang === 'ru' ? 'Дополнительные функции' : 'Extra Features', '#ffffff', true));
-            const diceSparkle = shopItems.perks.filter(i => i.id === 'perk_sparkle_dice');
-            appendItems(grid, diceSparkle, balanceCoins, balanceCrystals, lang);
-
-            // --- РАЗДЕЛ 2: ГРАНЬ ВЫБОРА ---
-            grid.appendChild(createCategoryHeader(lang === 'ru' ? 'Грань Выбора' : 'Edge of Choice', 'var(--sun-gold)'));
-            
-            grid.appendChild(createCategoryHeader(lang === 'ru' ? 'Облик монеты' : 'Coin Styles', '#ffffff', true));
-            
-            grid.appendChild(createCategoryHeader(lang === 'ru' ? 'Дополнительные функции' : 'Extra Features', '#ffffff', true));
-            const coinSparkle = shopItems.perks.filter(i => i.id === 'perk_sparkle_coin');
-            appendItems(grid, coinSparkle, balanceCoins, balanceCrystals, lang);
+        const mode = GameState.subModes.shop;
+        if (mode === 'exchange') {
+            renderExchangeTab(grid, p, lang);
+        } else if (mode === 'perks') {
+            renderPerksTab(grid, balanceCoins, balanceCrystals, lang);
+        } else if (mode === 'standard') {
+            renderStylesTab(grid, balanceCoins, balanceCrystals, lang);
+        } else if (mode === 'backgrounds') {
+            renderBackgroundsTab(grid, balanceCoins, balanceCrystals, lang);
         }
     }
-	
-	// === ГЛОБАЛЬНЫЙ ГЕНЕРАТОР ПОДСКАЗОК (ТУЛТИПОВ) ===
-    function getTooltipHTML(itemName, descObj, lang) {
-        if (!descObj) return ''; // Если описания нет, вопросик не выводим
-        const descText = descObj[lang] || descObj.ru;
+
+    // ВЕРХНЯЯ ПАНЕЛЬ И ВКЛАДКИ
+    function renderShopStructure(stage, grid, coins, crystals) {
+        let bH = document.getElementById('shopFixedBalances');
+        if (!bH) { bH = document.createElement('div'); bH.id = 'shopFixedBalances'; stage.insertBefore(bH, stage.firstChild); }
+        bH.style.cssText = 'position: sticky; top: 0; display: flex; justify-content: center; width: 100%; padding-top: 15px; padding-bottom: 10px; z-index: 100; flex-shrink: 0; transform: scale(0.95); pointer-events: none;';
+        bH.innerHTML = `<div style="background: rgba(10, 15, 25, 0.95); backdrop-filter: blur(8px); padding: 6px 20px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.15); font-size: 15px; display: inline-flex; align-items: center; gap: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.8); pointer-events: auto;"><span style="color: var(--friendly-green); font-weight: bold;"><i class="fas fa-wallet"></i> ${coins.toFixed(2)}</span><span style="color: rgba(255,255,255,0.2);">|</span><span style="color: var(--magic-color); font-weight: bold; text-shadow: 0 0 8px rgba(162,155,254,0.5);"><i class="fas fa-gem"></i> ${crystals}</span></div>`;
+
+        let tC = document.getElementById('shopTabsContainer');
+        if (!tC) { tC = document.createElement('div'); tC.id = 'shopTabsContainer'; stage.insertBefore(tC, grid); }
+        tC.style.cssText = 'flex-shrink: 0; padding-bottom: 10px; margin-bottom: 5px; border-bottom: 1px solid rgba(255,255,255,0.1); width: 95%; z-index: 10;';
+        tC.innerHTML = '';
         
-        // ВАЖНО: Добавлена умная проверка границ экрана при клике!
+        const bar = document.createElement('div'); bar.style.cssText = 'display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px;';
+        const tabs = [
+            {k:'exchange', i:'<i class="fas fa-exchange-alt"></i>', c:'var(--sun-gold)'}, 
+            {k:'perks', i:'<i class="fas fa-bolt"></i>', c:'var(--angry-red)'}, 
+            {k:'standard', i:'<i class="fas fa-tshirt"></i>', c:'var(--magic-color)'},
+            {k:'backgrounds', i:'<i class="fas fa-image"></i>', c:'var(--friendly-green)'}
+        ];
+
+        tabs.forEach(t => {
+            const isActive = GameState.subModes.shop === t.k;
+            const btn = document.createElement('div');
+            btn.style.cssText = `padding: 12px 0; background: ${isActive?'rgba(255,255,255,0.15)':'rgba(5,8,15,0.8)'}; border: 1px solid ${isActive?t.c:'rgba(255,255,255,0.15)'}; border-radius: 8px; display: flex; justify-content: center; align-items: center; font-size: 20px; color: #fff; cursor: pointer; transition: 0.3s ease; filter: ${isActive?`drop-shadow(0 0 12px ${t.c})`:'grayscale(1)'};`;
+            btn.innerHTML = t.i;
+            btn.onclick = () => { if(typeof App!=='undefined'&&App.playSoundEffect) App.playSoundEffect('tick'); GameState.subModes.shop = t.k; renderShop(); };
+            bar.appendChild(btn);
+        });
+        tC.appendChild(bar);
+
+        let sTC = document.getElementById('shopSubTabsContainer');
+        if (!sTC) { sTC = document.createElement('div'); sTC.id = 'shopSubTabsContainer'; stage.insertBefore(sTC, grid); }
+        if (GameState.subModes.shop === 'standard') {
+            sTC.style.display = 'block'; sTC.style.cssText = 'width: 95%; margin-bottom: 10px; padding-top: 5px;'; sTC.innerHTML = '';
+            const styleCats = [
+                { k: 'dice', i: '<i class="fas fa-cube"></i>', c: 'var(--magic-color)' }, 
+                { k: 'roulette', i: '<i class="fas fa-bullseye"></i>', c: 'var(--angry-red)' }, 
+                { k: 'coin', i: '<i class="fas fa-coins"></i>', c: 'var(--sun-gold)' }, 
+                { k: 'flower', i: '<i class="fas fa-seedling"></i>', c: 'var(--friendly-green)' }, 
+                { k: 'rps', i: '<i class="fas fa-hand-rock"></i>', c: '#ff9f43' }, 
+                { k: 'lots', i: '<i class="fas fa-grip-lines-vertical"></i>', c: '#00d2d3' }
+            ];
+            const sBar = document.createElement('div'); sBar.style.cssText = 'display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px;';
+            styleCats.forEach(cat => {
+                const isA = GameState.shopStyleCategory === cat.k;
+                const btn = document.createElement('div');
+                btn.style.cssText = `padding: 8px 0; background: ${isA?'rgba(255,255,255,0.1)':'rgba(5,8,15,0.6)'}; border: 1px solid ${isA?cat.c:'rgba(255,255,255,0.1)'}; border-radius: 6px; display: flex; justify-content: center; align-items: center; font-size: 16px; color: #fff; cursor: pointer; transition: 0.2s; opacity: ${isA?'1':'0.6'};`;
+                btn.innerHTML = cat.i;
+                btn.onclick = () => { if(typeof App!=='undefined'&&App.playSoundEffect) App.playSoundEffect('tick'); GameState.shopStyleCategory = cat.k; renderShop(); };
+                sBar.appendChild(btn);
+            });
+            sTC.appendChild(sBar);
+        } else { sTC.style.display = 'none'; }
+    }
+
+    // ВКЛАДКА ОБМЕН И ИНВЕНТАРЬ
+    function renderExchangeTab(grid, p, lang) {
+        grid.appendChild(createCategoryHeader(lang === 'ru' ? 'Обмен Валюты' : 'Currency Exchange', 'var(--sun-gold)'));
+        const exchDefs = [
+            { id: 'buy_coin', icon: '🪙', type: 'coin', mode: 'buy', desc: { ru: 'Конвертация Кристаллов в Монеты.<br><br>Комиссия Банка: 10%.', en: 'Convert Crystals to Coins.<br><br>Bank fee: 10%.' } },
+            { id: 'buy_cryst', icon: '💎', type: 'cryst', mode: 'buy', desc: { ru: 'Конвертация Монет в Кристаллы.<br><br>Комиссия Банка: 10%.', en: 'Convert Coins to Crystals.<br><br>Bank fee: 10%.' } },
+            { id: 'sell_coin', icon: '🪙', type: 'coin', mode: 'sell', desc: { ru: 'Продажа Монет за Кристаллы.<br><br>Комиссия Банка: 10%.', en: 'Sell Coins for Crystals.<br><br>Bank fee: 10%.' } },
+            { id: 'sell_cryst', icon: '💎', type: 'cryst', mode: 'sell', desc: { ru: 'Продажа Кристаллов за Монеты.<br><br>Комиссия Банка: 10%.', en: 'Sell Crystals for Coins.<br><br>Bank fee: 10%.' } }
+        ];
+
+        exchDefs.forEach(def => {
+            const card = document.createElement('div');
+            card.className = 'shop-item-card';
+            card.style.cssText = `padding: 8px 4px; min-height: 110px; display: flex; flex-direction: column; align-items: center; justify-content: space-between; border-radius: 8px; border: 1px solid rgba(255,249,174,0.3); background: rgba(5,8,15,0.8); position: relative;`;
+            const titleTxt = def.mode === 'buy' ? (lang==='ru'?'КУПИТЬ':'BUY') : (lang==='ru'?'ПРОДАТЬ':'SELL');
+            const color = def.mode === 'buy' ? 'var(--friendly-green)' : 'var(--angry-red)';
+            card.innerHTML = `${getTooltipHTML(titleTxt, def.desc, lang)}<div style="font-size: 24px;">${def.icon}</div><div style="color: ${color}; font-size: 10px; font-weight: bold; text-transform: uppercase;">${titleTxt}</div><input type="number" min="1" step="1" class="exch-input" placeholder="0" style="width: 85%; background: #000; border: 1px solid #333; color: #fff; text-align: center; border-radius: 4px; font-size: 13px; padding: 4px;"><div class="exch-result" style="font-size: 11px; font-weight: bold; color: #aaa; height: 14px;">...</div><button class="exch-btn" disabled style="width: 85%; background: var(--sun-gold); color: #000; border: none; border-radius: 4px; font-weight: 900; font-size: 10px; padding: 5px; opacity: 0.4;">${lang === 'ru' ? 'ОБМЕН' : 'EXCHANGE'}</button>`;
+            
+            const input = card.querySelector('.exch-input');
+            const resDiv = card.querySelector('.exch-result');
+            const btn = card.querySelector('.exch-btn');
+
+            input.oninput = () => {
+                let val = parseInt(input.value);
+                if (isNaN(val) || val <= 0) { resDiv.innerHTML = '...'; btn.disabled = true; btn.style.opacity = '0.4'; return; }
+                const curCoins = getPlayerCoins(p), curCryst = p ? p.crystals : 0;
+                let cCoins = 0, cCryst = 0;
+                if (def.mode === 'buy' && def.type === 'coin') { cCryst = Math.ceil(val * 11); resDiv.innerHTML = `<span style="color:var(--angry-red)">-${cCryst} 💎</span>`; }
+                else if (def.mode === 'buy' && def.type === 'cryst') { cCoins = val * 0.11; resDiv.innerHTML = `<span style="color:var(--angry-red)">-$${cCoins.toFixed(2)}</span>`; }
+                else if (def.mode === 'sell' && def.type === 'coin') { cCoins = val; resDiv.innerHTML = `<span style="color:var(--friendly-green)">+${Math.floor(val * 9)} 💎</span>`; }
+                else if (def.mode === 'sell' && def.type === 'cryst') { cCryst = val; resDiv.innerHTML = `<span style="color:var(--friendly-green)">+$${(val * 0.09).toFixed(2)}</span>`; }
+                btn.disabled = !(curCoins >= cCoins && curCryst >= cCryst);
+                btn.style.opacity = btn.disabled ? '0.4' : '1';
+                btn.style.cursor = btn.disabled ? 'default' : 'pointer';
+            };
+
+            btn.onclick = () => {
+                let val = parseInt(input.value);
+                const curCoins = getPlayerCoins(p), curCryst = p ? p.crystals : 0;
+                let cCoins = 0, cCryst = 0, gCoins = 0, gCryst = 0;
+                if (def.mode === 'buy' && def.type === 'coin') { cCryst = Math.ceil(val * 11); gCoins = val; }
+                else if (def.mode === 'buy' && def.type === 'cryst') { cCoins = val * 0.11; gCryst = val; }
+                else if (def.mode === 'sell' && def.type === 'coin') { cCoins = val; gCryst = Math.floor(val * 9); }
+                else if (def.mode === 'sell' && def.type === 'cryst') { cCryst = val; gCoins = val * 0.09; }
+                if (curCoins < cCoins || curCryst < cCryst) { if(typeof App !== 'undefined' && App.showError) App.showError(lang==='ru'?'Недостаточно средств!':'Not enough funds!'); return; }
+                if (cCoins > 0) deductPlayerCoins(p, cCoins); if (cCryst > 0) p.crystals -= cCryst;
+                if (gCoins > 0) { if (p.bank !== undefined) p.bank += gCoins; else p.rStats.bank += gCoins; }
+                if (gCryst > 0) p.crystals += gCryst;
+                const log = (cCoins > 0) ? `-$${cCoins.toFixed(2)} ➔ +${gCryst}💎` : `-${cCryst}💎 ➔ +$${gCoins.toFixed(2)}`;
+                p.historyShop = `<div class="history-item hist-exchange"><span style="color:var(--sun-gold); font-weight:bold;">[${lang==='ru'?'Обмен':'Exchange'}]</span><br><span style="color:#aaa; font-size:10px;">${log}</span></div>` + (p.historyShop || '');
+                if(typeof App !== 'undefined' && App.requestProfileSave) App.requestProfileSave(); updateTopUI(); renderShop();
+                if(typeof App !== 'undefined' && App.playSoundEffect) App.playSoundEffect('coins');
+            };
+            grid.appendChild(card);
+        });
+
+        const inv = p ? (p.inventory || []) : [];
+        const owned = []; shopItems.perks.filter(i => i.isStackable).forEach(item => { const count = inv.filter(id => id === item.id).length; if(count > 0) owned.push({item, count}); });
+        if (owned.length > 0) {
+            grid.appendChild(createCategoryHeader(lang==='ru'?'Ваш Инвентарь':'Your Inventory', 'var(--magic-color)'));
+            owned.forEach(d => {
+                const sCoins = d.item.priceCoins * 0.9, sCryst = Math.floor(d.item.priceCrystals * 0.9);
+                const card = document.createElement('div'); card.className = 'shop-item-card';
+                card.style.cssText = `padding: 8px 4px; min-height: 100px; display: flex; flex-direction: column; align-items: center; justify-content: space-between; border-radius: 8px; border: 1px solid var(--magic-color); background: rgba(5,8,15,0.8); position: relative;`;
+                card.innerHTML = `<div style="position: absolute; top: -2px; right: 2px; color: #ccffcc; text-shadow: 0 0 8px #ccffcc; font-size: 14px; font-weight: 900;">${d.count}</div>${getTooltipHTML(d.item.name[lang], d.item.desc, lang)}<div style="font-size: 24px;">${d.item.icon}</div><div style="color: #fff; font-size: 9px; font-weight: bold; text-align: center;">${d.item.name[lang]}</div><div style="font-size: 10px; font-weight: bold; background: rgba(0,0,0,0.5); padding: 4px; border-radius: 4px; line-height: 1.2;">${sCoins>0?`+$${sCoins.toFixed(2)}`:''}${sCoins>0&&sCryst>0?'<br>':''}${sCryst>0?`+${sCryst}💎`:''}</div><button class="sell-btn" style="width: 85%; background: var(--angry-red); color: #fff; border: none; border-radius: 4px; font-weight: 900; font-size: 10px; padding: 5px;">${lang==='ru'?'ПРОДАТЬ':'SELL'}</button>`;
+                card.querySelector('.sell-btn').onclick = () => {
+                    consumePerk(d.item.id); if (sCoins > 0) { if (p.bank !== undefined) p.bank += sCoins; else p.rStats.bank += sCoins; }
+                    if (sCryst > 0) p.crystals += sCryst;
+                    p.historyShop = `<div class="history-item hist-exchange"><span style="color:var(--angry-red); font-weight:bold;">[${lang==='ru'?'Продажа':'Sale'}]</span> ${d.item.icon} ${d.item.name[lang]}<br><span style="color:#aaa; font-size:10px;">+$${sCoins.toFixed(2)} | +${sCryst}💎</span></div>` + (p.historyShop || '');
+                    if(typeof App !== 'undefined' && App.requestProfileSave) App.requestProfileSave(); updateTopUI(); renderShop();
+                };
+                grid.appendChild(card);
+            });
+        }
+    }
+    
+    // ВКЛАДКА БУСТЕРЫ
+    function renderPerksTab(grid, coins, crystals, lang) {
+        grid.appendChild(createCategoryHeader(lang === 'ru' ? 'Бустеры Ставок' : 'Bet Boosters', 'var(--angry-red)'));
+        appendItems(grid, shopItems.perks.filter(i => i.id.startsWith('perk_x2_')), coins, crystals, lang);
+    }
+
+    // ВКЛАДКА СТИЛИ (С ПОДРАЗДЕЛАМИ)
+    function renderStylesTab(grid, coins, crystals, lang) {
+        const cat = GameState.shopStyleCategory || 'dice';
+        const isR = lang === 'ru';
+        
+        if (cat === 'dice') {
+            grid.appendChild(createCategoryHeader(isR?'Кость Истины':'Dice of Fate', 'var(--magic-color)'));
+            grid.appendChild(createCategoryHeader(isR?'Тема интерфейса':'UI Theme', '#fff', true));
+            appendItems(grid, shopItems.gameStyles.filter(i => i.id.startsWith('style_dice')), coins, crystals, lang);
+            grid.appendChild(createCategoryHeader(isR?'Облик кости':'Dice Faces', '#fff', true));
+            appendItems(grid, shopItems.diceModes, coins, crystals, lang);
+            grid.appendChild(createCategoryHeader(isR?'Эффекты':'Effects', '#fff', true));
+            appendItems(grid, shopItems.perks.filter(i => i.id === 'perk_sparkle_dice'), coins, crystals, lang);
+        } 
+        else if (cat === 'roulette') {
+            grid.appendChild(createCategoryHeader(isR?'Роковая Пуля':'Fatal Bullet', 'var(--angry-red)'));
+            grid.appendChild(createCategoryHeader(isR?'Барабаны':'Drums', '#fff', true));
+            appendItems(grid, shopItems.gameStyles.filter(i => i.id.startsWith('roulette_drum_')), coins, crystals, lang);
+            grid.appendChild(createCategoryHeader(isR?'Пули':'Bullets', '#fff', true));
+            appendItems(grid, shopItems.gameStyles.filter(i => i.id.startsWith('roulette_bullet_')), coins, crystals, lang);
+        } 
+        else if (cat === 'coin') {
+            grid.appendChild(createCategoryHeader(isR?'Грань Выбора':'Edge of Choice', 'var(--sun-gold)'));
+            grid.appendChild(createCategoryHeader(isR?'Тема интерфейса':'UI Theme', '#fff', true));
+            appendItems(grid, shopItems.gameStyles.filter(i => i.id.startsWith('style_coin')), coins, crystals, lang);
+            grid.appendChild(createCategoryHeader(isR?'Эффекты':'Effects', '#fff', true));
+            appendItems(grid, shopItems.perks.filter(i => i.id === 'perk_sparkle_coin'), coins, crystals, lang);
+        } 
+        else if (cat === 'flower') {
+            grid.appendChild(createCategoryHeader(isR?'Лепестки':'Petals', 'var(--friendly-green)'));
+            grid.appendChild(createCategoryHeader(isR?'Тема интерфейса':'UI Theme', '#fff', true));
+            appendItems(grid, shopItems.gameStyles.filter(i => i.id.startsWith('style_flower')), coins, crystals, lang);
+            grid.appendChild(createCategoryHeader(isR?'Сердцевина':'Core Styles', '#fff', true));
+            appendItems(grid, shopItems.flowerCores, coins, crystals, lang);
+            grid.appendChild(createCategoryHeader(isR?'Цвет лепестков':'Petal Colors', '#fff', true));
+            appendItems(grid, shopItems.flowerPetals, coins, crystals, lang);
+        } 
+        else if (cat === 'lots') {
+            grid.appendChild(createCategoryHeader(isR?'Жребий':'Draw Lots', '#00d2d3'));
+            grid.appendChild(createCategoryHeader(isR?'Тема интерфейса':'UI Theme', '#fff', true));
+            appendItems(grid, shopItems.gameStyles.filter(i => i.id.startsWith('style_lots')), coins, crystals, lang);
+            grid.appendChild(createCategoryHeader(isR?'Коробка':'Box Styles', '#fff', true));
+            appendItems(grid, shopItems.lotsBoxes, coins, crystals, lang);
+            grid.appendChild(createCategoryHeader(isR?'Вид палочек':'Stick Styles', '#fff', true));
+            appendItems(grid, shopItems.lotsSticks, coins, crystals, lang);
+        } 
+        else if (cat === 'rps') {
+            grid.appendChild(createCategoryHeader(isR?'К-Н-Б':'R-P-S', '#ff9f43'));
+            grid.appendChild(createCategoryHeader(isR?'Тема интерфейса':'UI Theme', '#fff', true));
+            appendItems(grid, shopItems.gameStyles.filter(i => i.id.startsWith('style_rps')), coins, crystals, lang);
+        }
+    }
+
+    // ВКЛАДКА ФОНЫ
+    function renderBackgroundsTab(grid, coins, crystals, lang) {
+        grid.appendChild(createCategoryHeader(lang === 'ru' ? 'Глобальные Фоны' : 'Global Backgrounds', 'var(--magic-color)'));
+        appendItems(grid, shopItems.backgrounds, coins, crystals, lang);
+    }
+    
+    // === ГЛОБАЛЬНЫЙ ГЕНЕРАТОР ПОДСКАЗОК (ТУЛТИПОВ) ===
+    function getTooltipHTML(itemName, descObj, lang) {
+        if (!descObj) return ''; 
+        const descText = descObj[lang] || descObj.ru;
         return `
             <div class="info-icon-btn" style="position: absolute; top: 4px; left: 4px; z-index: 20;" onclick="event.stopPropagation(); const tt = this.nextElementSibling; const isVis = tt.style.opacity === '1'; document.querySelectorAll('.shop-tt').forEach(el => el.style.opacity = '0'); if(!isVis) { tt.style.opacity = '1'; tt.style.left = '15px'; tt.style.right = 'auto'; if(tt.getBoundingClientRect().right > window.innerWidth - 10) { tt.style.left = 'auto'; tt.style.right = '10px'; } }">
                 <div style="background: rgba(255,249,174,0.1); border: 1px solid var(--sun-gold); color: var(--sun-gold); border-radius: 4px; width: 14px; height: 14px; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: bold; cursor: pointer; box-shadow: 0 0 5px rgba(255,249,174,0.3);">?</div>
@@ -9621,7 +9541,7 @@ const ShopGame = (function() {
             </div>
         `;
     }
-	
+    
     function createCategoryHeader(title, color = 'var(--sun-gold)', isSub = false) {
         const h = document.createElement('div');
         h.style.gridColumn = '1 / -1';
@@ -9686,11 +9606,7 @@ const ShopGame = (function() {
             } else {
                 let priceInnerHTML = '';
                 if (item.priceCoins > 0 && item.priceCrystals > 0) {
-                    priceInnerHTML = `
-                        <div style="color: ${canAffordCoins ? 'var(--friendly-green)' : 'var(--angry-red)'}; font-size: 9px; font-weight: bold; display: flex; align-items: center; gap: 3px;"><i class="fas fa-dollar-sign"></i>${item.priceCoins}</div>
-                        <div style="color: rgba(255,255,255,0.2); font-size: 9px;">|</div>
-                        <div style="color: ${canAffordCrystals ? 'var(--magic-color)' : 'var(--angry-red)'}; font-size: 9px; font-weight: bold; display: flex; align-items: center; gap: 3px;"><i class="fas fa-gem"></i>${item.priceCrystals}</div>
-                    `;
+                    priceInnerHTML = `<div style="color: ${canAffordCoins ? 'var(--friendly-green)' : 'var(--angry-red)'}; font-size: 9px; font-weight: bold; display: flex; align-items: center; gap: 3px;"><i class="fas fa-dollar-sign"></i>${item.priceCoins}</div><div style="color: rgba(255,255,255,0.2); font-size: 9px;">|</div><div style="color: ${canAffordCrystals ? 'var(--magic-color)' : 'var(--angry-red)'}; font-size: 9px; font-weight: bold; display: flex; align-items: center; gap: 3px;"><i class="fas fa-gem"></i>${item.priceCrystals}</div>`;
                 } else if (item.priceCrystals > 0) {
                     priceInnerHTML = `<div style="color: ${canAffordCrystals ? 'var(--magic-color)' : 'var(--angry-red)'}; font-size: 9px; font-weight: bold; display: flex; align-items: center; gap: 3px;"><i class="fas fa-gem"></i>${item.priceCrystals}</div>`;
                 } else if (item.priceCoins > 0) {
@@ -9699,17 +9615,10 @@ const ShopGame = (function() {
                     const freeTxt = lang === 'ru' ? 'БЕСПЛАТНО' : 'FREE';
                     priceInnerHTML = `<div style="color: var(--friendly-green); font-size: 9px; font-weight: bold; display: flex; align-items: center; gap: 3px;">${freeTxt}</div>`;
                 }
-                
-                priceSection = `
-                    <div style="display: flex; flex-direction: row; justify-content: center; align-items: center; gap: 2px; width: 90%; margin-top: auto; background: rgba(0,0,0,0.5); padding: 4px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);">
-                        ${priceInnerHTML}
-                    </div>
-                `;
+                priceSection = `<div style="display: flex; flex-direction: row; justify-content: center; align-items: center; gap: 2px; width: 90%; margin-top: auto; background: rgba(0,0,0,0.5); padding: 4px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);">${priceInnerHTML}</div>`;
             }
 
             const itemName = item.name[lang] || item.name.ru || item.name;
-
-            // === ВЫЗЫВАЕМ НАШ ДИНАМИЧЕСКИЙ ТУЛТИП ===
             const tooltipHTML = getTooltipHTML(itemName, item.desc, lang);
 
             card.innerHTML = `
@@ -9796,7 +9705,6 @@ const ShopGame = (function() {
         const equipped = p ? (p.equipped || {}) : {};
         const lang = GameState.lang || 'ru';
         
-        // КРИТИЧНО: list теперь гибкий (flex: 1). Он займет всё свободное место, не выталкивая кнопку Закрыть!
         list.style.cssText = 'flex: 1; min-height: 0; display: flex; flex-direction: column; overflow: hidden; padding-top: 15px; margin-bottom: 10px;';
         list.innerHTML = '';
         
@@ -9814,9 +9722,9 @@ const ShopGame = (function() {
             { key: 'boosters', icon: '<i class="fas fa-gift"></i>', title: { ru: 'Перки и Бустеры', en: 'Perks' }, color: 'var(--angry-red)', items: mapItems(shopItems.perks.filter(i => i.id.startsWith('perk_x2_')), 'perks', 'Бустеры Ставок', 'Bet Boosters') },
             { key: 'dice', icon: '<i class="fas fa-cube"></i>', title: { ru: 'Кость Истины', en: 'Dice of Fate' }, color: 'var(--magic-color)', items: [ ...mapItems(shopItems.gameStyles.filter(i=>i.id.startsWith('style_dice')), 'gameStyles', 'Тема интерфейса', 'UI Theme'), ...mapItems(shopItems.diceModes, 'diceModes', 'Облик кости', 'Dice Faces'), ...mapItems(shopItems.perks.filter(i => i.id === 'perk_sparkle_dice'), 'perks', 'Дополнительные функции', 'Extra Features') ] },
             { key: 'roulette', icon: rouletteSVG, title: { ru: 'Роковая Пуля', en: 'Fatal Bullet' }, color: 'var(--angry-red)', items: [ 
-    ...mapItems(shopItems.gameStyles.filter(i => i.id.startsWith('roulette_drum_')), 'gameStyles', 'Барабаны', 'Drums'), 
-    ...mapItems(shopItems.gameStyles.filter(i => i.id.startsWith('roulette_bullet_')), 'gameStyles', 'Пули', 'Bullets') 
-] },
+        ...mapItems(shopItems.gameStyles.filter(i => i.id.startsWith('roulette_drum_')), 'gameStyles', 'Барабаны', 'Drums'), 
+        ...mapItems(shopItems.gameStyles.filter(i => i.id.startsWith('roulette_bullet_')), 'gameStyles', 'Пули', 'Bullets') 
+    ] },
             { key: 'coin', icon: coinSVG, title: { ru: 'Грань Выбора', en: 'Edge of Choice' }, color: 'var(--sun-gold)', items: [ ...mapItems(shopItems.gameStyles.filter(i=>i.id.startsWith('style_coin')), 'gameStyles', 'Облик монеты', 'Coin Styles'), ...mapItems(shopItems.perks.filter(i => i.id === 'perk_sparkle_coin'), 'perks', 'Дополнительные функции', 'Extra Features') ] },
             { key: 'flower', icon: '<i class="fas fa-seedling"></i>', title: { ru: 'Лепестки', en: 'Petals' }, color: 'var(--friendly-green)', items: [ ...mapItems(shopItems.gameStyles.filter(i=>i.id.startsWith('style_flower')), 'gameStyles', 'Тема интерфейса', 'UI Theme'), ...mapItems(shopItems.flowerCores, 'flowerCores', 'Облик сердцевины', 'Core Styles'), ...mapItems(shopItems.flowerPetals, 'flowerPetals', 'Цвет лепестков', 'Petal Colors') ] },
             { key: 'lots', icon: '<i class="fas fa-pause"></i>', title: { ru: 'Жребий', en: 'Lots' }, color: '#00d2d3', items: [ ...mapItems(shopItems.gameStyles.filter(i=>i.id.startsWith('style_lots')), 'gameStyles', 'Тема интерфейса', 'UI Theme'), ...mapItems(shopItems.lotsBoxes, 'lotsBoxes', 'Облик коробки', 'Box Styles'), ...mapItems(shopItems.lotsSticks, 'lotsSticks', 'Вид палочек', 'Stick Styles') ] },
@@ -9854,7 +9762,6 @@ const ShopGame = (function() {
             document.head.appendChild(style);
         }
 
-        // --- 1. СТАТИЧНЫЙ БЛОК ВКЛАДОК ---
         const staticBlock = document.createElement('div');
         staticBlock.style.cssText = 'flex-shrink: 0; padding-bottom: 10px; margin-bottom: 5px; border-bottom: 1px solid rgba(255,255,255,0.1); z-index: 10;';
         
@@ -9889,7 +9796,6 @@ const ShopGame = (function() {
         staticBlock.appendChild(tabBar);
         list.appendChild(staticBlock);
 
-        // --- 2. СКРОЛЛ КОНТЕНТА ---
         if (activeCat) {
             const wrapper = document.createElement('div');
             wrapper.className = 'inv-mask-wrapper' + (skipAnimation ? '' : ' inv-content-active');
@@ -9897,7 +9803,6 @@ const ShopGame = (function() {
             
             const scrollContainer = document.createElement('div');
             scrollContainer.className = 'inv-scroll-container';
-            // flex: 1 гарантирует, что скролл займет ровно ту высоту, которую ему отдал родитель, и не выдавит ничего наружу
             scrollContainer.style.cssText = 'flex: 1; overflow-y: auto; touch-action: pan-y; padding-top: 5px; padding-bottom: 80px;';
             
             scrollContainer.appendChild(createCategoryHeader(activeCat.title[lang] || activeCat.title.ru, activeCat.color));
@@ -9921,23 +9826,20 @@ const ShopGame = (function() {
                     const bgStyle = isEquipped ? 'rgba(204,255,204,0.15)' : 'rgba(5,8,15,0.8)';
 
                     const card = document.createElement('div');
-					// ДОБАВЛЯЕМ КЛАССЫ:
-					card.className = isEquipped ? 'inv-card active' : 'inv-card';
-
-					card.style.cssText = `padding: 8px 4px; min-height: 55px; cursor: pointer; display: flex; flex-direction: column; align-items: center;
-					justify-content: center; border-radius: 8px; border: ${borderStyle}; background: ${bgStyle}; position: relative; transition: 0.3s;`;
+                    card.className = isEquipped ? 'inv-card active' : 'inv-card';
+                    card.style.cssText = `padding: 8px 4px; min-height: 55px; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 8px; border: ${borderStyle}; background: ${bgStyle}; position: relative; transition: 0.3s;`;
                     
                     const itemName = item.name[lang] || item.name.ru;
                     let badgeHTML = item.isStackable ? `<div style="position: absolute; top: -2px; right: 2px; color: #ccffcc; text-shadow: 0 0 8px #ccffcc; font-size: 14px; font-weight: 900;">${inv.filter(id => id === item.id).length}</div>` : '';
 
                     card.innerHTML = `
-					${badgeHTML}
-					<div class="smart-info-wrap">
-					${typeof getTooltipHTML === 'function' ? getTooltipHTML(itemName, item.desc, lang) : ''}
-					</div>
-					<div style="font-size: 20px; margin-bottom: 4px;">${item.icon}</div>
-					<div style="color: #fff; font-size: 8px; font-weight: bold; text-align: center; text-transform: uppercase;">${itemName}</div>
-				`;
+                    ${badgeHTML}
+                    <div class="smart-info-wrap">
+                    ${typeof getTooltipHTML === 'function' ? getTooltipHTML(itemName, item.desc, lang) : ''}
+                    </div>
+                    <div style="font-size: 20px; margin-bottom: 4px;">${item.icon}</div>
+                    <div style="color: #fff; font-size: 8px; font-weight: bold; text-align: center; text-transform: uppercase;">${itemName}</div>
+                `;
                     
                     card.onclick = (e) => {
                         e.stopPropagation();
@@ -9952,7 +9854,6 @@ const ShopGame = (function() {
         }
     }
 
-    // === ЗАКРЫТИЕ ИНВЕНТАРЯ И ПЛАВНЫЙ СТАРТ ===
     function toggleInventory(show) {
         const inv = document.getElementById('inventoryOverlay');
         if (inv) {
@@ -9979,7 +9880,6 @@ const ShopGame = (function() {
                     modal.style.margin = '0';
                 }
 
-                // --- УМНЫЕ ВКЛАДКИ (ПАМЯТЬ ИГРЫ) ---
                 if (list && typeof GameState !== 'undefined' && GameState.mode) {
                     const modeMap = { 'dice': 'dice', 'roulette': 'roulette', 'coin': 'coin', 'flower': 'flower', 'rps': 'rps', 'sticks': 'lots' };
                     if (modeMap[GameState.mode]) {
@@ -9995,7 +9895,6 @@ const ShopGame = (function() {
         if (show) {
             renderInventoryList();
         } else {
-            // КОГДА МЕНЮ ЗАКРЫВАЕТСЯ - ЗАПУСКАЕМ ОБНОВЛЕНИЕ ВИЗУАЛА
             if (pendingVisualUpdates) {
                 if (typeof applyAllEquippedVisuals === 'function') applyAllEquippedVisuals();
                 pendingVisualUpdates = false;
@@ -10008,18 +9907,15 @@ const ShopGame = (function() {
         if (rouletteStage) rouletteStage.style.visibility = show ? 'hidden' : 'visible';
     }
 
-    // --- ЕДИНЫЙ ЦЕНТР ПРИМЕНЕНИЯ СТИЛЕЙ ---
     function applyAllEquippedVisuals() {
         const p = GameState.activeProfileIdx !== -1 ? GameState.profiles[GameState.activeProfileIdx] : null;
         if (!p) return;
 
         const equipped = p.equipped || {};
 
-        // Включаем режим плавной смены на 1 секунду
         document.body.classList.add('visual-transitioning');
         setTimeout(() => document.body.classList.remove('visual-transitioning'), 1000);
 
-        // 1. КОСТЬ ИСТИНЫ (Теперь не сбрасывает режим игрока!)
         let actualMode = (GameState.subModes && GameState.subModes.dice) ? GameState.subModes.dice : 'dots';
         if (equipped.diceModes) {
             actualMode = equipped.diceModes.replace('dice_', '');
@@ -10033,10 +9929,8 @@ const ShopGame = (function() {
         if (sel) sel.value = actualMode;
         try { if (typeof DiceGame !== 'undefined' && typeof DiceGame.updateModeDisplay === 'function') DiceGame.updateModeDisplay(); } catch(e){}
 
-        // 2. Глобальный Фон
         if (typeof App !== 'undefined' && App.changeBackground) App.changeBackground(true);
 
-        // 3. Подготовка и сброс классов
         let allVisualItems = [];
         ['gameStyles', 'flowerCores', 'flowerPetals', 'lotsBoxes', 'lotsSticks', 'perks'].forEach(cat => {
             if (shopItems[cat]) allVisualItems = allVisualItems.concat(shopItems[cat].map(i => i.id));
@@ -10044,12 +9938,10 @@ const ShopGame = (function() {
 
         allVisualItems.forEach(id => document.body.classList.remove(`theme-${id}`));
 
-        // 4. Применение новых классов шмоток
         Object.keys(equipped).forEach(id => {
             if (equipped[id]) document.body.classList.add(`theme-${id}`);
         });
 
-        // 5. ДЕФОЛТЫ РУЛЕТКИ (Индиго барабан и Стальные пули, если ничего не надето)
         const hasDrum = Object.keys(equipped).some(k => k.startsWith('roulette_drum_'));
         const hasBullet = Object.keys(equipped).some(k => k.startsWith('roulette_bullet_'));
 
@@ -10061,86 +9953,6 @@ const ShopGame = (function() {
         }
     }
 
-    function unmount() {
-        isGameActive = false;
-        document.body.classList.remove('is-shop-active'); 
-        if (syncInterval) clearInterval(syncInterval);
-        const stage = document.getElementById('shopStage');
-        if (stage) stage.style.display = 'none';
-        const rollBtn = document.getElementById('rollBtn');
-        if (rollBtn) rollBtn.style.display = '';
-        const resStatus = document.getElementById('res-status');
-        if (resStatus) resStatus.style.display = '';
-        document.querySelectorAll('.std-debug-btn').forEach(el => el.style.display = 'flex');
-        document.querySelectorAll('.shop-debug-btn').forEach(el => el.style.display = 'none');
-        document.querySelectorAll('#ui-top-money, #ui-bank, .top-bank-val').forEach(el => {
-            el.style.display = '';
-            el.style.opacity = '1';
-        });
-    }
-
-    // --- ЕДИНЫЙ ЦЕНТР ПРИМЕНЕНИЯ СТИЛЕЙ ---
-    function applyAllEquippedVisuals() {
-        const p = GameState.activeProfileIdx !== -1 ? GameState.profiles[GameState.activeProfileIdx] : null;
-        if (!p) return;
-
-        const equipped = p.equipped || {};
-
-        // Включаем режим ПЛАВНОЙ смены цветов на 1 секунду
-        document.body.classList.add('visual-transitioning');
-        setTimeout(() => document.body.classList.remove('visual-transitioning'), 1000);
-
-        // 1. Смена граней Кости Истины (Сработает только сейчас, при закрытии!)
-        let actualMode = 'dots';
-        if (equipped.diceModes) {
-            actualMode = equipped.diceModes.replace('dice_', '');
-            if (actualMode === 'nums') actualMode = 'numbers'; 
-        }
-        if (!GameState.subModes) GameState.subModes = { dice: 'standard', roulette: 'standard', coin: 'standard', flower: 'standard', rps: 'standard', shop: 'exchange' };
-        GameState.subModes.dice = actualMode;
-        
-        const sel = document.getElementById('modeSelect');
-        if (sel) sel.value = actualMode;
-        
-        // Даем команду движку Кости поменять точки на числа/алко
-        try {
-            if (typeof DiceGame !== 'undefined' && typeof DiceGame.updateModeDisplay === 'function') {
-                DiceGame.updateModeDisplay();
-            }
-        } catch(e){}
-
-        // 2. Глобальный Фон
-        if (typeof App !== 'undefined' && App.changeBackground) App.changeBackground(true);
-
-        // 3. Подготовка и сброс классов
-        let allVisualItems = [];
-        ['gameStyles', 'flowerCores', 'flowerPetals', 'lotsBoxes', 'lotsSticks', 'perks'].forEach(cat => {
-            if (shopItems[cat]) allVisualItems = allVisualItems.concat(shopItems[cat].map(i => i.id));
-        });
-
-        allVisualItems.forEach(id => document.body.classList.remove(`theme-${id}`));
-
-        // 4. Применение новых классов
-        allVisualItems.forEach(id => {
-            let isItemEquipped = false;
-            if (equipped[id] === true) isItemEquipped = true;
-            else if (Object.values(equipped).includes(id)) isItemEquipped = true;
-            if (isItemEquipped) document.body.classList.add(`theme-${id}`);
-        });
-
-        // 5. Дефолты Рулетки (Чтобы не было белого барабана)
-        const hasDrum = Object.keys(equipped).some(k => k.startsWith('roulette_drum_'));
-        const hasBullet = Object.keys(equipped).some(k => k.startsWith('roulette_bullet_'));
-
-        if (!hasDrum) document.body.classList.add('theme-roulette_drum_indigo');
-        if (!hasBullet) document.body.classList.add('theme-roulette_bullet_orig');
-
-        if (typeof RouletteGame !== 'undefined' && typeof RouletteGame.updateBoosterUI === 'function') {
-            RouletteGame.updateBoosterUI();
-        }
-    }
-
-    // === УМНАЯ СИСТЕМА ЭКИПИРОВКИ (ВЗАИМОИСКЛЮЧЕНИЯ) ===
     function equipItem(cat, id) {
         const p = GameState.activeProfileIdx !== -1 ? GameState.profiles[GameState.activeProfileIdx] : null;
         if (!p) return;
@@ -10148,7 +9960,7 @@ const ShopGame = (function() {
         
         if (cat === 'gameStyles' || cat === 'perks') { 
             if (p.equipped[id]) {
-                delete p.equipped[id]; // Снимаем
+                delete p.equipped[id]; 
             } else {
                 if (cat === 'gameStyles') {
                     let prefix = null;
@@ -10173,7 +9985,7 @@ const ShopGame = (function() {
                         });
                     }
                 }
-                p.equipped[id] = true; // Надеваем
+                p.equipped[id] = true; 
                 
                 if (id.startsWith('style_flower')) {
                     delete p.equipped['flowerCores']; delete p.equipped['flowerPetals'];
@@ -10200,7 +10012,6 @@ const ShopGame = (function() {
         if (typeof App !== 'undefined' && App.playSoundEffect) App.playSoundEffect('click');
     }
 
-    // ЭКСПОРТ ДЛЯ ДРУГИХ ПЛАГИНОВ: Позволяет безопасно "сжечь" 1 штуку перка
     function consumePerk(perkId) {
         const p = GameState.activeProfileIdx !== -1 ? GameState.profiles[GameState.activeProfileIdx] : null;
         if (!p || !p.inventory) return false;
