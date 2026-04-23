@@ -9809,16 +9809,24 @@ const ShopGame = (function() {
         const coinSVG = `<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 6.5l5.5 5.5-5.5 5.5-5.5-5.5z"/><circle cx="12" cy="12" r="2" fill="currentColor" stroke="none"/></svg>`;
 
         const categories = [
-            // 🛑 НОВАЯ ВКЛАДКА ДЛЯ ГИРОСКОПА (И ДРУГИХ ГЛОБАЛЬНЫХ ЭФФЕКТОВ В БУДУЩЕМ)
-            { key: 'global', icon: '<i class="fas fa-globe"></i>', title: { ru: 'Глобальные', en: 'Global' }, color: '#ffffff', items: [ ...mapItems(shopItems.perks.filter(i => i.id === 'perk_gyro_stars'), 'perks', 'Эффекты интерфейса', 'UI Effects') ] },
+            // 🛑 ОБЪЕДИНЕННАЯ ВКЛАДКА "БУСТЕРЫ" (ИКОНКА МОЛНИИ)
+            { 
+                key: 'boosters', 
+                icon: '<i class="fas fa-bolt"></i>', 
+                title: { ru: 'Бустеры', en: 'Boosters' }, 
+                color: 'var(--angry-red)', 
+                items: [ 
+                    ...mapItems(shopItems.perks.filter(i => i.id.startsWith('perk_x2_')), 'perks', 'Бустеры Ставок', 'Bet Boosters'),
+                    ...mapItems(shopItems.perks.filter(i => i.id === 'perk_gyro_stars'), 'perks', 'Бустеры Интерфейса', 'UI Boosters')
+                ] 
+            },
             
-            { key: 'boosters', icon: '<i class="fas fa-gift"></i>', title: { ru: 'Перки и Бустеры', en: 'Perks' }, color: 'var(--angry-red)', items: mapItems(shopItems.perks.filter(i => i.id.startsWith('perk_x2_')), 'perks', 'Бустеры Ставок', 'Bet Boosters') },
             { key: 'dice', icon: '<i class="fas fa-cube"></i>', title: { ru: 'Кость Истины', en: 'Dice of Fate' }, color: 'var(--magic-color)', items: [ ...mapItems(shopItems.gameStyles.filter(i=>i.id.startsWith('style_dice')), 'gameStyles', 'Тема интерфейса', 'UI Theme'), ...mapItems(shopItems.diceModes, 'diceModes', 'Облик кости', 'Dice Faces'), ...mapItems(shopItems.perks.filter(i => i.id === 'perk_sparkle_dice'), 'perks', 'Дополнительные функции', 'Extra Features') ] },
-            { key: 'roulette', icon: rouletteSVG, title: { ru: 'Роковая Пуля', en: 'Fatal Bullet' }, color: 'var(--angry-red)', items: [ 
+            { key: 'roulette', icon: typeof rouletteSVG !== 'undefined' ? rouletteSVG : '<i class="fas fa-crosshairs"></i>', title: { ru: 'Роковая Пуля', en: 'Fatal Bullet' }, color: 'var(--angry-red)', items: [ 
                 ...mapItems(shopItems.gameStyles.filter(i => i.id.startsWith('roulette_drum_')), 'gameStyles', 'Барабаны', 'Drums'), 
                 ...mapItems(shopItems.gameStyles.filter(i => i.id.startsWith('roulette_bullet_')), 'gameStyles', 'Пули', 'Bullets') 
             ] },
-            { key: 'coin', icon: coinSVG, title: { ru: 'Грань Выбора', en: 'Edge of Choice' }, color: 'var(--sun-gold)', items: [ ...mapItems(shopItems.gameStyles.filter(i=>i.id.startsWith('style_coin')), 'gameStyles', 'Облик монеты', 'Coin Styles'), ...mapItems(shopItems.perks.filter(i => i.id === 'perk_sparkle_coin'), 'perks', 'Дополнительные функции', 'Extra Features') ] },
+            { key: 'coin', icon: typeof coinSVG !== 'undefined' ? coinSVG : '<i class="fas fa-coins"></i>', title: { ru: 'Грань Выбора', en: 'Edge of Choice' }, color: 'var(--sun-gold)', items: [ ...mapItems(shopItems.gameStyles.filter(i=>i.id.startsWith('style_coin')), 'gameStyles', 'Облик монеты', 'Coin Styles'), ...mapItems(shopItems.perks.filter(i => i.id === 'perk_sparkle_coin'), 'perks', 'Дополнительные функции', 'Extra Features') ] },
             { key: 'flower', icon: '<i class="fas fa-seedling"></i>', title: { ru: 'Лепестки', en: 'Petals' }, color: 'var(--friendly-green)', items: [ ...mapItems(shopItems.gameStyles.filter(i=>i.id.startsWith('style_flower')), 'gameStyles', 'Тема интерфейса', 'UI Theme'), ...mapItems(shopItems.flowerCores, 'flowerCores', 'Облик сердцевины', 'Core Styles'), ...mapItems(shopItems.flowerPetals, 'flowerPetals', 'Цвет лепестков', 'Petal Colors') ] },
             { key: 'lots', icon: '<i class="fas fa-pause"></i>', title: { ru: 'Жребий', en: 'Lots' }, color: '#00d2d3', items: [ ...mapItems(shopItems.gameStyles.filter(i=>i.id.startsWith('style_lots')), 'gameStyles', 'Тема интерфейса', 'UI Theme'), ...mapItems(shopItems.lotsBoxes, 'lotsBoxes', 'Облик коробки', 'Box Styles'), ...mapItems(shopItems.lotsSticks, 'lotsSticks', 'Вид палочек', 'Stick Styles') ] },
             { key: 'rps', icon: '<i class="fas fa-hand-rock"></i>', title: { ru: 'К-Н-Б', en: 'R-P-S' }, color: '#ff9f43', items: mapItems(shopItems.gameStyles.filter(i=>i.id.startsWith('style_rps')), 'gameStyles', 'Тема интерфейса', 'UI Theme') },
@@ -10160,31 +10168,48 @@ if (rulesModal) {
 try { if(typeof App !== 'undefined') { App.init(); if(typeof ShopGame !== 'undefined') ShopGame.init(); if(typeof CoinGame !== 'undefined') CoinGame.init(); if(typeof FlowerGame !== 'undefined') FlowerGame.init(); } } catch (err) { console.error("Start error:", err); }
 
 // ==============================================
-// 🌌 ИНЖЕКЦИЯ: ЖИВЫЕ ЗВЕЗДЫ (ПАРАЛЛАКС ГИРОСКОПА)
+// 🌌 ИНЖЕКЦИЯ V2: УНИВЕРСАЛЬНЫЙ ПАРАЛЛАКС ФОНА
 // ==============================================
-(function injectGyroParallax() {
+(function injectUniversalParallax() {
     let gyroX = 0, gyroY = 0;
+    let targetX = 0, targetY = 0;
     let gyroFrame = null;
+    let permissionGranted = false;
 
-    // Плавное обновление позиции звезд
-    function updateStarsPosition() {
+    function updateParallax() {
+        // Сглаживание движения (Lerp) - фон плывет плавно, а не дергается
+        gyroX += (targetX - gyroX) * 0.1;
+        gyroY += (targetY - gyroY) * 0.1;
+
+        // 1. Двигаем физические слои (летящие звезды, если они есть)
         document.querySelectorAll('.stars-layer').forEach(layer => {
-            layer.style.transform = `translate(${gyroX}px, ${gyroY}px)`;
+            layer.style.transform = `translate(${gyroX * 1.5}px, ${gyroY * 1.5}px)`;
         });
-        gyroFrame = null;
+
+        // 2. УНИВЕРСАЛЬНЫЙ СДВИГ ДЛЯ ПРЕМИУМ ФОНОВ (Градиентов)
+        // Увеличиваем размер фона до 120%, чтобы при сдвиге не вылезали белые края
+        document.body.style.backgroundSize = '120% 120%';
+        // Смещаем центр градиента, создавая 3D эффект освещения!
+        document.body.style.backgroundPosition = `calc(50% + ${gyroX}px) calc(50% + ${gyroY}px)`;
+
+        // Если движение еще не остановилось, продолжаем анимацию
+        if (Math.abs(targetX - gyroX) > 0.1 || Math.abs(targetY - gyroY) > 0.1) {
+            gyroFrame = requestAnimationFrame(updateParallax);
+        } else {
+            gyroFrame = null;
+        }
     }
 
-    // Слушатель наклона телефона
-    window.addEventListener('deviceorientation', (e) => {
-        // Проверяем, надет ли перк "Живые Звезды" у текущего игрока
+    function handleOrientation(e) {
         const p = (typeof GameState !== 'undefined' && GameState.activeProfileIdx !== -1) ? GameState.profiles[GameState.activeProfileIdx] : null;
         const hasGyro = p && p.equipped && p.equipped.perks && p.equipped.perks.includes('perk_gyro_stars');
         
         if (!hasGyro) {
-            // Если перк сняли, плавно возвращаем звезды в центр
-            if (gyroX !== 0 || gyroY !== 0) {
-                gyroX = 0; gyroY = 0;
-                if (!gyroFrame) gyroFrame = requestAnimationFrame(updateStarsPosition);
+            if (targetX !== 0 || targetY !== 0) {
+                targetX = 0; targetY = 0;
+                document.body.style.backgroundPosition = 'center';
+                document.body.style.backgroundSize = 'cover';
+                if (!gyroFrame) gyroFrame = requestAnimationFrame(updateParallax);
             }
             return;
         }
@@ -10194,28 +10219,40 @@ try { if(typeof App !== 'undefined') { App.init(); if(typeof ShopGame !== 'undef
 
         if (x === null || y === null) return;
 
-        // Ограничиваем углы, чтобы звезды не улетали за пределы экрана
-        if (x > 45) x = 45; if (x < -45) x = -45;
-        if (y > 45) y = 45; if (y < -45) y = -45;
+        // Ограничиваем углы, если телефон перевернут
+        if (x > 90) x = 90; if (x < -90) x = -90;
+        if (y > 90) y = 90; if (y < -90) y = -90;
 
-        // Вычисляем смещение (до 40 пикселей)
-        gyroX = (x / 45) * 40;
-        gyroY = (y / 45) * 40;
+        // Вычисляем целевой сдвиг (амплитуда до 40px)
+        targetX = (x / 45) * 40;
+        targetY = (y / 45) * 40;
 
-        if (!gyroFrame) gyroFrame = requestAnimationFrame(updateStarsPosition);
-    });
+        if (!gyroFrame) gyroFrame = requestAnimationFrame(updateParallax);
+    }
 
-    // 🛑 ХАК ДЛЯ iOS 13+: Apple требует запрашивать разрешение на гироскоп по клику
-    // Вешаем одноразовый запрос на ПЕРВЫЙ клик пользователя по экрану
-    document.addEventListener('click', () => {
+    // 🛑 Бронебойный запрос прав (Особенно для iOS и Telegram Web App)
+    function requestGyroPermissions() {
+        if (permissionGranted) return;
+        
         if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
-            if (!window.gyroPermissionAsked) {
-                DeviceOrientationEvent.requestPermission()
-                    .then(response => { window.gyroPermissionAsked = true; })
-                    .catch(console.error);
-            }
+            DeviceOrientationEvent.requestPermission()
+                .then(permissionState => {
+                    if (permissionState === 'granted') {
+                        permissionGranted = true;
+                        window.addEventListener('deviceorientation', handleOrientation);
+                    }
+                })
+                .catch(console.error); // Молча глотаем ошибку, если API заблокировано
+        } else {
+            // Android или старые устройства не требуют запроса прав
+            permissionGranted = true;
+            window.addEventListener('deviceorientation', handleOrientation);
         }
-    }, { once: true });
+    }
+
+    // Запрашиваем права при ПЕРВОМ тапе по экрану (требование безопасности Apple)
+    window.addEventListener('click', requestGyroPermissions, { once: true });
+    window.addEventListener('touchstart', requestGyroPermissions, { once: true });
 })();
 </script>
 
