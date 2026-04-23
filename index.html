@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Игры Судьбы. v0.8.8.60!</title>
+    <title>Игры Судьбы. v0.8.8.60+</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
@@ -932,7 +932,7 @@ setInterval(() => {
     <div id="stars" class="stars-layer stars-active bg1-stars"></div>
 
     <div id="mainMenuOverlay">
-        <div class="version">v0.8.8.60!</div> 
+        <div class="version">v0.8.8.60+</div> 
 		<div class="menu-top-bar">
     <button class="menu-icon-btn" style="margin-right: 15px;" onclick="if(typeof App !== 'undefined' && App.playSoundEffect) App.playSoundEffect('click'); if(typeof ShopGame !== 'undefined') ShopGame.toggleInventory(true);">
         <i class="fas fa-box-open" style="color: var(--sun-gold); filter: drop-shadow(0 0 5px rgba(255,249,174,0.4));"></i>
@@ -10168,7 +10168,7 @@ if (rulesModal) {
 try { if(typeof App !== 'undefined') { App.init(); if(typeof ShopGame !== 'undefined') ShopGame.init(); if(typeof CoinGame !== 'undefined') CoinGame.init(); if(typeof FlowerGame !== 'undefined') FlowerGame.init(); } } catch (err) { console.error("Start error:", err); }
 
 // ==============================================
-// 🌌 ИНЖЕКЦИЯ V3.3: БЕСКОНЕЧНЫЙ ДЕЛЬТА-ПАРАЛЛАКС + УЛЬТРА ЗВЕЗДЫ
+// 🌌 ИНЖЕКЦИЯ V3.4: СПОРТИВНЫЙ ДЕЛЬТА-ПАРАЛЛАКС (ФИКС ИНЕРЦИИ)
 // ==============================================
 (function injectInfiniteDeltaPanorama() {
     let targetX = 0, targetY = 0;
@@ -10179,49 +10179,37 @@ try { if(typeof App !== 'undefined') { App.init(); if(typeof ShopGame !== 'undef
 
     const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || navigator.maxTouchPoints > 0;
 
-    // 1. ВЖИВЛЯЕМ УЛЬТРА-ГРАФИКУ ДЛЯ ЗВЕЗД (Чтобы не менять CSS руками)
     function injectStarGraphics() {
         if (document.getElementById('vr-stars-css')) return;
         const style = document.createElement('style');
         style.id = 'vr-stars-css';
         style.innerHTML = `
-            /* Растягиваем холст с запасом */
             .stars-layer {
                 position: fixed; top: -20%; left: -20%; width: 140%; height: 140%;
                 pointer-events: none; z-index: -100; transition: opacity 0.5s ease;
             }
-            /* Отключаем лишние слои для оптимизации мобилок */
             .bg2-stars, .bg3-stars, .bg4-stars, .bg5-stars { display: none !important; }
-            
-            /* Накачиваем ПЕРВЫЙ слой 6-ю независимыми уровнями параллакса! */
             .bg1-stars {
                 background-image: 
                     radial-gradient(1.5px 1.5px at 10% 20%, rgba(255,255,255,0.4), transparent), 
                     radial-gradient(2px 2px at 40% 60%, rgba(255,255,255,0.7), transparent), 
                     radial-gradient(3px 3px at 80% 10%, #cce6ff, transparent), 
-                    radial-gradient(4px 4px at 20% 80%, #ffb7c5, transparent), /* Сакура */
-                    radial-gradient(5.5px 5.5px at 90% 90%, #facc15, transparent), /* Золотые гиганты */
-                    radial-gradient(7px 7px at 50% 50%, #8b5cf6, transparent) !important; /* Аметистовые гиганты */
-                background-size: 
-                    100px 100px, 
-                    250px 250px, 
-                    400px 400px, 
-                    550px 550px, 
-                    800px 800px, 
-                    1200px 1200px !important;
+                    radial-gradient(4px 4px at 20% 80%, #ffb7c5, transparent),
+                    radial-gradient(5.5px 5.5px at 90% 90%, #facc15, transparent),
+                    radial-gradient(7px 7px at 50% 50%, #8b5cf6, transparent) !important;
+                background-size: 100px 100px, 250px 250px, 400px 400px, 550px 550px, 800px 800px, 1200px 1200px !important;
                 filter: drop-shadow(0 0 6px rgba(255,255,255,0.6));
             }
         `;
         document.head.appendChild(style);
     }
 
-    // 2. ДВИЖОК ОТРИСОВКИ (МЯГКИЙ LERP)
     function updateParallax() {
-        // Очень плавное скольжение к цели (0.04 = масляная плавность)
-        currentX += (targetX - currentX) * 0.04;
-        currentY += (targetY - currentY) * 0.04;
+        // 🛑 ФИКС ИНЕРЦИИ: Было 0.04, стало 0.15. 
+        // Звезды останавливаются и меняют направление в 4 раза быстрее!
+        currentX += (targetX - currentX) * 0.15;
+        currentY += (targetY - currentY) * 0.15;
 
-        // Распределяем 6 слоев звезд на разные скорости (глубина 3D)
         let bgPos = `
             ${currentX * 1}px ${currentY * 1}px,  
             ${currentX * 2}px ${currentY * 2}px,    
@@ -10234,18 +10222,17 @@ try { if(typeof App !== 'undefined') { App.init(); if(typeof ShopGame !== 'undef
         const mainLayer = document.querySelector('.bg1-stars');
         if (mainLayer) mainLayer.style.backgroundPosition = bgPos;
 
-        // Двигаем сам источник света на премиум фонах
         document.body.style.backgroundSize = '130% 130%';
         document.body.style.backgroundPosition = `calc(50% + ${currentX * 1.5}px) calc(50% + ${currentY * 1.5}px)`;
 
-        if (Math.abs(targetX - currentX) > 0.05 || Math.abs(targetY - currentY) > 0.05) {
+        // Снижен порог остановки анимации (чтобы не жрала батарею в покое)
+        if (Math.abs(targetX - currentX) > 0.01 || Math.abs(targetY - currentY) > 0.01) {
             gyroFrame = requestAnimationFrame(updateParallax);
         } else {
             gyroFrame = null;
         }
     }
 
-    // 3. БЕСКОНЕЧНАЯ ДЕЛЬТА-МАТЕМАТИКА (ЗАЩИТА ОТ БАГОВ ДАТЧИКА)
     function handleOrientation(e) {
         if (e.alpha === null || e.beta === null) return;
         
@@ -10262,21 +10249,21 @@ try { if(typeof App !== 'undefined') { App.init(); if(typeof ShopGame !== 'undef
             return;
         }
 
-        // Вычисляем, насколько телефон сдвинулся с прошлого кадра
         let deltaAlpha = e.alpha - lastAlpha;
         let deltaBeta = e.beta - lastBeta;
 
-        // Фикс перехода через 0 градусов (359 -> 0)
         if (deltaAlpha > 180) deltaAlpha -= 360;
         if (deltaAlpha < -180) deltaAlpha += 360;
 
-        // 🛑 ГЛАВНЫЙ ФИКС: Если телефон перевернули (Gimbal Lock), дельта будет огромной. 
-        // Мы просто ИГНОРИРУЕМ этот глючный кадр!
-        if (Math.abs(deltaAlpha) < 50 && Math.abs(deltaBeta) < 50) {
-            // Прибавляем движение к бесконечным координатам
-            targetX += deltaAlpha; 
-            targetY += deltaBeta;   
-        }
+        // 🛑 ФИКС РЕВЕРСА: Срезаем аппаратные глюки.
+        // Если телефон выдал прыжок больше чем на 12 градусов за 1/60 секунды — это глюк компаса.
+        if (deltaAlpha > 12) deltaAlpha = 12;
+        if (deltaAlpha < -12) deltaAlpha = -12;
+        if (deltaBeta > 12) deltaBeta = 12;
+        if (deltaBeta < -12) deltaBeta = -12;
+
+        targetX += deltaAlpha; 
+        targetY += deltaBeta;   
 
         lastAlpha = e.alpha;
         lastBeta = e.beta;
@@ -10302,16 +10289,14 @@ try { if(typeof App !== 'undefined') { App.init(); if(typeof ShopGame !== 'undef
     document.addEventListener('click', requestGyroPermissions, { once: true });
     document.addEventListener('touchstart', requestGyroPermissions, { once: true, passive: true });
 
-    // 4. НЕЗАВИСИМЫЙ КОНТРОЛЛЕР (ПОЛЛИНГ)
     setInterval(() => {
         const p = (typeof GameState !== 'undefined' && GameState.activeProfileIdx !== -1) ? GameState.profiles[GameState.activeProfileIdx] : null;
         const hasGyro = p && p.equipped && p.equipped['perk_gyro_stars'] === true && isMobile;
         
-        injectStarGraphics(); // Гарантируем, что стили загружены
+        injectStarGraphics(); 
         const layer = document.querySelector('.bg1-stars');
 
         if (!hasGyro && layer) {
-            // Мягкий возврат в 2D (Карточка снята ИЛИ ПК)
             targetX = 0; targetY = 0;
             lastAlpha = null; lastBeta = null;
             if (!gyroFrame) gyroFrame = requestAnimationFrame(updateParallax);
