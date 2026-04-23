@@ -10168,94 +10168,151 @@ if (rulesModal) {
 try { if(typeof App !== 'undefined') { App.init(); if(typeof ShopGame !== 'undefined') ShopGame.init(); if(typeof CoinGame !== 'undefined') CoinGame.init(); if(typeof FlowerGame !== 'undefined') FlowerGame.init(); } } catch (err) { console.error("Start error:", err); }
 
 // ==============================================
-// 🌌 ИНЖЕКЦИЯ V2.2: УНИВЕРСАЛЬНЫЙ ПАРАЛЛАКС ФОНА (ТОЧНАЯ АРХИТЕКТУРА)
+// 🌌 ИНЖЕКЦИЯ V3.1: 3D СФЕРА (УМНЫЙ ПЕРЕКЛЮЧАТЕЛЬ 2D/3D + ФИКС ПК)
 // ==============================================
-(function injectUniversalParallax() {
-    let gyroX = 0, gyroY = 0;
-    let targetX = 0, targetY = 0;
+(function injectSphereParallax() {
+    let targetAlpha = 0, targetBeta = 60, targetGamma = 0;
+    let currentAlpha = 0, currentBeta = 60, currentGamma = 0;
     let gyroFrame = null;
     let permissionGranted = false;
+    let universeCreated = false;
 
+    // 🛑 Железобетонное определение мобильного устройства
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || navigator.maxTouchPoints > 0;
+
+    // 1. СОЗДАЕМ 3D-ВСЕЛЕННУЮ
+    function createUniverse() {
+        if (universeCreated) return;
+        
+        const universe = document.createElement('div');
+        universe.id = 'gof-3d-universe';
+        universe.style.cssText = `
+            position: fixed; top: 50%; left: 50%; width: 0; height: 0;
+            transform-style: preserve-3d; z-index: -90; pointer-events: none;
+            opacity: 0; transition: opacity 1.5s ease;
+        `;
+        document.body.appendChild(universe);
+
+        for (let i = 0; i < 250; i++) {
+            let lon = Math.random() * 360; 
+            let lat = Math.acos(2 * Math.random() - 1) * (180 / Math.PI) - 90;
+            let depth = 800 + Math.random() * 400; 
+            
+            let isRare = Math.random() > 0.9;
+            let size = isRare ? (Math.random() > 0.5 ? 3 : 4) : Math.random() > 0.5 ? 2 : 1;
+            let colors = ['#ffffff', '#ffffff', '#ffffff', '#e0ffff', '#ffb7c5', '#8b5cf6', '#facc15'];
+            let color = isRare ? colors[Math.floor(Math.random() * colors.length)] : '#ffffff';
+            let glow = isRare ? `0 0 ${size * 3}px ${color}, 0 0 ${size * 6}px ${color}` : `0 0 ${size}px ${color}`;
+
+            let star = document.createElement('div');
+            star.style.cssText = `
+                position: absolute; width: ${size}px; height: ${size}px;
+                background: ${color}; border-radius: 50%; box-shadow: ${glow};
+                transform: translate(-50%, -50%) rotateY(${lon}deg) rotateX(${lat}deg) translateZ(${depth}px);
+            `;
+            universe.appendChild(star);
+        }
+        universeCreated = true;
+    }
+
+    // 2. ДВИЖОК ОТРИСОВКИ
     function updateParallax() {
-        // Сглаживание движения (Lerp)
-        gyroX += (targetX - gyroX) * 0.1;
-        gyroY += (targetY - gyroY) * 0.1;
+        const universe = document.getElementById('gof-3d-universe');
+        if (!universe) return;
 
-        // 1. Двигаем летящие звезды
-        document.querySelectorAll('.stars-layer').forEach(layer => {
-            layer.style.transform = `translate(${gyroX * 1.5}px, ${gyroY * 1.5}px)`;
-        });
+        let diffA = targetAlpha - currentAlpha;
+        while (diffA > 180) diffA -= 360;
+        while (diffA < -180) diffA += 360;
+        currentAlpha += diffA * 0.05; 
 
-        // 2. Двигаем градиенты премиум-фонов
-        document.body.style.backgroundSize = '120% 120%';
-        document.body.style.backgroundPosition = `calc(50% + ${gyroX}px) calc(50% + ${gyroY}px)`;
+        currentBeta += (targetBeta - currentBeta) * 0.05;
+        currentGamma += (targetGamma - currentGamma) * 0.05;
 
-        // Если движение продолжается, просим следующий кадр
-        if (Math.abs(targetX - gyroX) > 0.1 || Math.abs(targetY - gyroY) > 0.1) {
+        universe.style.transform = `rotateZ(${-currentGamma}deg) rotateX(${currentBeta - 60}deg) rotateY(${-currentAlpha}deg)`;
+
+        document.body.style.backgroundSize = '130% 130%';
+        document.body.style.backgroundPosition = `calc(50% + ${currentGamma}px) calc(50% + ${currentBeta - 60}px)`;
+
+        if (Math.abs(diffA) > 0.01 || Math.abs(targetBeta - currentBeta) > 0.01 || Math.abs(targetGamma - currentGamma) > 0.01) {
             gyroFrame = requestAnimationFrame(updateParallax);
         } else {
             gyroFrame = null;
         }
     }
 
+    // 3. ЧТЕНИЕ ДАТЧИКОВ
     function handleOrientation(e) {
-        // 1. Получаем текущего игрока
+        if (e.alpha === null || e.beta === null || e.gamma === null) return;
+        
+        // 🛑 Если мы не на мобилке или карточка снята — игнорируем датчики
         const p = (typeof GameState !== 'undefined' && GameState.activeProfileIdx !== -1) ? GameState.profiles[GameState.activeProfileIdx] : null;
-        
-        // 🛑 ИДЕАЛЬНАЯ ПРОВЕРКА ПОД ТВОЙ КОД (equipItem):
-        // Смотрим напрямую ключ 'perk_gyro_stars' в объекте equipped
-        const hasGyro = p && p.equipped && p.equipped['perk_gyro_stars'] === true;
-        
-        if (!hasGyro) {
-            // Если карточка снята — плавно возвращаем фон в центр и отключаем анимацию
-            if (targetX !== 0 || targetY !== 0) {
-                targetX = 0; targetY = 0;
-                document.body.style.backgroundPosition = 'center';
-                document.body.style.backgroundSize = 'cover';
-                if (!gyroFrame) gyroFrame = requestAnimationFrame(updateParallax);
-            }
-            return;
-        }
+        const hasGyro = p && p.equipped && p.equipped['perk_gyro_stars'] === true && isMobile;
+        if (!hasGyro) return;
 
-        let x = e.gamma; // Наклон влево-вправо [-90, 90]
-        let y = e.beta;  // Наклон вперед-назад [-180, 180]
+        targetAlpha = e.alpha; 
+        targetBeta = e.beta;   
+        targetGamma = e.gamma; 
 
-        // Защита от ПК-версии (где нет гироскопа)
-        if (x === null || y === null) return;
-
-        // Ограничиваем углы, если телефон перевернули
-        if (x > 90) x = 90; if (x < -90) x = -90;
-        if (y > 90) y = 90; if (y < -90) y = -90;
-
-        // Вычисляем целевое смещение (амплитуда 40 пикселей)
-        targetX = (x / 45) * 40;
-        targetY = (y / 45) * 40;
+        if (targetBeta > 130) targetBeta = 130; 
+        if (targetBeta < -10) targetBeta = -10;
 
         if (!gyroFrame) gyroFrame = requestAnimationFrame(updateParallax);
     }
 
-    // Бронебойный запрос прав для iOS
     function requestGyroPermissions() {
         if (permissionGranted) return;
-        
         if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
-            DeviceOrientationEvent.requestPermission()
-                .then(permissionState => {
-                    if (permissionState === 'granted') {
-                        permissionGranted = true;
-                        window.addEventListener('deviceorientation', handleOrientation);
-                    }
-                })
-                .catch(console.error); // Игнорируем ошибку, если API заблокировано браузером
+            DeviceOrientationEvent.requestPermission().then(state => {
+                if (state === 'granted') {
+                    permissionGranted = true;
+                    window.addEventListener('deviceorientation', handleOrientation);
+                }
+            }).catch(e => {}); 
         } else {
             permissionGranted = true;
             window.addEventListener('deviceorientation', handleOrientation);
         }
     }
 
-    // Запрос прав при первом касании любого места на экране
     document.addEventListener('click', requestGyroPermissions, { once: true });
     document.addEventListener('touchstart', requestGyroPermissions, { once: true, passive: true });
+
+    // =======================================================
+    // 🛑 4. НЕЗАВИСИМЫЙ КОНТРОЛЛЕР СОСТОЯНИЯ (ПОЛЛИНГ)
+    // Работает всегда, даже если гироскопа физически нет!
+    // =======================================================
+    setInterval(() => {
+        const p = (typeof GameState !== 'undefined' && GameState.activeProfileIdx !== -1) ? GameState.profiles[GameState.activeProfileIdx] : null;
+        
+        // 3D включается ТОЛЬКО если есть карточка И устройство мобильное
+        const hasGyro = p && p.equipped && p.equipped['perk_gyro_stars'] === true && isMobile;
+
+        const universe = document.getElementById('gof-3d-universe');
+        const flatStars = document.querySelectorAll('.stars-layer');
+
+        if (hasGyro) {
+            // Включаем 3D Сферу
+            if (!universeCreated) createUniverse();
+            if (universe) universe.style.opacity = '1';
+            
+            // Прячем старые 2D звезды
+            flatStars.forEach(l => l.style.opacity = '0');
+        } else {
+            // Включаем 2D Режим (ПК или карточка снята)
+            if (universe) universe.style.opacity = '0';
+            
+            // Возвращаем 2D звезды, сбрасывая их смещение в ноль!
+            flatStars.forEach(l => {
+                l.style.opacity = '1';
+                l.style.transform = 'translate(0px, 0px)'; 
+            });
+            
+            // Возвращаем градиент премиум-фона в центр
+            document.body.style.backgroundPosition = 'center';
+            document.body.style.backgroundSize = 'cover';
+        }
+    }, 300); // Проверяет инвентарь 3 раза в секунду
+
 })();
 </script>
 
