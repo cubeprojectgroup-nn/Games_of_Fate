@@ -9815,7 +9815,7 @@ const ShopGame = (function() {
         const coinSVG = `<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 6.5l5.5 5.5-5.5 5.5-5.5-5.5z"/><circle cx="12" cy="12" r="2" fill="currentColor" stroke="none"/></svg>`;
 
         const categories = [
-            // 🛑 ОБЪЕДИНЕННАЯ ВКЛАДКА "БУСТЕРЫ" (ИКОНКА МОЛНИИ)
+            // 🛑 Вкладка БУСТЕРЫ (Ставки + Глобальный фон)
             { 
                 key: 'boosters', 
                 icon: '<i class="fas fa-bolt"></i>', 
@@ -9823,21 +9823,95 @@ const ShopGame = (function() {
                 color: 'var(--angry-red)', 
                 items: [ 
                     ...mapItems(shopItems.perks.filter(i => i.id.startsWith('perk_x2_')), 'perks', 'Бустеры Ставок', 'Bet Boosters'),
-                    // ФИКС: Собираем ВСЕ визуальные бустеры, включая новые карточки для игр
-                    ...mapItems(shopItems.perks.filter(i => !i.id.startsWith('perk_x2_') && !i.id.startsWith('exchange_')), 'perks', 'Бустеры Интерфейса', 'UI Boosters')
+                    ...mapItems(shopItems.perks.filter(i => i.id === 'perk_gyro_stars'), 'perks', 'Глобальные Эффекты', 'Global Effects')
                 ] 
             },
             
-            { key: 'dice', icon: '<i class="fas fa-cube"></i>', title: { ru: 'Кость Истины', en: 'Dice of Fate' }, color: 'var(--magic-color)', items: [ ...mapItems(shopItems.gameStyles.filter(i=>i.id.startsWith('style_dice')), 'gameStyles', 'Тема интерфейса', 'UI Theme'), ...mapItems(shopItems.diceModes, 'diceModes', 'Облик кости', 'Dice Faces'), ...mapItems(shopItems.perks.filter(i => i.id === 'perk_sparkle_dice'), 'perks', 'Дополнительные функции', 'Extra Features') ] },
-            { key: 'roulette', icon: typeof rouletteSVG !== 'undefined' ? rouletteSVG : '<i class="fas fa-crosshairs"></i>', title: { ru: 'Роковая Пуля', en: 'Fatal Bullet' }, color: 'var(--angry-red)', items: [ 
-                ...mapItems(shopItems.gameStyles.filter(i => i.id.startsWith('roulette_drum_')), 'gameStyles', 'Барабаны', 'Drums'), 
-                ...mapItems(shopItems.gameStyles.filter(i => i.id.startsWith('roulette_bullet_')), 'gameStyles', 'Пули', 'Bullets') 
-            ] },
-            { key: 'coin', icon: typeof coinSVG !== 'undefined' ? coinSVG : '<i class="fas fa-coins"></i>', title: { ru: 'Грань Выбора', en: 'Edge of Choice' }, color: 'var(--sun-gold)', items: [ ...mapItems(shopItems.gameStyles.filter(i=>i.id.startsWith('style_coin')), 'gameStyles', 'Облик монеты', 'Coin Styles'), ...mapItems(shopItems.perks.filter(i => i.id === 'perk_sparkle_coin'), 'perks', 'Дополнительные функции', 'Extra Features') ] },
-            { key: 'flower', icon: '<i class="fas fa-seedling"></i>', title: { ru: 'Лепестки', en: 'Petals' }, color: 'var(--friendly-green)', items: [ ...mapItems(shopItems.gameStyles.filter(i=>i.id.startsWith('style_flower')), 'gameStyles', 'Тема интерфейса', 'UI Theme'), ...mapItems(shopItems.flowerCores, 'flowerCores', 'Облик сердцевины', 'Core Styles'), ...mapItems(shopItems.flowerPetals, 'flowerPetals', 'Цвет лепестков', 'Petal Colors') ] },
-            { key: 'lots', icon: '<i class="fas fa-pause"></i>', title: { ru: 'Жребий', en: 'Lots' }, color: '#00d2d3', items: [ ...mapItems(shopItems.gameStyles.filter(i=>i.id.startsWith('style_lots')), 'gameStyles', 'Тема интерфейса', 'UI Theme'), ...mapItems(shopItems.lotsBoxes, 'lotsBoxes', 'Облик коробки', 'Box Styles'), ...mapItems(shopItems.lotsSticks, 'lotsSticks', 'Вид палочек', 'Stick Styles') ] },
-            { key: 'rps', icon: '<i class="fas fa-hand-rock"></i>', title: { ru: 'К-Н-Б', en: 'R-P-S' }, color: '#ff9f43', items: mapItems(shopItems.gameStyles.filter(i=>i.id.startsWith('style_rps')), 'gameStyles', 'Тема интерфейса', 'UI Theme') },
-            { key: 'backgrounds', icon: '<i class="fas fa-image"></i>', title: { ru: 'Глобальные Фоны', en: 'Global Backgrounds' }, color: 'var(--magic-color)', items: mapItems(shopItems.backgrounds, 'backgrounds', '', '') }
+            // 🛑 КОСТЬ ИСТИНЫ (Искры + Гироскоп)
+            { 
+                key: 'dice', 
+                icon: '<i class="fas fa-cube"></i>', 
+                title: { ru: 'Кость Истины', en: 'Dice of Fate' }, 
+                color: 'var(--magic-color)', 
+                items: [ 
+                    ...mapItems(shopItems.gameStyles.filter(i=>i.id.startsWith('style_dice')), 'gameStyles', 'Тема интерфейса', 'UI Theme'), 
+                    ...mapItems(shopItems.diceModes, 'diceModes', 'Облик кости', 'Dice Faces'), 
+                    ...mapItems(shopItems.perks.filter(i => i.id === 'perk_sparkle_dice' || i.id === 'perk_gyro_dice'), 'perks', 'Эффекты', 'Effects') 
+                ] 
+            },
+
+            // 🛑 РОКОВАЯ ПУЛЯ (Живой Барабан)
+            { 
+                key: 'roulette', 
+                icon: typeof rouletteSVG !== 'undefined' ? rouletteSVG : '<i class="fas fa-crosshairs"></i>', 
+                title: { ru: 'Роковая Пуля', en: 'Fatal Bullet' }, 
+                color: 'var(--angry-red)', 
+                items: [ 
+                    ...mapItems(shopItems.gameStyles.filter(i => i.id.startsWith('roulette_drum_')), 'gameStyles', 'Барабаны', 'Drums'), 
+                    ...mapItems(shopItems.gameStyles.filter(i => i.id.startsWith('roulette_bullet_')), 'gameStyles', 'Пули', 'Bullets'),
+                    ...mapItems(shopItems.perks.filter(i => i.id === 'perk_gyro_roulette'), 'perks', 'Эффекты', 'Effects')
+                ] 
+            },
+
+            // 🛑 ГРАНЬ ВЫБОРА (Искры + Живая Монета)
+            { 
+                key: 'coin', 
+                icon: typeof coinSVG !== 'undefined' ? coinSVG : '<i class="fas fa-coins"></i>', 
+                title: { ru: 'Грань Выбора', en: 'Edge of Choice' }, 
+                color: 'var(--sun-gold)', 
+                items: [ 
+                    ...mapItems(shopItems.gameStyles.filter(i=>i.id.startsWith('style_coin')), 'gameStyles', 'Облик монеты', 'Coin Styles'), 
+                    ...mapItems(shopItems.perks.filter(i => i.id === 'perk_sparkle_coin' || i.id === 'perk_gyro_coin'), 'perks', 'Эффекты', 'Effects') 
+                ] 
+            },
+
+            // 🛑 ЛЕПЕСТКИ (Живой Цветок)
+            { 
+                key: 'flower', 
+                icon: '<i class="fas fa-seedling"></i>', 
+                title: { ru: 'Лепестки', en: 'Petals' }, 
+                color: 'var(--friendly-green)', 
+                items: [ 
+                    ...mapItems(shopItems.gameStyles.filter(i=>i.id.startsWith('style_flower')), 'gameStyles', 'Тема интерфейса', 'UI Theme'), 
+                    ...mapItems(shopItems.flowerCores, 'flowerCores', 'Облик сердцевины', 'Core Styles'), 
+                    ...mapItems(shopItems.flowerPetals, 'flowerPetals', 'Цвет лепестков', 'Petal Colors'),
+                    ...mapItems(shopItems.perks.filter(i => i.id === 'perk_gyro_flower'), 'perks', 'Эффекты', 'Effects')
+                ] 
+            },
+
+            // 🛑 ЖРЕБИЙ (Живая Коробка)
+            { 
+                key: 'lots', 
+                icon: '<i class="fas fa-pause"></i>', 
+                title: { ru: 'Жребий', en: 'Lots' }, 
+                color: '#00d2d3', 
+                items: [ 
+                    ...mapItems(shopItems.gameStyles.filter(i=>i.id.startsWith('style_lots')), 'gameStyles', 'Тема интерфейса', 'UI Theme'), 
+                    ...mapItems(shopItems.lotsBoxes, 'lotsBoxes', 'Облик коробки', 'Box Styles'), 
+                    ...mapItems(shopItems.lotsSticks, 'lotsSticks', 'Вид палочек', 'Stick Styles'),
+                    ...mapItems(shopItems.perks.filter(i => i.id === 'perk_gyro_lots'), 'perks', 'Эффекты', 'Effects')
+                ] 
+            },
+
+            // 🛑 К-Н-Б (Живые Руки)
+            { 
+                key: 'rps', 
+                icon: '<i class="fas fa-hand-rock"></i>', 
+                title: { ru: 'К-Н-Б', en: 'R-P-S' }, 
+                color: '#ff9f43', 
+                items: [
+                    ...mapItems(shopItems.gameStyles.filter(i=>i.id.startsWith('style_rps')), 'gameStyles', 'Тема интерфейса', 'UI Theme'),
+                    ...mapItems(shopItems.perks.filter(i => i.id === 'perk_gyro_rps'), 'perks', 'Эффекты', 'Effects')
+                ] 
+            },
+
+            { 
+                key: 'backgrounds', 
+                icon: '<i class="fas fa-image"></i>', 
+                title: { ru: 'Глобальные Фоны', en: 'Global Backgrounds' }, 
+                color: 'var(--magic-color)', 
+                items: mapItems(shopItems.backgrounds, 'backgrounds', '', '') 
+            }
         ];
 
         categories.forEach(cat => cat.ownedItems = cat.items.filter(item => inv.includes(item.id)));
