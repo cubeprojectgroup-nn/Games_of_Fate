@@ -10168,7 +10168,7 @@ if (rulesModal) {
 try { if(typeof App !== 'undefined') { App.init(); if(typeof ShopGame !== 'undefined') ShopGame.init(); if(typeof CoinGame !== 'undefined') CoinGame.init(); if(typeof FlowerGame !== 'undefined') FlowerGame.init(); } } catch (err) { console.error("Start error:", err); }
 
 // ==============================================
-// 🌌 ИНЖЕКЦИЯ V2: УНИВЕРСАЛЬНЫЙ ПАРАЛЛАКС ФОНА
+// 🌌 ИНЖЕКЦИЯ V2.2: УНИВЕРСАЛЬНЫЙ ПАРАЛЛАКС ФОНА (ТОЧНАЯ АРХИТЕКТУРА)
 // ==============================================
 (function injectUniversalParallax() {
     let gyroX = 0, gyroY = 0;
@@ -10177,22 +10177,20 @@ try { if(typeof App !== 'undefined') { App.init(); if(typeof ShopGame !== 'undef
     let permissionGranted = false;
 
     function updateParallax() {
-        // Сглаживание движения (Lerp) - фон плывет плавно, а не дергается
+        // Сглаживание движения (Lerp)
         gyroX += (targetX - gyroX) * 0.1;
         gyroY += (targetY - gyroY) * 0.1;
 
-        // 1. Двигаем физические слои (летящие звезды, если они есть)
+        // 1. Двигаем летящие звезды
         document.querySelectorAll('.stars-layer').forEach(layer => {
             layer.style.transform = `translate(${gyroX * 1.5}px, ${gyroY * 1.5}px)`;
         });
 
-        // 2. УНИВЕРСАЛЬНЫЙ СДВИГ ДЛЯ ПРЕМИУМ ФОНОВ (Градиентов)
-        // Увеличиваем размер фона до 120%, чтобы при сдвиге не вылезали белые края
+        // 2. Двигаем градиенты премиум-фонов
         document.body.style.backgroundSize = '120% 120%';
-        // Смещаем центр градиента, создавая 3D эффект освещения!
         document.body.style.backgroundPosition = `calc(50% + ${gyroX}px) calc(50% + ${gyroY}px)`;
 
-        // Если движение еще не остановилось, продолжаем анимацию
+        // Если движение продолжается, просим следующий кадр
         if (Math.abs(targetX - gyroX) > 0.1 || Math.abs(targetY - gyroY) > 0.1) {
             gyroFrame = requestAnimationFrame(updateParallax);
         } else {
@@ -10201,10 +10199,15 @@ try { if(typeof App !== 'undefined') { App.init(); if(typeof ShopGame !== 'undef
     }
 
     function handleOrientation(e) {
+        // 1. Получаем текущего игрока
         const p = (typeof GameState !== 'undefined' && GameState.activeProfileIdx !== -1) ? GameState.profiles[GameState.activeProfileIdx] : null;
-        const hasGyro = p && p.equipped && p.equipped.perks && p.equipped.perks.includes('perk_gyro_stars');
+        
+        // 🛑 ИДЕАЛЬНАЯ ПРОВЕРКА ПОД ТВОЙ КОД (equipItem):
+        // Смотрим напрямую ключ 'perk_gyro_stars' в объекте equipped
+        const hasGyro = p && p.equipped && p.equipped['perk_gyro_stars'] === true;
         
         if (!hasGyro) {
+            // Если карточка снята — плавно возвращаем фон в центр и отключаем анимацию
             if (targetX !== 0 || targetY !== 0) {
                 targetX = 0; targetY = 0;
                 document.body.style.backgroundPosition = 'center';
@@ -10217,20 +10220,21 @@ try { if(typeof App !== 'undefined') { App.init(); if(typeof ShopGame !== 'undef
         let x = e.gamma; // Наклон влево-вправо [-90, 90]
         let y = e.beta;  // Наклон вперед-назад [-180, 180]
 
+        // Защита от ПК-версии (где нет гироскопа)
         if (x === null || y === null) return;
 
-        // Ограничиваем углы, если телефон перевернут
+        // Ограничиваем углы, если телефон перевернули
         if (x > 90) x = 90; if (x < -90) x = -90;
         if (y > 90) y = 90; if (y < -90) y = -90;
 
-        // Вычисляем целевой сдвиг (амплитуда до 40px)
+        // Вычисляем целевое смещение (амплитуда 40 пикселей)
         targetX = (x / 45) * 40;
         targetY = (y / 45) * 40;
 
         if (!gyroFrame) gyroFrame = requestAnimationFrame(updateParallax);
     }
 
-    // 🛑 Бронебойный запрос прав (Особенно для iOS и Telegram Web App)
+    // Бронебойный запрос прав для iOS
     function requestGyroPermissions() {
         if (permissionGranted) return;
         
@@ -10242,17 +10246,16 @@ try { if(typeof App !== 'undefined') { App.init(); if(typeof ShopGame !== 'undef
                         window.addEventListener('deviceorientation', handleOrientation);
                     }
                 })
-                .catch(console.error); // Молча глотаем ошибку, если API заблокировано
+                .catch(console.error); // Игнорируем ошибку, если API заблокировано браузером
         } else {
-            // Android или старые устройства не требуют запроса прав
             permissionGranted = true;
             window.addEventListener('deviceorientation', handleOrientation);
         }
     }
 
-    // Запрашиваем права при ПЕРВОМ тапе по экрану (требование безопасности Apple)
-    window.addEventListener('click', requestGyroPermissions, { once: true });
-    window.addEventListener('touchstart', requestGyroPermissions, { once: true });
+    // Запрос прав при первом касании любого места на экране
+    document.addEventListener('click', requestGyroPermissions, { once: true });
+    document.addEventListener('touchstart', requestGyroPermissions, { once: true, passive: true });
 })();
 </script>
 
