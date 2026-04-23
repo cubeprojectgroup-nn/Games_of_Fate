@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Игры Судьбы. v0.8.8.60+</title>
+    <title>Игры Судьбы. v0.8.8.61</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
@@ -932,7 +932,7 @@ setInterval(() => {
     <div id="stars" class="stars-layer stars-active bg1-stars"></div>
 
     <div id="mainMenuOverlay">
-        <div class="version">v0.8.8.60+</div> 
+        <div class="version">v0.8.8.61</div> 
 		<div class="menu-top-bar">
     <button class="menu-icon-btn" style="margin-right: 15px;" onclick="if(typeof App !== 'undefined' && App.playSoundEffect) App.playSoundEffect('click'); if(typeof ShopGame !== 'undefined') ShopGame.toggleInventory(true);">
         <i class="fas fa-box-open" style="color: var(--sun-gold); filter: drop-shadow(0 0 5px rgba(255,249,174,0.4));"></i>
@@ -9312,11 +9312,17 @@ const ShopGame = (function() {
             { id: 'exchange_gem_240', name: { ru: '240 Кристаллов', en: '240 Gems' }, priceCoins: 25, priceCrystals: 0, icon: '👑', isConsumable: true, rewardCoins: 0, rewardCrystals: 240 },
             { id: 'perk_sparkle_dice', name: { ru: 'Искры: Кость', en: 'Sparkles: Dice' }, priceCoins: 150, priceCrystals: 30, icon: '✨' },
             { id: 'perk_sparkle_coin', name: { ru: 'Искры: Монета', en: 'Sparkles: Coin' }, priceCoins: 150, priceCrystals: 30, icon: '🌟' },
-            { id: 'perk_x2_win', name: { ru: 'Х2 Выигрыш', en: 'x2 Win' }, priceCoins: 100, priceCrystals: 20, icon: '🤑', isStackable: true, desc: { ru: 'Умножает выигрыш в Банке х2.<br><br><span style="color:#ff6666; font-weight:bold;">Сгорает после 1 игры (победа или поражение).</span>', en: 'Multiplies Bank win x2.<br><br><span style="color:#ff6666; font-weight:bold;">Burns after 1 game (win or loss).</span>' } },
-            { id: 'perk_x2_super', name: { ru: 'Супер Х2', en: 'Super x2' }, priceCoins: 200, priceCrystals: 40, icon: '🔥', isStackable: true, desc: { ru: 'Умножает выигрыш в Банке х2.<br><br><span style="color:var(--friendly-green); font-weight:bold;">Не сгорает при проигрыше.</span> Тратится только при успешном умножении.', en: 'Multiplies Bank win x2.<br><br><span style="color:var(--friendly-green); font-weight:bold;">Does not burn on loss.</span> Only consumed on a successful win.' } },
+            { id: 'perk_x2_win', name: { ru: 'Х2 Выигрыш', en: 'x2 Win' }, priceCoins: 100, priceCrystals: 20, icon: '🤑', isStackable: true, desc: { ru: 'Умножает выигрыш в Банке х2.<br><br><span style="color:#ff6666; font-weight:bold;">Сгорает после 1 игры.</span>', en: 'Multiplies Bank win x2.<br><br><span style="color:#ff6666; font-weight:bold;">Burns after 1 game.</span>' } },
+            { id: 'perk_x2_super', name: { ru: 'Супер Х2', en: 'Super x2' }, priceCoins: 200, priceCrystals: 40, icon: '🔥', isStackable: true, desc: { ru: 'Умножает выигрыш в Банке х2.<br><br><span style="color:var(--friendly-green); font-weight:bold;">Не сгорает при проигрыше.</span>', en: 'Multiplies Bank win x2.<br><br><span style="color:var(--friendly-green); font-weight:bold;">Does not burn on loss.</span>' } },
             
-            // 🛑 НОВЫЙ ТОВАР
-            { id: 'perk_gyro_stars', name: { ru: 'Живые Звезды', en: 'Live Stars' }, priceCoins: 0, priceCrystals: 300, icon: '🌌', isStackable: false, desc: { ru: 'Звезды реагируют на наклон телефона.<br><br><span style="color:var(--magic-color); font-weight:bold;">Глобальный 3D эффект.</span>', en: 'Stars react to phone tilt.<br><br><span style="color:var(--magic-color); font-weight:bold;">Global 3D effect.</span>' } }
+            // 🛑 ЭФФЕКТЫ ИНТЕРФЕЙСА (ПАРАЛЛАКС И ГИРОСКОП)
+            { id: 'perk_gyro_stars', name: { ru: 'Живые Звезды', en: 'Live Stars' }, priceCoins: 0, priceCrystals: 300, icon: '🌌', isStackable: false, desc: { ru: 'Фон реагирует на наклон телефона.<br><br><span style="color:var(--magic-color); font-weight:bold;">Глобальный 3D Эффект.</span>', en: 'Background reacts to tilt.' } },
+            { id: 'perk_gyro_dice', name: { ru: 'Живая Кость', en: 'Live Dice' }, priceCoins: 0, priceCrystals: 150, icon: '🎲', isStackable: false, desc: { ru: 'Кость покачивается от наклона телефона.<br><br><span style="color:var(--magic-color); font-weight:bold;">3D Эффект.</span>', en: 'Dice tilts with phone.' } },
+            { id: 'perk_gyro_roulette', name: { ru: 'Живой Барабан', en: 'Live Drum' }, priceCoins: 0, priceCrystals: 150, icon: '🌀', isStackable: false, desc: { ru: 'Барабан слегка вращается от наклона.<br><br><span style="color:var(--magic-color); font-weight:bold;">2D Эффект.</span>', en: 'Drum rotates with tilt.' } },
+            { id: 'perk_gyro_coin', name: { ru: 'Живая Монета', en: 'Live Coin' }, priceCoins: 0, priceCrystals: 150, icon: '🪙', isStackable: false, desc: { ru: 'Монета реагирует на наклоны.<br><br><span style="color:var(--magic-color); font-weight:bold;">3D Эффект.</span>', en: 'Coin tilts with phone.' } },
+            { id: 'perk_gyro_flower', name: { ru: 'Живой Цветок', en: 'Live Flower' }, priceCoins: 0, priceCrystals: 150, icon: '🌸', isStackable: false, desc: { ru: 'Лепестки вращаются от наклонов.<br><br><span style="color:var(--magic-color); font-weight:bold;">2D Эффект.</span>', en: 'Flower rotates with tilt.' } },
+            { id: 'perk_gyro_rps', name: { ru: 'Живые Руки', en: 'Live Hands' }, priceCoins: 0, priceCrystals: 150, icon: '✌️', isStackable: false, desc: { ru: 'К-Н-Б кивают от наклонов телефона.<br><br><span style="color:var(--magic-color); font-weight:bold;">2D Эффект.</span>', en: 'Hands nod with tilt.' } },
+            { id: 'perk_gyro_lots', name: { ru: 'Живой Жребий', en: 'Live Lots' }, priceCoins: 0, priceCrystals: 150, icon: '📦', isStackable: false, desc: { ru: 'Коробка покачивается от наклонов.<br><br><span style="color:var(--magic-color); font-weight:bold;">3D Эффект.</span>', en: 'Box tilts with phone.' } }
         ]
     };
 
@@ -9817,7 +9823,8 @@ const ShopGame = (function() {
                 color: 'var(--angry-red)', 
                 items: [ 
                     ...mapItems(shopItems.perks.filter(i => i.id.startsWith('perk_x2_')), 'perks', 'Бустеры Ставок', 'Bet Boosters'),
-                    ...mapItems(shopItems.perks.filter(i => i.id === 'perk_gyro_stars'), 'perks', 'Бустеры Интерфейса', 'UI Boosters')
+                    // ФИКС: Собираем ВСЕ визуальные бустеры, включая новые карточки для игр
+                    ...mapItems(shopItems.perks.filter(i => !i.id.startsWith('perk_x2_') && !i.id.startsWith('exchange_')), 'perks', 'Бустеры Интерфейса', 'UI Boosters')
                 ] 
             },
             
@@ -10168,12 +10175,19 @@ if (rulesModal) {
 try { if(typeof App !== 'undefined') { App.init(); if(typeof ShopGame !== 'undefined') ShopGame.init(); if(typeof CoinGame !== 'undefined') CoinGame.init(); if(typeof FlowerGame !== 'undefined') FlowerGame.init(); } } catch (err) { console.error("Start error:", err); }
 
 // ==============================================
-// 🌌 ИНЖЕКЦИЯ V3.4: СПОРТИВНЫЙ ДЕЛЬТА-ПАРАЛЛАКС (ФИКС ИНЕРЦИИ)
+// 🌌 ИНЖЕКЦИЯ V4.0: СУПЕР-ПАРАЛЛАКС (ФОН + ИГРОВЫЕ ОБЪЕКТЫ С БЛОКИРОВКОЙ)
 // ==============================================
-(function injectInfiniteDeltaPanorama() {
+(function injectSuperGyroEngine() {
+    // Переменные для фона (Бесконечная Дельта)
     let targetX = 0, targetY = 0;
     let currentX = 0, currentY = 0;
     let lastAlpha = null, lastBeta = null;
+    
+    // Переменные для Игровых Объектов (Абсолютный компас, возврат в центр)
+    let targetAbsX = 0, targetAbsY = 0;
+    let objCurrentX = 0, objCurrentY = 0;
+    let baseBeta = null, baseGamma = null;
+
     let gyroFrame = null;
     let permissionGranted = false;
 
@@ -10205,28 +10219,66 @@ try { if(typeof App !== 'undefined') { App.init(); if(typeof ShopGame !== 'undef
     }
 
     function updateParallax() {
-        // 🛑 ФИКС ИНЕРЦИИ: Было 0.04, стало 0.15. 
-        // Звезды останавливаются и меняют направление в 4 раза быстрее!
+        // --- 1. ОБНОВЛЕНИЕ ФОНА (Бесконечное вращение) ---
         currentX += (targetX - currentX) * 0.15;
         currentY += (targetY - currentY) * 0.15;
 
-        let bgPos = `
-            ${currentX * 1}px ${currentY * 1}px,  
-            ${currentX * 2}px ${currentY * 2}px,    
-            ${currentX * 4}px ${currentY * 4}px,    
-            ${currentX * 6}px ${currentY * 6}px,    
-            ${currentX * 9}px ${currentY * 9}px,    
-            ${currentX * 14}px ${currentY * 14}px 
-        `;
-
         const mainLayer = document.querySelector('.bg1-stars');
-        if (mainLayer) mainLayer.style.backgroundPosition = bgPos;
-
+        if (mainLayer) {
+            mainLayer.style.backgroundPosition = `
+                ${currentX * 1}px ${currentY * 1}px, ${currentX * 2}px ${currentY * 2}px, 
+                ${currentX * 4}px ${currentY * 4}px, ${currentX * 6}px ${currentY * 6}px, 
+                ${currentX * 9}px ${currentY * 9}px, ${currentX * 14}px ${currentY * 14}px 
+            `;
+        }
         document.body.style.backgroundSize = '130% 130%';
         document.body.style.backgroundPosition = `calc(50% + ${currentX * 1.5}px) calc(50% + ${currentY * 1.5}px)`;
 
-        // Снижен порог остановки анимации (чтобы не жрала батарею в покое)
-        if (Math.abs(targetX - currentX) > 0.01 || Math.abs(targetY - currentY) > 0.01) {
+
+        // --- 2. ОБНОВЛЕНИЕ ИГРОВЫХ ОБЪЕКТОВ (С блокировкой) ---
+        const mode = (typeof GameState !== 'undefined') ? GameState.mode : null;
+        let pMode = mode === 'sticks' ? 'lots' : mode; // Унификация названий
+
+        const p = (typeof GameState !== 'undefined' && GameState.activeProfileIdx !== -1) ? GameState.profiles[GameState.activeProfileIdx] : null;
+        const hasObjGyro = p && p.equipped && p.equipped['perk_gyro_' + pMode] === true && isMobile;
+
+        // 🛑 УМНАЯ БЛОКИРОВКА: Если кнопка нажата (disabled) ИЛИ виден результат — фиксируем сцену!
+        const rollBtn = document.getElementById('rollBtn');
+        const resContent = document.getElementById('res-content');
+        const isLocked = (rollBtn && rollBtn.disabled) || (resContent && resContent.classList.contains('visible'));
+
+        const stage = document.getElementById('mainStage');
+
+        if (hasObjGyro && !isLocked && stage) {
+            // Игра простаивает -> Плавно наклоняем объект за гироскопом
+            objCurrentX += (targetAbsX - objCurrentX) * 0.15;
+            objCurrentY += (targetAbsY - objCurrentY) * 0.15;
+
+            // Распределяем 2D вращение и 3D наклон по играм
+            if (pMode === 'roulette' || pMode === 'flower' || pMode === 'rps') {
+                stage.style.transform = `rotateZ(${objCurrentX * 0.6}deg)`; // 2D поворот
+            } else {
+                stage.style.transform = `perspective(800px) rotateX(${-objCurrentY}deg) rotateY(${objCurrentX}deg)`; // 3D наклон
+            }
+            stage.dataset.gyroActive = 'true';
+
+        } else if (stage && stage.dataset.gyroActive) {
+            // ИГРА АКТИВНА ИЛИ ЗАВЕРШЕНА -> Плавно возвращаем в центр и отключаемся
+            objCurrentX += (0 - objCurrentX) * 0.2;
+            objCurrentY += (0 - objCurrentY) * 0.2;
+
+            if (Math.abs(objCurrentX) < 0.5 && Math.abs(objCurrentY) < 0.5) {
+                // Если почти вернулись, полностью стираем наш CSS, чтобы родной JS игры сделал свою магию
+                stage.style.transform = '';
+                stage.dataset.gyroActive = '';
+            } else {
+                if (pMode === 'roulette' || pMode === 'flower' || pMode === 'rps') stage.style.transform = `rotateZ(${objCurrentX * 0.6}deg)`;
+                else stage.style.transform = `perspective(800px) rotateX(${-objCurrentY}deg) rotateY(${objCurrentX}deg)`;
+            }
+        }
+
+        // Цикл анимации
+        if (Math.abs(targetX - currentX) > 0.01 || Math.abs(targetY - currentY) > 0.01 || Math.abs(targetAbsX - objCurrentX) > 0.01) {
             gyroFrame = requestAnimationFrame(updateParallax);
         } else {
             gyroFrame = null;
@@ -10234,51 +10286,53 @@ try { if(typeof App !== 'undefined') { App.init(); if(typeof ShopGame !== 'undef
     }
 
     function handleOrientation(e) {
-        if (e.alpha === null || e.beta === null) return;
+        if (e.alpha === null || e.beta === null || e.gamma === null) return;
         
+        // --- Логика для Фона (Бесконечная) ---
         const p = (typeof GameState !== 'undefined' && GameState.activeProfileIdx !== -1) ? GameState.profiles[GameState.activeProfileIdx] : null;
-        const hasGyro = p && p.equipped && p.equipped['perk_gyro_stars'] === true && isMobile;
+        const hasBgGyro = p && p.equipped && p.equipped['perk_gyro_stars'] === true && isMobile;
         
-        if (!hasGyro) {
-            lastAlpha = null; lastBeta = null;
-            return;
-        }
+        if (hasBgGyro) {
+            if (lastAlpha === null || lastBeta === null) { lastAlpha = e.alpha; lastBeta = e.beta; }
+            let deltaAlpha = e.alpha - lastAlpha; let deltaBeta = e.beta - lastBeta;
+            
+            if (deltaAlpha > 180) deltaAlpha -= 360; if (deltaAlpha < -180) deltaAlpha += 360;
+            if (deltaAlpha > 12) deltaAlpha = 12; if (deltaAlpha < -12) deltaAlpha = -12;
+            if (deltaBeta > 12) deltaBeta = 12; if (deltaBeta < -12) deltaBeta = -12;
 
-        if (lastAlpha === null || lastBeta === null) {
+            targetX += deltaAlpha; targetY += deltaBeta;   
             lastAlpha = e.alpha; lastBeta = e.beta;
-            return;
+        } else {
+            lastAlpha = null; lastBeta = null;
         }
 
-        let deltaAlpha = e.alpha - lastAlpha;
-        let deltaBeta = e.beta - lastBeta;
+        // --- Логика для Объектов Игры (Абсолютная с калибровкой) ---
+        if (baseBeta === null || baseGamma === null) { baseBeta = e.beta; baseGamma = e.gamma; }
+        let absX = e.gamma - baseGamma;
+        let absY = e.beta - baseBeta;
 
-        if (deltaAlpha > 180) deltaAlpha -= 360;
-        if (deltaAlpha < -180) deltaAlpha += 360;
+        // Если сильно перевернули телефон - перекалибровываем центр под новую позу
+        if (Math.abs(absX) > 50 || Math.abs(absY) > 50) {
+            baseBeta = e.beta; baseGamma = e.gamma;
+            absX = 0; absY = 0;
+        }
 
-        // 🛑 ФИКС РЕВЕРСА: Срезаем аппаратные глюки.
-        // Если телефон выдал прыжок больше чем на 12 градусов за 1/60 секунды — это глюк компаса.
-        if (deltaAlpha > 12) deltaAlpha = 12;
-        if (deltaAlpha < -12) deltaAlpha = -12;
-        if (deltaBeta > 12) deltaBeta = 12;
-        if (deltaBeta < -12) deltaBeta = -12;
-
-        targetX += deltaAlpha; 
-        targetY += deltaBeta;   
-
-        lastAlpha = e.alpha;
-        lastBeta = e.beta;
+        // Ограничиваем максимальный наклон объекта (25 градусов)
+        if (absX > 25) absX = 25; if (absX < -25) absX = -25;
+        if (absY > 25) absY = 25; if (absY < -25) absY = -25;
+        targetAbsX = absX; targetAbsY = absY;
 
         if (!gyroFrame) gyroFrame = requestAnimationFrame(updateParallax);
     }
 
     function requestGyroPermissions() {
+        // Калибровка нулевой точки при тапе по экрану
+        baseBeta = null; baseGamma = null;
+        
         if (permissionGranted) return;
         if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
             DeviceOrientationEvent.requestPermission().then(state => {
-                if (state === 'granted') {
-                    permissionGranted = true;
-                    window.addEventListener('deviceorientation', handleOrientation);
-                }
+                if (state === 'granted') { permissionGranted = true; window.addEventListener('deviceorientation', handleOrientation); }
             }).catch(e => {}); 
         } else {
             permissionGranted = true;
@@ -10286,23 +10340,21 @@ try { if(typeof App !== 'undefined') { App.init(); if(typeof ShopGame !== 'undef
         }
     }
 
-    document.addEventListener('click', requestGyroPermissions, { once: true });
-    document.addEventListener('touchstart', requestGyroPermissions, { once: true, passive: true });
+    document.addEventListener('click', requestGyroPermissions);
+    document.addEventListener('touchstart', requestGyroPermissions, { passive: true });
 
     setInterval(() => {
-        const p = (typeof GameState !== 'undefined' && GameState.activeProfileIdx !== -1) ? GameState.profiles[GameState.activeProfileIdx] : null;
-        const hasGyro = p && p.equipped && p.equipped['perk_gyro_stars'] === true && isMobile;
-        
         injectStarGraphics(); 
+        const p = (typeof GameState !== 'undefined' && GameState.activeProfileIdx !== -1) ? GameState.profiles[GameState.activeProfileIdx] : null;
+        const hasBgGyro = p && p.equipped && p.equipped['perk_gyro_stars'] === true && isMobile;
         const layer = document.querySelector('.bg1-stars');
 
-        if (!hasGyro && layer) {
-            targetX = 0; targetY = 0;
-            lastAlpha = null; lastBeta = null;
+        // Сброс фона, если карточка снята или это ПК
+        if (!hasBgGyro && layer) {
+            targetX = 0; targetY = 0; lastAlpha = null; lastBeta = null;
             if (!gyroFrame) gyroFrame = requestAnimationFrame(updateParallax);
         }
     }, 300);
-
 })();
 </script>
 
