@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Игры Судьбы. v0.8.8.60.</title>
+    <title>Игры Судьбы. v0.8.8.60!</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
@@ -932,7 +932,7 @@ setInterval(() => {
     <div id="stars" class="stars-layer stars-active bg1-stars"></div>
 
     <div id="mainMenuOverlay">
-        <div class="version">v0.8.8.60.</div> 
+        <div class="version">v0.8.8.60!</div> 
 		<div class="menu-top-bar">
     <button class="menu-icon-btn" style="margin-right: 15px;" onclick="if(typeof App !== 'undefined' && App.playSoundEffect) App.playSoundEffect('click'); if(typeof ShopGame !== 'undefined') ShopGame.toggleInventory(true);">
         <i class="fas fa-box-open" style="color: var(--sun-gold); filter: drop-shadow(0 0 5px rgba(255,249,174,0.4));"></i>
@@ -10168,73 +10168,118 @@ if (rulesModal) {
 try { if(typeof App !== 'undefined') { App.init(); if(typeof ShopGame !== 'undefined') ShopGame.init(); if(typeof CoinGame !== 'undefined') CoinGame.init(); if(typeof FlowerGame !== 'undefined') FlowerGame.init(); } } catch (err) { console.error("Start error:", err); }
 
 // ==============================================
-// 🌌 ИНЖЕКЦИЯ V3.2: БЕСКОНЕЧНАЯ 360-ПАНОРАМА (ИДЕАЛЬНЫЙ ПАРАЛЛАКС + ФИКС ПК)
+// 🌌 ИНЖЕКЦИЯ V3.3: БЕСКОНЕЧНЫЙ ДЕЛЬТА-ПАРАЛЛАКС + УЛЬТРА ЗВЕЗДЫ
 // ==============================================
-(function injectInfinitePanorama() {
-    let targetAlpha = 0, targetBeta = 60;
-    let currentAlpha = 0, currentBeta = 60;
+(function injectInfiniteDeltaPanorama() {
+    let targetX = 0, targetY = 0;
+    let currentX = 0, currentY = 0;
+    let lastAlpha = null, lastBeta = null;
     let gyroFrame = null;
     let permissionGranted = false;
 
-    // 🛑 Железобетонное определение мобилки
     const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || navigator.maxTouchPoints > 0;
 
-    // 1. ДВИЖОК МНОГОСЛОЙНОЙ ОТРИСОВКИ
+    // 1. ВЖИВЛЯЕМ УЛЬТРА-ГРАФИКУ ДЛЯ ЗВЕЗД (Чтобы не менять CSS руками)
+    function injectStarGraphics() {
+        if (document.getElementById('vr-stars-css')) return;
+        const style = document.createElement('style');
+        style.id = 'vr-stars-css';
+        style.innerHTML = `
+            /* Растягиваем холст с запасом */
+            .stars-layer {
+                position: fixed; top: -20%; left: -20%; width: 140%; height: 140%;
+                pointer-events: none; z-index: -100; transition: opacity 0.5s ease;
+            }
+            /* Отключаем лишние слои для оптимизации мобилок */
+            .bg2-stars, .bg3-stars, .bg4-stars, .bg5-stars { display: none !important; }
+            
+            /* Накачиваем ПЕРВЫЙ слой 6-ю независимыми уровнями параллакса! */
+            .bg1-stars {
+                background-image: 
+                    radial-gradient(1.5px 1.5px at 10% 20%, rgba(255,255,255,0.4), transparent), 
+                    radial-gradient(2px 2px at 40% 60%, rgba(255,255,255,0.7), transparent), 
+                    radial-gradient(3px 3px at 80% 10%, #cce6ff, transparent), 
+                    radial-gradient(4px 4px at 20% 80%, #ffb7c5, transparent), /* Сакура */
+                    radial-gradient(5.5px 5.5px at 90% 90%, #facc15, transparent), /* Золотые гиганты */
+                    radial-gradient(7px 7px at 50% 50%, #8b5cf6, transparent) !important; /* Аметистовые гиганты */
+                background-size: 
+                    100px 100px, 
+                    250px 250px, 
+                    400px 400px, 
+                    550px 550px, 
+                    800px 800px, 
+                    1200px 1200px !important;
+                filter: drop-shadow(0 0 6px rgba(255,255,255,0.6));
+            }
+        `;
+        document.head.appendChild(style);
+    }
+
+    // 2. ДВИЖОК ОТРИСОВКИ (МЯГКИЙ LERP)
     function updateParallax() {
-        // Умный Lerp (сглаживание) для компаса, чтобы не укачивало при переходе 359 -> 0
-        let diffA = targetAlpha - currentAlpha;
-        while (diffA > 180) diffA -= 360;
-        while (diffA < -180) diffA += 360;
-        currentAlpha += diffA * 0.05; 
+        // Очень плавное скольжение к цели (0.04 = масляная плавность)
+        currentX += (targetX - currentX) * 0.04;
+        currentY += (targetY - currentY) * 0.04;
 
-        currentBeta += (targetBeta - currentBeta) * 0.05;
-
-        // Коэффициенты смещения (1 градус = N пикселей)
-        let cx = currentAlpha;
-        let cy = (currentBeta - 60);
-
-        // 🛑 МАГИЯ ПАРАЛЛАКСА: Раскидываем 6 слоев звезд из CSS на разные скорости!
-        // Близкие (огромные) звезды летят быстро, далекая пыль - медленно.
+        // Распределяем 6 слоев звезд на разные скорости (глубина 3D)
         let bgPos = `
-            ${cx * 12}px ${cy * 12}px,  
-            ${cx * 9}px ${cy * 9}px,    
-            ${cx * 6}px ${cy * 6}px,    
-            ${cx * 4}px ${cy * 4}px,    
-            ${cx * 2}px ${cy * 2}px,    
-            ${cx * 0.5}px ${cy * 0.5}px 
+            ${currentX * 1}px ${currentY * 1}px,  
+            ${currentX * 2}px ${currentY * 2}px,    
+            ${currentX * 4}px ${currentY * 4}px,    
+            ${currentX * 6}px ${currentY * 6}px,    
+            ${currentX * 9}px ${currentY * 9}px,    
+            ${currentX * 14}px ${currentY * 14}px 
         `;
 
-        document.querySelectorAll('.stars-layer').forEach(layer => {
-            // Двигаем не сам блок, а фон ВНУТРИ блока. Это дает бесконечный 360-поворот без краев!
-            layer.style.backgroundPosition = bgPos;
-        });
+        const mainLayer = document.querySelector('.bg1-stars');
+        if (mainLayer) mainLayer.style.backgroundPosition = bgPos;
 
-        // Плавный сдвиг премиального фона (как источник света вдалеке)
-        document.body.style.backgroundSize = '120% 120%';
-        document.body.style.backgroundPosition = `calc(50% + ${cx * 1.5}px) calc(50% + ${cy * 1.5}px)`;
+        // Двигаем сам источник света на премиум фонах
+        document.body.style.backgroundSize = '130% 130%';
+        document.body.style.backgroundPosition = `calc(50% + ${currentX * 1.5}px) calc(50% + ${currentY * 1.5}px)`;
 
-        if (Math.abs(diffA) > 0.01 || Math.abs(targetBeta - currentBeta) > 0.01) {
+        if (Math.abs(targetX - currentX) > 0.05 || Math.abs(targetY - currentY) > 0.05) {
             gyroFrame = requestAnimationFrame(updateParallax);
         } else {
             gyroFrame = null;
         }
     }
 
-    // 2. ЧТЕНИЕ КОМПАСА И ГИРОСКОПА
+    // 3. БЕСКОНЕЧНАЯ ДЕЛЬТА-МАТЕМАТИКА (ЗАЩИТА ОТ БАГОВ ДАТЧИКА)
     function handleOrientation(e) {
         if (e.alpha === null || e.beta === null) return;
         
         const p = (typeof GameState !== 'undefined' && GameState.activeProfileIdx !== -1) ? GameState.profiles[GameState.activeProfileIdx] : null;
         const hasGyro = p && p.equipped && p.equipped['perk_gyro_stars'] === true && isMobile;
         
-        if (!hasGyro) return;
+        if (!hasGyro) {
+            lastAlpha = null; lastBeta = null;
+            return;
+        }
 
-        targetAlpha = e.alpha; 
-        targetBeta = e.beta;   
+        if (lastAlpha === null || lastBeta === null) {
+            lastAlpha = e.alpha; lastBeta = e.beta;
+            return;
+        }
 
-        // Ограничиваем наклон "в пол" и "в потолок", чтобы фон не улетал
-        if (targetBeta > 120) targetBeta = 120; 
-        if (targetBeta < 0) targetBeta = 0;
+        // Вычисляем, насколько телефон сдвинулся с прошлого кадра
+        let deltaAlpha = e.alpha - lastAlpha;
+        let deltaBeta = e.beta - lastBeta;
+
+        // Фикс перехода через 0 градусов (359 -> 0)
+        if (deltaAlpha > 180) deltaAlpha -= 360;
+        if (deltaAlpha < -180) deltaAlpha += 360;
+
+        // 🛑 ГЛАВНЫЙ ФИКС: Если телефон перевернули (Gimbal Lock), дельта будет огромной. 
+        // Мы просто ИГНОРИРУЕМ этот глючный кадр!
+        if (Math.abs(deltaAlpha) < 50 && Math.abs(deltaBeta) < 50) {
+            // Прибавляем движение к бесконечным координатам
+            targetX += deltaAlpha; 
+            targetY += deltaBeta;   
+        }
+
+        lastAlpha = e.alpha;
+        lastBeta = e.beta;
 
         if (!gyroFrame) gyroFrame = requestAnimationFrame(updateParallax);
     }
@@ -10257,26 +10302,19 @@ try { if(typeof App !== 'undefined') { App.init(); if(typeof ShopGame !== 'undef
     document.addEventListener('click', requestGyroPermissions, { once: true });
     document.addEventListener('touchstart', requestGyroPermissions, { once: true, passive: true });
 
-    // 3. ПОЛЛИНГ (Защита для ПК и смены карточки)
+    // 4. НЕЗАВИСИМЫЙ КОНТРОЛЛЕР (ПОЛЛИНГ)
     setInterval(() => {
         const p = (typeof GameState !== 'undefined' && GameState.activeProfileIdx !== -1) ? GameState.profiles[GameState.activeProfileIdx] : null;
         const hasGyro = p && p.equipped && p.equipped['perk_gyro_stars'] === true && isMobile;
         
-        // Удаляем мусор от старой 3D-матрешки, если она осталась в HTML
-        const oldUniverse = document.getElementById('gof-3d-universe');
-        if (oldUniverse) oldUniverse.remove();
+        injectStarGraphics(); // Гарантируем, что стили загружены
+        const layer = document.querySelector('.bg1-stars');
 
-        const flatStars = document.querySelectorAll('.stars-layer');
-
-        if (!hasGyro) {
-            // Возврат в статику (Карточка снята ИЛИ это ПК)
-            flatStars.forEach(l => {
-                l.style.opacity = '1';
-                l.style.transform = 'translate(0px, 0px)'; 
-                l.style.backgroundPosition = '0px 0px, 0px 0px, 0px 0px, 0px 0px, 0px 0px, 0px 0px';
-            });
-            document.body.style.backgroundPosition = 'center';
-            document.body.style.backgroundSize = 'cover';
+        if (!hasGyro && layer) {
+            // Мягкий возврат в 2D (Карточка снята ИЛИ ПК)
+            targetX = 0; targetY = 0;
+            lastAlpha = null; lastBeta = null;
+            if (!gyroFrame) gyroFrame = requestAnimationFrame(updateParallax);
         }
     }, 300);
 
