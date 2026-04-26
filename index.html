@@ -1194,20 +1194,51 @@ body.mode-switching-active .history {
 
 }
 
-/* === ФИКС ЦЕНТРИРОВАНИЯ ОКОН С ПРАВИЛАМИ (ДЛЯ ВСЕХ ИГР) === */
-.shop-tt:has(.rules-content), 
-div:has(> .rules-content):not(.settings-modal) {
+/* === ИДЕАЛЬНЫЙ ОВЕРЛЕЙ ПРАВИЛ === */
+#rulesOverlay {
     position: fixed !important;
-    top: 22vh !important; /* Высота появления (можешь менять) */
-    left: 0 !important;
-    right: 0 !important;
-    margin: 0 auto !important; /* Идеальное центрирование без размытия шрифта */
-    width: 90% !important;
-    max-width: 320px !important;
+    top: 0 !important; left: 0 !important;
+    width: 100% !important; height: 100% !important;
+    background: rgba(0, 0, 0, 0.7) !important;
+    backdrop-filter: blur(5px) !important;
     z-index: 99999 !important;
-    /* Добавим легкую неоновую тень для глубины */
-    box-shadow: 0 15px 40px rgba(0,0,0,0.9), 0 0 20px rgba(0, 210, 211, 0.15) !important;
+    display: none; /* Управляется скриптом */
+    align-items: center; justify-content: center;
 }
+#rulesOverlay > div {
+    background: rgba(5, 8, 15, 0.98) !important;
+    border: 2px solid var(--magic-color) !important;
+    box-shadow: 0 15px 40px rgba(0,0,0,0.9), 0 0 20px rgba(0, 210, 211, 0.2) !important;
+    padding: 20px !important;
+    border-radius: 20px !important;
+    width: 85% !important;
+    max-width: 320px !important;
+    max-height: 80vh !important;
+    overflow-y: auto !important;
+}
+
+/* === ИДЕАЛЬНЫЙ ВИД И ЛОГИКА ДЛЯ ПОДСКАЗОК === */
+.shop-tt {
+    position: fixed !important;
+    top: 22vh !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    width: 85% !important;
+    max-width: 320px !important;
+    background: rgba(5, 8, 15, 0.98) !important;
+    border: 2px solid var(--magic-color) !important;
+    box-shadow: 0 15px 40px rgba(0,0,0,0.9), 0 0 20px rgba(0, 210, 211, 0.2) !important;
+    padding: 15px 20px !important;
+    border-radius: 16px !important;
+    z-index: 999999 !important;
+    transition: opacity 0.2s ease !important;
+}
+
+/* Если окно скрыто, оно физически перестает реагировать на мышь */
+.shop-tt[style*="opacity: 0"], .shop-tt[style*="display: none"] {
+    pointer-events: none !important;
+}
+
     </style>
 </head>
 <!-- --- КОНЕЦ ПЕРВОЙ ЧАСТИ --- -->
@@ -1361,7 +1392,29 @@ setInterval(() => {
                     tt.style.cssText = `position: absolute; top: 135%; ${posCSS} width: 280px; max-width: 88vw; background: rgba(10, 15, 25, 0.98); backdrop-filter: blur(20px); border: 1px solid ${activeColor}; padding: 16px; border-radius: 14px; color: #fff; font-size: 13px; display: none; z-index: 1000000; text-transform: none; font-weight: normal; text-align: left; box-shadow: 0 15px 40px rgba(0,0,0,0.9); line-height: 1.5; white-space: normal;`;
                     tt.innerHTML = ruleContent;
                     btn.appendChild(qBtn); btn.appendChild(tt);
-                    qBtn.onclick = (e) => { e.stopPropagation(); const isVis = tt.style.display === 'block'; document.querySelectorAll('.shop-tt').forEach(el => el.style.display='none'); tt.style.display = isVis ? 'none' : 'block'; };
+                    // 🛠️ КОРНЕВОЙ ФИКС 2: Открытие/закрытие по кнопке (?)
+                // 🛠️ КОРНЕВОЙ ФИКС 2: Открытие/закрытие по кнопке (?)
+                qBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    const isVis = tt.style.display === 'block';
+                    
+                    // 1. Сначала жестко скрываем ВСЕ окна, обнуляя и display, и opacity
+                    document.querySelectorAll('.shop-tt').forEach(el => {
+                        el.style.display = 'none';
+                        el.style.opacity = '0';
+                        el.style.pointerEvents = 'none';
+                    });
+                    
+                    // 2. Если наше окно было закрыто — открываем его правильно
+                    if (!isVis) {
+                        tt.style.display = 'block';
+                        // Даем браузеру микросекунду, чтобы opacity сработала плавно
+                        requestAnimationFrame(() => {
+                            tt.style.opacity = '1';
+                            tt.style.pointerEvents = 'auto';
+                        });
+                    }
+                };
                 }
             } else {
                 btn.onclick = (e) => {
@@ -1420,7 +1473,7 @@ setInterval(() => {
         
         container.appendChild(bar);
 
-        // 🚀 ЖИВОЙ СКАНЕР СОСТОЯНИЯ ИГРЫ
+        // 🚀 ЖИВОЙ СКАНЕР СОСТОЯНИЯ ИГРЫ (ФИНАЛЬНЫЙ ФИКС К-Н-Б)
         window.tabLockInterval = setInterval(() => {
             const currentBar = document.getElementById('activeGameTabsBar');
             if (!currentBar) {
@@ -1428,25 +1481,33 @@ setInterval(() => {
                 return;
             }
 
-            // Проверяем, заблокирована ли главная кнопка или идет переключение
             const rb = document.getElementById('rollBtn');
-            let isBusy = window.isSwitchingMode || (rb && rb.disabled);
             
+            // 🛑 ФИКС 1: Игнорируем отключенную кнопку, если мы в К-Н-Б!
+            let isBusy = window.isSwitchingMode;
+            if (GameState.mode !== 'rps') {
+                isBusy = isBusy || (rb && rb.disabled);
+            }
+
             // Проверяем спец-статусы Ромашки и КНБ
             if (GameState.mode === 'flower' && typeof FlowerGame !== 'undefined') {
                 if (typeof FlowerGame.isGameActive === 'function') isBusy = isBusy || FlowerGame.isGameActive();
             }
+            
             if (GameState.mode === 'rps' && typeof RPSGame !== 'undefined') {
-                if (typeof RPSGame.isGameActiveState === 'function') isBusy = isBusy || RPSGame.isGameActiveState();
+                // 🛑 ФИКС 2: Вызываем правильное имя экспортированной функции (isGameActive)
+                if (typeof RPSGame.isGameActive === 'function') {
+                    isBusy = isBusy || RPSGame.isGameActive();
+                }
             }
 
-            // Визуальная реакция
+            // Визуальная реакция (Блокировка или разблокировка табов)
             if (isBusy) {
-                currentBar.style.opacity = '0.35'; // Вкладки тускнеют
-                currentBar.style.pointerEvents = 'none'; // Жесткая защита от кликов
+                currentBar.style.opacity = '0.35'; 
+                currentBar.style.pointerEvents = 'none'; 
             } else {
-                currentBar.style.opacity = '1';    // Вкладки загораются
-                currentBar.style.pointerEvents = 'auto'; // Разрешаем клики
+                currentBar.style.opacity = '1';    
+                currentBar.style.pointerEvents = 'auto'; 
             }
         }, 150);
     }
@@ -1823,6 +1884,7 @@ setInterval(() => {
         // 🚑 АВТО-ХИРУРГ V2: HTML-ФИКСЫ + SVG-ЛИНЗА
         // ==============================================
         window.addEventListener('DOMContentLoaded', () => {
+		
 		// 🔮 ОЖИВЛЯЕМ ГЛАВНЫЙ ЗАГОЛОВОК (ЛОР ОРАКУЛА)
     const mainTitleEl = document.getElementById('mainMenuTitle');
     if (mainTitleEl) {
@@ -2084,7 +2146,21 @@ const App = (function() {
 			// ==========================================
 
                 document.getElementById('settingsOverlay').addEventListener('click', function(e) { if (e.target === this) toggleSettings(false); });
-                document.getElementById('rulesOverlay').addEventListener('click', function(e) { if (e.target === this) toggleRules(false); });
+                // 🛡️ БРОНЕБОЙНОЕ ЗАКРЫТИЕ ПРАВИЛ (МОБИЛЬНЫЙ ФИКС)
+const rOverlay = document.getElementById('rulesOverlay');
+if (rOverlay) {
+    ['touchstart', 'mousedown'].forEach(evt => {
+        rOverlay.addEventListener(evt, function(e) {
+            // Если кликнули именно по темному фону, а не по тексту
+            if (e.target === this) {
+                e.preventDefault();  // Жестко убиваем провал клика сквозь фон в игру
+                e.stopPropagation();
+                if (typeof toggleRules === 'function') toggleRules(false);
+                else this.style.display = 'none';
+            }
+        });
+    });
+}
                 
                 const uInput = document.getElementById('userQuestion');
                 if(uInput) {
@@ -5194,9 +5270,16 @@ const ShopGame = (function() {
             }
         }, 300);
 
+        // 🛠️ КОРНЕВОЙ ФИКС 1.3: Закрытие тултипов ПРИ ЛЮБОМ ТАПЕ (кроме кнопки вызова)
         document.addEventListener('click', (e) => {
-            if (!e.target.closest('.shop-tt') && !e.target.closest('.info-icon-btn')) {
-                document.querySelectorAll('.shop-tt').forEach(el => el.style.opacity = '0');
+            // Если мы нажали НЕ на кнопку вызова (?)
+            if (!e.target.closest('.info-icon-btn') && !e.target.closest('.info-mode-btn')) {
+                document.querySelectorAll('.shop-tt').forEach(el => {
+                    // Закрываем окно полностью, обнуляя все свойства
+                    el.style.display = 'none';
+                    el.style.opacity = '0';
+                    el.style.pointerEvents = 'none';
+                });
             }
         });
     }
@@ -9087,20 +9170,21 @@ const FlowerGame = (function() {
 // --- КОНЕЦ ВОСЬМОЙ ЧАСТИ ---
 // --- НАЧАЛО ДЕВЯТОЙ ЧАСТИ --- Плагин 5 (К-Н-Б).
 // ==============================================
-// ✊✌️✋ ПЛАГИН 5: КАМЕНЬ НОЖНИЦЫ БУМАГА (v2.1 - INTUITIVE PvP LOCKS)
+// ✊✌️✋ ПЛАГИН 5: КАМЕНЬ НОЖНИЦЫ БУМАГА (v2.1 - ИДЕАЛЬНЫЕ СТАДИИ)
 // ==============================================
 const RPSGame = (function() {
     function getEmptyState() {
-        return { isGameActive: false, playerMove: null, pcMove: null, pvpState: 0, p1Move: null, p2Move: null };
+        return { isGameActive: false, playerMove: null, pcMove: null, pvpState: 0, p1Move: null, p2Move: null, isSelecting: false };
     }
 
     let subStates = { standard: getEmptyState(), pvp: getEmptyState() };
     
     let isGameActive = false;
     let isSpinning = false;
+    let isSelecting = false; // 🚀 ВОЗВРАЩЕН ФЛАГ СТАДИИ ВЫБОРА ЖЕСТА
     let playerMove = null;
     let pcMove = null;
-	let forcedOutcome = null;
+    let forcedOutcome = null;
     
     // Переменные для PvP (0: P1 ждет, 1: P1 выбирает, 2: P2 ждет, 3: P2 выбирает, 4: Готовы, 5: Анимация, 6: Результат)
     let pvpState = 0; 
@@ -9126,34 +9210,39 @@ const RPSGame = (function() {
     function saveCurrentSubState() {
         const mode = GameState.subModes.rps || 'standard';
         if (!subStates[mode]) subStates[mode] = getEmptyState();
-        subStates[mode] = { isGameActive, playerMove, pcMove, pvpState, p1Move, p2Move };
+        subStates[mode] = { isGameActive, playerMove, pcMove, pvpState, p1Move, p2Move, isSelecting };
     }
 
     function loadCurrentSubState() {
         const mode = GameState.subModes.rps || 'standard';
         if (!subStates[mode]) subStates[mode] = getEmptyState();
         const s = subStates[mode];
-        isGameActive = s.isGameActive;
-        playerMove = s.playerMove;
-        pcMove = s.pcMove;
+        isGameActive = s.isGameActive || false;
+        playerMove = s.playerMove || null;
+        pcMove = s.pcMove || null;
         pvpState = s.pvpState || 0;
         p1Move = s.p1Move || null;
         p2Move = s.p2Move || null;
-
+        
+        isSelecting = false; // 🚀 Всегда начинаем с закрытых кулаков
         restoreUI();
     }
 
     function resetAll() {
         isGameActive = false;
-        isAnimating = false;
+        isSpinning = false;
+        isSelecting = false; // Сброс стадии
         pvpState = 0; // Сброс этапа выбора
+        playerMove = null;
+        pcMove = null;
+        p1Move = null;
+        p2Move = null;
         currentSessionId++; 
         
         if (typeof getEmptyState === 'function') {
             subStates = { standard: getEmptyState(), pvp: getEmptyState() };
         }
         
-        if (typeof loadCurrentSubState === 'function') loadCurrentSubState();
         if (typeof restoreUI === 'function') restoreUI();
     }
 
@@ -9172,6 +9261,7 @@ const RPSGame = (function() {
             disp.style.display = 'inline';
         }
         
+        isSelecting = false; // Сбрасываем стадию при входе
         if(typeof App !== 'undefined') App.hideError();
         restoreUI();
     }
@@ -9179,13 +9269,13 @@ const RPSGame = (function() {
     function unmount() {
         const st = document.getElementById('rpsStage');
         if(st) st.style.display = 'none';
-        // Убираем обе метки, чтобы цифры вернулись!
         document.body.classList.remove('is-rps-game-active', 'rps-pvp-active');
         
         const rs = document.getElementById('res-status'); if(rs) rs.classList.remove('visible');
         const rc = document.getElementById('res-content'); if(rc) rc.classList.remove('visible');
 
         isGameActive = false;
+        isSelecting = false;
         pvpState = 0;
         p1Move = null;
         p2Move = null;
@@ -9202,16 +9292,6 @@ const RPSGame = (function() {
             rollBtn.innerText = (t && t.rollBtn) ? t.rollBtn : "ИСПЫТАТЬ СУДЬБУ";
         }
     }
-	
-	function restoreUI() {
-        // === ПЕРЕКЛЮЧАТЕЛЬ ДЕБАГ КНОПОК ===
-        if (GameState.subModes.rps === 'pvp') document.body.classList.add('rps-pvp-active');
-        else document.body.classList.remove('rps-pvp-active');
-        // ==================================
-
-        const t = LANG_DATA[GameState.lang];
-        const mode = GameState.subModes.rps;
-	}
 
     function clearHandsFormatting() {
         const leftHand = document.getElementById('rps-left-hand');
@@ -9221,6 +9301,10 @@ const RPSGame = (function() {
     }
 
     function restoreUI() {
+        // === ПЕРЕКЛЮЧАТЕЛЬ ДЕБАГ КНОПОК И ФОНА ===
+        if (GameState.subModes.rps === 'pvp') document.body.classList.add('rps-pvp-active');
+        else document.body.classList.remove('rps-pvp-active');
+
         const t = LANG_DATA[GameState.lang];
         const mode = GameState.subModes.rps;
         
@@ -9233,49 +9317,40 @@ const RPSGame = (function() {
         const animText = document.getElementById('rps-animation-text');
         const leftHand = document.getElementById('rps-left-hand');
         const rightHand = document.getElementById('rps-right-hand');
-		// === КРИТИЧЕСКИЙ СБРОС (ВСТАВИТЬ ТУТ) ===
-if (leftHand) {
-    leftHand.onclick = (e) => RPSGame.handClick(1, e);
-    leftHand.classList.remove('sword-clash-anim');
-    leftHand.style.cursor = 'pointer';
-}
-if (rightHand) {
-    rightHand.onclick = (e) => RPSGame.handClick(2, e);
-    rightHand.classList.remove('sword-clash-anim');
-    rightHand.style.cursor = 'pointer';
-}
-// =========================================
-		
-		// === ВОЗВРАЩАЕМ РАБОЧИЙ КЛИК (в начало restoreUI) ===
-    if (leftHand) leftHand.onclick = (e) => RPSGame.handClick(1, e);
-    if (rightHand) rightHand.onclick = (e) => RPSGame.handClick(2, e);
+
+        // === ВОЗВРАЩАЕМ РАБОЧИЙ КЛИК ===
+        if (leftHand) {
+            leftHand.onclick = (e) => RPSGame.handClick(1, e);
+            leftHand.classList.remove('sword-clash-anim');
+            leftHand.style.cursor = 'pointer';
+        }
+        if (rightHand) {
+            rightHand.onclick = (e) => RPSGame.handClick(2, e);
+            rightHand.classList.remove('sword-clash-anim');
+            rightHand.style.cursor = 'pointer';
+        }
 
         // === ОТОБРАЖЕНИЕ ДЛЯ РЕЖИМА PvP ===
         if (mode === 'pvp') {
             if (animText) animText.style.opacity = 0;
             
-            // Состояние 0: Начало или сброс
-if (pvpState === 0) { 
-    if (selCont) selCont.style.display = 'none';
-    if (arenaCont) { 
-        arenaCont.style.display = 'flex'; 
-        arenaCont.style.justifyContent = 'space-between'; // Вернули распределение по краям
-        clearHandsFormatting(); 
-        leftHand.style.display = 'block';  // Проверка видимости
-        rightHand.style.display = 'block'; // Проверка видимости
-        leftHand.innerText = '🔓'; 
-        rightHand.innerText = '🔓'; 
-        leftHand.classList.add('active-lock');
-        rightHand.classList.add('idle-lock'); 
-    }
-    if (rollBtn) { 
-    rollBtn.innerText = t.rpsP1Turn; 
-    rollBtn.disabled = true; // Кнопка теперь неактивна
-    rollBtn.classList.remove('gold-text-active'); // Убираем подсветку
-}
-    if (rs) { rs.innerText = t.rpsPrepare; rs.classList.add('visible'); }
-    if (rc) rc.classList.remove('visible');
-}
+            if (pvpState === 0) { 
+                if (selCont) selCont.style.display = 'none';
+                if (arenaCont) { 
+                    arenaCont.style.display = 'flex'; 
+                    arenaCont.style.justifyContent = 'space-between';
+                    clearHandsFormatting(); 
+                    leftHand.style.display = 'block';  
+                    rightHand.style.display = 'block'; 
+                    leftHand.innerText = '🔓'; 
+                    rightHand.innerText = '🔓'; 
+                    leftHand.classList.add('active-lock');
+                    rightHand.classList.add('idle-lock'); 
+                }
+                if (rollBtn) { rollBtn.innerText = t.rpsP1Turn; rollBtn.disabled = true; rollBtn.classList.remove('gold-text-active'); }
+                if (rs) { rs.innerText = t.rpsPrepare; rs.classList.add('visible'); }
+                if (rc) rc.classList.remove('visible');
+            }
             else if (pvpState === 1) { 
                 if (selCont) selCont.style.display = 'flex';
                 if (arenaCont) arenaCont.style.display = 'none';
@@ -9284,30 +9359,19 @@ if (pvpState === 0) {
                 if (rc) rc.classList.remove('visible');
             } 
             else if (pvpState === 2) {
-    if (selCont) selCont.style.display = 'none';
-    if (arenaCont) {
-        arenaCont.style.display = 'flex';
-        arenaCont.style.justifyContent = 'space-between';
-        
-        // ВАЖНО: Очищаем старые классы (idle-lock), чтобы замок стал кликабельным
-        clearHandsFormatting(); 
-        
-        leftHand.innerText = '🔒'; 
-        rightHand.innerText = '🔓';
-        
-        // Теперь вешаем новые классы
-        leftHand.classList.add('locked-lock'); 
-        rightHand.classList.add('active-lock'); 
-        
-        // На всякий случай принудительно разрешаем клики для правой руки
-        rightHand.style.pointerEvents = 'auto'; 
-    }
-    if (rollBtn) { 
-        rollBtn.innerText = t.rpsP2Turn; 
-        rollBtn.disabled = true; 
-        rollBtn.classList.remove('gold-text-active');
-    }
-}
+                if (selCont) selCont.style.display = 'none';
+                if (arenaCont) {
+                    arenaCont.style.display = 'flex';
+                    arenaCont.style.justifyContent = 'space-between';
+                    clearHandsFormatting(); 
+                    leftHand.innerText = '🔒'; 
+                    rightHand.innerText = '🔓';
+                    leftHand.classList.add('locked-lock'); 
+                    rightHand.classList.add('active-lock'); 
+                    rightHand.style.pointerEvents = 'auto'; 
+                }
+                if (rollBtn) { rollBtn.innerText = t.rpsP2Turn; rollBtn.disabled = true; rollBtn.classList.remove('gold-text-active'); }
+            }
             else if (pvpState === 3) { 
                 if (selCont) selCont.style.display = 'flex';
                 if (arenaCont) arenaCont.style.display = 'none';
@@ -9315,83 +9379,62 @@ if (pvpState === 0) {
                 if (rs) { rs.innerText = t.rpsSecret; rs.classList.add('visible'); }
                 if (rc) rc.classList.remove('visible');
             } 
-            // Состояние 4: Оба выбрали жесты
-else if (pvpState === 4) { 
-            if (selCont) selCont.style.display = 'none';
-            if (arenaCont) { 
-                arenaCont.style.display = 'flex'; 
-                arenaCont.style.justifyContent = 'center'; 
-                clearHandsFormatting(); 
-                leftHand.innerText = '⚔️'; 
-                rightHand.innerText = '⚔️';
-                
-                // Создаем функцию боя
-                const runFight = (e) => {
-                    if (e) e.stopPropagation();
-                    leftHand.classList.add('sword-clash-anim');
-                    rightHand.classList.add('sword-clash-anim');
-                    setTimeout(() => {
-                        leftHand.classList.remove('sword-clash-anim');
-                        rightHand.classList.remove('sword-clash-anim');
-                        RPSGame.play(); // Запуск самой игры
-                    }, 400);
-                };
-                
-                // Привязываем её ко всем элементам
-                leftHand.onclick = runFight;
-                rightHand.onclick = runFight;
-                if (rollBtn) rollBtn.onclick = runFight;
+            else if (pvpState === 4) { 
+                if (selCont) selCont.style.display = 'none';
+                if (arenaCont) { 
+                    arenaCont.style.display = 'flex'; 
+                    arenaCont.style.justifyContent = 'center'; 
+                    clearHandsFormatting(); 
+                    leftHand.innerText = '⚔️'; 
+                    rightHand.innerText = '⚔️';
+                    
+                    const runFight = (e) => {
+                        if (e) e.stopPropagation();
+                        leftHand.classList.add('sword-clash-anim');
+                        rightHand.classList.add('sword-clash-anim');
+                        setTimeout(() => {
+                            leftHand.classList.remove('sword-clash-anim');
+                            rightHand.classList.remove('sword-clash-anim');
+                            RPSGame.play();
+                        }, 400);
+                    };
+                    leftHand.onclick = runFight;
+                    rightHand.onclick = runFight;
+                    if (rollBtn) rollBtn.onclick = runFight;
+                }
+                if (rollBtn) { rollBtn.innerText = t.rpsFightBtn; rollBtn.disabled = false; rollBtn.classList.add('gold-text-active'); }
+                if (rs) { rs.innerText = (GameState.lang === 'ru' ? "К бою готовы" : "Ready to fight"); rs.classList.add('visible'); }
+                if (rc) rc.classList.remove('visible');
             }
-            if (rollBtn) { 
-                rollBtn.innerText = t.rpsFightBtn; 
-                rollBtn.disabled = false; 
-                rollBtn.classList.add('gold-text-active');
-            }
-            if (rs) { rs.innerText = (GameState.lang === 'ru' ? "К бою готовы" : "Ready to fight"); rs.classList.add('visible'); 
-        }
-
-
-    if (rc) rc.classList.remove('visible');
-}
             else if (pvpState === 5) {
                 // Идет анимация (не трогаем UI)
             } 
             else if (pvpState === 6) {
-            if (selCont) selCont.style.display = 'none';
-            if (arenaCont) {
-                arenaCont.style.display = 'flex';
-                arenaCont.style.justifyContent = 'space-between';
-                
-                // Функция для сброса игры и начала заново
-                const handleReplay = (e) => {
-                    if (e) e.stopPropagation();
-                    // Используем ваш метод сброса
-                    if (typeof RPSGame.resetAll === 'function') {
-                        RPSGame.resetAll();
-                    } else {
-                        // Если resetAll не доступен, сбрасываем вручную
-                        pvpState = 0; p1Move = null; p2Move = null;
-                        restoreUI();
-                    }
-                };
-                
-                leftHand.onclick = handleReplay;
-                rightHand.onclick = handleReplay;
-                if (rollBtn) rollBtn.onclick = handleReplay;
+                if (selCont) selCont.style.display = 'none';
+                if (arenaCont) {
+                    arenaCont.style.display = 'flex';
+                    arenaCont.style.justifyContent = 'space-between';
+                    
+                    const handleReplay = (e) => {
+                        if (e) e.stopPropagation();
+                        if (typeof RPSGame.resetAll === 'function') RPSGame.resetAll();
+                        else { pvpState = 0; p1Move = null; p2Move = null; restoreUI(); }
+                    };
+                    
+                    leftHand.onclick = handleReplay;
+                    rightHand.onclick = handleReplay;
+                    if (rollBtn) rollBtn.onclick = handleReplay;
+                }
+                if (rollBtn) { rollBtn.innerText = t.rpsReplay; rollBtn.disabled = false; rollBtn.classList.remove('gold-text-active'); }
+                if (rs) rs.classList.remove('visible');
+                if (rc) rc.classList.add('visible');
             }
-            if (rollBtn) { 
-                rollBtn.innerText = t.rpsReplay; 
-                rollBtn.disabled = false; 
-                rollBtn.classList.remove('gold-text-active');
-            }
-            if (rs) rs.classList.remove('visible');
-            if (rc) rc.classList.add('visible');
-        }
             return;
         }
 
         // === ОТОБРАЖЕНИЕ ДЛЯ СТАНДАРТНОГО РЕЖИМА ===
         if (isGameActive && !isSpinning) {
+            // ЭКРАН РЕЗУЛЬТАТОВ
             if (selCont) selCont.style.display = 'none';
             if (arenaCont) {
                 arenaCont.style.display = 'flex';
@@ -9417,22 +9460,46 @@ else if (pvpState === 4) {
             }
             if (rs) rs.classList.remove('visible'); 
             if (rc) rc.classList.add('visible'); 
-        } else if (!isSpinning) {
-            if (selCont) selCont.style.display = 'flex';
-            if (arenaCont) arenaCont.style.display = 'none';
-            if (animText) animText.style.opacity = 0;
-
-            if (rollBtn) {
-                rollBtn.innerText = t.rpsChoose || "ВЫБЕРИ ЖЕСТ";
-                rollBtn.disabled = true;
-                rollBtn.classList.remove('gold-text-active');
-            }
             
-            if (rs) {
-                rs.innerText = t.rpsIdle || "ВЫБЕРИ ОРУЖИЕ...";
-                rs.classList.add('visible');
+        } else if (!isSpinning) {
+            // 🚀 ВОТ ОНО! РАЗДЕЛЕНИЕ НА 2 СТАДИИ ДЛЯ СТАНДАРТНОГО РЕЖИМА
+            if (isSelecting) {
+                // СТАДИЯ 2: ВЫБОР ЖЕСТА
+                if (selCont) selCont.style.display = 'flex';
+                if (arenaCont) arenaCont.style.display = 'none';
+                if (animText) animText.style.opacity = 0;
+
+                if (rollBtn) {
+                    rollBtn.innerText = t.rpsChoose || "ВЫБЕРИ ЖЕСТ";
+                    rollBtn.disabled = true;
+                    rollBtn.classList.remove('gold-text-active');
+                }
+                if (rs) { rs.innerText = t.rpsIdle || "ВЫБЕРИ ОРУЖИЕ..."; rs.classList.add('visible'); }
+                if (rc) rc.classList.remove('visible');
+                
+            } else {
+                // СТАДИЯ 1: ОЖИДАНИЕ (ДВА КУЛАКА)
+                if (selCont) selCont.style.display = 'none';
+                if (arenaCont) {
+                    arenaCont.style.display = 'flex';
+                    arenaCont.style.justifyContent = 'space-between';
+                    clearHandsFormatting();
+                    leftHand.innerText = '✊';
+                    rightHand.innerText = '✊';
+                    leftHand.classList.add('active-lock');
+                    rightHand.classList.add('idle-lock');
+                    leftHand.style.pointerEvents = 'auto'; // Разрешаем тап
+                }
+                if (animText) animText.style.opacity = 0;
+
+                if (rollBtn) {
+                    rollBtn.innerText = t.rpsPrepare || "ГОТОВЬТЕСЬ К БИТВЕ! ⚔️";
+                    rollBtn.disabled = true;
+                    rollBtn.classList.remove('gold-text-active');
+                }
+                if (rs) { rs.innerText = t.rpsPrepare || "ГОТОВЬТЕСЬ К БИТВЕ! ⚔️"; rs.classList.add('visible'); }
+                if (rc) rc.classList.remove('visible');
             }
-            if (rc) rc.classList.remove('visible');
         }
     }
 
@@ -9445,9 +9512,19 @@ else if (pvpState === 4) {
         if (mode === 'pvp') {
             if (pvpState === 0 && player === 1) play();
             else if (pvpState === 2 && player === 2) play();
-            else if (pvpState === 6) play(); 
+            else if (pvpState === 6) resetAll(); 
         } else {
-            if (isGameActive) play(); 
+            // Обычный режим
+            if (isGameActive) {
+                // Клик по результатам - сброс
+                isGameActive = false; isSelecting = false; restoreUI();
+                if (typeof App !== 'undefined') App.playSoundEffect('tick');
+            } else if (!isSelecting) {
+                // Клик по кулакам - переход к выбору
+                isSelecting = true;
+                restoreUI();
+                if (typeof App !== 'undefined') App.playSoundEffect('tick');
+            }
         }
     }
 
@@ -9455,8 +9532,17 @@ else if (pvpState === 4) {
     function arenaClick() {
         if (isSpinning) return;
         const mode = GameState.subModes.rps;
-        if (mode === 'pvp' && pvpState === 6) play();
-        else if (mode === 'standard' && isGameActive) play();
+        if (mode === 'pvp' && pvpState === 6) resetAll();
+        else if (mode === 'standard') {
+            if (isGameActive) {
+                isGameActive = false; isSelecting = false; restoreUI();
+                if (typeof App !== 'undefined') App.playSoundEffect('tick');
+            } else if (!isSelecting) {
+                isSelecting = true;
+                restoreUI();
+                if (typeof App !== 'undefined') App.playSoundEffect('tick');
+            }
+        }
     }
 
     function selectMove(move) {
@@ -9481,16 +9567,6 @@ else if (pvpState === 4) {
         }
 
         // Обычный режим
-        if (isGameActive) {
-            isGameActive = false;
-            playerMove = null;
-            pcMove = null;
-            restoreUI();
-            if (typeof App !== 'undefined') App.playSoundEffect('tick');
-            if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
-            return;
-        }
-
         playerMove = move;
         if (tg.HapticFeedback) tg.HapticFeedback.selectionChanged();
         if (typeof App !== 'undefined') App.playSoundEffect('click');
@@ -9516,6 +9592,7 @@ else if (pvpState === 4) {
             // Обычный режим
             if (isGameActive) {
                 isGameActive = false;
+                isSelecting = false;
                 playerMove = null;
                 pcMove = null;
                 restoreUI();
@@ -9524,7 +9601,7 @@ else if (pvpState === 4) {
             }
 
             if (!playerMove) {
-                if(typeof App !== 'undefined') { App.triggerButtonError(); App.showError(LANG_DATA[GameState.lang].error); }
+                if(typeof App !== 'undefined') { App.triggerButtonError(); App.showError(LANG_DATA[GameState.lang].error || "Ошибка"); }
                 return;
             }
         }
@@ -9537,9 +9614,9 @@ else if (pvpState === 4) {
 
         const t = LANG_DATA[GameState.lang];
         const rollBtn = document.getElementById('rollBtn');
-        if(rollBtn) { rollBtn.disabled = true; rollBtn.innerText = t.waiting; rollBtn.classList.add('gold-text-active'); }
+        if(rollBtn) { rollBtn.disabled = true; rollBtn.innerText = t.waiting || "ОЖИДАНИЕ..."; rollBtn.classList.add('gold-text-active'); }
         
-        if (typeof App !== 'undefined' && App.setTopNavLocked) App.setTopNavLocked(true); // <--- БЛОКИРУЕМ
+        if (typeof App !== 'undefined' && App.setTopNavLocked) App.setTopNavLocked(true); // <--- БЛОКИРУЕМ ВКЛАДКИ
 
         const rs = document.getElementById('res-status'); if(rs) rs.classList.remove('visible');
         const rc = document.getElementById('res-content'); if(rc) rc.classList.remove('visible');
@@ -9631,6 +9708,7 @@ else if (pvpState === 4) {
             smName = t.smRPSPvP || (isRu ? "Два Игрока" : "PvP");
         } else {
             isGameActive = true;
+            isSelecting = false; // 🚀 Возвращаемся в начальное состояние после конца игры
             m1 = playerMove;
             
             // === ЛОГИКА ЧИТА ===
@@ -9646,12 +9724,12 @@ else if (pvpState === 4) {
                 const choices = ['rock', 'scissors', 'paper'];
                 pcMove = choices[Math.floor(getCryptoRandom() * 3)];
             }
-            forcedOutcome = null; // Сбрасываем чит после использования
-            // ===================
-
+            
             m2 = pcMove;
             smName = t.smRPSStd || (isRu ? "С Компьютером" : "VS PC");
         }
+        
+        forcedOutcome = null; // Сбрасываем чит после использования
 
         if (leftHand) leftHand.innerText = gestures[m1].icon;
         if (rightHand) rightHand.innerText = gestures[m2].icon;
@@ -9740,14 +9818,20 @@ else if (pvpState === 4) {
             rollBtn.classList.remove('gold-text-active');
         }
         
-        if (typeof App !== 'undefined' && App.setTopNavLocked) App.setTopNavLocked(false); // <--- РАЗБЛОКИРУЕМ
+        if (typeof App !== 'undefined' && App.setTopNavLocked) App.setTopNavLocked(false); // <--- РАЗБЛОКИРУЕМ ВКЛАДКИ
     }
 
+    // 🚀 НОВАЯ ЛОГИКА БЛОКИРОВКИ ВКЛАДОК
     function isGameActiveState() {
-        return isGameActive || pvpState > 0;
+        if (GameState.subModes.rps === 'pvp') {
+            return pvpState > 0 && pvpState < 6;
+        } else {
+            // Вкладки блокируются ТОЛЬКО когда крутятся кулаки или открыто меню 3 жестов
+            return isSpinning === true || isSelecting === true;
+        }
     }
 
-	function triggerCheat(outcome) {
+    function triggerCheat(outcome) {
      if (isSpinning || isGameActive) return;
      if (GameState.subModes.rps === 'pvp') return;
 
@@ -9757,7 +9841,7 @@ else if (pvpState === 4) {
 
      if (typeof App !== 'undefined') App.playSoundEffect('click');
      play();
-	}
+    }
 
     return { init, mount, unmount, play, resetAll, saveCurrentSubState, triggerCheat, loadCurrentSubState, selectMove, handClick, arenaClick, isGameActive: isGameActiveState };
 })();
