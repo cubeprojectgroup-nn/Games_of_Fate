@@ -4,14 +4,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Игры Судьбы. v0.9.0.02</title>
+    <title>Игры Судьбы. v0.9.0.04</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 	<style>
-	/* Полное удаление цвета для ЧБ режима */
-html:has(body.theme-perk_crt_bw) {
-    filter: grayscale(100%) contrast(1.2) brightness(1.1) !important;
-}
+
         /* === [ CSS: БАЗОВЫЕ СТИЛИ ] === */
         :root {
             --magic-color: #a29bfe;
@@ -303,6 +300,21 @@ html:has(body.theme-perk_crt_bw) {
         
         #submodes-dice .sub-mode-btn.active-sub { border-color: var(--magic-color); color: var(--magic-color); box-shadow: 0 0 10px rgba(162, 155, 254, 0.3); background: rgba(162, 155, 254, 0.1); }
         #submodes-roulette .sub-mode-btn.active-sub { border-color: var(--angry-red); color: var(--angry-red); box-shadow: 0 0 10px rgba(255, 102, 102, 0.3); background: rgba(255, 102, 102, 0.1); }
+
+/* 1. Навсегда убиваем старый текстовый заголовок истории */
+.history-header { 
+    display: none !important; 
+}
+
+/* 2. Прячем сам блок истории, пока он не переехал в модальное окно */
+#gameUI > #historyBlock { 
+    display: none !important; 
+}
+
+/* 3. Фильтр, который делает любой эмодзи кристально белым */
+.white-emoji {
+    filter: grayscale(1) brightness(10);
+}
 
 /* === РОДНЫЕ СТИЛИ КНОПОК ИГР (ЧИСТЫЙ КОД) === */
 .square-game-btn {
@@ -634,8 +646,26 @@ body.mode-switching-active .input-section {
         .debug-btn:active { background: var(--magic-color); color: #000; transform: scale(0.9); }
 
         .history-header { margin-top: 15px; width: 100%; max-width: 350px; border-top: 1px solid rgba(162, 155, 254, 0.2); padding-top: 10px; text-align: center; color: var(--magic-color); font-size: 11px; text-transform: uppercase; font-weight: bold; transition: opacity 0.2s ease; }
-        .history { width: 100%; max-width: 350px; text-align: center; color: #888; overflow-y: auto; max-height: 120px; padding: 5px; flex-grow: 1; transition: opacity 0.4s; }
-        .history-item { padding: 10px 0; font-size: 12px; position: relative; line-height: 1.4; border-bottom: 1px solid rgba(162, 155, 254, 0.1); }
+        .history {
+    width: 100% !important;
+    max-width: 100% !important;
+    max-height: none !important; /* 🚀 УБИРАЕМ 120px */
+    height: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important; /* Скроллом теперь управляет модалка */
+    display: flex;
+    flex-direction: column;
+}
+        /* . Улучшаем внешний вид элементов истории в большом окне */
+.history-item {
+    padding: 12px 8px !important;
+    border-bottom: 1px solid rgba(162, 155, 254, 0.1) !important;
+    background: rgba(255, 255, 255, 0.02);
+    margin-bottom: 4px;
+    border-radius: 8px;
+    flex-shrink: 0;
+}
 
         /* === [ ОКНА НАСТРОЕК И ПРАВИЛ ] === */
         .settings-overlay, .rules-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; display: none; align-items: center; justify-content: center; z-index: 10000; }
@@ -995,66 +1025,76 @@ body.mode-switching-active .history {
             position: relative; /* Дает блоку свободу перемещения */
             z-index: 10;
         }
+/* ========================================================== */
+/* 📺 АБСОЛЮТНО БЕЗОПАСНЫЕ РЕТРО-ЭФФЕКТЫ (БЕЗ CSS-FILTER)     */
+/* ========================================================== */
 
-		/* ========================================= */
-        /* 📺 ПРЕМИУМ ЭФФЕКТЫ: РЕТРО ТЕЛЕВИЗОРЫ V3   */
-        /* ========================================= */
-        
-        /* 1. ОБЩИЙ СЛОЙ СТЕКЛА */
-        body.theme-perk_crt_filter::after,
-        body.theme-perk_crt_bw::after {
-            content: "";
-            position: fixed;
-            top: 0; left: 0; width: 100vw; height: 100vh;
-            z-index: 999999 !important; 
-            pointer-events: none; 
-            box-shadow: inset 0 0 120px rgba(0,0,0,0.95);
-            border-radius: 15px; 
-            animation: crtFlicker 0.2s infinite;
-        }
-
-        /* 2. ЦВЕТНОЙ CRT (Оставляем как был, он сочный) */
-        body.theme-perk_crt_filter::after {
-            background: 
-                radial-gradient(circle at 50% 30%, rgba(255, 255, 255, 0.1) 0%, rgba(0, 0, 0, 0) 65%),
-                linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.2) 50%), 
-                linear-gradient(90deg, rgba(255, 0, 0, 0.04), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.04));
-            background-size: 100% 100%, 100% 4px, 3px 100%;
-        }
-        body.theme-perk_crt_filter {
-            filter: contrast(0.9) saturate(0.7) brightness(0.9) sepia(0.1) !important;
-        }
-
-        /* 3. ЧЕРНО-БЕЛЫЙ КИНЕСКОП (Бескомпромиссный олдскул) */
-        body.theme-perk_crt_bw::after {
-            background: 
-                /* Блик на стекле */
-                radial-gradient(circle at 50% 30%, rgba(255, 255, 255, 0.15) 0%, rgba(0, 0, 0, 0) 60%),
-                /* Грубые сканирующие линии */
-                linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.3) 50%), 
-                /* Зернистость люминофора (только ч/б шум) */
-                linear-gradient(90deg, rgba(255, 255, 255, 0.03), rgba(0, 0, 0, 0.03), rgba(255, 255, 255, 0.03));
-            background-size: 100% 100%, 100% 6px, 2px 100%;
-        }
-
-        body.theme-perk_crt_bw {
-            /* grayscale(1) на 100% выжигает любой цвет. contrast(1.5) дает ту самую жесткую картинку */
-            filter: grayscale(1) brightness(1.05) contrast(1.15) url(#fisheye) !important;
+/* 1. Жестко запрещаем ломающие фильтры на всех контейнерах */
+body.theme-perk_crt_bw, 
+body.theme-perk_crt_filter,
+body.theme-perk_crt_bw #gameUI, 
+body.theme-perk_crt_filter #gameUI,
+body.theme-perk_crt_bw #mainMenuOverlay,
+body.theme-perk_crt_filter #mainMenuOverlay {
+    filter: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    transform: none !important;
 }
 
-        body.theme-perk_crt_bw * {
-            /* Ореол свечения вокруг белых объектов (Гало-эффект) */
-            text-shadow: 0px 0px 3px rgba(255,255,255,0.8) !important;
-            /* Убираем любые цветные тени, если они были */
-            box-shadow: none !important; 
-        }
+/* 2. МАГИЯ ЧБ (КИНЕСКОП): Делаем экран черно-белым через независимый 
+      слой наложения. Это гарантированно не ломает position: fixed! */
+body.theme-perk_crt_bw::before {
+    content: "";
+    position: fixed;
+    top: 0; left: 0; width: 100vw; height: 100vh;
+    background: #000; /* Черный цвет в режиме color обесцвечивает всё */
+    mix-blend-mode: color; /* 🚀 Секретное оружие против багов WebKit */
+    z-index: 999998 !important; /* Лежит поверх всего */
+    pointer-events: none !important; /* Пропускает клики и скролл */
+}
 
-        /* 4. Мягкая анимация мерцания */
-        @keyframes crtFlicker {
-            0% { opacity: 0.98; }
-            50% { opacity: 1; }
-            100% { opacity: 0.99; }
-        }
+/* 3. СЛОЙ ПОМЕХ И СЕТКИ (Для обоих режимов) */
+body.theme-perk_crt_filter::after,
+body.theme-perk_crt_bw::after {
+    content: "";
+    position: fixed;
+    top: 0; left: 0; width: 100vw; height: 100vh;
+    z-index: 999999 !important; /* Самый верхний слой */
+    pointer-events: none !important; /* Жизненно важно для тапов! */
+    box-shadow: inset 0 0 120px rgba(0,0,0,0.95);
+    animation: crtFlicker 0.2s infinite;
+}
+
+/* Текстура для цветного кинескопа */
+body.theme-perk_crt_filter::after {
+    background: 
+        radial-gradient(circle at 50% 30%, rgba(255, 255, 255, 0.1) 0%, rgba(0, 0, 0, 0) 65%),
+        linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.2) 50%), 
+        linear-gradient(90deg, rgba(255, 0, 0, 0.04), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.04));
+    background-size: 100% 100%, 100% 4px, 3px 100%;
+}
+
+/* Текстура для ЧБ кинескопа */
+body.theme-perk_crt_bw::after {
+    background: 
+        radial-gradient(circle at 50% 30%, rgba(255, 255, 255, 0.15) 0%, rgba(0, 0, 0, 0) 60%),
+        linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.3) 50%), 
+        linear-gradient(90deg, rgba(255, 255, 255, 0.03), rgba(0, 0, 0, 0.03), rgba(255, 255, 255, 0.03));
+    background-size: 100% 100%, 100% 6px, 2px 100%;
+}
+
+/* Единственное место, где безопасно оставить CSS-filter для цвета — 
+   это фон (звезды), так как внутри него нет интерфейса */
+body.theme-perk_crt_filter .stars-layer {
+    filter: contrast(1.15) saturate(1.2) !important;
+}
+
+@keyframes crtFlicker {
+    0% { opacity: 0.98; }
+    50% { opacity: 1; }
+    100% { opacity: 0.99; }
+}
 
 /* ============================================================ */
         /* 🚀 ГРАНД-ФИКС v2: ОЧИСТКА, КНОПКИ ВНИЗ И ФИКС БАРАБАНА       */
@@ -1233,11 +1273,91 @@ body.mode-switching-active .history {
     z-index: 999999 !important;
     transition: opacity 0.2s ease !important;
 }
+/* Полная деактивация всех старых контейнеров подсказок */
+.shop-tt, .smart-info-wrap { display: none !important; visibility: hidden !important; opacity: 0 !important; }
 
 /* Если окно скрыто, оно физически перестает реагировать на мышь */
 .shop-tt[style*="opacity: 0"], .shop-tt[style*="display: none"] {
     pointer-events: none !important;
 }
+
+/* === НОВАЯ КНОПКА ИСТОРИИ (СВИТОК) === */
+.history-trigger-btn {
+    width: 40px;
+    height: 40px;
+    min-width: 40px;
+    background: rgba(162, 155, 254, 0.1);
+    border: 2px solid var(--magic-color);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    cursor: pointer;
+    transition: 0.3s;
+    margin-left: 8px; /* Отступ от вкладок режимов */
+    box-shadow: 0 0 10px rgba(162, 155, 254, 0.2);
+}
+.history-trigger-btn:active {
+    transform: scale(0.9);
+    background: rgba(162, 155, 254, 0.3);
+}
+
+/* === ВСПЛЫВАЮЩЕЕ ОКНО ИСТОРИИ === */
+#historyOverlay {
+    position: fixed !important;
+    top: 0 !important; left: 0 !important;
+    width: 100% !important; height: 100% !important;
+    background: rgba(0, 0, 0, 0.8) !important;
+    backdrop-filter: blur(8px) !important;
+    z-index: 10000 !important;
+    display: none; /* Управляется скриптом */
+    align-items: center; justify-content: center;
+}
+.history-modal {
+    background: rgba(5, 8, 15, 0.98);
+    border: 2px solid var(--magic-color);
+    border-radius: 20px;
+    width: 85%;
+    max-width: 320px;
+    height: 60vh; /* Окно на 60% высоты экрана */
+    display: flex;
+    flex-direction: column;
+    padding: 20px;
+    box-shadow: 0 0 30px rgba(162, 155, 254, 0.3);
+}
+.history-modal-header {
+    font-size: 16px;
+    font-weight: 900;
+    color: var(--magic-color);
+    text-transform: uppercase;
+    text-align: center;
+    padding-bottom: 15px;
+    border-bottom: 1px solid rgba(162, 155, 254, 0.2);
+    margin-bottom: 10px;
+}
+/* Контейнер внутри модалки, который будет скроллиться */
+.history-scroll-area {
+    flex: 1 1 auto; /* 🚀 Заставляет блок забирать всё свободное место */
+    overflow-y: auto;
+    margin: 10px 0;
+    padding-right: 8px;
+    display: flex;
+    flex-direction: column;
+	/*. Фикс контейнера, чтобы он не "схлопывался" */
+#historyBlock {
+    width: 100% !important;
+    height: auto !important;
+    display: block !important;
+}
+/* Стилизация полосы прокрутки */
+.history-scroll-area::-webkit-scrollbar { width: 4px; }
+.history-scroll-area::-webkit-scrollbar-track { background: transparent; }
+.history-scroll-area::-webkit-scrollbar-thumb { 
+    background: var(--magic-color); 
+    border-radius: 10px; 
+}
+
 
     </style>
 </head>
@@ -1316,6 +1436,110 @@ setInterval(() => {
     if (pkLbl) pkLbl.innerText = isEng ? 'PERKS' : 'ПЕРКИ';
 }, 10);
 
+// === ОБНОВЛЕННАЯ ФУНКЦИЯ ИСТОРИИ (С УМНЫМ ЗАГОЛОВКОМ) ===
+window.toggleHistory = function(show) {
+    const overlay = document.getElementById('historyOverlay');
+    if (!overlay) return;
+    
+    if (show) {
+        // 🚀 МЕНЯЕМ ЗАГОЛОВОК В ЗАВИСИМОСТИ ОТ РЕЖИМА
+        const titleEl = document.getElementById('historyModalTitle');
+        if (titleEl) {
+            const lang = typeof GameState !== 'undefined' ? (GameState.lang || 'ru') : 'ru';
+            const isShop = typeof GameState !== 'undefined' && GameState.mode === 'shop';
+            
+            if (isShop) {
+                titleEl.innerText = lang === 'ru' ? 'ЖУРНАЛ ОПЕРАЦИЙ' : 'TRANSACTIONS';
+            } else {
+                titleEl.innerText = lang === 'ru' ? 'ИСТОРИЯ ИГРЫ' : 'GAME HISTORY';
+            }
+        }
+
+        const hBlock = document.getElementById('historyBlock');
+        const content = document.getElementById('historyModalContent');
+        if (hBlock && content) {
+            if (hBlock.parentNode !== content) {
+                content.appendChild(hBlock);
+            }
+            hBlock.style.display = 'block'; 
+            
+            // Сбрасываем скролл на самый верх
+            setTimeout(() => { content.scrollTop = 0; }, 10);
+        }
+        
+        if (typeof App !== 'undefined' && App.playSoundEffect) App.playSoundEffect('tick');
+        overlay.style.display = 'flex';
+    } else {
+        overlay.style.display = 'none';
+    }
+};
+
+window.clearCurrentHistory = function() {
+    const hBlock = document.getElementById('historyBlock');
+    if (!hBlock) return;
+    
+    // Ищем тот список истории, который сейчас активен (видим) на экране
+    const activeList = Array.from(hBlock.children).find(el => el.style.display === 'block');
+    
+    if (activeList) {
+        // Очищаем HTML внутри активного списка
+        activeList.innerHTML = ''; 
+        // Просим Ядро сохранить пустую историю в профиль
+        if (typeof App !== 'undefined' && App.requestProfileSave) App.requestProfileSave();
+        
+        // Маленький вибро-отклик для красоты
+        if (typeof tg !== 'undefined' && tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
+    }
+};
+
+// === ЕДИНЫЙ ЦЕНТР УПРАВЛЕНИЯ (ФИНАЛЬНАЯ ВЕРСИЯ) ===
+
+// 1. Умная ищейка: проверяет все возможные места хранения данных
+window.findItemById = function(id) {
+    // Проверяем глобальный массив или массив внутри модуля
+    let db = (typeof shopItems !== 'undefined') ? shopItems : 
+             (typeof ShopGame !== 'undefined' && ShopGame.shopItems) ? ShopGame.shopItems : null;
+    
+    if (!db) return null;
+    for (let cat in db) {
+        if (Array.isArray(db[cat])) {
+            let found = db[cat].find(item => item.id === id);
+            if (found) return found;
+        }
+    }
+    return null;
+};
+
+// 2. Глобальный контроллер: создается в body, игнорирует маски и скроллы
+window.toggleShopTooltip = function(e, btn, title, text) {
+    e.stopPropagation();
+    let gtt = document.getElementById('global-shop-tooltip');
+    if (!gtt) {
+        gtt = document.createElement('div');
+        gtt.id = 'global-shop-tooltip';
+        gtt.style.cssText = `position:fixed; display:none; z-index:1000001; width:260px; max-width:85vw; background:rgba(10,15,25,0.98); backdrop-filter:blur(20px); border:1px solid rgba(255,255,255,0.2); padding:15px; border-radius:12px; color:#fff; font-size:13px; line-height:1.5; box-shadow:0 15px 40px rgba(0,0,0,0.8); opacity:0; transition:opacity 0.2s; pointer-events:auto;`;
+        document.body.appendChild(gtt);
+        document.addEventListener('click', () => { gtt.style.opacity='0'; setTimeout(()=>gtt.style.display='none', 200); });
+    }
+
+    if (gtt.style.display === 'block' && gtt.dataset.owner === title) {
+        gtt.style.opacity='0'; setTimeout(()=>gtt.style.display='none', 200); return;
+    }
+
+    gtt.innerHTML = `<div style="font-weight:900; color:var(--sun-gold); margin-bottom:5px; text-transform:uppercase; font-size:11px;">${title}</div><div>${text}</div>`;
+    gtt.style.display = 'block';
+    
+    const rect = btn.getBoundingClientRect();
+    let topPos = rect.bottom + 10;
+    let leftPos = Math.min(window.innerWidth - 270, Math.max(10, rect.left));
+    if (topPos + 180 > window.innerHeight) topPos = rect.top - 10 - gtt.offsetHeight;
+
+    gtt.style.top = topPos + 'px';
+    gtt.style.left = leftPos + 'px';
+    gtt.dataset.owner = title;
+    requestAnimationFrame(() => { gtt.style.opacity = '1'; });
+};
+
 // === ГЕНЕРАТОР ВНУТРИИГРОВЫХ ВКЛАДОК (ВЕРСИЯ "УМНАЯ БЛОКИРОВКА") ===
     function renderGameTabs() {
         const container = document.getElementById('gameSubTabsContainer');
@@ -1386,35 +1610,72 @@ setInterval(() => {
                     const qBtn = document.createElement('div');
                     qBtn.innerHTML = '<i class="fas fa-question"></i>';
                     qBtn.style.cssText = `position:absolute; top:-8px; left:-8px; font-size:10px; width:24px; height:24px; display:flex; justify-content:center; align-items:center; background:${activeColor}; color:#000; border-radius:50%; box-shadow:0 0 10px ${activeColor}; z-index:10; cursor: pointer; pointer-events: auto;`;
+                    
                     const tt = document.createElement('div');
-                    tt.className = 'shop-tt';
-                    let posCSS = index === 0 ? 'left: 0; transform: none;' : (index === tabs.length - 1 ? 'right: 0; transform: none;' : 'left: 50%; transform: translateX(-50%);');
-                    tt.style.cssText = `position: absolute; top: 135%; ${posCSS} width: 280px; max-width: 88vw; background: rgba(10, 15, 25, 0.98); backdrop-filter: blur(20px); border: 1px solid ${activeColor}; padding: 16px; border-radius: 14px; color: #fff; font-size: 13px; display: none; z-index: 1000000; text-transform: none; font-weight: normal; text-align: left; box-shadow: 0 15px 40px rgba(0,0,0,0.9); line-height: 1.5; white-space: normal;`;
+                    tt.className = 'shop-tooltip-new'; 
+                    
+                    // 🎯 ИЗНАЧАЛЬНАЯ ИДЕАЛЬНАЯ ЦЕНТРОВКА:
+                    // Ставим левый край по центру кнопки и сдвигаем на 50% ширины назад
+                    tt.style.cssText = `
+                        position: absolute; 
+                        top: 140%; 
+                        left: 50%; 
+                        transform: translateX(-50%); 
+                        width: 280px; 
+                        max-width: 85vw; 
+                        background: rgba(10, 15, 25, 0.98); 
+                        backdrop-filter: blur(20px); 
+                        -webkit-backdrop-filter: blur(20px);
+                        border: 1px solid ${activeColor}; 
+                        padding: 16px; 
+                        border-radius: 14px; 
+                        color: #fff; 
+                        font-size: 13px; 
+                        display: none; 
+                        z-index: 1000000; 
+                        text-transform: none; 
+                        font-weight: normal; 
+                        text-align: left; 
+                        box-shadow: 0 15px 40px rgba(0,0,0,0.9); 
+                        line-height: 1.5; 
+                        white-space: normal;
+                        pointer-events: auto;
+                    `;
                     tt.innerHTML = ruleContent;
                     btn.appendChild(qBtn); btn.appendChild(tt);
-                    // 🛠️ КОРНЕВОЙ ФИКС 2: Открытие/закрытие по кнопке (?)
-                // 🛠️ КОРНЕВОЙ ФИКС 2: Открытие/закрытие по кнопке (?)
-                qBtn.onclick = (e) => {
-                    e.stopPropagation();
-                    const isVis = tt.style.display === 'block';
                     
-                    // 1. Сначала жестко скрываем ВСЕ окна, обнуляя и display, и opacity
-                    document.querySelectorAll('.shop-tt').forEach(el => {
-                        el.style.display = 'none';
-                        el.style.opacity = '0';
-                        el.style.pointerEvents = 'none';
-                    });
-                    
-                    // 2. Если наше окно было закрыто — открываем его правильно
-                    if (!isVis) {
-                        tt.style.display = 'block';
-                        // Даем браузеру микросекунду, чтобы opacity сработала плавно
-                        requestAnimationFrame(() => {
-                            tt.style.opacity = '1';
-                            tt.style.pointerEvents = 'auto';
+                    qBtn.onclick = (e) => {
+                        e.stopPropagation();
+                        const isVis = tt.style.display === 'block';
+                        
+                        document.querySelectorAll('.shop-tooltip-new').forEach(el => {
+                            el.style.display = 'none';
+                            el.style.opacity = '0';
+                            el.style.pointerEvents = 'none';
                         });
-                    }
-                };
+                        
+                        if (!isVis) {
+                            tt.style.display = 'block';
+                            
+                            // 🚀 УМНАЯ КОРРЕКЦИЯ (Если центр вылетает за экран):
+                            const rect = tt.getBoundingClientRect();
+                            if (rect.left < 10) {
+                                // Если вылетает слева — прижимаем к левому краю экрана
+                                tt.style.left = '0';
+                                tt.style.transform = 'translateX(0)';
+                            } else if (rect.right > window.innerWidth - 10) {
+                                // Если вылетает справа — прижимаем к правому краю экрана
+                                tt.style.left = 'auto';
+                                tt.style.right = '0';
+                                tt.style.transform = 'translateX(0)';
+                            }
+
+                            requestAnimationFrame(() => {
+                                tt.style.opacity = '1';
+                                tt.style.pointerEvents = 'auto';
+                            });
+                        }
+                    };
                 }
             } else {
                 btn.onclick = (e) => {
@@ -1472,7 +1733,17 @@ setInterval(() => {
         });
         
         container.appendChild(bar);
-
+		
+const scrollBtn = document.createElement('div');
+scrollBtn.className = 'history-trigger-btn';
+// 🚀 ВОТ ОНО: Обернули эмодзи в span с классом white-emoji
+scrollBtn.innerHTML = '<span class="white-emoji">📜</span>';
+scrollBtn.onclick = (e) => {
+    e.stopPropagation();
+    window.toggleHistory(true); // Добавили window. для надежности
+};
+bar.appendChild(scrollBtn);
+		
         // 🚀 ЖИВОЙ СКАНЕР СОСТОЯНИЯ ИГРЫ (ФИНАЛЬНЫЙ ФИКС К-Н-Б)
         window.tabLockInterval = setInterval(() => {
             const currentBar = document.getElementById('activeGameTabsBar');
@@ -1517,7 +1788,7 @@ setInterval(() => {
     <div id="stars" class="stars-layer stars-active bg1-stars"></div>
 
     <div id="mainMenuOverlay">
-        <div class="version">v0.9.0.02</div> 
+        <div class="version">v0.9.0.04</div> 
 		<div class="global-bottom-nav">
             <div class="nav-btn" onclick="if(typeof App !== 'undefined' && App.playSoundEffect) App.playSoundEffect('click'); if(typeof ShopGame !== 'undefined') ShopGame.toggleInventory(true);">
                 <i class="fas fa-box-open" style="color: var(--sun-gold);"></i>
@@ -1878,7 +2149,20 @@ setInterval(() => {
                 profileToDelete: -1,
                 profileToRename: -1
             };
-			
+		
+			// === ФУНДАМЕНТАЛЬНЫЕ УТИЛИТЫ МАГАЗИНА ===
+// 1. Ищейка предметов: ищет данные там, где они реально лежат
+window.findItemById = function(id) {
+    if (typeof ShopGame === 'undefined' || !ShopGame.shopItems) return null;
+    const db = ShopGame.shopItems;
+    for (let cat in db) {
+        if (Array.isArray(db[cat])) {
+            let found = db[cat].find(item => item.id === id);
+            if (found) return found;
+        }
+    }
+    return null;
+};
 		
 		// ==============================================
         // 🚑 АВТО-ХИРУРГ V2: HTML-ФИКСЫ + SVG-ЛИНЗА
@@ -2104,7 +2388,10 @@ const App = (function() {
 
             function init() {
                 document.documentElement.lang = GameState.lang; 
-                document.getElementById('langSelect').value = GameState.lang; 
+                
+                // 🛡️ Фикс выбора языка (чтобы не крашилось, если элемента еще нет)
+                const langSelect = document.getElementById('langSelect');
+                if (langSelect) langSelect.value = GameState.lang; 
                 
                 try {
                     GameState.profiles = JSON.parse(localStorage.getItem('gof_profiles')) || [];
@@ -2115,15 +2402,10 @@ const App = (function() {
                     GameState.activeProfileIdx = parseInt(savedActiveIdx);
                     if (GameState.activeProfileIdx >= GameState.profiles.length) GameState.activeProfileIdx = -1;
                 } else {
-                    if (GameState.profiles.length > 0) {
-                        GameState.activeProfileIdx = 0; 
-                    } else {
-                        GameState.activeProfileIdx = -1; 
-                    }
+                    GameState.activeProfileIdx = GameState.profiles.length > 0 ? 0 : -1;
                 }
 
-            // === СИСТЕМА САМОВОССТАНОВЛЕНИЯ ИСТОРИИ ===
-                // Гарантирует, что ни одна игра не сбросит историю в чужой контейнер
+                // === СИСТЕМА САМОВОССТАНОВЛЕНИЯ ИСТОРИИ ===
                 const histBlock = document.getElementById('historyBlock');
                 if (histBlock) {
                     const requiredLists = [
@@ -2138,29 +2420,41 @@ const App = (function() {
                             el.style.display = 'none';
                             histBlock.appendChild(el);
                         } else if (el.parentNode !== histBlock) {
-                            // БРОНЕБОЙНЫЙ ФИКС: Вытаскиваем контейнер, если он случайно вложился в другой
                             histBlock.appendChild(el);
                         }
                     });
                 }
-			// ==========================================
 
-                document.getElementById('settingsOverlay').addEventListener('click', function(e) { if (e.target === this) toggleSettings(false); });
-                // 🛡️ БРОНЕБОЙНОЕ ЗАКРЫТИЕ ПРАВИЛ (МОБИЛЬНЫЙ ФИКС)
-const rOverlay = document.getElementById('rulesOverlay');
-if (rOverlay) {
-    ['touchstart', 'mousedown'].forEach(evt => {
-        rOverlay.addEventListener(evt, function(e) {
-            // Если кликнули именно по темному фону, а не по тексту
-            if (e.target === this) {
-                e.preventDefault();  // Жестко убиваем провал клика сквозь фон в игру
-                e.stopPropagation();
-                if (typeof toggleRules === 'function') toggleRules(false);
-                else this.style.display = 'none';
-            }
-        });
-    });
-}
+                // 🛡️ ФИКС НАСТРОЕК (Исправляет ошибку из скриншота консоли)
+                const sOverlay = document.getElementById('settingsOverlay');
+                if (sOverlay) {
+                    sOverlay.addEventListener('click', function(e) { 
+                        if (e.target === this) toggleSettings(false); 
+                    });
+                }
+
+                // Безопасное закрытие истории
+                const hOverlay = document.getElementById('historyOverlay');
+                if (hOverlay) {
+                    hOverlay.addEventListener('click', function(e) { 
+                        if (e.target === this) window.toggleHistory(false); 
+                    });
+                }
+
+                // 🛡️ БРОНЕБОЙНОЕ ЗАКРЫТИЕ ПРАВИЛ
+                const rOverlay = document.getElementById('rulesOverlay');
+                if (rOverlay) {
+                    ['touchstart', 'mousedown'].forEach(evt => {
+                        rOverlay.addEventListener(evt, function(e) {
+                            if (e.target === this) {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                if (typeof toggleRules === 'function') toggleRules(false);
+                                else this.style.display = 'none';
+                            }
+                        });
+                    });
+                }
                 
                 const uInput = document.getElementById('userQuestion');
                 if(uInput) {
@@ -2206,9 +2500,41 @@ if (rOverlay) {
 
                 loadProfileData(GameState.activeProfileIdx);
                 renderProfiles();
-                
                 previewGame(GameState.mode);
             }
+
+			// Функция открытия/закрытия истории
+function toggleHistory(show) {
+    const overlay = document.getElementById('historyOverlay');
+    if (!overlay) return;
+    
+    if (show) {
+        // Перед открытием убеждаемся, что история актуальна для текущей игры
+        if (typeof updateHistoryView === 'function') updateHistoryView();
+        
+        // Перемещаем физический блок истории внутрь модалки, если он еще не там
+        const hBlock = document.getElementById('historyBlock');
+        const content = document.getElementById('historyModalContent');
+        if (hBlock && content && hBlock.parentNode !== content) {
+            content.appendChild(hBlock);
+            hBlock.style.display = 'block'; // Всегда показываем его внутри модалки
+        }
+        
+        overlay.style.display = 'flex';
+        playSoundEffect('tick');
+    } else {
+        overlay.style.display = 'none';
+    }
+}
+
+// Обновляем заголовок модалки (опционально)
+function updateHistoryModalTitle() {
+    const titleEl = document.getElementById('historyModalTitle');
+    const t = LANG_DATA[GameState.lang];
+    if (titleEl && t) {
+        titleEl.innerText = t.history || "ИСТОРИЯ";
+    }
+}
 
             function applySettings(s) {
                 if (!s) return;
@@ -3954,7 +4280,7 @@ function addCrystal(game = null, subMode = null, customAmount = null) {
 // 🛒 МАГАЗИН v12.4 [NEON STICKS UPDATE]
 // ==============================================
 const ShopGame = (function() {
-	let activeTab = 'exchange';
+    let activeTab = 'exchange';
     let isGameActive = false;
     let syncInterval = null;
     let pendingVisualUpdates = false;
@@ -4069,6 +4395,16 @@ const ShopGame = (function() {
         ]
     };
 
+    function findItemById(id) {
+        for (let cat in shopItems) {
+            if (Array.isArray(shopItems[cat])) {
+                let found = shopItems[cat].find(item => item.id === id);
+                if (found) return found;
+            }
+        }
+        return null;
+    }
+
     function updateTopUI() {
         if (typeof App !== 'undefined' && App.updateMenuBankUI) App.updateMenuBankUI();
         if (typeof App !== 'undefined' && App.renderProfiles) App.renderProfiles(); 
@@ -4142,7 +4478,6 @@ const ShopGame = (function() {
         grid.innerHTML = '';
         grid.className = 'shop-grid-container';
 
-        // Обновляем окно истории при старте магазина
         const hlShop = document.getElementById('historyListShop');
         if (hlShop && p) hlShop.innerHTML = p.historyShop || '';
 
@@ -4153,210 +4488,33 @@ const ShopGame = (function() {
             return; 
         }
 
-        const renderBatch = (items) => {
-            items.forEach(item => {
-                const isBought = (item.isConsumable || item.isStackable) ? false : inv.includes(item.id);
-                const card = document.createElement('div');
-                card.className = 'shop-item-card' + (isBought ? ' bought' : '');
-                
-                let priceHTML = '';
-                if (isBought) {
-                    priceHTML = lang === 'ru' ? 'КУПЛЕНО' : 'BOUGHT';
-                } else {
-                    if (item.priceCoins > 0 && item.priceCrystals > 0) priceHTML = `$${item.priceCoins} | ${item.priceCrystals}💎`;
-                    else if (item.priceCrystals > 0) priceHTML = `${item.priceCrystals}💎`;
-                    else if (item.priceCoins > 0) priceHTML = `$${item.priceCoins}`;
-                    else priceHTML = lang === 'ru' ? 'БЕСПЛАТНО' : 'FREE';
-                }
-
-                card.innerHTML = `
-                    ${getTooltipHTML(item.name[lang], item.desc, lang)}
-                    <div class="shop-item-icon">${item.icon}</div>
-                    <div class="shop-item-title">${item.name[lang]}</div>
-                    <div class="shop-price-badge">${priceHTML}</div>
-                `;
-                
-                if (!isBought) {
-                    card.onclick = (e) => {
-                        e.stopPropagation();
-                        
-                        // Звук успешной покупки
-                        if (typeof App !== 'undefined' && App.playSoundEffect) App.playSoundEffect('achievement');
-                        if (window.Telegram?.WebApp?.HapticFeedback) window.Telegram.WebApp.HapticFeedback.notificationOccurred('success');
-
-                        const curCoins = getPlayerCoins(p);
-                        const curCryst = p.crystals || 0;
-                        
-                        if (curCoins < item.priceCoins || curCryst < item.priceCrystals) {
-                            const errTxt = lang === 'ru' ? 'Недостаточно средств!' : 'Not enough funds!';
-                            if (typeof App !== 'undefined' && App.showError) App.showError(errTxt);
-                            return; 
-                        }
-
-                        if (item.priceCoins > 0) deductPlayerCoins(p, item.priceCoins);
-                        if (item.priceCrystals > 0) {
-                            if (!p.crystals) p.crystals = 0;
-                            p.crystals -= item.priceCrystals;
-                        }
-                        
-                        if (item.isConsumable) {
-                            if (item.rewardCoins) {
-                                if (p.bank !== undefined) p.bank += item.rewardCoins;
-                                else if (p.rStats && p.rStats.bank !== undefined) p.rStats.bank += item.rewardCoins;
-                            }
-                            if (item.rewardCrystals) {
-                                if (p.crystals === undefined) p.crystals = 0;
-                                p.crystals += item.rewardCrystals;
-                            }
-                        } else {
-                            if (!p.inventory) p.inventory = [];
-                            p.inventory.push(item.id);
-                        }
-
-                        const actionName = lang === 'ru' ? "Покупка" : "Purchase";
-                        const freeTxtLog = lang === 'ru' ? "Бесплатно" : "Free";
-                        
-                        let logPriceStr = '';
-                        if (item.priceCoins > 0 && item.priceCrystals > 0) logPriceStr = `- $${item.priceCoins.toFixed(2)} | - ${item.priceCrystals} 💎`;
-                        else if (item.priceCrystals > 0) logPriceStr = `- ${item.priceCrystals} 💎`;
-                        else if (item.priceCoins > 0) logPriceStr = `- $${item.priceCoins.toFixed(2)}`;
-                        else logPriceStr = freeTxtLog;
-
-                        const itemHTML = `
-                            <div class="history-item">
-                                <span style="color:var(--friendly-green); font-weight:bold;">[${actionName}]</span> ${item.icon} ${item.name[lang]}
-                                <br><span style="color:#aaa; font-size:9px;">${logPriceStr}</span>
-                            </div>`;
-                        
-                        p.historyShop = itemHTML + (p.historyShop || '');
-                        
-                        // Обновляем историю в UI сразу после покупки
-                        const hlShopUpdate = document.getElementById('historyListShop');
-                        if (hlShopUpdate) hlShopUpdate.innerHTML = p.historyShop;
-
-                        if (typeof App !== 'undefined' && App.requestProfileSave) App.requestProfileSave();
-                        updateTopUI(); 
-                        renderShop();
-                    };
-                }
-                grid.appendChild(card);
-            });
-        };
-
-        const isR = lang === 'ru';
-
         if (mode === 'perks') {
-            const betBoosters = shopItems.perks.filter(i => i.id.startsWith('perk_x2_'));
-            const stars = shopItems.perks.filter(i => i.id === 'perk_gyro_stars');
-            const filters = shopItems.perks.filter(i => i.id.startsWith('perk_crt_'));
-            const sparkles = shopItems.perks.filter(i => i.id.startsWith('perk_sparkle_'));
-            
-            // 1. БУСТЕРЫ СТАВОК ИДУТ САМЫМИ ПЕРВЫМИ
-            if (betBoosters.length > 0) {
-                grid.appendChild(createCategoryHeader(isR ? 'Бустеры Ставок' : 'Bet Boosters', 'var(--angry-red)'));
-                renderBatch(betBoosters);
-            }
-
-            // 2. ГЛАВНЫЙ БЛОК ИНТЕРФЕЙСА (идет после ставок)
-            if (stars.length > 0 || filters.length > 0 || sparkles.length > 0) {
-                grid.appendChild(createCategoryHeader(isR ? 'Бустеры Интерфейса' : 'UI Boosters', 'var(--magic-color)'));
-                
-                // Подблок: Звезды
-                if (stars.length > 0) {
-                    grid.appendChild(createCategoryHeader(isR ? 'Живые Звезды' : 'Live Stars', '#fff', true));
-                    renderBatch(stars);
-                }
-                // Подблок: Фильтры
-                if (filters.length > 0) {
-                    grid.appendChild(createCategoryHeader(isR ? 'Фильтры Экрана' : 'Screen Filters', '#fff', true));
-                    renderBatch(filters);
-                }
-                // Подблок: Искры
-                if (sparkles.length > 0) {
-                    grid.appendChild(createCategoryHeader(isR ? 'Эффекты Искр' : 'Sparkle Effects', '#fff', true));
-                    renderBatch(sparkles);
-                }
-            }
-
+            renderPerksTab(grid, balanceCoins, balanceCrystals, lang);
         } else if (mode === 'backgrounds') {
-            grid.appendChild(createCategoryHeader(isR ? 'Глобальные Фоны' : 'Global Backgrounds', 'var(--magic-color)'));
-            renderBatch(shopItems.backgrounds);
-
+            renderBackgroundsTab(grid, balanceCoins, balanceCrystals, lang);
         } else if (mode === 'standard') {
-            const cat = GameState.shopStyleCategory || 'dice';
-            
-            if (cat === 'dice') {
-                grid.appendChild(createCategoryHeader(isR ? 'Кость Истины' : 'Dice of Fate', 'var(--magic-color)'));
-                grid.appendChild(createCategoryHeader(isR ? 'Тема интерфейса' : 'UI Theme', '#fff', true));
-                renderBatch(shopItems.gameStyles.filter(i => i.id.startsWith('style_dice')));
-                
-                grid.appendChild(createCategoryHeader(isR ? 'Облик кости' : 'Dice Faces', '#fff', true));
-                renderBatch(shopItems.diceModes);
-                
-                grid.appendChild(createCategoryHeader(isR ? 'Эффекты' : 'Effects', '#fff', true));
-                renderBatch(shopItems.perks.filter(i => i.id === 'perk_sparkle_dice'));
-            } 
-            else if (cat === 'roulette') {
-                grid.appendChild(createCategoryHeader(isR ? 'Роковая Пуля' : 'Fatal Bullet', 'var(--angry-red)'));
-                grid.appendChild(createCategoryHeader(isR ? 'Барабаны' : 'Drums', '#fff', true));
-                renderBatch(shopItems.gameStyles.filter(i => i.id.startsWith('roulette_drum_')));
-                
-                grid.appendChild(createCategoryHeader(isR ? 'Пули' : 'Bullets', '#fff', true));
-                renderBatch(shopItems.gameStyles.filter(i => i.id.startsWith('roulette_bullet_')));
-            }
-            else if (cat === 'coin') {
-                grid.appendChild(createCategoryHeader(isR ? 'Грань Выбора' : 'Edge of Choice', 'var(--sun-gold)'));
-                grid.appendChild(createCategoryHeader(isR ? 'Тема интерфейса' : 'UI Theme', '#fff', true));
-                renderBatch(shopItems.gameStyles.filter(i => i.id.startsWith('style_coin')));
-                
-                grid.appendChild(createCategoryHeader(isR ? 'Эффекты' : 'Effects', '#fff', true));
-                renderBatch(shopItems.perks.filter(i => i.id === 'perk_sparkle_coin'));
-            }
-            else if (cat === 'flower') {
-                grid.appendChild(createCategoryHeader(isR ? 'Цветок Оракула' : 'The Oracle Flower', 'var(--friendly-green)'));
-                grid.appendChild(createCategoryHeader(isR ? 'Тема интерфейса' : 'UI Theme', '#fff', true));
-                renderBatch(shopItems.gameStyles.filter(i => i.id.startsWith('style_flower')));
-                
-                grid.appendChild(createCategoryHeader(isR ? 'Сердцевина' : 'Core Styles', '#fff', true));
-                renderBatch(shopItems.flowerCores);
-                
-                grid.appendChild(createCategoryHeader(isR ? 'Цвет лепестков' : 'Petal Colors', '#fff', true));
-                renderBatch(shopItems.flowerPetals);
-            }
-            else if (cat === 'lots') {
-                grid.appendChild(createCategoryHeader(isR ? 'Нить Жребия' : 'Draw The Threads of Fate', '#00d2d3'));
-                grid.appendChild(createCategoryHeader(isR ? 'Тема интерфейса' : 'UI Theme', '#fff', true));
-                renderBatch(shopItems.gameStyles.filter(i => i.id.startsWith('style_lots')));
-                
-                grid.appendChild(createCategoryHeader(isR ? 'Коробка' : 'Box Styles', '#fff', true));
-                renderBatch(shopItems.lotsBoxes);
-                
-                grid.appendChild(createCategoryHeader(isR ? 'Вид палочек' : 'Stick Styles', '#fff', true));
-                renderBatch(shopItems.lotsSticks);
-            }
-            else if (cat === 'rps') {
-                grid.appendChild(createCategoryHeader(isR ? 'К-Н-Б' : 'R-P-S', '#ff9f43'));
-                grid.appendChild(createCategoryHeader(isR ? 'Тема интерфейса' : 'UI Theme', '#fff', true));
-                renderBatch(shopItems.gameStyles.filter(i => i.id.startsWith('style_rps')));
-            }
+            renderStylesTab(grid, balanceCoins, balanceCrystals, lang);
         }
     }
 
-    // === 1. СТРУКТУРА МАГАЗИНА (С БАЛАНСОМ) ===
     function renderShopStructure(stage, grid, coins, crystals) {
         const lang = GameState.lang || 'ru';
         
-        // 1. ЕДИНАЯ ПРИЛИПАЮЩАЯ ШАПКА
+        if (typeof RULES_HTML !== 'undefined') {
+            ['shop_exchange', 'shop_perks', 'shop_backgrounds', 'shop_standard'].forEach(key => {
+                if (!RULES_HTML[key]) RULES_HTML[key] = { ru: '', en: '' };
+            });
+        }
+
         let stickyHeader = document.getElementById('shopStickyHeader');
         if (!stickyHeader) {
             stickyHeader = document.createElement('div');
             stickyHeader.id = 'shopStickyHeader';
-            stickyHeader.style.cssText = 'position: sticky; top: 0; width: 100%; max-width: 400px; z-index: 150; background: rgba(5, 8, 15, 0.95); backdrop-filter: blur(10px); display: flex; flex-direction: column; align-items: center; border-bottom: 1px solid rgba(162, 155, 254, 0.2); margin-bottom: 10px; padding-bottom: 5px;';
+            stickyHeader.style.cssText = 'position: sticky; top: 0; width: 100%; max-width: 400px; z-index: 150; background: transparent; display: flex; flex-direction: column; align-items: center; margin-bottom: 10px; padding-bottom: 5px;';
             stage.insertBefore(stickyHeader, grid);
         }
         stickyHeader.innerHTML = '';
 
-        // 2. Блок баланса
         const bH = document.createElement('div');
         bH.style.cssText = 'display: flex; justify-content: center; width: 100%; padding-top: 5px; padding-bottom: 10px; pointer-events: none;';
         bH.innerHTML = `<div style="background: rgba(10, 15, 25, 0.8); padding: 6px 20px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.15); font-size: 15px; display: inline-flex; align-items: center; gap: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); pointer-events: auto;">
@@ -4366,39 +4524,25 @@ const ShopGame = (function() {
         </div>`;
         stickyHeader.appendChild(bH);
 
-        // 3. Главные табы с подробным лором
-        // 3. Главные табы с подробным лором (ВЕРСИЯ "PREMIUM")
         const tC = document.createElement('div');
-        // Расширяем контейнер до 600px, чтобы 4 кнопки влезли с комфортом
         tC.style.cssText = 'width: 100%; max-width: 600px; margin: 0 auto 10px auto; flex-shrink: 0; padding: 0 10px; box-sizing: border-box;';
         
         const bar = document.createElement('div');
-        // Используем flex для идеального распределения ширины
-        bar.style.cssText = 'display: flex; justify-content: center; gap: 8px; width: 100%; position: relative; z-index: 100;';
+        bar.style.cssText = 'display: flex; justify-content: center; gap: 6px; width: 100%; position: relative; z-index: 100; align-items: stretch;';
 
         const tabsInfo = [
-            { k: 'exchange', i: '<i class="fas fa-exchange-alt"></i>', c: 'var(--sun-gold)', ru: 'ОБМЕН', en: 'EXCHANGE' },
-            { k: 'perks', i: '<i class="fas fa-bolt"></i>', c: 'var(--angry-red)', ru: 'ПЕРКИ', en: 'PERKS' },
-            { k: 'standard', i: '<i class="fas fa-tshirt"></i>', c: 'var(--magic-color)', ru: 'СТИЛИ', en: 'STYLES' },
-            { k: 'backgrounds', i: '<i class="fas fa-image"></i>', c: 'var(--friendly-green)', ru: 'ФОНЫ', en: 'BGS' }
+            { k: 'exchange', i: '<i class="fas fa-exchange-alt"></i>', c: 'var(--sun-gold)', ru: 'ОБМЕН', en: 'EXCHANGE', desc: { ru: 'Обмен Кристаллов на Монеты и наоборот (Комиссия Банка: 10%).<br><br>Здесь же находится Ваш Инвентарь для продажи предметов.', en: 'Exchange Crystals for Coins and vice versa (Bank fee: 10%).<br><br>Your Inventory is also here for selling items.' } },
+            { k: 'perks', i: '<i class="fas fa-bolt"></i>', c: 'var(--angry-red)', ru: 'ПЕРКИ', en: 'PERKS', desc: { ru: 'Мощные усилители и эффекты.<br><br>Бустеры ставок умножают выигрыш. Эффекты интерфейса добавляют уникальные детали.', en: 'Powerful boosters and effects.<br><br>Bet boosters multiply winnings. UI effects add unique details.' } },
+            { k: 'standard', i: '<i class="fas fa-tshirt"></i>', c: 'var(--magic-color)', ru: 'СТИЛИ', en: 'STYLES', desc: { ru: 'Полная кастомизация игр!<br><br>Покупайте новые облики для Кости, рулеточные барабаны, стили монет и лепестки.', en: 'Full game customization!<br><br>Buy new dice faces, roulette drums, coin styles, unique petals.' } },
+            { k: 'backgrounds', i: '<i class="fas fa-image"></i>', c: 'var(--friendly-green)', ru: 'ФОНЫ', en: 'BGS', desc: { ru: 'Глобальные фоновые изображения.<br><br>Установите новый фон, который будет отображаться во всех разделах игры.', en: 'Global background images.<br><br>Equip a new background for all game sections.' } }
         ];
 
-        // Добавляем описание (лор) отдельно, если оно нужно для всплывающих окон
-        const descriptions = {
-            exchange: { ru: 'Обмен Кристаллов на Монеты и наоборот (Комиссия: 10%). Здесь же ваш Инвентарь.', en: 'Exchange Crystals/Coins (Fee: 10%). Your Inventory is here.' },
-            perks: { ru: 'Мощные усилители и визуальные эффекты интерфейса.', en: 'Powerful boosters and UI visual effects.' },
-            standard: { ru: 'Кастомизация: новые облики костей, барабанов и лепестков.', en: 'Customization: new skins for dice, drums and petals.' },
-            backgrounds: { ru: 'Глобальные фоновые изображения для всех разделов игры.', en: 'Global background images for all game sections.' }
-        };
-
-        tabsInfo.forEach(t => {
-            const isActive = (activeTab === t.k);
+        tabsInfo.forEach((t, index) => {
+            const isActive = (GameState.subModes.shop === t.k);
             const color = isActive ? t.c : 'rgba(255,255,255,0.2)';
             const bg = isActive ? 'rgba(255,255,255,0.15)' : 'rgba(5,8,15,0.6)';
-            const lang = GameState.lang || 'ru';
 
             const btn = document.createElement('div');
-            // 🚀 flex: 1 делает все 4 кнопки идеально равными по ширине
             btn.style.cssText = `
                 position: relative; flex: 1; height: 44px; background: ${bg}; 
                 border: 1px solid ${color}; border-radius: 12px; display: flex; 
@@ -4407,57 +4551,80 @@ const ShopGame = (function() {
                 ${isActive ? `box-shadow: 0 0 15px ${t.c}; z-index: 10;` : ''}
             `;
 
-            // Иконка + короткий текст (чтобы влезло на 4 кнопки)
-            btn.innerHTML = `
+            let tooltipHTML = '';
+            if (isActive) {
+                tooltipHTML = getTooltipHTML(lang === 'ru' ? 'Информация' : 'Info', t.desc, lang);
+            }
+
+            btn.innerHTML = tooltipHTML + `
                 <span style="font-size: 14px; color: ${isActive ? '#fff' : 'rgba(255,255,255,0.5)'}">${t.i}</span>
                 <span style="font-size: 9px; font-weight: 900; text-transform: uppercase; color: ${isActive ? '#fff' : 'rgba(255,255,255,0.4)'}">${t[lang]}</span>
             `;
 
-            btn.onclick = () => {
-                if (activeTab === t.k || window.isSwitchingShop) return;
-                window.isSwitchingShop = true;
-                if (typeof App !== 'undefined' && App.playSoundEffect) App.playSoundEffect('tick');
-
-                // 🚀 ПРИМЕНЯЕМ НАШ ФИРМЕННЫЙ БЛЮР
-                let curtain = document.getElementById('softBlurCurtain');
-                if (!curtain) {
-                    curtain = document.createElement('div');
-                    curtain.id = 'softBlurCurtain';
-                    curtain.style.cssText = 'position:fixed; left:0; width:100%; bottom:0; background:rgba(5,8,15,0.1); backdrop-filter:blur(30px); -webkit-backdrop-filter:blur(30px); z-index:9000; opacity:0; pointer-events:none; transition:opacity 0.15s ease-out; -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 50px, black calc(100% - 40px), transparent 100%);';
-                    document.body.appendChild(curtain);
+            if (isActive) {
+                const infoBtn = btn.querySelector('.info-icon-btn');
+                if (infoBtn) {
+                    infoBtn.style.top = '2px';
+                    infoBtn.style.left = '2px';
+                    infoBtn.style.transform = 'scale(0.85)';
                 }
+            }
 
-                const barRect = bar.getBoundingClientRect();
-                curtain.style.top = (barRect.bottom - 10) + 'px';
+            if (!isActive) {
+                btn.onclick = () => {
+                    if (GameState.subModes.shop === t.k || window.isSwitchingShop) return;
+                    window.isSwitchingShop = true;
+                    if (typeof App !== 'undefined' && App.playSoundEffect) App.playSoundEffect('tick');
 
-                requestAnimationFrame(() => {
-                    curtain.style.opacity = '1';
-                    curtain.style.pointerEvents = 'auto';
+                    let curtain = document.getElementById('softBlurCurtain');
+                    if (!curtain) {
+                        curtain = document.createElement('div');
+                        curtain.id = 'softBlurCurtain';
+                        curtain.style.cssText = 'position:fixed; left:0; width:100%; bottom:0; background:rgba(5,8,15,0.1); backdrop-filter:blur(30px); -webkit-backdrop-filter:blur(30px); z-index:9000; opacity:0; pointer-events:none; transition:opacity 0.15s ease-out; -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 50px, black calc(100% - 40px), transparent 100%);';
+                        document.body.appendChild(curtain);
+                    }
 
-                    setTimeout(() => {
-                        activeTab = t.k; // Меняем вкладку "в тумане"
-                        renderShop();    // Перерисовываем весь магазин
+                    const barRect = bar.getBoundingClientRect();
+                    curtain.style.top = (barRect.bottom - 10) + 'px';
+
+                    requestAnimationFrame(() => {
+                        curtain.style.opacity = '1';
+                        curtain.style.pointerEvents = 'auto';
 
                         setTimeout(() => {
-                            curtain.style.transition = 'opacity 0.25s ease-in';
-                            curtain.style.opacity = '0';
+                            GameState.subModes.shop = t.k;
+                            if (typeof App !== 'undefined' && App.requestProfileSave) App.requestProfileSave();
+                            if (typeof renderShop === 'function') renderShop();
+
                             setTimeout(() => {
-                                curtain.style.pointerEvents = 'none';
-                                window.isSwitchingShop = false;
-                            }, 250);
-                        }, 100);
-                    }, 160);
-                });
-            };
+                                curtain.style.transition = 'opacity 0.25s ease-in';
+                                curtain.style.opacity = '0';
+                                setTimeout(() => {
+                                    curtain.style.pointerEvents = 'none';
+                                    window.isSwitchingShop = false;
+                                }, 250);
+                            }, 100);
+                        }, 160);
+                    });
+                };
+            }
             bar.appendChild(btn);
         });
+
+        const shopHistBtn = document.createElement('div');
+        shopHistBtn.className = 'history-trigger-btn';
+        shopHistBtn.style.cssText = 'width: 44px; height: 44px; min-width: 44px; background: rgba(162, 155, 254, 0.1); border: 2px solid var(--magic-color); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px; cursor: pointer; transition: 0.3s; box-shadow: 0 0 10px rgba(162, 155, 254, 0.2); flex-shrink: 0;';
+        shopHistBtn.innerHTML = '<span class="white-emoji">📜</span>';
+        shopHistBtn.onclick = (e) => {
+            e.stopPropagation();
+            if (window.toggleHistory) window.toggleHistory(true);
+        };
+        bar.appendChild(shopHistBtn);
 
         tC.appendChild(bar);
         stickyHeader.appendChild(tC);
 
-        // 4. Под-табы (Игры)
-        // 🚀 ФИКС: Используем activeTab вместо GameState.subModes.shop
-        if (activeTab === 'standard') {
+        if (GameState.subModes.shop === 'standard') {
             const sTC = document.createElement('div');
             sTC.style.cssText = 'width: 95%; margin-bottom: 5px; flex-shrink: 0;';
             const styleCats = [
@@ -4485,7 +4652,7 @@ const ShopGame = (function() {
                     btn.onclick = () => {
                         if (typeof App !== 'undefined' && App.playSoundEffect) App.playSoundEffect('tick');
                         GameState.shopStyleCategory = cat.k;
-                        renderShop();
+                        if (typeof renderShop === 'function') renderShop();
                     };
                 }
                 sBar.appendChild(btn);
@@ -4493,18 +4660,6 @@ const ShopGame = (function() {
             sTC.appendChild(sBar);
             stickyHeader.appendChild(sTC);
         }
-    }
-
-    // Вспомогательная функция для поиска инфы о предмете по ID
-    // Вспомогательная функция (если её еще нет)
-    function findItemById(id) {
-        for (const key in shopItems) {
-            if (Array.isArray(shopItems[key])) {
-                const found = shopItems[key].find(i => i.id === id);
-                if (found) return found;
-            }
-        }
-        return null;
     }
 
     function renderExchangeTab(grid, p, lang) {
@@ -4566,13 +4721,11 @@ const ShopGame = (function() {
                 if (gCoins > 0) { if (p.bank !== undefined) p.bank += gCoins; else p.rStats.bank += gCoins; }
                 if (gCryst > 0) p.crystals += gCryst;
                 
-                // Звук обмена (монетки)
                 if (typeof App !== 'undefined' && App.playSoundEffect) App.playSoundEffect('coins');
 
                 const log = (cCoins > 0) ? `-$${cCoins.toFixed(2)} ➔ +${gCryst}💎` : `-${cCryst}💎 ➔ +$${gCoins.toFixed(2)}`;
                 p.historyShop = `<div class="history-item"><span style="color:var(--sun-gold); font-weight:bold;">[${lang==='ru'?'Обмен':'Exchange'}]</span><br><span style="color:#aaa; font-size:10px;">${log}</span></div>` + (p.historyShop || '');
                 
-                // Обновляем историю в UI
                 const hlShop = document.getElementById('historyListShop');
                 if (hlShop) hlShop.innerHTML = p.historyShop;
 
@@ -4582,7 +4735,6 @@ const ShopGame = (function() {
             grid.appendChild(card);
         });
 
-        // === ПОЛНЫЙ ИНВЕНТАРЬ ИГРОКА ===
         const inv = p ? (p.inventory || []) : [];
         if (inv.length > 0) {
             const groupedInv = {};
@@ -4620,7 +4772,6 @@ const ShopGame = (function() {
             invWrapper.appendChild(createCategoryHeader(lang==='ru'?'Ваш Инвентарь':'Your Inventory', 'var(--magic-color)'));
             
             const invScroll = document.createElement('div');
-            // Уменьшили высоту до 220px (это как раз полторы карточки)
             invScroll.style.cssText = `
                 display: grid !important;
                 grid-template-columns: repeat(4, 1fr) !important;
@@ -4635,7 +4786,6 @@ const ShopGame = (function() {
                 align-content: start;
             `;
 
-            // Вытаскиваем категории и сортируем, чтобы Бустеры были первыми
             const catKeys = Object.keys(groupedInv);
             catKeys.sort((a, b) => {
                 const isBoostA = (a === 'Бустеры Ставок' || a === 'Bet Boosters');
@@ -4681,7 +4831,6 @@ const ShopGame = (function() {
                     `;
                     
                     card.querySelector('.sell-btn').onclick = () => {
-                        // Звук продажи (монетки)
                         if (typeof App !== 'undefined' && App.playSoundEffect) App.playSoundEffect('coins');
                         if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.HapticFeedback) window.Telegram.WebApp.HapticFeedback.impactOccurred('medium');
                         
@@ -4701,7 +4850,6 @@ const ShopGame = (function() {
                         const actionName = (sCoins > 0 || sCryst > 0) ? (lang==='ru'?'Продажа':'Sale') : (lang==='ru'?'Удаление':'Discard');
                         p.historyShop = `<div class="history-item"><span style="color:var(--angry-red); font-weight:bold;">[${actionName}]</span> ${d.item.icon} ${d.item.name[lang]}<br><span style="color:#aaa; font-size:10px;">+$${sCoins.toFixed(2)} | +${sCryst}💎</span></div>` + (p.historyShop || '');
                         
-                        // Обновляем историю в UI
                         const hlShop = document.getElementById('historyListShop');
                         if (hlShop) hlShop.innerHTML = p.historyShop;
                         
@@ -4718,87 +4866,99 @@ const ShopGame = (function() {
         }
     }
 
-    function renderPerksTab(grid, coins, crystals, lang) {
+    function renderPerksTab(grid, balanceCoins, balanceCrystals, lang) {
         const betBoosters = shopItems.perks.filter(i => i.id.startsWith('perk_x2_'));
         const uiBoosters = shopItems.perks.filter(i => !i.id.startsWith('perk_x2_') && !i.id.startsWith('exchange_'));
 
         if (betBoosters.length > 0) {
             grid.appendChild(createCategoryHeader(lang === 'ru' ? 'Бустеры Ставок' : 'Bet Boosters', 'var(--angry-red)'));
-            appendItems(grid, betBoosters, coins, crystals, lang);
+            appendItems(grid, betBoosters, balanceCoins, balanceCrystals, lang);
         }
         if (uiBoosters.length > 0) {
             grid.appendChild(createCategoryHeader(lang === 'ru' ? 'Бустеры Интерфейса' : 'UI Boosters', 'var(--magic-color)'));
-            appendItems(grid, uiBoosters, coins, crystals, lang);
+            appendItems(grid, uiBoosters, balanceCoins, balanceCrystals, lang);
         }
     }
 
-    function renderStylesTab(grid, coins, crystals, lang) {
+    function renderStylesTab(grid, balanceCoins, balanceCrystals, lang) {
         const cat = GameState.shopStyleCategory || 'dice';
         const isR = lang === 'ru';
         
         if (cat === 'dice') {
             grid.appendChild(createCategoryHeader(isR?'Кость Истины':'Dice of Fate', 'var(--magic-color)'));
             grid.appendChild(createCategoryHeader(isR?'Тема интерфейса':'UI Theme', '#fff', true));
-            appendItems(grid, shopItems.gameStyles.filter(i => i.id.startsWith('style_dice')), coins, crystals, lang);
+            appendItems(grid, shopItems.gameStyles.filter(i => i.id.startsWith('style_dice')), balanceCoins, balanceCrystals, lang);
             grid.appendChild(createCategoryHeader(isR?'Облик кости':'Dice Faces', '#fff', true));
-            appendItems(grid, shopItems.diceModes, coins, crystals, lang);
+            appendItems(grid, shopItems.diceModes, balanceCoins, balanceCrystals, lang);
             grid.appendChild(createCategoryHeader(isR?'Эффекты':'Effects', '#fff', true));
-            appendItems(grid, shopItems.perks.filter(i => i.id === 'perk_sparkle_dice'), coins, crystals, lang);
+            appendItems(grid, shopItems.perks.filter(i => i.id === 'perk_sparkle_dice'), balanceCoins, balanceCrystals, lang);
         } 
         else if (cat === 'roulette') {
             grid.appendChild(createCategoryHeader(isR?'Роковая Пуля':'Fatal Bullet', 'var(--angry-red)'));
             grid.appendChild(createCategoryHeader(isR?'Барабаны':'Drums', '#fff', true));
-            appendItems(grid, shopItems.gameStyles.filter(i => i.id.startsWith('roulette_drum_')), coins, crystals, lang);
+            appendItems(grid, shopItems.gameStyles.filter(i => i.id.startsWith('roulette_drum_')), balanceCoins, balanceCrystals, lang);
             grid.appendChild(createCategoryHeader(isR?'Пули':'Bullets', '#fff', true));
-            appendItems(grid, shopItems.gameStyles.filter(i => i.id.startsWith('roulette_bullet_')), coins, crystals, lang);
+            appendItems(grid, shopItems.gameStyles.filter(i => i.id.startsWith('roulette_bullet_')), balanceCoins, balanceCrystals, lang);
         } 
         else if (cat === 'coin') {
             grid.appendChild(createCategoryHeader(isR?'Грань Выбора':'Edge of Choice', 'var(--sun-gold)'));
             grid.appendChild(createCategoryHeader(isR?'Тема интерфейса':'UI Theme', '#fff', true));
-            appendItems(grid, shopItems.gameStyles.filter(i => i.id.startsWith('style_coin')), coins, crystals, lang);
+            appendItems(grid, shopItems.gameStyles.filter(i => i.id.startsWith('style_coin')), balanceCoins, balanceCrystals, lang);
             grid.appendChild(createCategoryHeader(isR?'Эффекты':'Effects', '#fff', true));
-            appendItems(grid, shopItems.perks.filter(i => i.id === 'perk_sparkle_coin'), coins, crystals, lang);
+            appendItems(grid, shopItems.perks.filter(i => i.id === 'perk_sparkle_coin'), balanceCoins, balanceCrystals, lang);
         } 
         else if (cat === 'flower') {
             grid.appendChild(createCategoryHeader(isR?'Цветок Оракула':'The Oracle flower', 'var(--friendly-green)'));
             grid.appendChild(createCategoryHeader(isR?'Тема интерфейса':'UI Theme', '#fff', true));
-            appendItems(grid, shopItems.gameStyles.filter(i => i.id.startsWith('style_flower')), coins, crystals, lang);
+            appendItems(grid, shopItems.gameStyles.filter(i => i.id.startsWith('style_flower')), balanceCoins, balanceCrystals, lang);
             grid.appendChild(createCategoryHeader(isR?'Сердцевина':'Core Styles', '#fff', true));
-            appendItems(grid, shopItems.flowerCores, coins, crystals, lang);
+            appendItems(grid, shopItems.flowerCores, balanceCoins, balanceCrystals, lang);
             grid.appendChild(createCategoryHeader(isR?'Цвет лепестков':'Petal Colors', '#fff', true));
-            appendItems(grid, shopItems.flowerPetals, coins, crystals, lang);
+            appendItems(grid, shopItems.flowerPetals, balanceCoins, balanceCrystals, lang);
         } 
         else if (cat === 'lots') {
             grid.appendChild(createCategoryHeader(isR?'Нить Жребия':'Draw The Threads of Fate', '#00d2d3'));
             grid.appendChild(createCategoryHeader(isR?'Тема интерфейса':'UI Theme', '#fff', true));
-            appendItems(grid, shopItems.gameStyles.filter(i => i.id.startsWith('style_lots')), coins, crystals, lang);
+            appendItems(grid, shopItems.gameStyles.filter(i => i.id.startsWith('style_lots')), balanceCoins, balanceCrystals, lang);
             grid.appendChild(createCategoryHeader(isR?'Коробка':'Box Styles', '#fff', true));
-            appendItems(grid, shopItems.lotsBoxes, coins, crystals, lang);
+            appendItems(grid, shopItems.lotsBoxes, balanceCoins, balanceCrystals, lang);
             grid.appendChild(createCategoryHeader(isR?'Вид палочек':'Stick Styles', '#fff', true));
-            appendItems(grid, shopItems.lotsSticks, coins, crystals, lang);
+            appendItems(grid, shopItems.lotsSticks, balanceCoins, balanceCrystals, lang);
         } 
         else if (cat === 'rps') {
             grid.appendChild(createCategoryHeader(isR?'К-Н-Б':'R-P-S', '#ff9f43'));
             grid.appendChild(createCategoryHeader(isR?'Тема интерфейса':'UI Theme', '#fff', true));
-            appendItems(grid, shopItems.gameStyles.filter(i => i.id.startsWith('style_rps')), coins, crystals, lang);
+            appendItems(grid, shopItems.gameStyles.filter(i => i.id.startsWith('style_rps')), balanceCoins, balanceCrystals, lang);
         }
     }
 
-    function renderBackgroundsTab(grid, coins, crystals, lang) {
+    function renderBackgroundsTab(grid, balanceCoins, balanceCrystals, lang) {
         grid.appendChild(createCategoryHeader(lang === 'ru' ? 'Глобальные Фоны' : 'Global Backgrounds', 'var(--magic-color)'));
-        appendItems(grid, shopItems.backgrounds, coins, crystals, lang);
+        appendItems(grid, shopItems.backgrounds, balanceCoins, balanceCrystals, lang);
     }
     
     function getTooltipHTML(itemName, descObj, lang) {
-        if (!descObj) return ''; 
-        const descText = descObj[lang] || descObj.ru;
+        // Твоя оригинальная, надежная система проверки языков
+        const ruDesc = (descObj && typeof descObj === 'object') ? (descObj.ru || '') : (descObj || '');
+        const enDesc = (descObj && typeof descObj === 'object') ? (descObj.en || '') : (descObj || '');
+        if (!ruDesc && !enDesc) return '';
+
+        // Железобетонное экранирование ВСЕХ кавычек (одинарных и двойных)
+        const safeTitle = itemName.replace(/'/g, "&#39;").replace(/"/g, "&quot;");
+        const safeRu = ruDesc.replace(/'/g, "&#39;").replace(/"/g, "&quot;").replace(/\n/g, "<br>");
+        const safeEn = enDesc.replace(/'/g, "&#39;").replace(/"/g, "&quot;").replace(/\n/g, "<br>");
+
+        // Выбираем нужный язык для отрисовки
+        const displayDesc = lang === 'en' ? (safeEn || safeRu) : (safeRu || safeEn);
+
+        // ВНИМАНИЕ: Возвращен твой HTML с новым классом .shop-tooltip-new
         return `
-            <div class="info-icon-btn" style="position: absolute; top: 4px; left: 4px; z-index: 20;" onclick="event.stopPropagation(); const tt = this.nextElementSibling; const isVis = tt.style.opacity === '1'; document.querySelectorAll('.shop-tt').forEach(el => el.style.opacity = '0'); if(!isVis) { tt.style.opacity = '1'; tt.style.left = '15px'; tt.style.right = 'auto'; if(tt.getBoundingClientRect().right > window.innerWidth - 10) { tt.style.left = 'auto'; tt.style.right = '10px'; } }">
+            <div class="info-icon-btn" style="position: absolute; top: 4px; left: 4px; z-index: 20;" onclick="event.stopPropagation(); const tt = this.nextElementSibling; const isVis = tt.style.opacity === '1'; document.querySelectorAll('.shop-tooltip-new').forEach(el => el.style.opacity = '0'); if(!isVis) { tt.style.opacity = '1'; tt.style.left = '15px'; tt.style.right = 'auto'; if(tt.getBoundingClientRect().right > window.innerWidth - 10) { tt.style.left = 'auto'; tt.style.right = '10px'; } }">
                 <div style="background: rgba(255,249,174,0.1); border: 1px solid var(--sun-gold); color: var(--sun-gold); border-radius: 4px; width: 14px; height: 14px; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: bold; cursor: pointer; box-shadow: 0 0 5px rgba(255,249,174,0.3);">?</div>
             </div>
-            <div class="shop-tt" style="position: absolute; top: 25px; left: 15px; background: rgba(5, 8, 15, 0.98); border: 1px solid var(--sun-gold); padding: 8px 10px; border-radius: 8px; color: white; font-size: 10px; width: 150px; opacity: 0; pointer-events: none; transition: opacity 0.2s; z-index: 9999; box-shadow: 0 0 15px rgba(255, 249, 174, 0.3); text-align: left; text-transform: none; font-weight: normal; line-height: 1.3;">
-                <div style="color: var(--sun-gold); font-weight: bold; margin-bottom: 5px; text-transform: uppercase; font-size: 10px;">${itemName}</div>
-                ${descText}
+            <div class="shop-tooltip-new" style="position: absolute; top: 25px; left: 15px; background: rgba(5, 8, 15, 0.98); border: 1px solid var(--sun-gold); padding: 8px 10px; border-radius: 8px; color: white; font-size: 10px; width: 150px; opacity: 0; pointer-events: none; transition: opacity 0.2s; z-index: 9999; box-shadow: 0 0 15px rgba(255, 249, 174, 0.3); text-align: left; text-transform: none; font-weight: normal; line-height: 1.3;">
+                <div style="color: var(--sun-gold); font-weight: bold; margin-bottom: 5px; text-transform: uppercase; font-size: 10px;">${safeTitle}</div>
+                ${displayDesc}
             </div>
         `;
     }
@@ -4814,12 +4974,12 @@ const ShopGame = (function() {
         
         if (isSub) {
             h.style.fontSize = '9px';
-            h.style.marginTop = '6px'; /* Срезали воздух перед подзаголовком */
+            h.style.marginTop = '6px';
             h.style.marginBottom = '2px';
             h.style.opacity = '0.6';
         } else {
             h.style.fontSize = '12px'; 
-            h.style.marginTop = '10px'; /* Срезали гигантский отступ перед главным блоком */
+            h.style.marginTop = '10px';
             h.style.marginBottom = '6px';
             h.style.borderBottom = `1px solid ${color}`;
             h.style.paddingBottom = '4px';
@@ -4834,6 +4994,9 @@ const ShopGame = (function() {
         const p = GameState.activeProfileIdx !== -1 ? GameState.profiles[GameState.activeProfileIdx] : null;
         const inv = p ? (p.inventory || []) : [];
 
+        const realCoinsNum = p ? (parseFloat(getPlayerCoins(p)) || 0) : 0;
+        const realCrystNum = p ? (parseInt(p.crystals) || 0) : 0;
+
         items.forEach(item => {
             const isBought = (item.isConsumable || item.isStackable) ? false : inv.includes(item.id);
             const card = document.createElement('div');
@@ -4841,8 +5004,12 @@ const ShopGame = (function() {
             card.className = 'shop-item-card ' + (isBought ? 'unlocked' : 'locked');
             card.style.cursor = isBought ? 'default' : 'pointer';
             
-            const canAffordCoins = balanceCoins >= item.priceCoins;
-            const canAffordCrystals = balanceCrystals >= item.priceCrystals;
+            const priceCoinsNum = parseFloat(item.priceCoins) || 0;
+            const priceCrystNum = parseInt(item.priceCrystals) || 0;
+
+            const canAffordCoins = realCoinsNum >= priceCoinsNum;
+            const canAffordCrystals = realCrystNum >= priceCrystNum;
+            const canAffordBoth = (priceCoinsNum === 0 || canAffordCoins) && (priceCrystNum === 0 || canAffordCrystals);
             
             let priceSection = '';
             if (isBought) {
@@ -4850,17 +5017,23 @@ const ShopGame = (function() {
                 priceSection = `<div class="shop-price-badge" style="color: var(--friendly-green); border-color: rgba(204, 255, 204, 0.2);">${boughtTxt}</div>`;
             } else {
                 let priceInnerHTML = '';
-                if (item.priceCoins > 0 && item.priceCrystals > 0) {
-                    priceInnerHTML = `<div style="color: ${canAffordCoins ? 'var(--friendly-green)' : 'var(--angry-red)'}; display: flex; align-items: center; gap: 2px;"><i class="fas fa-dollar-sign"></i>${item.priceCoins}</div><div style="color: rgba(255,255,255,0.2);">|</div><div style="color: ${canAffordCrystals ? 'var(--magic-color)' : 'var(--angry-red)'}; display: flex; align-items: center; gap: 2px;"><i class="fas fa-gem"></i>${item.priceCrystals}</div>`;
-                } else if (item.priceCrystals > 0) {
-                    priceInnerHTML = `<div style="color: ${canAffordCrystals ? 'var(--magic-color)' : 'var(--angry-red)'}; display: flex; align-items: center; gap: 2px;"><i class="fas fa-gem"></i>${item.priceCrystals}</div>`;
-                } else if (item.priceCoins > 0) {
-                    priceInnerHTML = `<div style="color: ${canAffordCoins ? 'var(--friendly-green)' : 'var(--angry-red)'}; display: flex; align-items: center; gap: 2px;"><i class="fas fa-dollar-sign"></i>${item.priceCoins}</div>`;
+                
+                const colCoins = canAffordCoins ? 'var(--friendly-green)' : 'var(--angry-red)';
+                const colCryst = canAffordCrystals ? 'var(--magic-color)' : 'var(--angry-red)';
+
+                if (priceCoinsNum > 0 && priceCrystNum > 0) {
+                    priceInnerHTML = `<div style="color: ${colCoins} !important; display: flex; align-items: center; gap: 2px;"><i class="fas fa-dollar-sign"></i>${priceCoinsNum}</div><div style="color: rgba(255,255,255,0.2);">|</div><div style="color: ${colCryst} !important; display: flex; align-items: center; gap: 2px;"><i class="fas fa-gem"></i>${priceCrystNum}</div>`;
+                } else if (priceCrystNum > 0) {
+                    priceInnerHTML = `<div style="color: ${colCryst} !important; display: flex; align-items: center; gap: 2px;"><i class="fas fa-gem"></i>${priceCrystNum}</div>`;
+                } else if (priceCoinsNum > 0) {
+                    priceInnerHTML = `<div style="color: ${colCoins} !important; display: flex; align-items: center; gap: 2px;"><i class="fas fa-dollar-sign"></i>${priceCoinsNum}</div>`;
                 } else {
                     const freeTxt = lang === 'ru' ? 'БЕСПЛАТНО' : 'FREE';
-                    priceInnerHTML = `<div style="color: var(--friendly-green);">${freeTxt}</div>`;
+                    priceInnerHTML = `<div style="color: var(--friendly-green) !important;">${freeTxt}</div>`;
                 }
-                priceSection = `<div class="shop-price-badge">${priceInnerHTML}</div>`;
+                
+                const badgeStyle = canAffordBoth ? '' : 'opacity: 0.4 !important; filter: grayscale(1) !important;';
+                priceSection = `<div class="shop-price-badge" style="${badgeStyle}">${priceInnerHTML}</div>`;
             }
 
             const itemName = item.name[lang] || item.name.ru || item.name;
@@ -4875,22 +5048,23 @@ const ShopGame = (function() {
             
             if (!isBought) {
                 card.onclick = () => {
-                    if (typeof App !== 'undefined' && App.playSoundEffect) App.playSoundEffect('click');
-                    if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.HapticFeedback) window.Telegram.WebApp.HapticFeedback.impactOccurred('medium');
+                    const curCoinsNum = parseFloat(getPlayerCoins(p)) || 0;
+                    const curCrystNum = parseInt(p.crystals) || 0;
                     
-                    const curCoins = getPlayerCoins(p);
-                    const curCryst = p.crystals || 0;
-                    
-                    if (curCoins < item.priceCoins || curCryst < item.priceCrystals) {
+                    if (curCoinsNum < priceCoinsNum || curCrystNum < priceCrystNum) {
+                        if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.HapticFeedback) window.Telegram.WebApp.HapticFeedback.notificationOccurred('error');
                         const errTxt = lang === 'ru' ? 'Недостаточно средств!' : 'Not enough funds!';
                         if (typeof App !== 'undefined' && App.showError) App.showError(errTxt);
                         return; 
                     }
 
-                    if (item.priceCoins > 0) deductPlayerCoins(p, item.priceCoins);
-                    if (item.priceCrystals > 0) {
+                    if (typeof App !== 'undefined' && App.playSoundEffect) App.playSoundEffect('click');
+                    if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.HapticFeedback) window.Telegram.WebApp.HapticFeedback.impactOccurred('medium');
+
+                    if (priceCoinsNum > 0) deductPlayerCoins(p, priceCoinsNum);
+                    if (priceCrystNum > 0) {
                         if (!p.crystals) p.crystals = 0;
-                        p.crystals -= item.priceCrystals;
+                        p.crystals -= priceCrystNum;
                     }
                     
                     if (item.isConsumable) {
@@ -4911,9 +5085,9 @@ const ShopGame = (function() {
                     const freeTxtLog = lang === 'ru' ? "Бесплатно" : "Free";
                     
                     let logPriceStr = '';
-                    if (item.priceCoins > 0 && item.priceCrystals > 0) logPriceStr = `- $${item.priceCoins.toFixed(2)} | - ${item.priceCrystals} 💎`;
-                    else if (item.priceCrystals > 0) logPriceStr = `- ${item.priceCrystals} 💎`;
-                    else if (item.priceCoins > 0) logPriceStr = `- $${item.priceCoins.toFixed(2)}`;
+                    if (priceCoinsNum > 0 && priceCrystNum > 0) logPriceStr = `- $${priceCoinsNum.toFixed(2)} | - ${priceCrystNum} 💎`;
+                    else if (priceCrystNum > 0) logPriceStr = `- ${priceCrystNum} 💎`;
+                    else if (priceCoinsNum > 0) logPriceStr = `- $${priceCoinsNum.toFixed(2)}`;
                     else logPriceStr = freeTxtLog;
 
                     const itemHTML = `
@@ -4928,7 +5102,7 @@ const ShopGame = (function() {
 
                     if (typeof App !== 'undefined' && App.requestProfileSave) App.requestProfileSave();
                     if (typeof App !== 'undefined' && App.updateHistoryView) App.updateHistoryView();
-                    updateTopUI(); 
+                    if (typeof updateTopUI === 'function') updateTopUI(); 
                     renderShop();
 
                     if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.HapticFeedback) window.Telegram.WebApp.HapticFeedback.notificationOccurred('success');
@@ -4940,142 +5114,136 @@ const ShopGame = (function() {
     }
 
     function renderInventoryList(skipAnimation = false) {
-    const list = document.getElementById('inventoryList');
-    if (!list) return;
+        const list = document.getElementById('inventoryList');
+        if (!list) return;
 
-    const p = GameState.activeProfileIdx !== -1 ? GameState.profiles[GameState.activeProfileIdx] : null;
-    const inv = p ? (p.inventory || []) : [];
-    const equipped = p ? (p.equipped || {}) : {};
-    const lang = GameState.lang || 'ru';
-    
-    // 1. Полная очистка
-    list.innerHTML = '';
-    
-    if (inv.length === 0) {
-        const emptyTxt = lang === 'ru' ? 'Инвентарь пуст' : 'Inventory is empty';
-        list.innerHTML = `<div style="color:rgba(255,255,255,0.4); text-align:center; padding: 20px;">${emptyTxt}</div>`;
-        return;
-    }
-
-    // Вспомогательная функция для разметки категорий
-    const mapItems = (arr, cat, subRu, subEn) => arr.map(i => ({ ...i, _cat: cat, _subRu: subRu, _subEn: subEn }));
-    
-    const rouletteSVG = `<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10" stroke-width="2"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="5.5" r="2.5"/><circle cx="12" cy="5.5" r="1.2" fill="currentColor" stroke="none"/><circle cx="17.6" cy="8.8" r="2.5"/><circle cx="17.6" cy="15.2" r="2.5"/><circle cx="12" cy="18.5" r="2.5"/><circle cx="6.4" cy="15.2" r="2.5"/><circle cx="6.4" cy="8.8" r="2.5"/></svg>`;
-    const coinSVG = `<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 6.5l5.5 5.5-5.5 5.5-5.5-5.5z"/><circle cx="12" cy="12" r="2" fill="currentColor" stroke="none"/></svg>`;
-
-    const categories = [
-        { 
-            key: 'boosters', icon: '<i class="fas fa-bolt"></i>', title: { ru: 'Бустеры', en: 'Boosters' }, color: 'var(--angry-red)', 
-            items: [ 
-                ...mapItems(shopItems.perks.filter(i => i.id.startsWith('perk_x2_')), 'perks', 'Бустеры Ставок', 'Bet Boosters'),
-                ...mapItems(shopItems.perks.filter(i => i.id === 'perk_gyro_stars' || i.id.startsWith('perk_crt_')), 'perks', 'Глобальные Эффекты', 'Global Effects')
-            ] 
-        },
-        { key: 'dice', icon: '<i class="fas fa-cube"></i>', title: { ru: 'Кость Истины', en: 'Dice of Fate' }, color: 'var(--magic-color)', items: [ ...mapItems(shopItems.gameStyles.filter(i=>i.id.startsWith('style_dice')), 'gameStyles', 'Тема интерфейса', 'UI Theme'), ...mapItems(shopItems.diceModes, 'diceModes', 'Облик кости', 'Dice Faces'), ...mapItems(shopItems.perks.filter(i => i.id === 'perk_sparkle_dice'), 'perks', 'Дополнительные функции', 'Extra Features') ] },
-        { key: 'roulette', icon: rouletteSVG, title: { ru: 'Роковая Пуля', en: 'Fatal Bullet' }, color: 'var(--angry-red)', items: [ ...mapItems(shopItems.gameStyles.filter(i => i.id.startsWith('roulette_drum_')), 'gameStyles', 'Барабаны', 'Drums'), ...mapItems(shopItems.gameStyles.filter(i => i.id.startsWith('roulette_bullet_')), 'gameStyles', 'Пули', 'Bullets') ] },
-        { key: 'coin', icon: coinSVG, title: { ru: 'Грань Выбора', en: 'Edge of Choice' }, color: 'var(--sun-gold)', items: [ ...mapItems(shopItems.gameStyles.filter(i=>i.id.startsWith('style_coin')), 'gameStyles', 'Облик монеты', 'Coin Styles'), ...mapItems(shopItems.perks.filter(i => i.id === 'perk_sparkle_coin'), 'perks', 'Дополнительные функции', 'Extra Features') ] },
-        { key: 'flower', icon: '<i class="fas fa-seedling"></i>', title: { ru: 'Цветок оракула', en: 'The Oracle flower' }, color: 'var(--friendly-green)', items: [ ...mapItems(shopItems.gameStyles.filter(i=>i.id.startsWith('style_flower')), 'gameStyles', 'Тема интерфейса', 'UI Theme'), ...mapItems(shopItems.flowerCores, 'flowerCores', 'Облик сердцевины', 'Core Styles'), ...mapItems(shopItems.flowerPetals, 'flowerPetals', 'Цвет лепестков', 'Petal Colors') ] },
-        { key: 'lots', icon: '<i class="fas fa-pause"></i>', title: { ru: 'Нить Жребия', en: 'The Threads of Fate' }, color: '#00d2d3', items: [ ...mapItems(shopItems.gameStyles.filter(i=>i.id.startsWith('style_lots')), 'gameStyles', 'Тема интерфейса', 'UI Theme'), ...mapItems(shopItems.lotsBoxes, 'lotsBoxes', 'Облик коробки', 'Box Styles'), ...mapItems(shopItems.lotsSticks, 'lotsSticks', 'Вид палочек', 'Stick Styles') ] },
-        { key: 'rps', icon: '<i class="fas fa-hand-rock"></i>', title: { ru: 'К-Н-Б', en: 'R-P-S' }, color: '#ff9f43', items: mapItems(shopItems.gameStyles.filter(i=>i.id.startsWith('style_rps')), 'gameStyles', 'Тема интерфейса', 'UI Theme') },
-        { key: 'backgrounds', icon: '<i class="fas fa-image"></i>', title: { ru: 'Глобальные Фоны', en: 'Global Backgrounds' }, color: 'var(--magic-color)', items: mapItems(shopItems.backgrounds, 'backgrounds', '', '') }
-    ];
-
-    categories.forEach(cat => cat.ownedItems = cat.items.filter(item => inv.includes(item.id)));
-
-    let activeTabKey = list.dataset.activeTab;
-    let activeCat = categories.find(c => c.key === activeTabKey && c.ownedItems.length > 0) || categories.find(c => c.ownedItems.length > 0);
-    if (activeCat) list.dataset.activeTab = activeCat.key;
-
-    // 2. Рендерим панель вкладок
-    const staticBlock = document.createElement('div');
-    staticBlock.className = 'shop-tabs-container';
-    
-    const tabBar = document.createElement('div');
-    tabBar.style.cssText = 'display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 10px;';
-
-    categories.forEach(cat => {
-        const btn = document.createElement('div');
-        const isActive = cat.key === list.dataset.activeTab;
-        const hasItems = cat.ownedItems.length > 0;
+        const p = GameState.activeProfileIdx !== -1 ? GameState.profiles[GameState.activeProfileIdx] : null;
+        const inv = p ? (p.inventory || []) : [];
+        const equipped = p ? (p.equipped || {}) : {};
+        const lang = GameState.lang || 'ru';
         
-        btn.style.cssText = `
-            padding: 12px 0; background: ${isActive ? 'rgba(255,255,255,0.15)' : 'rgba(5,8,15,0.8)'};
-            border: 1px solid ${isActive ? cat.color : 'rgba(255,255,255,0.15)'}; border-radius: 8px;
-            display: flex; justify-content: center; align-items: center; font-size: 22px;
-            cursor: ${hasItems ? 'pointer' : 'default'}; opacity: ${hasItems ? (isActive ? '1' : '0.85') : '0.15'};
-            filter: ${hasItems ? (isActive ? `drop-shadow(0 0 12px ${cat.color})` : 'none') : 'grayscale(1)'};
-            transform: ${isActive ? 'scale(1.05)' : 'scale(1)'}; transition: all 0.3s ease;
-        `;
-        btn.innerHTML = cat.icon;
-
-        if (hasItems && !isActive) {
-            btn.onclick = () => {
-                if (typeof App !== 'undefined' && App.playSoundEffect) App.playSoundEffect('tick');
-                list.dataset.activeTab = cat.key;
-                renderInventoryList(false); 
-            };
+        list.innerHTML = '';
+        
+        if (inv.length === 0) {
+            const emptyTxt = lang === 'ru' ? 'Инвентарь пуст' : 'Inventory is empty';
+            list.innerHTML = `<div style="color:rgba(255,255,255,0.4); text-align:center; padding: 20px;">${emptyTxt}</div>`;
+            return;
         }
-        tabBar.appendChild(btn);
-    });
 
-    staticBlock.appendChild(tabBar);
-    list.appendChild(staticBlock);
-
-    // 3. Рендерим содержимое вкладки
-    if (activeCat) {
-        const scrollContainer = document.createElement('div');
-        scrollContainer.className = 'inv-scroll-container';
-        // Убираем inline-стили, оставляем работу на CSS
+        const mapItems = (arr, cat, subRu, subEn) => arr.map(i => ({ ...i, _cat: cat, _subRu: subRu, _subEn: subEn }));
         
-        scrollContainer.appendChild(createCategoryHeader(activeCat.title[lang] || activeCat.title.ru, activeCat.color));
+        const rouletteSVG = `<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10" stroke-width="2"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="5.5" r="2.5"/><circle cx="12" cy="5.5" r="1.2" fill="currentColor" stroke="none"/><circle cx="17.6" cy="8.8" r="2.5"/><circle cx="17.6" cy="15.2" r="2.5"/><circle cx="12" cy="18.5" r="2.5"/><circle cx="6.4" cy="15.2" r="2.5"/><circle cx="6.4" cy="8.8" r="2.5"/></svg>`;
+        const coinSVG = `<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 6.5l5.5 5.5-5.5 5.5-5.5-5.5z"/><circle cx="12" cy="12" r="2" fill="currentColor" stroke="none"/></svg>`;
 
-        const groups = {};
-        activeCat.ownedItems.forEach(item => {
-            const subLabel = lang === 'ru' ? item._subRu : item._subEn;
-            if (!groups[subLabel]) groups[subLabel] = [];
-            groups[subLabel].push(item);
-        });
+        const categories = [
+            { 
+                key: 'boosters', icon: '<i class="fas fa-bolt"></i>', title: { ru: 'Бустеры', en: 'Boosters' }, color: 'var(--angry-red)', 
+                items: [ 
+                    ...mapItems(shopItems.perks.filter(i => i.id.startsWith('perk_x2_')), 'perks', 'Бустеры Ставок', 'Bet Boosters'),
+                    ...mapItems(shopItems.perks.filter(i => i.id === 'perk_gyro_stars' || i.id.startsWith('perk_crt_')), 'perks', 'Глобальные Эффекты', 'Global Effects')
+                ] 
+            },
+            { key: 'dice', icon: '<i class="fas fa-cube"></i>', title: { ru: 'Кость Истины', en: 'Dice of Fate' }, color: 'var(--magic-color)', items: [ ...mapItems(shopItems.gameStyles.filter(i=>i.id.startsWith('style_dice')), 'gameStyles', 'Тема интерфейса', 'UI Theme'), ...mapItems(shopItems.diceModes, 'diceModes', 'Облик кости', 'Dice Faces'), ...mapItems(shopItems.perks.filter(i => i.id === 'perk_sparkle_dice'), 'perks', 'Дополнительные функции', 'Extra Features') ] },
+            { key: 'roulette', icon: rouletteSVG, title: { ru: 'Роковая Пуля', en: 'Fatal Bullet' }, color: 'var(--angry-red)', items: [ ...mapItems(shopItems.gameStyles.filter(i => i.id.startsWith('roulette_drum_')), 'gameStyles', 'Барабаны', 'Drums'), ...mapItems(shopItems.gameStyles.filter(i => i.id.startsWith('roulette_bullet_')), 'gameStyles', 'Пули', 'Bullets') ] },
+            { key: 'coin', icon: coinSVG, title: { ru: 'Грань Выбора', en: 'Edge of Choice' }, color: 'var(--sun-gold)', items: [ ...mapItems(shopItems.gameStyles.filter(i=>i.id.startsWith('style_coin')), 'gameStyles', 'Облик монеты', 'Coin Styles'), ...mapItems(shopItems.perks.filter(i => i.id === 'perk_sparkle_coin'), 'perks', 'Дополнительные функции', 'Extra Features') ] },
+            { key: 'flower', icon: '<i class="fas fa-seedling"></i>', title: { ru: 'Цветок оракула', en: 'The Oracle flower' }, color: 'var(--friendly-green)', items: [ ...mapItems(shopItems.gameStyles.filter(i=>i.id.startsWith('style_flower')), 'gameStyles', 'Тема интерфейса', 'UI Theme'), ...mapItems(shopItems.flowerCores, 'flowerCores', 'Облик сердцевины', 'Core Styles'), ...mapItems(shopItems.flowerPetals, 'flowerPetals', 'Цвет лепестков', 'Petal Colors') ] },
+            { key: 'lots', icon: '<i class="fas fa-pause"></i>', title: { ru: 'Нить Жребия', en: 'The Threads of Fate' }, color: '#00d2d3', items: [ ...mapItems(shopItems.gameStyles.filter(i=>i.id.startsWith('style_lots')), 'gameStyles', 'Тема интерфейса', 'UI Theme'), ...mapItems(shopItems.lotsBoxes, 'lotsBoxes', 'Облик коробки', 'Box Styles'), ...mapItems(shopItems.lotsSticks, 'lotsSticks', 'Вид палочек', 'Stick Styles') ] },
+            { key: 'rps', icon: '<i class="fas fa-hand-rock"></i>', title: { ru: 'К-Н-Б', en: 'R-P-S' }, color: '#ff9f43', items: mapItems(shopItems.gameStyles.filter(i=>i.id.startsWith('style_rps')), 'gameStyles', 'Тема интерфейса', 'UI Theme') },
+            { key: 'backgrounds', icon: '<i class="fas fa-image"></i>', title: { ru: 'Глобальные Фоны', en: 'Global Backgrounds' }, color: 'var(--magic-color)', items: mapItems(shopItems.backgrounds, 'backgrounds', '', '') }
+        ];
 
-        Object.keys(groups).forEach(subLabel => {
-            if (subLabel) scrollContainer.appendChild(createCategoryHeader(subLabel, '#ffffff', true));
+        categories.forEach(cat => cat.ownedItems = cat.items.filter(item => inv.includes(item.id)));
+
+        let activeTabKey = list.dataset.activeTab;
+        let activeCat = categories.find(c => c.key === activeTabKey && c.ownedItems.length > 0) || categories.find(c => c.ownedItems.length > 0);
+        if (activeCat) list.dataset.activeTab = activeCat.key;
+
+        const staticBlock = document.createElement('div');
+        staticBlock.className = 'shop-tabs-container';
+        
+        const tabBar = document.createElement('div');
+        tabBar.style.cssText = 'display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 10px;';
+
+        categories.forEach(cat => {
+            const btn = document.createElement('div');
+            const isActive = cat.key === list.dataset.activeTab;
+            const hasItems = cat.ownedItems.length > 0;
             
-            const grid = document.createElement('div');
-            grid.className = 'shop-grid-container';
-            
-            groups[subLabel].forEach(item => {
-                let isEquipped = (item._cat === 'gameStyles' || item._cat === 'perks') 
-                    ? !!equipped[item.id] 
-                    : equipped[item._cat] === item.id;
+            btn.style.cssText = `
+                padding: 12px 0; background: ${isActive ? 'rgba(255,255,255,0.15)' : 'rgba(5,8,15,0.8)'};
+                border: 1px solid ${isActive ? cat.color : 'rgba(255,255,255,0.15)'}; border-radius: 8px;
+                display: flex; justify-content: center; align-items: center; font-size: 22px;
+                cursor: ${hasItems ? 'pointer' : 'default'}; opacity: ${hasItems ? (isActive ? '1' : '0.85') : '0.15'};
+                filter: ${hasItems ? (isActive ? `drop-shadow(0 0 12px ${cat.color})` : 'none') : 'grayscale(1)'};
+                transform: ${isActive ? 'scale(1.05)' : 'scale(1)'}; transition: all 0.3s ease;
+            `;
+            btn.innerHTML = cat.icon;
 
-                const card = document.createElement('div');
-                card.className = isEquipped ? 'inv-card active' : 'inv-card';
-                
-                const itemName = item.name[lang] || item.name.ru;
-                const badgeHTML = item.isStackable ? `<div style="position: absolute; top: -2px; right: 4px; color: var(--friendly-green); font-weight: 900; font-size: 12px;">${inv.filter(id => id === item.id).length}</div>` : '';
-
-                card.innerHTML = `
-                    ${badgeHTML}
-                    <div class="smart-info-wrap">
-                    ${typeof getTooltipHTML === 'function' ? getTooltipHTML(itemName, item.desc, lang) : ''}
-                    </div>
-                    <div class="shop-item-icon">${item.icon}</div>
-                    <div class="shop-item-title">${itemName}</div>
-                    <div class="shop-price-badge" style="color:${isEquipped ? 'var(--friendly-green)' : '#aaa'}">
-                        ${isEquipped ? (lang === 'ru' ? 'АКТИВНО' : 'ACTIVE') : (lang === 'ru' ? 'НАДЕТЬ' : 'EQUIP')}
-                    </div>
-                `;
-                
-                card.onclick = (e) => {
-                    e.stopPropagation();
-                    if (typeof equipItem === 'function') equipItem(item._cat, item.id);
+            if (hasItems && !isActive) {
+                btn.onclick = () => {
+                    if (typeof App !== 'undefined' && App.playSoundEffect) App.playSoundEffect('tick');
+                    list.dataset.activeTab = cat.key;
+                    renderInventoryList(false); 
                 };
-                grid.appendChild(card);
-            });
-            scrollContainer.appendChild(grid);
+            }
+            tabBar.appendChild(btn);
         });
-        list.appendChild(scrollContainer);
+
+        staticBlock.appendChild(tabBar);
+        list.appendChild(staticBlock);
+
+        if (activeCat) {
+            const scrollContainer = document.createElement('div');
+            scrollContainer.className = 'inv-scroll-container';
+            
+            scrollContainer.appendChild(createCategoryHeader(activeCat.title[lang] || activeCat.title.ru, activeCat.color));
+
+            const groups = {};
+            activeCat.ownedItems.forEach(item => {
+                const subLabel = lang === 'ru' ? item._subRu : item._subEn;
+                if (!groups[subLabel]) groups[subLabel] = [];
+                groups[subLabel].push(item);
+            });
+
+            Object.keys(groups).forEach(subLabel => {
+                if (subLabel) scrollContainer.appendChild(createCategoryHeader(subLabel, '#ffffff', true));
+                
+                const grid = document.createElement('div');
+                grid.className = 'shop-grid-container';
+                
+                groups[subLabel].forEach(item => {
+                    let isEquipped = (item._cat === 'gameStyles' || item._cat === 'perks') 
+                        ? !!equipped[item.id] 
+                        : equipped[item._cat] === item.id;
+
+                    const card = document.createElement('div');
+                    card.className = isEquipped ? 'inv-card active' : 'inv-card';
+                    
+                    const itemName = item.name[lang] || item.name.ru;
+                    const badgeHTML = item.isStackable ? `<div style="position: absolute; top: -2px; right: 4px; color: var(--friendly-green); font-weight: 900; font-size: 12px; z-index: 10;">${inv.filter(id => id === item.id).length}</div>` : '';
+
+                    // Вызываем подсказку напрямую, без сломанного div class="smart-info-wrap"
+                    card.innerHTML = `
+                        ${badgeHTML}
+                        ${typeof getTooltipHTML === 'function' ? getTooltipHTML(itemName, item.desc, lang) : ''}
+                        <div class="shop-item-icon" style="position: relative; z-index: 1;">${item.icon}</div>
+                        <div class="shop-item-title" style="position: relative; z-index: 1;">${itemName}</div>
+                        <div class="shop-price-badge" style="color:${isEquipped ? 'var(--friendly-green)' : '#aaa'}; position: relative; z-index: 1;">
+                            ${isEquipped ? (lang === 'ru' ? 'АКТИВНО' : 'ACTIVE') : (lang === 'ru' ? 'НАДЕТЬ' : 'EQUIP')}
+                        </div>
+                    `;
+                    
+                    card.onclick = (e) => {
+                        e.stopPropagation();
+                        if (typeof equipItem === 'function') equipItem(item._cat, item.id);
+                    };
+                    grid.appendChild(card);
+                });
+                scrollContainer.appendChild(grid);
+            });
+            list.appendChild(scrollContainer);
+        }
     }
-}
 
     function toggleInventory(show) {
         const inv = document.getElementById('inventoryOverlay');
@@ -5270,12 +5438,9 @@ const ShopGame = (function() {
             }
         }, 300);
 
-        // 🛠️ КОРНЕВОЙ ФИКС 1.3: Закрытие тултипов ПРИ ЛЮБОМ ТАПЕ (кроме кнопки вызова)
         document.addEventListener('click', (e) => {
-            // Если мы нажали НЕ на кнопку вызова (?)
             if (!e.target.closest('.info-icon-btn') && !e.target.closest('.info-mode-btn')) {
                 document.querySelectorAll('.shop-tt').forEach(el => {
-                    // Закрываем окно полностью, обнуляя все свойства
                     el.style.display = 'none';
                     el.style.opacity = '0';
                     el.style.pointerEvents = 'none';
@@ -5288,20 +5453,20 @@ const ShopGame = (function() {
         init, mount, unmount, toggleInventory, renderShop, applyAllEquippedVisuals, consumePerk,
         getTotalItems: () => Object.values(shopItems).reduce((sum, arr) => sum + (Array.isArray(arr) ? arr.length : 0), 0)
     };
-	
+    
 })();
 
 const invModal = document.getElementById('inventoryOverlay');
 if (invModal) {
-    document.body.appendChild(invModal);
-    invModal.style.zIndex = '9999';
-    invModal.addEventListener('click', function(e) { if (e.target === this) ShopGame.toggleInventory(false); });
+    document.body.appendChild(invModal);
+    invModal.style.zIndex = '9999';
+    invModal.addEventListener('click', function(e) { if (e.target === this && typeof ShopGame !== 'undefined') ShopGame.toggleInventory(false); });
 }
 
 const rulesModal = document.getElementById('rulesOverlay');
 if (rulesModal) {
-    document.body.appendChild(rulesModal);
-    rulesModal.style.zIndex = '9999';
+    document.body.appendChild(rulesModal);
+    rulesModal.style.zIndex = '9999';
 }
 // --- КОНЕЦ ЧЕТВЕРТОЙ ЧАСТИ ---
 // --- НАЧАЛО ПЯТОЙ ЧАСТИ --- Плагин 1 (Кость истины).
@@ -11160,70 +11325,75 @@ const Achievements = (function() {
 // Инициализация модальных окон после загрузки всего HTML
 window.addEventListener('DOMContentLoaded', () => {
 // =======================================================
-    // 🔮 ГЛОБАЛЬНАЯ СИСТЕМА УМНЫХ ПОДСКАЗОК И ЛОР ОРАКУЛА
-    // =======================================================
-    window.showStatInfo = function(e, ruText, enText) {
-        e.stopPropagation(); 
-        
-        const lang = GameState.lang || 'ru';
-        const text = lang === 'ru' ? ruText : enText;
-
-        let tt = document.getElementById('global-stat-tt');
-        if (!tt) {
-            tt = document.createElement('div');
-            tt.id = 'global-stat-tt';
-            tt.style.cssText = 'position: fixed; left: 50%; transform: translateX(-50%) scale(0.8); background: rgba(5, 8, 15, 0.98); border: 1px solid var(--magic-color); padding: 14px 20px; border-radius: 14px; color: #fff; font-size: 13px; font-weight: normal; text-align: center; z-index: 100000; opacity: 0; transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); pointer-events: none; box-shadow: 0 10px 25px rgba(0,0,0,0.9), 0 0 15px rgba(162, 155, 254, 0.4); white-space: normal; max-width: 280px; line-height: 1.5; cursor: pointer;';
-            document.body.appendChild(tt);
-
-            // Закрытие по клику в молоко
-            document.addEventListener('click', (event) => {
-                if (tt.style.opacity === '1' && event.target !== tt && !tt.contains(event.target)) {
-                    tt.style.opacity = '0';
-                    tt.style.transform = 'translateX(-50%) scale(0.9)';
-                    tt.style.pointerEvents = 'none';
-                    window.currentTooltipText = null; // Очищаем память
-                }
-            });
-            
-            // Закрытие по самой подсказке
-            tt.addEventListener('click', (event) => {
-                event.stopPropagation();
-                tt.style.opacity = '0';
-                tt.style.transform = 'translateX(-50%) scale(0.9)';
-                tt.style.pointerEvents = 'none';
-                window.currentTooltipText = null; // Очищаем память
-            });
+// 🔮 ГЛОБАЛЬНАЯ СИСТЕМА УМНЫХ ПОДСКАЗОК И ЛОР ОРАКУЛА
+// =======================================================
+window.showStatInfo = function(e, arg1, arg2, arg3) {
+    if (e) { e.preventDefault(); e.stopPropagation(); }
+    
+    let title = '', ruText = '', enText = '';
+    // Умное определение, откуда вызвали (Магазин или Главное меню)
+    if (arg3 !== undefined) {
+        title = arg1; ruText = arg2; enText = arg3;
+    } else {
+        title = "ИГРЫ СУДЬБЫ"; ruText = arg1; enText = arg2;
+    }
+    
+    const lang = (typeof GameState !== 'undefined' && GameState.lang) ? GameState.lang : 'ru';
+    const desc = lang === 'ru' ? ruText : enText;
+    
+    // 1. Создаем или находим единый безопасный контейнер
+    let tooltip = document.getElementById('globalSmartTooltip');
+    if (!tooltip) {
+        tooltip = document.createElement('div');
+        tooltip.id = 'globalSmartTooltip';
+        tooltip.style.cssText = 'position: fixed; background: rgba(5, 8, 15, 0.95); border: 1px solid var(--magic-color); padding: 12px; border-radius: 12px; color: white; font-size: 12px; width: 260px; pointer-events: none; opacity: 0; transition: opacity 0.2s ease; z-index: 10000; box-shadow: 0 0 20px rgba(162, 155, 254, 0.4); text-align: center;';
+        document.body.appendChild(tooltip);
+    }
+    
+    tooltip.innerHTML = `
+        <div style="font-weight: 900; color: var(--magic-color); margin-bottom: 5px; text-transform: uppercase; font-size: 14px;">${title}</div>
+        <div style="color: #ccc; line-height: 1.4;">${desc}</div>
+    `;
+    
+    // 2. Бронебойное позиционирование (Абсолютная защита от null.getBoundingClientRect)
+    let targetRect = { top: window.innerHeight / 2, left: window.innerWidth / 2, width: 0, height: 0 };
+    
+    if (e && e.target) {
+        // Ищем ближайший элемент или берем сам таргет, чтобы никогда не было null!
+        let btn = e.target.closest('.info-icon-btn, .hub-item, h1, .shop-tabs-container div, button') || e.target;
+        if (btn && typeof btn.getBoundingClientRect === 'function') {
+            targetRect = btn.getBoundingClientRect();
         }
-        
-        // 🚀 ЖЕЛЕЗОБЕТОННЫЙ ФИКС: Сравниваем по тексту, а не по HTML-элементу!
-        if (tt.style.opacity === '1' && window.currentTooltipText === ruText) {
-            tt.style.opacity = '0';
-            tt.style.transform = 'translateX(-50%) scale(0.9)';
-            tt.style.pointerEvents = 'none';
-            window.currentTooltipText = null;
-            return;
-        }
-
-        // Запоминаем, какая именно подсказка сейчас открыта
-        window.currentTooltipText = ruText; 
-
-        tt.innerHTML = text;
-
-        const targetRect = e.currentTarget.getBoundingClientRect();
-        if (targetRect.top < 100) {
-            tt.style.top = (targetRect.bottom + 15) + 'px'; 
-        } else {
-            tt.style.top = (targetRect.top - tt.offsetHeight - 15) + 'px'; 
-        }
-        
-        requestAnimationFrame(() => {
-            tt.style.opacity = '1';
-            tt.style.transform = 'translateX(-50%) scale(1)';
-            tt.style.pointerEvents = 'auto'; 
-        });
-
-        if (typeof App !== 'undefined' && App.playSoundEffect) App.playSoundEffect('tick');
+    }
+    
+    tooltip.style.display = 'block';
+    
+    // Рассчитываем координаты, чтобы подсказка не улетала за экран
+    let topPos = targetRect.top - tooltip.offsetHeight - 10;
+    let leftPos = targetRect.left + (targetRect.width / 2) - 130;
+    
+    if (topPos < 10) topPos = targetRect.bottom + 10;
+    if (leftPos < 10) leftPos = 10;
+    if (leftPos + 260 > window.innerWidth) leftPos = window.innerWidth - 270;
+    
+    tooltip.style.top = topPos + 'px';
+    tooltip.style.left = leftPos + 'px';
+    
+    requestAnimationFrame(() => {
+        tooltip.style.opacity = '1';
+    });
+    
+    // 3. Автоматическое закрытие при клике в любое место
+    const closeHandler = () => {
+        tooltip.style.opacity = '0';
+        setTimeout(() => { tooltip.style.display = 'none'; }, 200);
+        document.removeEventListener('click', closeHandler);
     };
+    
+    setTimeout(() => {
+        document.addEventListener('click', closeHandler);
+    }, 50);
+};
 
     // 🔮 Оживляем Заголовок
     const mainTitleEl = document.getElementById('mainMenuTitle');
@@ -11399,6 +11569,17 @@ try {
         </h2>
         <div id="inventoryList" style="max-height: 50vh; overflow-y: auto; padding: 10px; display: flex; flex-direction: column; gap: 10px;"></div>
         <button class="close-btn" onclick="if(typeof ShopGame !== 'undefined') ShopGame.toggleInventory(false)" style="background: var(--sun-gold); margin-top: 15px;">Закрыть</button>
+    </div>
+</div>
+<div id="historyOverlay">
+    <div class="history-modal">
+        <div class="history-modal-header" id="historyModalTitle">ИСТОРИЯ ИГРЫ</div>
+        <div class="history-scroll-area" id="historyModalContent">
+            </div>
+        <div style="display: flex; gap: 10px; margin-top: 15px;">
+            <button class="close-btn" style="background: var(--angry-red); margin-top: 0; flex: 1; font-size: 13px;" onclick="window.clearCurrentHistory()">ОЧИСТИТЬ</button>
+            <button class="close-btn" style="margin-top: 0; flex: 1; font-size: 13px;" onclick="window.toggleHistory(false)">ЗАКРЫТЬ</button>
+        </div>
     </div>
 </div>
 </body>
