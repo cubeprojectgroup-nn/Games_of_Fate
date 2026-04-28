@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Игры Судьбы. v0.9.0.04</title>
+    <title>Игры Судьбы. v0.9.0.05</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 	<style>
@@ -40,6 +40,7 @@
 			-ms-user-select: none;     /* IE10+/Edge */
 			user-select: none;         /* Стандарт */
 		}
+	
 
 		/* === ИДЕАЛЬНАЯ СЕТКА 3х2 (НА ВСЮ ШИРИНУ ЭКРАНА) === */
         
@@ -629,19 +630,21 @@ body.mode-switching-active .input-section {
         .sparkle { position: absolute; width: 5.3px; height: 5.3px; border-radius: 50%; opacity: 0; pointer-events: none; left: 50%; z-index: 10; }
         @keyframes sparkle-fly { 0% { opacity: 1; transform: translate(-50%, -50%) scale(1); } 100% { opacity: 0; transform: translate(var(--fly-x), var(--fly-y)) scale(0); } }
 
-        /* === [ ОТЛАДКА И ИСТОРИЯ ] === */
+/* === [ ОТЛАДКА И ИСТОРИЯ ] === */
         .debug-panel { 
-    display: none;
-    justify-content: center; 
-    gap: 8px; 
-    margin: 5px 0 10px 0; 
-    width: 100%; 
-    max-width: 350px;
-    /* --- ФИКС КАСАНИЙ НА МОБИЛКЕ --- */
-    position: relative; 
-    z-index: 9999;
-    pointer-events: auto;
-}
+            position: fixed !important;
+            bottom: 85px !important; /* Четко над нижней панелью навигации */
+            left: 50% !important;
+            transform: translateX(-50%) !important;
+            z-index: 99999 !important; /* Поверх всех игр и скроллов */
+            display: none; 
+            justify-content: center; 
+            gap: 10px; 
+            flex-wrap: wrap; 
+            width: 100%; 
+            max-width: 350px; 
+            pointer-events: auto; 
+        }
         .debug-btn { width: 35px; height: 35px; border-radius: 50%; background: rgba(162, 155, 254, 0.1); border: 1px solid var(--magic-color); font-size: 14px; color: white; font-weight: bold; cursor: pointer; transition: 0.3s; display: flex; align-items: center; justify-content: center; }
         .debug-btn:active { background: var(--magic-color); color: #000; transform: scale(0.9); }
 
@@ -1442,17 +1445,12 @@ window.toggleHistory = function(show) {
     if (!overlay) return;
     
     if (show) {
-        // 🚀 МЕНЯЕМ ЗАГОЛОВОК В ЗАВИСИМОСТИ ОТ РЕЖИМА
+        // 1. ТВОЯ РОДНАЯ ЛОГИКА ЗАГОЛОВКА
         const titleEl = document.getElementById('historyModalTitle');
         if (titleEl) {
             const lang = typeof GameState !== 'undefined' ? (GameState.lang || 'ru') : 'ru';
             const isShop = typeof GameState !== 'undefined' && GameState.mode === 'shop';
-            
-            if (isShop) {
-                titleEl.innerText = lang === 'ru' ? 'ЖУРНАЛ ОПЕРАЦИЙ' : 'TRANSACTIONS';
-            } else {
-                titleEl.innerText = lang === 'ru' ? 'ИСТОРИЯ ИГРЫ' : 'GAME HISTORY';
-            }
+            titleEl.innerText = isShop ? (lang === 'ru' ? 'ЖУРНАЛ ОПЕРАЦИЙ' : 'TRANSACTIONS') : (lang === 'ru' ? 'ИСТОРИЯ ИГРЫ' : 'GAME HISTORY');
         }
 
         const hBlock = document.getElementById('historyBlock');
@@ -1462,11 +1460,32 @@ window.toggleHistory = function(show) {
                 content.appendChild(hBlock);
             }
             hBlock.style.display = 'block'; 
-            
-            // Сбрасываем скролл на самый верх
             setTimeout(() => { content.scrollTop = 0; }, 10);
+            
+            // 🚀 ФИКС СКРОЛЛБАРА: Возвращаем красивый фиолетовый скролл
+            content.classList.add('history-scroll-area');
         }
-        
+
+        // 🚀 ФИКС КОРЗИНЫ: Создаем её абсолютно в правом верхнем углу модалки
+        const modalBox = document.querySelector('.history-modal');
+        if (modalBox) {
+            modalBox.style.position = 'relative'; // Чтобы корзина не улетела за экран
+            let trashBtn = document.getElementById('smartTrashBtn');
+            if (!trashBtn) {
+                trashBtn = document.createElement('i');
+                trashBtn.id = 'smartTrashBtn';
+                trashBtn.className = 'fas fa-trash-alt';
+                // Прибиваем четко в правый верхний угол:
+                trashBtn.style.cssText = 'position: absolute; top: 15px; right: 15px; color: var(--angry-red); font-size: 18px; cursor: pointer; text-shadow: 0 0 10px rgba(255,0,0,0.5); padding: 10px; z-index: 1000;';
+                trashBtn.onclick = () => { if(window.clearCurrentHistory) window.clearCurrentHistory(); };
+                modalBox.appendChild(trashBtn);
+            }
+        }
+
+        // Прячем твою старую большую красную кнопку "Очистить"
+        const oldClearBtn = document.querySelector('#historyOverlay button[onclick*="clearCurrentHistory"]');
+        if (oldClearBtn) oldClearBtn.style.display = 'none';
+
         if (typeof App !== 'undefined' && App.playSoundEffect) App.playSoundEffect('tick');
         overlay.style.display = 'flex';
     } else {
@@ -1655,25 +1674,50 @@ window.toggleShopTooltip = function(e, btn, title, text) {
                         });
                         
                         if (!isVis) {
-                            tt.style.display = 'block';
+                            // 1. Ставим жестко по центру кнопки
+                            tt.style.left = '50%';
+                            tt.style.right = 'auto'; // Убиваем старый баг
+                            tt.style.transform = 'translateX(-50%)';
+                            tt.style.display = 'block'; // Показываем невидимо, чтобы измерить размеры
                             
-                            // 🚀 УМНАЯ КОРРЕКЦИЯ (Если центр вылетает за экран):
+                            // 2. Измеряем реальные пиксели на экране
                             const rect = tt.getBoundingClientRect();
-                            if (rect.left < 10) {
-                                // Если вылетает слева — прижимаем к левому краю экрана
-                                tt.style.left = '0';
-                                tt.style.transform = 'translateX(0)';
-                            } else if (rect.right > window.innerWidth - 10) {
-                                // Если вылетает справа — прижимаем к правому краю экрана
-                                tt.style.left = 'auto';
-                                tt.style.right = '0';
-                                tt.style.transform = 'translateX(0)';
+                            let overflowOffset = 0;
+                            
+                            if (rect.right > window.innerWidth - 10) {
+                                // Если вылезло справа: толкаем влево на точное количество лишних пикселей
+                                overflowOffset = -(rect.right - window.innerWidth + 10);
+                            } else if (rect.left < 10) {
+                                // Если вылезло слева: толкаем вправо
+                                overflowOffset = 10 - rect.left;
                             }
 
+                            // 3. Применяем математический сдвиг, если нужно
+                            if (overflowOffset !== 0) {
+                                tt.style.transform = `translateX(calc(-50% + ${overflowOffset}px))`;
+                            }
+
+                            // 4. Плавно проявляем
                             requestAnimationFrame(() => {
                                 tt.style.opacity = '1';
                                 tt.style.pointerEvents = 'auto';
                             });
+
+                            // 5. Авто-закрытие и снятие блокировки при клике куда угодно
+                            const closeHandler = () => {
+                                tt.style.opacity = '0';
+                                tt.style.pointerEvents = 'none'; // Мгновенно отпускаем игру под подсказкой
+                                
+                                setTimeout(() => { 
+                                    tt.style.display = 'none'; 
+                                }, 200); 
+                                
+                                document.removeEventListener('click', closeHandler);
+                            };
+                            
+                            setTimeout(() => {
+                                document.addEventListener('click', closeHandler);
+                            }, 50);
                         }
                     };
                 }
@@ -1788,7 +1832,7 @@ bar.appendChild(scrollBtn);
     <div id="stars" class="stars-layer stars-active bg1-stars"></div>
 
     <div id="mainMenuOverlay">
-        <div class="version">v0.9.0.04</div> 
+        <div class="version">v0.9.0.05</div> 
 		<div class="global-bottom-nav">
             <div class="nav-btn" onclick="if(typeof App !== 'undefined' && App.playSoundEffect) App.playSoundEffect('click'); if(typeof ShopGame !== 'undefined') ShopGame.toggleInventory(true);">
                 <i class="fas fa-box-open" style="color: var(--sun-gold);"></i>
