@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Игры Судьбы. v0.9.0.05</title>
+    <title>Игры Судьбы. v0.9.0.06</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 	<style>
@@ -41,6 +41,7 @@
 			user-select: none;         /* Стандарт */
 		}
 	
+
 
 		/* === ИДЕАЛЬНАЯ СЕТКА 3х2 (НА ВСЮ ШИРИНУ ЭКРАНА) === */
         
@@ -1264,8 +1265,7 @@ body.theme-perk_crt_filter .stars-layer {
 .shop-tt {
     position: fixed !important;
     top: 22vh !important;
-    left: 50% !important;
-    transform: translateX(-50%) !important;
+    /* 🚀 УБРАЛИ left: 50% и transform, чтобы скрипт сам двигал блок */
     width: 85% !important;
     max-width: 320px !important;
     background: rgba(5, 8, 15, 0.98) !important;
@@ -1275,6 +1275,18 @@ body.theme-perk_crt_filter .stars-layer {
     border-radius: 16px !important;
     z-index: 999999 !important;
     transition: opacity 0.2s ease !important;
+}
+
+/* 🚀 УБРАЛИ display: none !important, чтобы скрипт мог считывать ширину! */
+.shop-tt, .smart-info-wrap { 
+    visibility: hidden !important; 
+    opacity: 0 !important; 
+    pointer-events: none !important; 
+}
+
+/* Если окно скрыто, оно физически перестает реагировать на мышь */
+.shop-tt[style*="opacity: 0"] {
+    pointer-events: none !important;
 }
 /* Полная деактивация всех старых контейнеров подсказок */
 .shop-tt, .smart-info-wrap { display: none !important; visibility: hidden !important; opacity: 0 !important; }
@@ -1347,12 +1359,15 @@ body.theme-perk_crt_filter .stars-layer {
     padding-right: 8px;
     display: flex;
     flex-direction: column;
-	/*. Фикс контейнера, чтобы он не "схлопывался" */
+} /* <--- ВОТ ЭТА СПАСИТЕЛЬНАЯ СКОБКА */
+
+/* Фикс контейнера, чтобы он не "схлопывался" */
 #historyBlock {
     width: 100% !important;
     height: auto !important;
     display: block !important;
 }
+
 /* Стилизация полосы прокрутки */
 .history-scroll-area::-webkit-scrollbar { width: 4px; }
 .history-scroll-area::-webkit-scrollbar-track { background: transparent; }
@@ -1361,8 +1376,20 @@ body.theme-perk_crt_filter .stars-layer {
     border-radius: 10px; 
 }
 
+/* === ЗЕЛЕНАЯ ПОДСВЕТКА КУПЛЕННЫХ ТОВАРОВ === */
+.shop-item-card.unlocked {
+    border-color: var(--friendly-green) !important;
+    background: rgba(204, 255, 204, 0.12) !important;
+    box-shadow: inset 0 0 15px rgba(204, 255, 204, 0.05), 0 0 8px rgba(204, 255, 204, 0.2) !important;
+}
 
-    </style>
+.shop-item-card.unlocked .shop-price-badge {
+    background: rgba(204, 255, 204, 0.2) !important;
+    border-color: var(--friendly-green) !important;
+    color: #fff !important;
+    text-shadow: 0 0 5px var(--friendly-green) !important;
+}
+</style>
 </head>
 <!-- --- КОНЕЦ ПЕРВОЙ ЧАСТИ --- -->
 <!-- --- НАЧАЛО ВТОРОЙ ЧАСТИ --- Данные и тексты (Словари локализации, конфиги). -->
@@ -1501,9 +1528,23 @@ window.clearCurrentHistory = function() {
     const activeList = Array.from(hBlock.children).find(el => el.style.display === 'block');
     
     if (activeList) {
-        // Очищаем HTML внутри активного списка
+        // 1. Очищаем визуально на экране
         activeList.innerHTML = ''; 
-        // Просим Ядро сохранить пустую историю в профиль
+        
+        // 2. 💥 УБИВАЕМ ИСТОРИЮ ИЗ ПАМЯТИ!
+        if (typeof GameState !== 'undefined' && GameState.activeProfileIdx !== -1) {
+            const p = GameState.profiles[GameState.activeProfileIdx];
+            if (p) {
+                if (GameState.mode === 'shop') {
+                    p.historyShop = ''; // Чистим историю покупок
+                } else {
+                    p.history = ''; // Чистим общую историю игр
+                    p.historyShop = ''; // На всякий случай бьем и по магазину
+                }
+            }
+        }
+        
+        // 3. Просим Ядро сохранить ПУСТОЙ профиль
         if (typeof App !== 'undefined' && App.requestProfileSave) App.requestProfileSave();
         
         // Маленький вибро-отклик для красоты
@@ -1631,93 +1672,52 @@ window.toggleShopTooltip = function(e, btn, title, text) {
                     qBtn.style.cssText = `position:absolute; top:-8px; left:-8px; font-size:10px; width:24px; height:24px; display:flex; justify-content:center; align-items:center; background:${activeColor}; color:#000; border-radius:50%; box-shadow:0 0 10px ${activeColor}; z-index:10; cursor: pointer; pointer-events: auto;`;
                     
                     const tt = document.createElement('div');
-                    tt.className = 'shop-tooltip-new'; 
-                    
-                    // 🎯 ИЗНАЧАЛЬНАЯ ИДЕАЛЬНАЯ ЦЕНТРОВКА:
-                    // Ставим левый край по центру кнопки и сдвигаем на 50% ширины назад
-                    tt.style.cssText = `
-                        position: absolute; 
-                        top: 140%; 
-                        left: 50%; 
-                        transform: translateX(-50%); 
-                        width: 280px; 
-                        max-width: 85vw; 
-                        background: rgba(10, 15, 25, 0.98); 
-                        backdrop-filter: blur(20px); 
-                        -webkit-backdrop-filter: blur(20px);
-                        border: 1px solid ${activeColor}; 
-                        padding: 16px; 
-                        border-radius: 14px; 
-                        color: #fff; 
-                        font-size: 13px; 
-                        display: none; 
-                        z-index: 1000000; 
-                        text-transform: none; 
-                        font-weight: normal; 
-                        text-align: left; 
-                        box-shadow: 0 15px 40px rgba(0,0,0,0.9); 
-                        line-height: 1.5; 
-                        white-space: normal;
-                        pointer-events: auto;
-                    `;
+                    tt.className = 'shop-tt'; // 🎯 Подхватываем наш исправленный CSS
+                    tt.style.borderColor = activeColor; // Красим рамку под цвет режима
                     tt.innerHTML = ruleContent;
-                    btn.appendChild(qBtn); btn.appendChild(tt);
+                    
+                    btn.appendChild(qBtn); 
+                    btn.appendChild(tt);
                     
                     qBtn.onclick = (e) => {
                         e.stopPropagation();
-                        const isVis = tt.style.display === 'block';
+                        if (typeof App !== 'undefined' && App.playSoundEffect) App.playSoundEffect('tick');
                         
-                        document.querySelectorAll('.shop-tooltip-new').forEach(el => {
-                            el.style.display = 'none';
+                        const isVis = tt.style.opacity === '1';
+                        
+                        // Скрываем все остальные подсказки
+                        document.querySelectorAll('.shop-tt, .shop-tooltip-new').forEach(el => {
                             el.style.opacity = '0';
                             el.style.pointerEvents = 'none';
+                            el.style.visibility = 'hidden';
                         });
                         
                         if (!isVis) {
-                            // 1. Ставим жестко по центру кнопки
-                            tt.style.left = '50%';
-                            tt.style.right = 'auto'; // Убиваем старый баг
-                            tt.style.transform = 'translateX(-50%)';
-                            tt.style.display = 'block'; // Показываем невидимо, чтобы измерить размеры
+                            // Так как display: none больше нет, скрипт мгновенно получает реальные размеры
+                            const btnRect = btn.getBoundingClientRect(); // Берем кнопку
+                            const ttRect = tt.getBoundingClientRect();   // Берем подсказку
                             
-                            // 2. Измеряем реальные пиксели на экране
-                            const rect = tt.getBoundingClientRect();
-                            let overflowOffset = 0;
+                            // Центрируем: центр кнопки минус половина подсказки
+                            let leftPos = btnRect.left + (btnRect.width / 2) - (ttRect.width / 2);
                             
-                            if (rect.right > window.innerWidth - 10) {
-                                // Если вылезло справа: толкаем влево на точное количество лишних пикселей
-                                overflowOffset = -(rect.right - window.innerWidth + 10);
-                            } else if (rect.left < 10) {
-                                // Если вылезло слева: толкаем вправо
-                                overflowOffset = 10 - rect.left;
-                            }
+                            // Защита от вылетов за границы экрана
+                            if (leftPos < 10) leftPos = 10;
+                            if (leftPos + ttRect.width > window.innerWidth - 10) leftPos = window.innerWidth - ttRect.width - 10;
+                            
+                            // Применяем вычисленный сдвиг
+                            tt.style.left = leftPos + 'px';
+                            tt.style.visibility = 'visible';
+                            tt.style.opacity = '1';
+                            tt.style.pointerEvents = 'auto';
 
-                            // 3. Применяем математический сдвиг, если нужно
-                            if (overflowOffset !== 0) {
-                                tt.style.transform = `translateX(calc(-50% + ${overflowOffset}px))`;
-                            }
-
-                            // 4. Плавно проявляем
-                            requestAnimationFrame(() => {
-                                tt.style.opacity = '1';
-                                tt.style.pointerEvents = 'auto';
-                            });
-
-                            // 5. Авто-закрытие и снятие блокировки при клике куда угодно
+                            // Авто-закрытие
                             const closeHandler = () => {
                                 tt.style.opacity = '0';
-                                tt.style.pointerEvents = 'none'; // Мгновенно отпускаем игру под подсказкой
-                                
-                                setTimeout(() => { 
-                                    tt.style.display = 'none'; 
-                                }, 200); 
-                                
+                                tt.style.pointerEvents = 'none'; 
+                                setTimeout(() => { tt.style.visibility = 'hidden'; }, 200); 
                                 document.removeEventListener('click', closeHandler);
                             };
-                            
-                            setTimeout(() => {
-                                document.addEventListener('click', closeHandler);
-                            }, 50);
+                            setTimeout(() => { document.addEventListener('click', closeHandler); }, 50);
                         }
                     };
                 }
@@ -1832,7 +1832,7 @@ bar.appendChild(scrollBtn);
     <div id="stars" class="stars-layer stars-active bg1-stars"></div>
 
     <div id="mainMenuOverlay">
-        <div class="version">v0.9.0.05</div> 
+        <div class="version">v0.9.0.06</div> 
 		<div class="global-bottom-nav">
             <div class="nav-btn" onclick="if(typeof App !== 'undefined' && App.playSoundEffect) App.playSoundEffect('click'); if(typeof ShopGame !== 'undefined') ShopGame.toggleInventory(true);">
                 <i class="fas fa-box-open" style="color: var(--sun-gold);"></i>
@@ -2402,7 +2402,7 @@ const App = (function() {
                 crystalStyle.innerHTML = `
                     .crystal-anim-new {
                         position: fixed; 
-                        top: 16%;
+                        top: 35%;
                         left: 25%;
                         transform: translate(-50%, 0) scale(0.5);
                         color: var(--magic-color);
@@ -4511,6 +4511,36 @@ const ShopGame = (function() {
         const grid = document.getElementById('shopGrid');
         if (!stage || !grid) return;
         
+        // === 1. ЖЕЛЕЗОБЕТОННО УБИВАЕМ СКРОЛЛБАР ЧЕРЕЗ JS ===
+        if (!document.getElementById('shop-scroll-killer')) {
+            const style = document.createElement('style');
+            style.id = 'shop-scroll-killer';
+            // Прописываем width: 0 и display: none с !important
+            style.innerHTML = `
+                #shopGrid { scrollbar-width: none !important; -ms-overflow-style: none !important; }
+                #shopGrid::-webkit-scrollbar { width: 0 !important; height: 0 !important; display: none !important; }
+            `;
+            document.head.appendChild(style);
+        }
+
+        // === 2. ДИНАМИЧЕСКАЯ ПОДСТРОЙКА ВЫСОТЫ (Без vh и процентов) ===
+        // Привязываем блок намертво к верхнему и нижнему краю экрана
+        stage.style.position = 'absolute';
+        stage.style.top = '0';
+        stage.style.bottom = '0';
+        stage.style.left = '0';
+        stage.style.right = '0';
+        stage.style.display = 'flex';
+        stage.style.flexDirection = 'column';
+        stage.style.overflow = 'hidden'; // Внешний контейнер не скроллится
+        stage.style.height = 'auto'; // Сбрасываем старые значения
+        
+        // Флекс сетки: забирает ровно то место (1 1 0), которое осталось под шапкой
+        grid.style.flex = '1 1 0'; 
+        grid.style.overflowY = 'auto'; // Скроллится только сетка
+        grid.style.paddingBottom = '30px'; // Небольшой отступ для нижнего ряда
+        // =========================================================
+
         const p = GameState.activeProfileIdx !== -1 ? GameState.profiles[GameState.activeProfileIdx] : null;
         const balanceCoins = getPlayerCoins(p);
         const balanceCrystals = p ? (p.crystals || 0) : 0;
@@ -4554,13 +4584,16 @@ const ShopGame = (function() {
         if (!stickyHeader) {
             stickyHeader = document.createElement('div');
             stickyHeader.id = 'shopStickyHeader';
-            stickyHeader.style.cssText = 'position: sticky; top: 0; width: 100%; max-width: 400px; z-index: 150; background: transparent; display: flex; flex-direction: column; align-items: center; margin-bottom: 10px; padding-bottom: 5px;';
+            
+            // Шапка: flex-shrink: 0 запрещает ей сжиматься, фон прозрачный
+            stickyHeader.style.cssText = 'flex-shrink: 0; width: 100%; max-width: 400px; z-index: 150; background: transparent; display: flex; flex-direction: column; align-items: center; margin-bottom: 10px; padding-bottom: 5px; margin-left: auto; margin-right: auto;';
+            
             stage.insertBefore(stickyHeader, grid);
         }
         stickyHeader.innerHTML = '';
 
         const bH = document.createElement('div');
-        bH.style.cssText = 'display: flex; justify-content: center; width: 100%; padding-top: 5px; padding-bottom: 10px; pointer-events: none;';
+        bH.style.cssText = 'display: flex; justify-content: center; width: 100%; padding-top: 1px; padding-bottom: 14px; pointer-events: none;';
         bH.innerHTML = `<div style="background: rgba(10, 15, 25, 0.8); padding: 6px 20px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.15); font-size: 15px; display: inline-flex; align-items: center; gap: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); pointer-events: auto;">
             <span id="shop-local-wallet" style="color: var(--friendly-green); font-weight: bold;"><i class="fas fa-wallet"></i> ${coins.toFixed(2)}</span>
             <span style="color: rgba(255,255,255,0.2);">|</span>
@@ -5592,8 +5625,18 @@ const DiceGame = (function() {
         const disp = document.getElementById('current-mode-display');
         if (disp && typeof GameState !== 'undefined' && GameState.subModes && GameState.subModes.dice && typeof LANG_DATA !== 'undefined') {
             const t = LANG_DATA[GameState.lang || 'ru'];
-            // 🛑 ВОЗВРАЩАЕМ ПРАВИЛЬНЫЕ ЗАГОЛОВКИ ПОДРЕЖИМОВ
-            const subNames = { standard: t.smStd || 'Кость', bet: t.smBet || 'Ставка', casino: t.smCasino || 'Казино' };
+            
+            // 🛑 ФИКС 1: Расширенный словарь переводов для заголовка
+            const subNames = { 
+                standard: t.smStd || 'Кость', 
+                bet: t.smBet || 'Ставка', 
+                casino: t.smCasino || 'Казино',
+                yesno: GameState.lang === 'ru' ? 'Да/Нет' : 'Yes/No',
+                numbers: GameState.lang === 'ru' ? 'Числа' : 'Numbers',
+                trader: GameState.lang === 'ru' ? 'Трейдинг' : 'Trading',
+                alco: GameState.lang === 'ru' ? 'Бар' : 'Bar'
+            };
+            
             disp.innerText = (subNames[GameState.subModes.dice] || GameState.subModes.dice).toUpperCase();
             disp.style.display = 'inline';
         }
@@ -5825,11 +5868,22 @@ const DiceGame = (function() {
         const resSub = document.getElementById('res-sub');
         if (resSub) resSub.classList.remove('heart-pulse', 'skull-aura');
         
-        const subNames = { standard: t.smStd || "Кость", bet: t.smBet || "Ставка", casino: t.smCasino || "Казино" };
+        // 🛑 ФИКС 2: Расширенный словарь переводов для ИСТОРИИ
+        const subNames = { 
+            standard: t.smStd || "Кость", 
+            bet: t.smBet || "Ставка", 
+            casino: t.smCasino || "Казино",
+            yesno: GameState.lang === 'ru' ? 'Да/Нет' : 'Yes/No',
+            numbers: GameState.lang === 'ru' ? 'Числа' : 'Numbers',
+            trader: GameState.lang === 'ru' ? 'Трейдинг' : 'Trading',
+            alco: GameState.lang === 'ru' ? 'Бар' : 'Bar'
+        };
+        
+        // Теперь скрипт найдет русский перевод в словаре и подставит его!
         let histModeStrengthHistory = `[${(subNames[gameSubMode] || gameSubMode).toUpperCase()}]`;
 
         let faceVal = currentFaces[rIdx] !== undefined && currentFaces[rIdx] !== "" ? currentFaces[rIdx] : (rIdx + 1);
-
+        
         if (faceMode === 'trader') { 
             uiColor = (rIdx === 0 || rIdx === 2 || rIdx === 4) ? "#ccffcc" : "#ff6666"; 
             if (rIdx === 4) uiColor = "#ffffff"; 
@@ -5992,7 +6046,8 @@ const DiceGame = (function() {
                 bank:     { loadedBullets: 0, chamberState: [false,false,false,false,false,false], stashState: [false,false,false,false,false], drumRotation: 0, survivalCount: 0, survivalInitialBullets: 0 },
                 survival: { loadedBullets: 0, chamberState: [false,false,false,false,false,false], stashState: [false,false,false,false,false], drumRotation: 0, survivalCount: 0, survivalInitialBullets: 0 }
             };
-
+			
+			let currentActiveMode = 'standard';
             let isDragging = false;
 			// Добавь эти строки, если их нет
             let isSpinning = false; 
@@ -6181,7 +6236,10 @@ const DiceGame = (function() {
             }
 
             function saveCurrentSubState() {
-                const mode = GameState.subModes.roulette;
+                // 🔥 ФИКС: Используем внутреннюю память плагина, а не глобальный GameState.
+                // Теперь пули всегда будут сохраняться в тот режим, в котором они были заряжены!
+                const mode = currentActiveMode; 
+                
                 if (!subStates[mode]) return;
                 subStates[mode].loadedBullets = loadedBullets;
                 subStates[mode].chamberState = [...chamberState];
@@ -6193,6 +6251,10 @@ const DiceGame = (function() {
 
             function loadCurrentSubState() {
                 const mode = GameState.subModes.roulette;
+                
+                // 🔥 ФИКС: При загрузке запоминаем, в какой режим мы перешли
+                currentActiveMode = mode; 
+                
                 if (!subStates[mode]) return;
                 loadedBullets = subStates[mode].loadedBullets;
                 chamberState = [...subStates[mode].chamberState];
@@ -10475,7 +10537,7 @@ const SticksGame = (function() {
                 #sticksContainer { position: absolute; inset: 0; transform-style: preserve-3d; pointer-events: none; }
                 
                 /* РАДИУС ПАЛОЧЕК ОСТАЛСЯ 20px ДЛЯ СВОБОДЫ */
-                .stick { position: absolute; left: 33px; width: 14px; top: -40px; height: var(--h); transform-style: preserve-3d; transform: translateY(var(--py)) rotateY(var(--ry)) translateZ(20px); transition: transform 0.6s cubic-bezier(0.18, 0.89, 0.32, 1.28); cursor: pointer; pointer-events: auto; touch-action: none; }
+                .stick { position: absolute; left: 33px; width: 14px; top: -30px; height: var(--h); transform-style: preserve-3d; transform: translateY(var(--py)) rotateY(var(--ry)) translateZ(20px); transition: transform 0.6s cubic-bezier(0.18, 0.89, 0.32, 1.28); cursor: pointer; pointer-events: auto; touch-action: none; }
                 .stick.dragging { transition: none; }
                 
                 .s-face { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 1px; clip-path: polygon(0 0, 100% 0, 100% calc(95px - var(--py)), 0 calc(95px - var(--py))); }
@@ -10489,11 +10551,21 @@ const SticksGame = (function() {
 
                 .stick.drawn .s-face, .stick.drawn .s-top, .stick.drawn .s-bottom { clip-path: none !important; }
 
-                /* --- ВИЗУАЛЬНЫЙ АКЦЕНТ КОРОТКОЙ ПАЛОЧКИ --- */
-                .stick.short .s-bottom { background: #2a0800 !important; box-shadow: inset 0 0 8px #000 !important; }
+                /* --- ВИЗУАЛЬНЫЙ АКЦЕНТ КОРОТКОЙ ПАЛОЧКИ (ЯРКО-ЖЕЛТЫЙ) --- */
+                .stick.short .s-bottom { 
+                    background: #ffff00 !important; /* Ярко-желтое дно */
+                    box-shadow: 0 0 10px 2px #ffff00, inset 0 0 8px #000 !important; /* Желтое свечение */
+                    animation: shortStickPulse 0.8s infinite alternate !important; /* Пульсация */
+                }
+                
+                @keyframes shortStickPulse {
+                    0% { box-shadow: 0 0 15px 5px #ffff00, inset 0 0 8px #000; background: #ffff00; }
+                    100% { box-shadow: 0 0 25px 10px #ffea00, inset 0 0 8px #000; background: #ffea00; }
+                }
+
                 .stick.short .s-front::after, .stick.short .s-back::after, .stick.short .s-left::after, .stick.short .s-right::after {
                     content: ''; position: absolute; bottom: 0; left: 0; width: 100%; height: 10px;
-                    background: linear-gradient(to top, rgba(42,8,0,0.95) 0%, transparent 100%);
+                    background: linear-gradient(to top, rgba(255, 255, 0, 0.8) 0%, transparent 100%);
                 }
 
                 /* === ИНТЕГРАЦИЯ С МАГАЗИНОМ: СТИЛИ КОРОБОК === */
@@ -10786,7 +10858,7 @@ const SticksGame = (function() {
 
             if (Math.abs(y - lastHapticY) > 10) { hapticTick(); lastHapticY = y; }
 
-            if (newY <= -60) { 
+            if (newY <= -50) { 
                 finishPull(draggedStick);
                 isDragging = false; draggedStick = null;
             }
@@ -10808,7 +10880,7 @@ const SticksGame = (function() {
     function onUp() {
         if (isDragging && draggedStick) {
             draggedStick.el.classList.remove('dragging'); 
-            if (draggedStick.currentY > -60) {
+            if (draggedStick.currentY > -50) {
                 draggedStick.currentY = 0;
                 draggedStick.el.style.setProperty('--py', `0px`);
                 if (typeof App !== 'undefined') App.playSoundEffect('tick');
