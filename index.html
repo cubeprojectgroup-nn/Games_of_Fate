@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Игры Судьбы. v0.9.0.06</title>
+    <title>Игры Судьбы. v0.9.0.10</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 	<style>
@@ -426,7 +426,7 @@
         .icon-btn.active-magic { color: #ffffff !important; text-shadow: 0 0 10px white; background: rgba(162, 155, 254, 0.3); }
 
         .header-wrapper { display: inline-flex; flex-direction: column; margin: 2px 0 5px 0; }
-        .header-wrapper { display: inline-flex; flex-direction: column; margin: 12px 0 5px 0; max-width: calc(100vw - 90px); }
+        .header-wrapper { display: inline-flex; flex-direction: column; margin: 14px 0 5px 0; max-width: calc(100vw - 90px); }
         h1 { font-size: clamp(20px, 7.5vw, 32px); letter-spacing: 2px; margin: 0; padding: 0; color: var(--magic-color); text-shadow: 0 0 10px var(--magic-color); font-weight: bold; text-transform: uppercase; transition: opacity 0.2s ease; white-space: nowrap; }
         
         .title-animating { animation: title-fade 0.2s ease-in-out; }
@@ -498,8 +498,6 @@ body.mode-switching-active .input-section {
         @keyframes error-vibe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
 
         #answer-box { min-height: 110px; display: flex; flex-direction: column; align-items: center; justify-content: center; margin: 0; font-weight: bold; position: relative; z-index: 100; overflow: visible; width: 100%; pointer-events: none; }
-        #res-content { opacity: 0; transform: translateY(10px) scale(0.9); transition: opacity 0.5s ease, transform 0.5s ease, text-shadow 0.5s ease; width: 100%; display: flex; flex-direction: column; align-items: center; pointer-events: none; }
-        #res-content.visible { opacity: 1 !important; transform: translateY(0) scale(1); }
         
         .answer-main { display: block; line-height: 1.1; font-size: 32px; text-transform: uppercase; margin-bottom: 2px; text-align: center; pointer-events: auto; } 
         .answer-sub { font-size: 46px; margin: 0; display: flex; align-items: center; justify-content: center; transition: 0.3s; position: relative; pointer-events: auto; }
@@ -1029,76 +1027,86 @@ body.mode-switching-active .history {
             position: relative; /* Дает блоку свободу перемещения */
             z-index: 10;
         }
+
 /* ========================================================== */
-/* 📺 АБСОЛЮТНО БЕЗОПАСНЫЕ РЕТРО-ЭФФЕКТЫ (БЕЗ CSS-FILTER)     */
+/* 📺 УЛЬТИМАТИВНЫЕ РЕТРО-ЭФФЕКТЫ v3.0 (ФИНАЛЬНАЯ ПРАВКА)     */
 /* ========================================================== */
 
-/* 1. Жестко запрещаем ломающие фильтры на всех контейнерах */
-body.theme-perk_crt_bw, 
-body.theme-perk_crt_filter,
-body.theme-perk_crt_bw #gameUI, 
-body.theme-perk_crt_filter #gameUI,
-body.theme-perk_crt_bw #mainMenuOverlay,
-body.theme-perk_crt_filter #mainMenuOverlay {
+body[class*="theme-perk_crt_"],
+body[class*="theme-perk_crt_"] #gameUI,
+body[class*="theme-perk_crt_"] #mainMenuOverlay {
     filter: none !important;
     backdrop-filter: none !important;
-    -webkit-backdrop-filter: none !important;
     transform: none !important;
 }
 
-/* 2. МАГИЯ ЧБ (КИНЕСКОП): Делаем экран черно-белым через независимый 
-      слой наложения. Это гарантированно не ломает position: fixed! */
-body.theme-perk_crt_bw::before {
+body[class*="theme-perk_crt_"]::before,
+body[class*="theme-perk_crt_"]::after {
     content: "";
     position: fixed;
     top: 0; left: 0; width: 100vw; height: 100vh;
-    background: #000; /* Черный цвет в режиме color обесцвечивает всё */
-    mix-blend-mode: color; /* 🚀 Секретное оружие против багов WebKit */
-    z-index: 999998 !important; /* Лежит поверх всего */
-    pointer-events: none !important; /* Пропускает клики и скролл */
+    pointer-events: none !important;
+    z-index: 2147483647 !important;
 }
 
-/* 3. СЛОЙ ПОМЕХ И СЕТКИ (Для обоих режимов) */
-body.theme-perk_crt_filter::after,
-body.theme-perk_crt_bw::after {
-    content: "";
+body[class*="theme-perk_crt_"]::before { mix-blend-mode: color; }
+
+/* Общий слой помех: убавили интенсивность полос (с 4px до 8px) */
+body[class*="theme-perk_crt_"]::after {
+    box-shadow: inset 0 0 120px rgba(0,0,0,0.9);
+    background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%);
+    background-size: 100% 8px;
+    animation: crtFlicker 0.15s infinite;
+}
+
+/* 📟 1. МАТРИЦА (Мягкий зеленый) */
+body.theme-perk_crt_matrix::before { background: rgba(0, 255, 70, 0.35); }
+body.theme-perk_crt_matrix::after { 
+    background-image: radial-gradient(circle at 50% 30%, rgba(0, 255, 0, 0.05) 0%, transparent 70%),
+                      linear-gradient(rgba(0, 20, 0, 0) 50%, rgba(0, 40, 0, 0.2) 50%);
+    background-size: 100% 100%, 100% 2px;
+}
+
+/* 🌴 2. КИБЕРПАНК (Тот самый Майами-градиент переехал сюда) */
+body.theme-perk_crt_miami::before { 
+    background: linear-gradient(180deg, #ff007f 0%, #00f0ff 100%); 
+}
+
+/* 🌅 3. МАЙАМИ 80-х (Огненный закат) */
+/* Мы используем ID miami, но теперь это настоящий солнечный закат */
+body.theme-perk_crt_miami_sunset::before { 
+    background: linear-gradient(180deg, #ff4500 0%, #ff8c00 40%, #ffcc33 70%, #2f4f4f 100%); 
+}
+body.theme-perk_crt_miami_sunset::after {
+    box-shadow: inset 0 0 150px rgba(50, 20, 0, 0.6);
+}
+
+/* 🤖 4. T-100 (HUD Терминатора) */
+body.theme-perk_crt_terminator::before { background: rgba(255, 0, 0, 0.45); }
+body.theme-perk_crt_terminator::after {
+    box-shadow: inset 0 0 200px rgba(70,0,0,0.9);
+    background-image: 
+        linear-gradient(rgba(255, 0, 0, 0.1) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 0, 0, 0.1) 1px, transparent 1px);
+    background-size: 60px 60px;
+}
+
+/* Стили для вылетающих блоков кода Терминатора */
+.t100-data-block {
     position: fixed;
-    top: 0; left: 0; width: 100vw; height: 100vh;
-    z-index: 999999 !important; /* Самый верхний слой */
-    pointer-events: none !important; /* Жизненно важно для тапов! */
-    box-shadow: inset 0 0 120px rgba(0,0,0,0.95);
-    animation: crtFlicker 0.2s infinite;
+    color: #ff0000;
+    font-family: 'Courier New', monospace;
+    font-size: 10px;
+    font-weight: bold;
+    text-shadow: 0 0 5px #ff0000;
+    z-index: 2147483646;
+    pointer-events: none;
+    line-height: 1.2;
+    opacity: 0;
+    transition: opacity 0.3s;
 }
 
-/* Текстура для цветного кинескопа */
-body.theme-perk_crt_filter::after {
-    background: 
-        radial-gradient(circle at 50% 30%, rgba(255, 255, 255, 0.1) 0%, rgba(0, 0, 0, 0) 65%),
-        linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.2) 50%), 
-        linear-gradient(90deg, rgba(255, 0, 0, 0.04), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.04));
-    background-size: 100% 100%, 100% 4px, 3px 100%;
-}
-
-/* Текстура для ЧБ кинескопа */
-body.theme-perk_crt_bw::after {
-    background: 
-        radial-gradient(circle at 50% 30%, rgba(255, 255, 255, 0.15) 0%, rgba(0, 0, 0, 0) 60%),
-        linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.3) 50%), 
-        linear-gradient(90deg, rgba(255, 255, 255, 0.03), rgba(0, 0, 0, 0.03), rgba(255, 255, 255, 0.03));
-    background-size: 100% 100%, 100% 6px, 2px 100%;
-}
-
-/* Единственное место, где безопасно оставить CSS-filter для цвета — 
-   это фон (звезды), так как внутри него нет интерфейса */
-body.theme-perk_crt_filter .stars-layer {
-    filter: contrast(1.15) saturate(1.2) !important;
-}
-
-@keyframes crtFlicker {
-    0% { opacity: 0.98; }
-    50% { opacity: 1; }
-    100% { opacity: 0.99; }
-}
+@keyframes crtFlicker { 0% { opacity: 0.99; } 50% { opacity: 1; } 100% { opacity: 0.98; } }
 
 /* ============================================================ */
         /* 🚀 ГРАНД-ФИКС v2: ОЧИСТКА, КНОПКИ ВНИЗ И ФИКС БАРАБАНА       */
@@ -1389,6 +1397,803 @@ body.theme-perk_crt_filter .stars-layer {
     color: #fff !important;
     text-shadow: 0 0 5px var(--friendly-green) !important;
 }
+
+/* ============================================================ */
+/* 🚀 ГРАНД-ФИКС v3: РЕОРДЕР ИНТЕРФЕЙСА (ЗАГОЛОВОК И ТАБЫ ВНИЗ) */
+/* ============================================================ */
+
+/* Превращаем сетку в управляемую колонку */
+#gameUI {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+}
+
+/* 1. Главные сцены (Кость, Барабан, Цветок) — в самый верх */
+#gameUI > .stage, 
+#gameUI > #rouletteStage { 
+    order: 1 !important; 
+    margin-top: 30px !important; 
+}
+
+/* 2. Контейнер патронов и статус ("Судьба ждет...") */
+#gameUI > #bulletStash { order: 2 !important; }
+
+
+/* 3. Кнопки действий (Испытать судьбу и мини-кнопки) */
+#gameUI > .action-row { order: 4 !important; margin-top: 10px !important; }
+
+/* 4. Ошибки и поля ввода (Банк, вопросы) */
+#gameUI > #error-msg { order: 5 !important; }
+#gameUI > .input-section { order: 6 !important; margin-bottom: 20px !important; }
+
+/* Панели дебага и истории оставляем посередине (если они включены) */
+#gameUI > .debug-panel { order: 7 !important; }
+#gameUI > .history { order: 8 !important; }
+
+/* 5. Хедер (Заголовок + табы) откидываем в самый низ */
+#gameUI > .header-wrapper {
+    order: 10 !important;
+    margin-top: auto !important; /* Толкает весь этот блок в самый низ экрана */
+    margin-bottom: 25px !important; /* Выравнивание по высоте кнопок навигации */
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+/* 6. Меняем порядок внутри хедера: табы сверху, название снизу */
+#gameSubTabsContainer { 
+    order: 1 !important; 
+    margin-bottom: 30px !important; /* Отступ от табов до заголовка */
+}
+.subtitle-row { order: 2 !important; }
+h1#ui-title { 
+    order: 3 !important; 
+    position: relative; 
+    z-index: 100; 
+    pointer-events: none; /* Чтобы клики проходили сквозь текст, если он перекроет кнопки */
+}
+
+/* 7. Навигация внутри игры: раскидываем кнопки и прячем шестеренку */
+#gameUI .global-bottom-nav {
+    justify-content: space-between !important;
+    padding: 0 25px !important;
+    box-sizing: border-box !important;
+    z-index: 90 !important;
+}
+
+/* Оставляем шестеренку только в главном меню */
+#gameUI #gameSettingsBtn {
+    display: none !important;
+}
+
+/* ============================================================ */
+/* 🚀 ГРАНД-ФИКС v4: ПОДСКАЗКИ НАВЕРХ, МАСШТАБ И КНОПКИ         */
+/* ============================================================ */
+
+
+/* 2. Уменьшаем кнопки навигации (Домик, Инвентарь) на 30% */
+.global-bottom-nav .nav-btn {
+    width: 36px !important;       /* Было 52px */
+    height: 36px !important;      /* Было 52px */
+    font-size: 16px !important;   /* Было 22px */
+    border-radius: 12px !important; /* Чуть уменьшаем скругление пропорционально размеру */
+}
+
+/* 3. Динамический масштаб заголовков */
+h1#ui-title {
+    /* Жестко ограничиваем ширину: 100% экрана минус место под боковые кнопки (примерно 120px) */
+    max-width: calc(100vw - 120px) !important; 
+    
+    /* Текст будет плавно масштабироваться, но не превысит 26px */
+    font-size: clamp(14px, 5.5vw, 26px) !important;
+    
+    /* Если на очень узком экране текст всё равно не влезет — аккуратно обрежем его троеточием */
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+    margin: 0 auto !important;
+}
+
+/* 4. Центрируем заголовок относительно новых уменьшенных кнопок */
+#gameUI > .header-wrapper {
+    margin-bottom: 20px !important; 
+}
+
+/* ============================================================ */
+/* 🚀 ГРАНД-ФИКС v5: ИЗЯЩНЫЕ ТАБЫ И СПУСК ВНИЗ                  */
+/* ============================================================ */
+
+/* 1. Спускаем блок табов ближе к заголовку */
+#gameSubTabsContainer { 
+    margin-bottom: 8px !important; /* Было 30px, уменьшили, чтобы блок "упал" вниз */
+}
+
+/* 2. Делаем сами кнопки режимов "худее" (меньше по высоте) */
+#activeGameTabsBar > div {
+    height: 34px !important;       /* Оригинальный скрипт ставит 46px */
+    min-height: 34px !important;
+    border-radius: 10px !important; /* Чуть уменьшаем скругление под новый размер */
+}
+
+/* 3. Подгоняем кнопку истории (свиток) под новую высоту табов */
+#activeGameTabsBar .history-trigger-btn {
+    height: 34px !important;
+    width: 38px !important;
+    min-width: 38px !important;
+    font-size: 16px !important;    /* Чуть уменьшаем сам эмодзи свитка */
+    border-radius: 10px !important;
+}
+
+/* 4. Корректируем кругляш с вопросиком, чтобы он аккуратно смотрелся на узких кнопках */
+#activeGameTabsBar > div > div[style*="position:absolute"] {
+    top: -6px !important;
+    left: -6px !important;
+    width: 20px !important;
+    height: 20px !important;
+    font-size: 9px !important;
+}
+
+/* ============================================================ */
+/* 🚀 ГРАНД-ФИКС v6: УДАЛЕНИЕ ПУСТОТЫ И СЛИЯНИЕ ТЕКСТОВ         */
+/* ============================================================ */
+
+/* 1. Подтягиваем кнопки действий вплотную к игровому элементу/патронам */
+#gameUI > .action-row { 
+    order: 4 !important; 
+    margin-top: 15px !important; /* Отступ от барабана/кости */
+    margin-bottom: 0 !important; 
+}
+
+/* 2. Блок ошибки схлопываем в 0px. Он не будет толкать интерфейс, 
+      а просто "повиснет" ровно над статусом игры, перекрывая его */
+#gameUI > #error-msg { 
+    order: 7 !important; /* Ставим СТРОГО НИЖЕ поля банка/ввода (у банка order: 6) */
+    height: 20px !important; /* Возвращаем физическую высоту, чтобы текст не был призраком */
+    margin: 2px 0 0 0 !important; /* Небольшой отступ вниз от банка */
+    padding: 0 !important;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    transform: none !important; /* УБИВАЕМ СТАРЫЙ СДВИГ ВВЕРХ (-28px) */
+    z-index: 150 !important;
+    overflow: visible !important;
+}
+
+
+
+/* 4. Очищаем лишние отступы у статусной надписи */
+#res-status {
+    margin: 0 !important;
+    transition: opacity 0.3s ease !important;
+}
+
+/* Скрываем надпись "Судьба ждет", если всплыла ошибка (чтобы тексты не сливались в кашу) */
+body:has(.error-visible) #res-status {
+    opacity: 0 !important;
+}
+
+
+
+
+/* ============================================================ */
+/* 🚀 ГРАНД-ФИКС v8: ИНТЕРАКТИВНЫЕ ЗАГОЛОВКИ ИГР                */
+/* ============================================================ */
+
+/* Возвращаем заголовку кликабельность и добавляем плавность */
+h1#ui-title {
+    pointer-events: auto !important; 
+    cursor: pointer !important;
+    transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), filter 0.2s !important;
+}
+
+/* Эффект наведения (для мышки) */
+@media (hover: hover) {
+    h1#ui-title:hover {
+        transform: scale(1.05) !important;
+        filter: brightness(1.3) !important;
+    }
+}
+
+/* Эффект нажатия/тапа (пружинит и вспыхивает) */
+h1#ui-title:active {
+    transform: scale(0.95) !important;
+    filter: brightness(1.5) !important;
+}
+
+/* ============================================================ */
+/* 🚀 ГРАНД-ФИКС v9: ИСПРАВЛЕНИЕ НАЛОЖЕНИЯ (Z-INDEX)            */
+/* ============================================================ */
+
+/* 1. Усмиряем агрессивный z-index у табов, чтобы они не лезли поверх окон */
+#activeGameTabsBar {
+    z-index: 50 !important; 
+}
+
+
+
+/* ============================================================ */
+/* 🚀 ГРАНД-ФИКС v10: ДОРОГИЕ 3D-КНОПКИ И ТАКТИЛЬНЫЙ ТАП        */
+/* ============================================================ */
+
+/* 1. Выравниваем всю панель кнопок */
+#gameUI > .action-row {
+    gap: 12px !important; /* Чуть сближаем кнопки для монолитности */
+    align-items: center !important;
+}
+
+/* 2. Единый дорогой формат для боковых кнопок (Вопрос, Барабан, Патрон) */
+#gameUI > .action-row .btn-mini-roll,
+#gameUI > .action-row .icon-btn {
+    width: 56px !important;
+    height: 56px !important;
+    border-radius: 18px !important; /* Мягкий квадрат (Squircle) */
+    background: linear-gradient(145deg, rgba(162, 155, 254, 0.2), rgba(162, 155, 254, 0.05)) !important;
+    border: 1px solid rgba(162, 155, 254, 0.4) !important;
+    
+    /* Псевдо-3D стеклянная тень */
+    box-shadow: 
+        0 6px 0 rgba(162, 155, 254, 0.15), /* Нижняя грань (толщина кнопки) */
+        inset 0 2px 0 rgba(255, 255, 255, 0.1) !important; /* Блик света сверху */
+        
+    backdrop-filter: blur(10px) !important;
+    transition: all 0.1s cubic-bezier(0.4, 0, 0.2, 1) !important; /* Очень быстрый отклик */
+}
+
+/* Анимация вдавливания боковых кнопок */
+#gameUI > .action-row .btn-mini-roll:active,
+#gameUI > .action-row .icon-btn:active {
+    transform: translateY(6px) !important; /* Кнопка уходит вниз */
+    box-shadow: 
+        0 0 0 rgba(162, 155, 254, 0.15), /* Нижняя грань исчезает (кнопка вжата) */
+        inset 0 2px 0 rgba(255, 255, 255, 0.1) !important;
+    background: rgba(162, 155, 254, 0.25) !important; /* Чуть вспыхивает при нажатии */
+}
+
+/* 3. ГЛАВНАЯ КНОПКА "ИСПЫТАТЬ СУДЬБУ" */
+#gameUI > .action-row .btn-roll {
+    height: 56px !important;
+    border-radius: 18px !important;
+    background: linear-gradient(145deg, #b5b0ff, #8e84f5) !important; /* Сочный градиент */
+    color: #111b27 !important;
+    font-size: 15px !important;
+    font-weight: 900 !important;
+    letter-spacing: 1px !important;
+    border: none !important;
+    
+    /* Сочное механическое 3D */
+    box-shadow: 
+        0 6px 0 #6e64d5, /* Темно-фиолетовая нижняя грань (толщина) */
+        0 12px 20px rgba(162, 155, 254, 0.3), /* Магическое свечение вокруг */
+        inset 0 2px 0 rgba(255, 255, 255, 0.5) !important; /* Резкий блик сверху */
+        
+    transition: all 0.1s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+/* Анимация жесткого вдавливания главной кнопки */
+#gameUI > .action-row .btn-roll:active {
+    transform: translateY(6px) !important; /* Прожимается на 6 пикселей вниз */
+    box-shadow: 
+        0 0 0 #6e64d5, /* Грань прячется в корпус */
+        0 6px 10px rgba(162, 155, 254, 0.4), /* Свечение становится плотнее */
+        inset 0 2px 0 rgba(255, 255, 255, 0.2) !important;
+}
+
+/* 4. Защита заблокированного состояния (когда Оракул "думает") */
+#gameUI > .action-row .btn-roll:disabled {
+    background: #4a457e !important;
+    transform: translateY(6px) !important; /* Кнопка залипает в нажатом состоянии */
+    box-shadow: none !important; /* Отключаем свечение и 3D-грань */
+    color: rgba(255, 255, 255, 0.4) !important;
+}
+
+/* Фикс для иконок внутри кнопок, чтобы они стояли ровно по центру */
+#gameUI > .action-row svg, 
+#gameUI > .action-row i {
+    pointer-events: none !important;
+}
+
+/* ============================================================ */
+/* 🚀 ГРАНД-ФИКС v11: ПРЕМИАЛЬНЫЕ ПОЛЯ ВВОДА И МИНИ-КНОПКИ      */
+/* ============================================================ */
+
+/* 1. Общий стиль для всех полей ввода (эффект матового стекла) */
+#gameUI .input-section input[type="text"],
+#gameUI .input-section input[type="number"] {
+    background: rgba(255, 255, 255, 0.05) !important; /* Почти прозрачный светлый фон */
+    backdrop-filter: blur(12px) !important; /* То самое матовое размытие фона */
+    -webkit-backdrop-filter: blur(12px) !important; /* Обязательно для iOS/Safari */
+    
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    border-radius: 14px !important;
+    color: #fff !important;
+    font-weight: bold !important;
+    
+    /* Смягчили внутреннюю тень, чтобы сохранить объем, но пропустить свет */
+    box-shadow: 
+        inset 0 4px 10px rgba(0, 0, 0, 0.3), 
+        0 1px 0 rgba(255, 255, 255, 0.1) !important;
+        
+    transition: all 0.3s ease !important;
+}
+
+/* Высота для поля вопроса */
+#gameUI .input-section input[type="text"] {
+    height: 48px !important;
+}
+
+/* Высота и ширина для поля ставки в банке */
+body.bank-mode-active .input-section input[type="number"] {
+    height: 42px !important;
+    padding: 0 10px !important;
+    border-color: rgba(255, 249, 174, 0.2) !important; /* Легкий золотой оттенок */
+}
+
+/* 2. Эффект фокуса (когда тапнул по полю ввода) */
+#gameUI .input-section input[type="text"]:focus {
+    border-color: var(--magic-color) !important;
+    box-shadow: 
+        inset 0 4px 8px rgba(0, 0, 0, 0.6), 
+        0 0 12px rgba(162, 155, 254, 0.4) !important; /* Фиолетовое неоновое свечение */
+}
+
+body.bank-mode-active .input-section input[type="number"]:focus {
+    border-color: var(--sun-gold) !important;
+    box-shadow: 
+        inset 0 4px 8px rgba(0, 0, 0, 0.6), 
+        0 0 12px rgba(255, 249, 174, 0.4) !important; /* Золотое неоновое свечение */
+}
+
+/* 3. Превращаем круглые мини-кнопки банка в 3D-сквирклы */
+#cashoutBtn, #betSubmitBtn {
+    border-radius: 12px !important; /* Мягкий квадрат */
+    height: 42px !important;
+    width: 42px !important;
+    border: none !important;
+    transition: all 0.1s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+/* Кнопка "Принять ставку" (Галочка) */
+#betSubmitBtn {
+    background: linear-gradient(145deg, rgba(162, 155, 254, 0.3), rgba(162, 155, 254, 0.1)) !important;
+    color: var(--magic-color) !important;
+    box-shadow: 
+        0 4px 0 rgba(162, 155, 254, 0.2), /* 3D толщина */
+        inset 0 2px 0 rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Кнопка "Вывод" (Рука с монетой) */
+#cashoutBtn {
+    background: linear-gradient(145deg, rgba(204, 255, 204, 0.3), rgba(204, 255, 204, 0.1)) !important;
+    color: var(--friendly-green) !important;
+    box-shadow: 
+        0 4px 0 rgba(204, 255, 204, 0.2), /* 3D толщина */
+        inset 0 2px 0 rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Анимация вдавливания мини-кнопок */
+#cashoutBtn:active:not(:disabled), 
+#betSubmitBtn:active:not(:disabled) {
+    transform: translateY(4px) !important;
+    box-shadow: 
+        0 0 0 transparent, 
+        inset 0 2px 0 rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Заблокированное состояние (когда нельзя нажать) */
+#cashoutBtn:disabled, 
+#betSubmitBtn:disabled {
+    background: rgba(255, 255, 255, 0.05) !important;
+    color: rgba(255, 255, 255, 0.2) !important;
+    box-shadow: none !important;
+    transform: translateY(4px) !important; /* Залипает во вжатом состоянии */
+}
+
+/* 4. Чуть раздвигаем элементы в Банке, чтобы новые кнопки не слипались */
+.input-section {
+    gap: 8px !important;
+}
+
+/* ============================================================ */
+/* 🚀 ГРАНД-ФИКС v12: СПАСАЕМ КНОПКИ БАНКА И СЛОИ ПРАВИЛ        */
+/* ============================================================ */
+
+/* 1. Даем контейнеру внутренний отступ снизу, чтобы 3D-тени не срезались */
+#gameUI .input-section {
+    padding-bottom: 8px !important;
+    align-items: center !important;
+}
+
+
+/* 3. Усмиряем 3D-кнопки: они больше не будут вылезать поверх правил и настроек */
+#rulesOverlay, 
+.settings-overlay {
+    z-index: 9999999 !important; /* Поднимаем модальные окна выше стратосферы */
+}
+
+/* ============================================================ */
+/* 🚀 ГРАНД-ФИКС v14: ПРЯЧЕМ ЛИШНЕЕ И ЛЕЧИМ СЛОИ МОДАЛОК        */
+/* ============================================================ */
+
+/* 1. Жестко скрываем мини-кнопки банка, если режим Банка выключен */
+body:not(.bank-mode-active) #cashoutBtn,
+body:not(.bank-mode-active) #betSubmitBtn {
+    display: none !important;
+}
+
+/* 2. Запираем весь игровой интерфейс на нижнем, контролируемом слое */
+#gameUI {
+    position: relative !important;
+    z-index: 10 !important;
+}
+
+/* 3. Возносим окна правил, настроек и истории на абсолютный Олимп, 
+      и сбрасываем 3D-трансформации, из-за которых пробивались слои */
+#rulesOverlay, 
+.settings-overlay,
+#historyOverlay {
+    z-index: 2147483647 !important; /* Максимальный лимит z-index в CSS */
+    transform: translateZ(1000px)     /* Убиваем баги рендеринга WebKit/Blink */
+}
+
+/* ============================================================ */
+/* 🚀 ГРАНД-ФИКС v15: ВОСКРЕШЕНИЕ БЛЮРА И СЛОЕВ ПОДСКАЗОК       */
+/* ============================================================ */
+
+/* 1. Наделяем родительский блок табов властью над слоями внутри игры */
+#gameUI > .header-wrapper {
+    position: relative !important;
+    z-index: 9999 !important; /* Теперь всё, что внутри (включая подсказки), будет выше полей ввода и кнопок! */
+}
+
+/* 2. Чиним блюр-завесу. Скрипт рисовал её от табов и вниз, но табы теперь в самом низу! */
+/* Заставляем её принудительно растянуться на весь экран сверху вниз */
+#softBlurCurtain {
+    top: 0 !important;
+    bottom: 120px !important; /* Обрываем аккурат над табами, чтобы они оставались кликабельными */
+    height: auto !important;
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 15%, black 85%, transparent 100%) !important;
+    mask-image: linear-gradient(to bottom, transparent 0%, black 15%, black 85%, transparent 100%) !important;
+}
+
+/* ============================================================ */
+/* 🚀 ГРАНД-ФИКС v16: ОСВОБОЖДЕНИЕ КНОПОК НАВИГАЦИИ             */
+/* ============================================================ */
+
+/* Вытаскиваем нижнюю навигацию из-под невидимого блока табов */
+#gameUI .global-bottom-nav {
+    z-index: 10000 !important; /* У табов 9999, поэтому ставим больше */
+    pointer-events: none !important; /* Контейнер пропускает клики сквозь пустоты... */
+}
+
+/* ...а сами кнопки жадно ловят каждый тап! */
+#gameUI .global-bottom-nav .nav-btn {
+    pointer-events: auto !important;
+}
+
+
+
+
+
+
+/* ============================================================ */
+/* 🚀 ФИНАЛЬНЫЙ ТЕЛЕПОРТ: СДВИГ ВЛЕВО ИЗ-ЗА БАРАБАНА            */
+/* ============================================================ */
+
+
+
+/* Крупный размер эмодзи */
+body.is-roulette-run #res-sub {
+    font-size: 70px !important; 
+    line-height: 1 !important;
+    margin: 0 !important;
+    filter: drop-shadow(0 0 15px currentColor); /* Добавляем свечение */
+}
+
+/* Защита от дублирования надписей (только эмодзи в этом углу) */
+body.is-roulette-run #res-main,
+body.is-roulette-run #res-desc {
+    display: none !important;
+}
+
+/* ============================================================ */
+/* 🚀 НОВАЯ ЭРА: ИДЕАЛЬНАЯ ФИЗИКА ОТВЕТОВ И ИЗОЛЯЦИЯ РУЛЕТКИ    */
+/* ============================================================ */
+
+/* 1. БАЗА ОТВЕТОВ (Контейнер) */
+
+
+
+
+
+
+
+body.roulette-mode-active #res-sub {
+    font-size: 75px !important; 
+    line-height: 1 !important;
+    margin: 0 !important;
+    filter: drop-shadow(0 0 15px currentColor) !important;
+}
+
+body.roulette-mode-active #res-main,
+body.roulette-mode-active #res-desc {
+    display: none !important; /* Прячем текст в рулетке, оставляем только иконку */
+}
+
+/* ============================================================ */
+/* 🧹 ЧИСТЫЙ CSS ДЛЯ ОТВЕТОВ И РУЛЕТКИ (ЗАМЕНА ГРАНД-ФИКСАМ)    */
+/* ============================================================ */
+
+
+/* 3. СПЕЦ-ПОЗИЦИЯ ДЛЯ РУЛЕТКИ (Красный квадрат слева) */
+/* Обрати внимание: мы используем надежный системный класс ядра .roulette-mode-active */
+body.roulette-mode-active #res-content {
+    position: fixed !important;
+    display: flex !important;
+    top: 30vh !important; /* Уровень барабана */
+    left: 5vw !important; /* Прижимаем к левому краю */
+    bottom: auto !important;
+    right: auto !important;
+    width: 90px !important;
+    height: 90px !important;
+    justify-content: center !important;
+    align-items: center !important;
+    transform: none !important; 
+    z-index: 99999 !important; /* Поверх всего */
+    pointer-events: none !important;
+}
+
+body.roulette-mode-active #res-sub {
+    font-size: 75px !important; 
+    line-height: 1 !important;
+    margin: 0 !important;
+    filter: drop-shadow(0 0 15px currentColor) !important;
+}
+
+body.roulette-mode-active #res-main,
+body.roulette-mode-active #res-desc {
+    display: none !important; /* Скрываем текст "НЕТ/ДА" в Рулетке */
+}
+
+/* 4. ОСВОБОЖДАЕМ ПОДСКАЗКИ ДЛЯ УМНОГО JS */
+.shop-tooltip-new {
+    top: auto; 
+    bottom: auto; /* Убираем !important, отдаем контроль скрипту */
+}
+
+/* ============================================================ */
+/* 🚀 ФИНАЛЬНЫЙ АНТИ-ХАОС: ФИЗИКА ОТВЕТОВ И КЛИКИ               */
+/* ============================================================ */
+
+/* 1. ЗАПРЕЩАЕМ СЖАТИЕ СЦЕНЫ (Лечим визуальный нахлест на экранах) */
+.stage, #gameUI > #answer-box {
+    flex-shrink: 0 !important; 
+}
+
+/* 2. БЛОК ОТВЕТОВ (Нормальный поток) */
+#gameUI > #answer-box {
+    order: 3 !important;
+    margin-top: auto !important;
+    margin-bottom: 5px !important;
+    min-height: 90px !important;
+    height: auto !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: flex-end !important;
+    align-items: center !important;
+    position: relative !important;
+    z-index: 10 !important; /* Опускаем на дно, чтобы не лез поверх сцены */
+    padding: 0 !important;
+    width: 100% !important;
+    pointer-events: none !important; /* КРИТИЧНО: Пропускаем клики сквозь коробку к Цветку */
+}
+
+/* 3. КОНТЕНТ ОТВЕТА (Прячем по умолчанию) */
+body:not(.roulette-mode-active) #res-content {
+    position: relative !important; 
+    top: auto !important;
+    bottom: auto !important;
+    left: auto !important;
+    right: auto !important;
+    transform: translateY(10px) scale(0.9) !important;
+    width: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    opacity: 0 !important; /* УБИВАЕТ ЗАВИСШИЙ ТЕКСТ при старте игры */
+    pointer-events: none !important; 
+    transition: transform 0.3s ease, opacity 0.3s ease !important;
+}
+
+/* 4. АНИМАЦИЯ ПОЯВЛЕНИЯ */
+body:not(.roulette-mode-active) #res-content.visible {
+    transform: translateY(0) scale(1) !important;
+    opacity: 1 !important;
+}
+
+/* 5. УБИВАЕМ ПЕРЕХВАТ КЛИКОВ (Окончательно лечим некликабельную сердцевину) */
+.answer-main, .answer-sub, .answer-desc {
+    pointer-events: none !important; 
+    position: relative !important;
+}
+
+/* ============================================================ */
+/* 🚀 ФИНАЛЬНАЯ ЧИСТКА: ФИЗИКА ТЕКСТА, КЛИКОВ И АНТИ-ДРЕБЕЗГ    */
+/* ============================================================ */
+
+/* 1. БЛОК ОТВЕТОВ: Жестко держим место внизу и пропускаем клики */
+#gameUI > #answer-box {
+    position: relative !important;
+    min-height: 95px !important; /* Бронируем место, чтобы текст не лез на игры */
+    height: auto !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: flex-end !important;
+    align-items: center !important;
+    z-index: 105 !important;
+    margin-top: auto !important; /* Пружиним к низу экрана */
+    margin-bottom: 5px !important;
+    pointer-events: none !important; /* 🛑 ГЛАВНОЕ: блок прозрачен для мыши (ЛЕЧИТ ЦВЕТОК!) */
+    width: 100% !important;
+}
+
+/* 2. ТЕКСТ (КНБ, Кость, Цветок, Монета): Вытаскиваем из 3D-кубов */
+body:not(.roulette-mode-active) #res-content {
+    position: relative !important; /* УБИВАЕМ absolute, возвращаем текст в нормальный мир */
+    top: auto !important;
+    bottom: auto !important;
+    left: auto !important;
+    right: auto !important;
+    transform: translateY(10px) scale(0.9) !important;
+    pointer-events: none !important;
+    width: 100% !important;
+}
+body:not(.roulette-mode-active) #res-content.visible {
+    transform: translateY(0) scale(1) !important;
+    opacity: 1 !important;
+}
+
+/* 3. ГАРАНТИЯ КЛИКОВ: Текстовые узлы тоже прозрачны для нажатий */
+.answer-main, .answer-sub, .answer-desc {
+    pointer-events: none !important;
+}
+
+/* 4. АНТИ-ДРЕБЕЗГ КНОПОК НАВИГАЦИИ (Щит от бага hover) */
+.global-bottom-nav .nav-btn {
+    position: relative !important; 
+}
+.global-bottom-nav .nav-btn::after {
+    content: "";
+    position: absolute;
+    top: -10px; 
+    bottom: -15px; /* Запас снизу, чтобы курсор не соскальзывал при прыжке кнопки */
+    left: -10px; 
+    right: -10px;
+}
+
+/* ============================================================ */
+/* 📺 ЛЕЧИМ НАЛОЖЕНИЕ ИСТОРИИ НА РЕТРО-ФИЛЬТРЫ                  */
+/* ============================================================ */
+
+/* Выкручиваем фильтры на абсолютный максимум */
+body.theme-perk_crt_bw::before,
+body.theme-perk_crt_bw::after,
+body.theme-perk_crt_filter::after {
+    z-index: 2147483647 !important; 
+}
+
+/* Опускаем модальные окна чуть ниже фильтров, чтобы они покрывались помехами и ЧБ */
+#rulesOverlay, 
+.settings-overlay,
+#historyOverlay {
+    z-index: 2147483640 !important; 
+    transform: translateZ(100px) !important; /* Уменьшили 3D-выталкивание */
+}
+
+/* ============================================================ */
+/* 🔒 АБСОЛЮТНАЯ ЗАЩИТА: Блокировка интерфейса во время игры    */
+/* ============================================================ */
+
+/* Блокируем вкладки режимов и всё внутри них (свиток, вопросики) */
+body.is-game-busy #gameUI #activeGameTabsBar,
+body.is-game-busy #gameUI #activeGameTabsBar * {
+    pointer-events: none !important;
+}
+
+/* Блокируем кнопки Домик и Инвентарь, добавляем затухание */
+body.is-game-busy #gameUI .global-bottom-nav .nav-btn {
+    pointer-events: none !important;
+    opacity: 0.35 !important;
+    transform: scale(1) !important; /* Убиваем случайные попытки анимации hover */
+}
+
+/* На всякий случай блокируем заголовок игры, чтобы не сбили анимацию */
+body.is-game-busy #gameUI h1#ui-title {
+    pointer-events: none !important;
+}
+
+/* ============================================================ */
+/* 💎 ТОЧЕЧНЫЙ СДВИГ КРИСТАЛЛА ДЛЯ К-Н-Б                        */
+/* ============================================================ */
+
+body.is-rps-game-active .crystal-anim-new {
+    top: 50% !important; /* Сдвигаем кристалл ниже кулаков (по умолчанию там 25%) */
+}
+
+/* ========================================================== */
+/* 🛠 ФИКС Ч/Б И РЕТРО + ТОНКИЕ СЕТКИ ДЛЯ КИБЕРПАНКА И МАЙАМИ */
+/* ========================================================== */
+
+/* 1. ВОСКРЕШАЕМ Ч/Б И РЕТРО (Умная линза поверх всего экрана) */
+body.theme-perk_crt_bw { 
+    filter: none !important; /* Убиваем старый глючный фильтр */
+}
+body.theme-perk_crt_bw::after {
+    /* Накладываем ЧБ прямо на слой с помехами */
+    backdrop-filter: grayscale(100%) contrast(1.15) !important;
+    -webkit-backdrop-filter: grayscale(100%) contrast(1.15) !important;
+}
+
+body.theme-perk_crt_filter { 
+    filter: none !important; /* Убиваем старый глючный фильтр */
+}
+body.theme-perk_crt_filter::after {
+    /* Накладываем Сепию (Ретро) прямо на слой с помехами */
+    backdrop-filter: sepia(80%) contrast(1.15) !important;
+    -webkit-backdrop-filter: sepia(80%) contrast(1.15) !important;
+}
+
+/* 2. СОВРЕМЕННЫЕ ТОНКИЕ ПОЛОСКИ ДЛЯ КИБЕРПАНКА */
+body.theme-perk_crt_miami::after {
+    box-shadow: inset 0 0 120px rgba(0,0,0,0.9);
+    background: linear-gradient(rgba(0, 0, 0, 0) 75%, rgba(0, 0, 0, 0.15) 75%);
+    background-size: 100% 3px;
+}
+
+/* 🌅 МАЙАМИ 80-х (Яркий закат сверху, нуар снизу) */
+body.theme-perk_crt_miami_sunset::before { 
+    /* Окрашивание: сверху слепящий желтый, в центре оранжевый, внизу глубокий фиолетово-черный */
+    background: linear-gradient(180deg, #ffea00 0%, #ff5e00 35%, #1a0033 75%, #000000 100%) !important; 
+	background-size: 100% 2px;
+}
+
+body.theme-perk_crt_miami_sunset::after {
+    /* Чуть усиливаем темную виньетку по краям для кинематографичности */
+    box-shadow: inset 0 0 150px rgba(20, 0, 10, 0.8) !important;
+    background: 
+        /* 1. Наши современные тонкие сканлайны (сетка) */
+        linear-gradient(rgba(0, 0, 0, 0) 75%, rgba(50, 20, 0, 0.2) 75%),
+        /* 2. Физическое затемнение (нуар), поднимающееся снизу вверх */
+        linear-gradient(to top, rgba(0, 0, 0, 0.95) 0%, rgba(0, 0, 0, 0.5) 25%, transparent 60%) !important;
+    background-size: 100% 2px, 100% 100% !important;
+}
+
+/* ========================================================== */
+/* 🛒 ФИКС: ОШИБКА МАГАЗИНА В САМОМ ВЕРХУ                     */
+/* ========================================================== */
+body.is-shop-active #gameUI > #error-msg {
+    position: absolute !important;
+    top: 5px !important; /* Размещаем ровно в пустой зоне над кошельком */
+    left: 0 !important;
+    right: 0 !important;
+    margin: 0 auto !important;
+    order: unset !important; /* Вырываем из обычного порядка flex-колонок */
+    z-index: 9999 !important;
+    
+    /* Делаем цвет красным, так как это предупреждение об ошибке! */
+    color: var(--angry-red) !important; 
+    text-shadow: 0 0 10px var(--angry-red) !important;
+    font-size: 15px !important;
+}
+
+/* ========================================================== */
+/* 🛠 ФИКС: ДЕБАГ-ПАНЕЛЬ АБСОЛЮТНО ПОВЕРХ ВСЕГО               */
+/* ========================================================== */
+.debug-panel { 
+    z-index: 2147483647 !important; /* Максимальный лимит z-index в CSS */
+    transform: translateX(-50%) translateZ(1000px) !important; /* Выталкиваем в самый верхний 3D-слой */
+}
+
 </style>
 </head>
 <!-- --- КОНЕЦ ПЕРВОЙ ЧАСТИ --- -->
@@ -1672,49 +2477,83 @@ window.toggleShopTooltip = function(e, btn, title, text) {
                     qBtn.style.cssText = `position:absolute; top:-8px; left:-8px; font-size:10px; width:24px; height:24px; display:flex; justify-content:center; align-items:center; background:${activeColor}; color:#000; border-radius:50%; box-shadow:0 0 10px ${activeColor}; z-index:10; cursor: pointer; pointer-events: auto;`;
                     
                     const tt = document.createElement('div');
-                    tt.className = 'shop-tt'; // 🎯 Подхватываем наш исправленный CSS
-                    tt.style.borderColor = activeColor; // Красим рамку под цвет режима
+                    tt.className = 'shop-tooltip-new'; 
+                    
+                    // 🚀 МАГИЯ ПОЗИЦИОНИРОВАНИЯ ПО ИНДЕКСУ КНОПКИ
+                    let positionStyles = 'left: 50%; transform: translateX(-50%);'; // По умолчанию для центра (Банк)
+                    if (tabs.length > 1) {
+                        if (index === 0) {
+                            positionStyles = 'left: -5px; transform: none;'; // Левая кнопка -> уходит вправо
+                        } else if (index === tabs.length - 1) {
+                            positionStyles = 'left: auto; right: -5px; transform: none;'; // Правая кнопка -> уходит влево
+                        }
+                    }
+
+                    tt.style.cssText = `
+                        position: absolute; 
+                        top: 140%; 
+                        ${positionStyles}
+                        width: 280px; 
+                        max-width: 85vw; 
+                        background: rgba(10, 15, 25, 0.98); 
+                        backdrop-filter: blur(20px); 
+                        -webkit-backdrop-filter: blur(20px);
+                        border: 1px solid ${activeColor}; 
+                        padding: 16px; 
+                        border-radius: 14px; 
+                        color: #fff; 
+                        font-size: 13px; 
+                        display: none; 
+                        z-index: 1000000; 
+                        text-transform: none; 
+                        font-weight: normal; 
+                        text-align: left; 
+                        box-shadow: 0 15px 40px rgba(0,0,0,0.9); 
+                        line-height: 1.5; 
+                        white-space: normal;
+                        pointer-events: auto;
+                        box-sizing: border-box; /* 🚀 ФИКС ВЫЛЕТА: Теперь 85vw учитывает отступы! */
+                    `;
                     tt.innerHTML = ruleContent;
+                    btn.appendChild(qBtn); btn.appendChild(tt);
                     
-                    btn.appendChild(qBtn); 
-                    btn.appendChild(tt);
-                    
+                    // Классический рабочий клик без лишней JS математики
+                    // Умный клик с авто-позиционированием
+                    // Классический клик с УМНЫМ позиционированием
                     qBtn.onclick = (e) => {
                         e.stopPropagation();
-                        if (typeof App !== 'undefined' && App.playSoundEffect) App.playSoundEffect('tick');
+                        const isVis = tt.style.opacity === '1' || tt.style.display === 'block';
                         
-                        const isVis = tt.style.opacity === '1';
-                        
-                        // Скрываем все остальные подсказки
-                        document.querySelectorAll('.shop-tt, .shop-tooltip-new').forEach(el => {
+                        document.querySelectorAll('.shop-tooltip-new').forEach(el => {
                             el.style.opacity = '0';
                             el.style.pointerEvents = 'none';
-                            el.style.visibility = 'hidden';
                         });
                         
                         if (!isVis) {
-                            // Так как display: none больше нет, скрипт мгновенно получает реальные размеры
-                            const btnRect = btn.getBoundingClientRect(); // Берем кнопку
-                            const ttRect = tt.getBoundingClientRect();   // Берем подсказку
+                            tt.style.display = 'block';
                             
-                            // Центрируем: центр кнопки минус половина подсказки
-                            let leftPos = btnRect.left + (btnRect.width / 2) - (ttRect.width / 2);
-                            
-                            // Защита от вылетов за границы экрана
-                            if (leftPos < 10) leftPos = 10;
-                            if (leftPos + ttRect.width > window.innerWidth - 10) leftPos = window.innerWidth - ttRect.width - 10;
-                            
-                            // Применяем вычисленный сдвиг
-                            tt.style.left = leftPos + 'px';
-                            tt.style.visibility = 'visible';
-                            tt.style.opacity = '1';
-                            tt.style.pointerEvents = 'auto';
+                            requestAnimationFrame(() => {
+                                const btnRect = qBtn.getBoundingClientRect();
+                                const ttRect = tt.getBoundingClientRect();
+                                
+                                // По умолчанию кидаем наверх
+                                tt.style.top = 'auto';
+                                tt.style.bottom = '140%';
+                                
+                                // Если не влезает (упирается в потолок экрана) — кидаем вниз
+                                if (btnRect.top - ttRect.height < 15) {
+                                    tt.style.bottom = 'auto';
+                                    tt.style.top = '140%';
+                                }
+                                
+                                tt.style.opacity = '1';
+                                tt.style.pointerEvents = 'auto';
+                            });
 
-                            // Авто-закрытие
                             const closeHandler = () => {
                                 tt.style.opacity = '0';
                                 tt.style.pointerEvents = 'none'; 
-                                setTimeout(() => { tt.style.visibility = 'hidden'; }, 200); 
+                                setTimeout(() => { tt.style.display = 'none'; }, 200); 
                                 document.removeEventListener('click', closeHandler);
                             };
                             setTimeout(() => { document.addEventListener('click', closeHandler); }, 50);
@@ -1725,9 +2564,6 @@ window.toggleShopTooltip = function(e, btn, title, text) {
                 btn.onclick = (e) => {
                     if (window.isSwitchingMode) return;
                     window.isSwitchingMode = true;
-                    
-                    // 🛡️ ФЕЙЛ-СЕЙФ: Принудительно разблокируем интерфейс через 1.5с, 
-                    // если анимация внезапно зависнет
                     setTimeout(() => { window.isSwitchingMode = false; }, 1500);
 
                     if (typeof App !== 'undefined' && App.playSoundEffect) App.playSoundEffect('tick');
@@ -1740,7 +2576,9 @@ window.toggleShopTooltip = function(e, btn, title, text) {
                     if (!curtain) {
                         curtain = document.createElement('div');
                         curtain.id = 'softBlurCurtain';
-                        curtain.style.cssText = `position:fixed; left:0; width:100%; bottom:0; background:rgba(5,8,15,0.1); backdrop-filter:blur(30px); z-index:9000; opacity:0; pointer-events:none; transition:opacity 0.15s ease-out; -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 60px, black calc(100% - 40px), transparent 100%);`;
+                        // 🚀 ФИКС АНИМАЦИИ: Слегка затемненный блюр (rgba 0.45).
+                        // Он не черный, но достаточно плотный, чтобы скрыть "дыру" от исчезающего барабана!
+                        curtain.style.cssText = `position:fixed; left:0; width:100%; bottom:0; background:rgba(10,15,25,0.45); backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px); z-index:9000; opacity:0; pointer-events:none; transition:opacity 0.15s ease-out; -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 60px, black calc(100% - 40px), transparent 100%);`;
                         document.body.appendChild(curtain);
                     }
                     curtain.style.top = (bar.getBoundingClientRect().bottom - 12) + 'px';
@@ -1748,11 +2586,11 @@ window.toggleShopTooltip = function(e, btn, title, text) {
                     requestAnimationFrame(() => {
                         curtain.style.opacity = '1';
                         curtain.style.pointerEvents = 'auto';
+                        
                         setTimeout(() => {
                             GameState.subModes[mode] = t.id;
                             GameState.previewMode = mode;
                             
-                            // 🛡️ ЗАЩИТНЫЙ БЛОК: гарантирует, что сбой в ядре не "убьет" вкладки
                             try {
                                 if (typeof App !== 'undefined' && App.selectGameMode) App.selectGameMode();
                             } catch(err) {
@@ -1765,7 +2603,7 @@ window.toggleShopTooltip = function(e, btn, title, text) {
                                         curtain.style.pointerEvents = 'none';
                                         if (gameUI) gameUI.style.minHeight = '';
                                         document.body.classList.remove('mode-switching-active');
-                                        window.isSwitchingMode = false; // Разблокировка
+                                        window.isSwitchingMode = false;
                                     }, 250);
                                 }, 120); 
                             }
@@ -1788,17 +2626,18 @@ scrollBtn.onclick = (e) => {
 };
 bar.appendChild(scrollBtn);
 		
-        // 🚀 ЖИВОЙ СКАНЕР СОСТОЯНИЯ ИГРЫ (ФИНАЛЬНЫЙ ФИКС К-Н-Б)
+        // 🚀 ЖИВОЙ СКАНЕР СОСТОЯНИЯ ИГРЫ (ФИНАЛЬНЫЙ ФИКС БЛОКИРОВКИ)
         window.tabLockInterval = setInterval(() => {
             const currentBar = document.getElementById('activeGameTabsBar');
             if (!currentBar) {
                 clearInterval(window.tabLockInterval);
+                document.body.classList.remove('is-game-busy'); // Снимаем замок на всякий случай
                 return;
             }
 
             const rb = document.getElementById('rollBtn');
-            
-            // 🛑 ФИКС 1: Игнорируем отключенную кнопку, если мы в К-Н-Б!
+
+            // 🛑 Игнорируем отключенную кнопку, если мы в К-Н-Б!
             let isBusy = window.isSwitchingMode;
             if (GameState.mode !== 'rps') {
                 isBusy = isBusy || (rb && rb.disabled);
@@ -1810,19 +2649,18 @@ bar.appendChild(scrollBtn);
             }
             
             if (GameState.mode === 'rps' && typeof RPSGame !== 'undefined') {
-                // 🛑 ФИКС 2: Вызываем правильное имя экспортированной функции (isGameActive)
                 if (typeof RPSGame.isGameActive === 'function') {
                     isBusy = isBusy || RPSGame.isGameActive();
                 }
             }
 
-            // Визуальная реакция (Блокировка или разблокировка табов)
+            // 🔒 ВЕШАЕМ ГЛОБАЛЬНЫЙ ЗАМОК НА ВЕСЬ ЭКРАН
             if (isBusy) {
+                document.body.classList.add('is-game-busy');
                 currentBar.style.opacity = '0.35'; 
-                currentBar.style.pointerEvents = 'none'; 
             } else {
+                document.body.classList.remove('is-game-busy');
                 currentBar.style.opacity = '1';    
-                currentBar.style.pointerEvents = 'auto'; 
             }
         }, 150);
     }
@@ -1832,7 +2670,7 @@ bar.appendChild(scrollBtn);
     <div id="stars" class="stars-layer stars-active bg1-stars"></div>
 
     <div id="mainMenuOverlay">
-        <div class="version">v0.9.0.06</div> 
+        <div class="version">v0.9.0.10</div> 
 		<div class="global-bottom-nav">
             <div class="nav-btn" onclick="if(typeof App !== 'undefined' && App.playSoundEffect) App.playSoundEffect('click'); if(typeof ShopGame !== 'undefined') ShopGame.toggleInventory(true);">
                 <i class="fas fa-box-open" style="color: var(--sun-gold);"></i>
@@ -1942,6 +2780,9 @@ bar.appendChild(scrollBtn);
     <div class="shop-grid" id="shopGrid" style="display:grid; grid-template-columns:1fr 1fr; gap:12px; width:95%;"></div>
 </div>
         <div id="rouletteStage">
+            <!-- НОВЫЙ ЭЛЕМЕНТ: Личный контейнер для эмодзи рулетки (Красный квадрат) -->
+            <div id="roulette-isolated-icon" style="position: absolute; left: 5%; top: 40%; margin-top: -40px; font-size: 80px; z-index: 150; pointer-events: none; opacity: 0; transition: opacity 0.3s ease; line-height: 1;"></div>
+            
             <div class="drum-wrapper" id="drumWrapper">
                 <div class="target-marker"><i class="fas fa-caret-down"></i></div>
                 <div class="drum-rotator" id="drumRotator">
@@ -2429,6 +3270,137 @@ const App = (function() {
                 `;
                 document.head.appendChild(crystalStyle);
             }
+
+			// 🤖 HUD ПРОЦЕССОР ТЕРМИНАТОРА и МАТРИЦЫ
+			window.spawnTerminatorData = function() {
+    const isTerminator = document.body.classList.contains('theme-perk_crt_terminator');
+    const isMatrix = document.body.classList.contains('theme-perk_crt_matrix');
+
+    if (!isTerminator && !isMatrix) return;
+
+    // 🟢 ЛОГИКА ДЛЯ МАТРИЦЫ
+    if (isMatrix) {
+        // Каноничный набор: Японская катакана (полуширинная) + латиница + цифры
+        const chars = "ｱｲｳｴｵｶｷｸｹｺｻｼｽｾｿﾀﾁﾂﾃﾄﾅﾆﾇﾈﾉﾊﾋﾌﾍﾎﾏﾐﾑﾒﾓﾔﾕﾖﾗﾘﾙﾚﾛﾜﾝ1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        
+        // За один бросок пускаем 2-4 потока дождя
+        const dropsCount = 2 + Math.floor(Math.random() * 3);
+
+        for (let i = 0; i < dropsCount; i++) {
+            setTimeout(() => {
+                const container = document.createElement('div');
+                container.style.setProperty('pointer-events', 'none', 'important');
+                container.style.setProperty('user-select', 'none', 'important');
+                container.style.setProperty('touch-action', 'none', 'important');
+                container.style.setProperty('z-index', '5', 'important'); 
+                container.style.setProperty('position', 'fixed', 'important');
+                
+                // Аутентичный неоново-зеленый с яркой сердцевиной
+                container.style.setProperty('color', '#4ade80', 'important');
+                container.style.setProperty('text-shadow', '0 0 8px #22c55e, 0 0 2px #ffffff', 'important');
+                container.style.setProperty('font-family', '"Courier New", monospace', 'important');
+                // Разный размер шрифта для разных колонок создает крутой эффект глубины (3D)
+                container.style.setProperty('font-size', (12 + Math.random() * 12) + 'px', 'important');
+                container.style.setProperty('line-height', '0.9', 'important');
+                container.style.setProperty('white-space', 'pre', 'important');
+                container.style.setProperty('text-align', 'center', 'important');
+                container.style.setProperty('transition', 'opacity 0.8s ease', 'important');
+                container.style.setProperty('font-weight', 'bold', 'important');
+
+                container.style.left = (2 + Math.random() * 94) + 'vw';
+                container.style.top = (Math.random() * 20) + 'vh'; // Начинают падать из верхней части экрана
+                document.body.appendChild(container);
+
+                let currentText = "";
+                let maxLen = 10 + Math.floor(Math.random() * 15); // Длина потока
+                let currentLen = 0;
+
+                // Сверхбыстрая печать текста без нагрузки на анимацию игры
+                function dropRain() {
+                    if (currentLen < maxLen) {
+                        const randomChar = chars.charAt(Math.floor(Math.random() * chars.length));
+                        currentText += randomChar + "\n";
+                        container.textContent = currentText;
+                        currentLen++;
+                        // Случайная скорость падения каждой отдельной капли
+                        requestAnimationFrame(() => setTimeout(dropRain, 20 + Math.random() * 40));
+                    } else {
+                        // Растворяется в воздухе
+                        setTimeout(() => {
+                            container.style.opacity = '0';
+                            setTimeout(() => container.remove(), 800);
+                        }, 500 + Math.random() * 1000);
+                    }
+                }
+                dropRain();
+            }, i * 150); // Легкая рассинхронизация старта потоков (эффект натурального дождя)
+        }
+        return;
+    }
+
+    // 🔴 ЛОГИКА ДЛЯ ТЕРМИНАТОРА (T-100)
+    if (isTerminator) {
+        const phrases = [
+            "ANALYSIS: PROBABILITY 67.4%", "TARGET_LOCK: STABLE", "VOLTAGE_CHECK: OK", 
+            "CORE_TEMP: 34.2C", "SENSORS: ACTIVE", "INPUT_DETECTED...", "CALCULATING_FATE...",
+            "0x45FF32: READY", "SECTOR_7G: CLEAR", "THREAT_LEVEL: ZERO", "OBJECT_ID: 8829-B"
+        ];
+
+        const container = document.createElement('div');
+        container.className = 't100-data-block';
+        
+        container.style.setProperty('pointer-events', 'none', 'important');
+        container.style.setProperty('user-select', 'none', 'important');
+        container.style.setProperty('touch-action', 'none', 'important');
+        container.style.setProperty('z-index', '5', 'important'); 
+        container.style.whiteSpace = 'pre-wrap';
+        
+        const isLeft = Math.random() > 0.5;
+        if (isLeft) {
+            container.style.left = '3vw';
+            container.style.textAlign = 'left';
+        } else {
+            container.style.right = '3vw';
+            container.style.textAlign = 'right';
+        }
+        
+        container.style.top = (25 + Math.random() * 35) + 'vh';
+        container.style.opacity = '0.8';
+        
+        document.body.appendChild(container);
+
+        let lines = [];
+        for(let i=0; i<3; i++) {
+            lines.push(phrases[Math.floor(Math.random() * phrases.length)]);
+        }
+
+        let lineIdx = 0, charIdx = 0;
+        let currentText = "";
+
+        function typeEffect() {
+            if (lineIdx < lines.length) {
+                if (charIdx < lines[lineIdx].length) {
+                    currentText += lines[lineIdx].charAt(charIdx);
+                    container.textContent = currentText; 
+                    charIdx++;
+                    requestAnimationFrame(() => setTimeout(typeEffect, 20)); 
+                } else {
+                    currentText += "\n";
+                    container.textContent = currentText;
+                    lineIdx++; charIdx = 0;
+                    requestAnimationFrame(() => setTimeout(typeEffect, 80)); 
+                }
+            } else {
+                setTimeout(() => {
+                    container.style.opacity = '0';
+                    setTimeout(() => container.remove(), 400);
+                }, 2000);
+            }
+        }
+        
+        typeEffect();
+    }
+};
 
             function init() {
                 document.documentElement.lang = GameState.lang; 
@@ -3491,8 +4463,23 @@ function addCrystal(game = null, subMode = null, customAmount = null) {
                     if(overlay) overlay.style.display = 'flex';
                 }
             }
+//ядро
+	function mountActiveGame() {
+    // 🧹 Тотальная зачистка призраков: убиваем всё, что осталось на экране от прошлой игры
+    const resMain = document.getElementById('res-main'); if (resMain) resMain.innerHTML = '';
+    const resSub = document.getElementById('res-sub'); if (resSub) resSub.innerHTML = '';
+    const resDesc = document.getElementById('res-desc'); if (resDesc) resDesc.innerHTML = '';
+    const resContent = document.getElementById('res-content'); if (resContent) resContent.classList.remove('visible');
+    
+    // 💉 АНТИДОТ ОТ "ЗАРАЖЕНИЯ" ПОЗИЦИОНИРОВАНИЯ ИЗ К-Н-Б
+    const ansBox = document.getElementById('answer-box');
+    if (ansBox && resContent && resContent.parentNode !== ansBox) {
+        ansBox.appendChild(resContent); // Жестко возвращаем беглеца в его родной контейнер
+    }
+    if (resContent) resContent.style.cssText = ''; // Выжигаем любые инлайн-стили, которые могли налипнуть
+    if (ansBox) ansBox.style.cssText = ''; 
+    document.body.classList.remove('is-rps-game-active', 'rps-pvp-active'); // Снимаем залипшие классы К-Н-Б
 
-            function mountActiveGame() {
     const oldBtn = document.getElementById('rollBtn');
     if (oldBtn) {
         const newBtn = oldBtn.cloneNode(true);
@@ -3676,19 +4663,41 @@ function addCrystal(game = null, subMode = null, customAmount = null) {
             }
 
 
-            async function askOracle(forcedIdx = null) {
-                if (GameState.mode === 'rps') {
-                    if(typeof RPSGame !== 'undefined') RPSGame.play(forcedIdx);
-                } else if (GameState.mode === 'flower') {
-                    if(typeof FlowerGame !== 'undefined') FlowerGame.play(forcedIdx);
-                } else if (GameState.mode === 'coin') {
-                    if(typeof CoinGame !== 'undefined') CoinGame.play(forcedIdx);
-                } else if (GameState.mode === 'dice') {
-                    if(typeof DiceGame !== 'undefined') DiceGame.play(forcedIdx);
-                } else {
-                    if(typeof RouletteGame !== 'undefined') RouletteGame.play(forcedIdx);
-                }
+            async function askOracle(arg = null) {
+    // 🛑 КРИТИЧЕСКИЙ ФИКС: Очищаем аргумент от объекта Event.
+    const forcedIdx = (typeof arg === 'number') ? arg : null;
+
+    // Запускаем логику активной игры
+    const mode = GameState.mode;
+
+    if (mode === 'rps' && typeof RPSGame !== 'undefined') {
+        RPSGame.play(forcedIdx);
+    } else if (mode === 'flower' && typeof FlowerGame !== 'undefined') {
+        FlowerGame.play(forcedIdx);
+    } else if (mode === 'coin' && typeof CoinGame !== 'undefined') {
+        CoinGame.play(forcedIdx);
+    } else if (mode === 'dice' && typeof DiceGame !== 'undefined') {
+        DiceGame.play(forcedIdx);
+    } else if (mode === 'roulette' && typeof RouletteGame !== 'undefined') {
+        RouletteGame.play(forcedIdx);
+    } else if (mode === 'sticks' || mode === 'lots') {
+        if (typeof SticksGame !== 'undefined' && typeof SticksGame.play === 'function') {
+            SticksGame.play(forcedIdx);
+        }
+    }
+
+    // 🤖 ГЛОБАЛЬНЫЙ УМНЫЙ ХУК ДЛЯ T-100
+    setTimeout(() => {
+        const rollBtn = document.getElementById('rollBtn');
+        // Если игра успешно началась, она заблокирует кнопку "Испытать судьбу".
+        // Если была ошибка (например, нет вопроса) — кнопка останется активной.
+        if (rollBtn && rollBtn.disabled) {
+            if (typeof window.spawnTerminatorData === 'function') {
+                window.spawnTerminatorData();
             }
+        }
+    }, 150); // Ждем 150мс, чтобы игра успела отреагировать
+}
 
             function showError(msg) {
                 clearTimeout(GameState.errorTimeout);
@@ -4434,8 +5443,13 @@ const ShopGame = (function() {
             { id: 'perk_x2_win', name: { ru: 'Х2 Выигрыш', en: 'x2 Win' }, priceCoins: 100, priceCrystals: 20, icon: '🤑', isStackable: true, desc: { ru: 'Умножает выигрыш в Банке х2.<br><br><span style="color:#ff6666; font-weight:bold;">Сгорает после 1 игры (победа или поражение).</span>', en: 'Multiplies Bank win x2.<br><br><span style="color:#ff6666; font-weight:bold;">Burns after 1 game (win or loss).</span>' } },
             { id: 'perk_x2_super', name: { ru: 'Супер Х2', en: 'Super x2' }, priceCoins: 200, priceCrystals: 40, icon: '🔥', isStackable: true, desc: { ru: 'Умножает выигрыш в Банке х2.<br><br><span style="color:var(--friendly-green); font-weight:bold;">Не сгорает при проигрыше.</span> Тратится только при успешном умножении.', en: 'Multiplies Bank win x2.<br><br><span style="color:var(--friendly-green); font-weight:bold;">Does not burn on loss.</span> Only consumed on a successful win.' } },
             { id: 'perk_gyro_stars', name: { ru: 'Живые Звезды', en: 'Live Stars' }, priceCoins: 0, priceCrystals: 300, icon: '🌌', isStackable: false, desc: { ru: 'Звезды реагируют на наклон телефона.<br><br><span style="color:var(--magic-color); font-weight:bold;">Глобальный 3D эффект.</span>', en: 'Stars react to phone tilt.<br><br><span style="color:var(--magic-color); font-weight:bold;">Global 3D effect.</span>' } },
+			{ id: 'perk_gyro_stars_far', name: { ru: 'Далекие Звезды', en: 'Distant Stars' }, priceCoins: 0, priceCrystals: 300, icon: '🔭', isStackable: false, desc: { ru: 'Звезды реагируют на наклон плавно и мягко, создавая эффект огромного расстояния.<br><br><span style="color:var(--magic-color); font-weight:bold;">Глубокий 3D эффект.</span>', en: 'Stars react to tilt smoothly, creating a massive distance effect.<br><br><span style="color:var(--magic-color); font-weight:bold;">Deep 3D effect.</span>' } },
             { id: 'perk_crt_filter', name: { ru: 'Ретро CRT', en: 'Retro CRT' }, priceCoins: 0, priceCrystals: 200, icon: '📺', isStackable: false, desc: { ru: 'Эффект старого пузатого телевизора.<br><br><span style="color:var(--magic-color); font-weight:bold;">Глобальный фильтр.</span>', en: 'Old CRT TV effect.<br><br><span style="color:var(--magic-color); font-weight:bold;">Global filter.</span>' } },
-            { id: 'perk_crt_bw', name: { ru: 'Ч/Б Кинескоп', en: 'B/W CRT' }, priceCoins: 0, priceCrystals: 250, icon: '📻', isStackable: false, desc: { ru: 'Эффект античного черно-белого телевизора с высокой контрастностью.<br><br><span style="color:var(--magic-color); font-weight:bold;">Глобальный фильтр.</span>', en: 'Antique B/W TV effect.<br><br><span style="color:var(--magic-color); font-weight:bold;">Global filter.</span>' } }
+            { id: 'perk_crt_bw', name: { ru: 'Ч/Б Кинескоп', en: 'B/W CRT' }, priceCoins: 0, priceCrystals: 250, icon: '📻', isStackable: false, desc: { ru: 'Эффект античного черно-белого телевизора с высокой контрастностью.<br><br><span style="color:var(--magic-color); font-weight:bold;">Глобальный фильтр.</span>', en: 'Antique B/W TV effect.<br><br><span style="color:var(--magic-color); font-weight:bold;">Global filter.</span>' } },
+            { id: 'perk_crt_matrix', name: { ru: 'Матрица', en: 'Matrix' }, priceCoins: 0, priceCrystals: 250, icon: '📟', isStackable: false, desc: { ru: 'Цифровой мир в зеленых тонах. Снижена интенсивность.', en: 'Digital world in green tones. Reduced intensity.' } },
+            { id: 'perk_crt_miami', name: { ru: 'Киберпанк', en: 'Cyberpunk' }, priceCoins: 0, priceCrystals: 250, icon: '🏙️', isStackable: false, desc: { ru: 'Кислотный градиент будущего. Стиль Майами теперь здесь.', en: 'Acid gradient of the future. Miami style is here now.' } },
+            { id: 'perk_crt_miami_sunset', name: { ru: 'Майами 80-х', en: 'Miami 80s' }, priceCoins: 0, priceCrystals: 250, icon: '🌅', isStackable: false, desc: { ru: 'Настоящий закат на побережье. Огненно-рыжая палитра.', en: 'Real sunset on the coast. Fiery orange palette.' } },
+            { id: 'perk_crt_terminator', name: { ru: 'T-100', en: 'T-100' }, priceCoins: 0, priceCrystals: 300, icon: '🤖', isStackable: false, desc: { ru: 'Зрение киборга. Интерактивный HUD с кодом в реальном времени.', en: 'Cyborg vision. Interactive HUD with code in real time.' } }
         ]
     };
 
@@ -4944,16 +5958,42 @@ const ShopGame = (function() {
     }
 
     function renderPerksTab(grid, balanceCoins, balanceCrystals, lang) {
+        // 1. Сортируем перки по логическим группам
         const betBoosters = shopItems.perks.filter(i => i.id.startsWith('perk_x2_'));
-        const uiBoosters = shopItems.perks.filter(i => !i.id.startsWith('perk_x2_') && !i.id.startsWith('exchange_'));
+        // 🚀 ФИКС: Используем startsWith, чтобы захватить обе версии звезд!
+        const dynamicBg = shopItems.perks.filter(i => i.id.startsWith('perk_gyro_stars'));
+        const crtFilters = shopItems.perks.filter(i => i.id.startsWith('perk_crt_'));
+        
+        // Отлавливаем любые другие перки (исключая искры, т.к. они продаются в разделе "Стили")
+        const otherBoosters = shopItems.perks.filter(i => 
+            !i.id.startsWith('perk_x2_') && 
+            !i.id.startsWith('exchange_') && 
+            !i.id.startsWith('perk_crt_') && 
+            !i.id.startsWith('perk_sparkle_') && 
+            !i.id.startsWith('perk_gyro_stars') // 🚀 ФИКС: Исключаем все варианты звезд
+        );
 
+        // 2. Отрисовываем категории в нужном порядке
         if (betBoosters.length > 0) {
             grid.appendChild(createCategoryHeader(lang === 'ru' ? 'Бустеры Ставок' : 'Bet Boosters', 'var(--angry-red)'));
             appendItems(grid, betBoosters, balanceCoins, balanceCrystals, lang);
         }
-        if (uiBoosters.length > 0) {
-            grid.appendChild(createCategoryHeader(lang === 'ru' ? 'Бустеры Интерфейса' : 'UI Boosters', 'var(--magic-color)'));
-            appendItems(grid, uiBoosters, balanceCoins, balanceCrystals, lang);
+        
+        if (dynamicBg.length > 0) {
+            // Выделяем звезды красивым неоново-бирюзовым цветом
+            grid.appendChild(createCategoryHeader(lang === 'ru' ? 'Динамический Фон' : 'Dynamic Background', '#00f5d4'));
+            appendItems(grid, dynamicBg, balanceCoins, balanceCrystals, lang);
+        }
+
+        if (crtFilters.length > 0) {
+            // CRT фильтры оставляем фирменным фиолетовым
+            grid.appendChild(createCategoryHeader(lang === 'ru' ? 'Экранные Фильтры' : 'Screen Filters', 'var(--magic-color)'));
+            appendItems(grid, crtFilters, balanceCoins, balanceCrystals, lang);
+        }
+
+        if (otherBoosters.length > 0) {
+            grid.appendChild(createCategoryHeader(lang === 'ru' ? 'Прочие Эффекты' : 'Other Effects', 'var(--sun-gold)'));
+            appendItems(grid, otherBoosters, balanceCoins, balanceCrystals, lang);
         }
     }
 
@@ -5015,25 +6055,21 @@ const ShopGame = (function() {
     }
     
     function getTooltipHTML(itemName, descObj, lang) {
-        // Твоя оригинальная, надежная система проверки языков
         const ruDesc = (descObj && typeof descObj === 'object') ? (descObj.ru || '') : (descObj || '');
         const enDesc = (descObj && typeof descObj === 'object') ? (descObj.en || '') : (descObj || '');
         if (!ruDesc && !enDesc) return '';
 
-        // Железобетонное экранирование ВСЕХ кавычек (одинарных и двойных)
         const safeTitle = itemName.replace(/'/g, "&#39;").replace(/"/g, "&quot;");
         const safeRu = ruDesc.replace(/'/g, "&#39;").replace(/"/g, "&quot;").replace(/\n/g, "<br>");
         const safeEn = enDesc.replace(/'/g, "&#39;").replace(/"/g, "&quot;").replace(/\n/g, "<br>");
-
-        // Выбираем нужный язык для отрисовки
         const displayDesc = lang === 'en' ? (safeEn || safeRu) : (safeRu || safeEn);
 
-        // ВНИМАНИЕ: Возвращен твой HTML с новым классом .shop-tooltip-new
+        // В onclick добавлено условие if (el !== tt), чтобы скрипт не убивал сам себя!
         return `
-            <div class="info-icon-btn" style="position: absolute; top: 4px; left: 4px; z-index: 20;" onclick="event.stopPropagation(); const tt = this.nextElementSibling; const isVis = tt.style.opacity === '1'; document.querySelectorAll('.shop-tooltip-new').forEach(el => el.style.opacity = '0'); if(!isVis) { tt.style.opacity = '1'; tt.style.left = '15px'; tt.style.right = 'auto'; if(tt.getBoundingClientRect().right > window.innerWidth - 10) { tt.style.left = 'auto'; tt.style.right = '10px'; } }">
+            <div class="info-icon-btn" style="position: absolute; top: 4px; left: 4px; z-index: 20;" onclick="event.stopPropagation(); const tt = this.nextElementSibling; const isVis = tt.style.opacity === '1'; document.querySelectorAll('.shop-tooltip-new').forEach(el => { if (el !== tt) { el.style.opacity = '0'; el.style.pointerEvents = 'none'; setTimeout(() => { el.style.display = 'none'; }, 200); } }); if (!isVis) { tt.style.display = 'block'; requestAnimationFrame(() => { const b = this.getBoundingClientRect(); const t = tt.getBoundingClientRect(); tt.style.bottom = 'auto'; tt.style.top = '25px'; if (b.bottom + t.height > window.innerHeight - 15) { tt.style.top = 'auto'; tt.style.bottom = '25px'; } tt.style.left = '15px'; tt.style.right = 'auto'; if (b.left + 15 + t.width > window.innerWidth - 10) { tt.style.left = 'auto'; tt.style.right = '10px'; } tt.style.opacity = '1'; tt.style.pointerEvents = 'auto'; }); } else { tt.style.opacity = '0'; tt.style.pointerEvents = 'none'; setTimeout(() => { tt.style.display = 'none'; }, 200); }">
                 <div style="background: rgba(255,249,174,0.1); border: 1px solid var(--sun-gold); color: var(--sun-gold); border-radius: 4px; width: 14px; height: 14px; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: bold; cursor: pointer; box-shadow: 0 0 5px rgba(255,249,174,0.3);">?</div>
             </div>
-            <div class="shop-tooltip-new" style="position: absolute; top: 25px; left: 15px; background: rgba(5, 8, 15, 0.98); border: 1px solid var(--sun-gold); padding: 8px 10px; border-radius: 8px; color: white; font-size: 10px; width: 150px; opacity: 0; pointer-events: none; transition: opacity 0.2s; z-index: 9999; box-shadow: 0 0 15px rgba(255, 249, 174, 0.3); text-align: left; text-transform: none; font-weight: normal; line-height: 1.3;">
+            <div class="shop-tooltip-new" style="position: absolute; background: rgba(5, 8, 15, 0.98); border: 1px solid var(--sun-gold); padding: 8px 10px; border-radius: 8px; color: white; font-size: 10px; width: 150px; opacity: 0; pointer-events: none; transition: opacity 0.2s; z-index: 9999; box-shadow: 0 0 15px rgba(255, 249, 174, 0.3); text-align: left; text-transform: none; font-weight: normal; line-height: 1.3; display: none;">
                 <div style="color: var(--sun-gold); font-weight: bold; margin-bottom: 5px; text-transform: uppercase; font-size: 10px;">${safeTitle}</div>
                 ${displayDesc}
             </div>
@@ -5212,12 +6248,15 @@ const ShopGame = (function() {
         const rouletteSVG = `<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10" stroke-width="2"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="5.5" r="2.5"/><circle cx="12" cy="5.5" r="1.2" fill="currentColor" stroke="none"/><circle cx="17.6" cy="8.8" r="2.5"/><circle cx="17.6" cy="15.2" r="2.5"/><circle cx="12" cy="18.5" r="2.5"/><circle cx="6.4" cy="15.2" r="2.5"/><circle cx="6.4" cy="8.8" r="2.5"/></svg>`;
         const coinSVG = `<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 6.5l5.5 5.5-5.5 5.5-5.5-5.5z"/><circle cx="12" cy="12" r="2" fill="currentColor" stroke="none"/></svg>`;
 
+        // 🚀 ФИКС: Красиво разбитая первая вкладка (Молния) с учетом новых Далеких Звезд
         const categories = [
             { 
                 key: 'boosters', icon: '<i class="fas fa-bolt"></i>', title: { ru: 'Бустеры', en: 'Boosters' }, color: 'var(--angry-red)', 
                 items: [ 
                     ...mapItems(shopItems.perks.filter(i => i.id.startsWith('perk_x2_')), 'perks', 'Бустеры Ставок', 'Bet Boosters'),
-                    ...mapItems(shopItems.perks.filter(i => i.id === 'perk_gyro_stars' || i.id.startsWith('perk_crt_')), 'perks', 'Глобальные Эффекты', 'Global Effects')
+                    ...mapItems(shopItems.perks.filter(i => i.id.startsWith('perk_gyro_stars')), 'perks', 'Динамический Фон', 'Dynamic Background'),
+                    ...mapItems(shopItems.perks.filter(i => i.id.startsWith('perk_crt_')), 'perks', 'Экранные Фильтры', 'Screen Filters'),
+                    ...mapItems(shopItems.perks.filter(i => !i.id.startsWith('perk_x2_') && !i.id.startsWith('exchange_') && !i.id.startsWith('perk_crt_') && !i.id.startsWith('perk_sparkle_') && !i.id.startsWith('perk_gyro_stars')), 'perks', 'Прочие Эффекты', 'Other Effects')
                 ] 
             },
             { key: 'dice', icon: '<i class="fas fa-cube"></i>', title: { ru: 'Кость Истины', en: 'Dice of Fate' }, color: 'var(--magic-color)', items: [ ...mapItems(shopItems.gameStyles.filter(i=>i.id.startsWith('style_dice')), 'gameStyles', 'Тема интерфейса', 'UI Theme'), ...mapItems(shopItems.diceModes, 'diceModes', 'Облик кости', 'Dice Faces'), ...mapItems(shopItems.perks.filter(i => i.id === 'perk_sparkle_dice'), 'perks', 'Дополнительные функции', 'Extra Features') ] },
@@ -5515,15 +6554,22 @@ const ShopGame = (function() {
             }
         }, 300);
 
-        document.addEventListener('click', (e) => {
-            if (!e.target.closest('.info-icon-btn') && !e.target.closest('.info-mode-btn')) {
-                document.querySelectorAll('.shop-tt').forEach(el => {
-                    el.style.display = 'none';
-                    el.style.opacity = '0';
-                    el.style.pointerEvents = 'none';
-                });
+        // 🚀 ФИКС: Умный закрыватель подсказок для мобилок и ПК
+        const closeShopTooltips = (e) => {
+            // Защита: если тапнули по самой кнопке с вопросиком или внутри открытой подсказки — не закрываем ее принудительно
+            if (e.target.closest('.info-icon-btn') || e.target.closest('.shop-tooltip-new') || e.target.closest('.shop-tt') || e.target.closest('.float-corner-btn')) {
+                return;
             }
-        });
+            
+            document.querySelectorAll('.shop-tooltip-new, .shop-tt').forEach(el => {
+                el.style.opacity = '0';
+                el.style.pointerEvents = 'none';
+            });
+        };
+
+        // Вешаем слушатель и на клик мыши, и на касание пальцем
+        document.addEventListener('click', closeShopTooltips);
+        document.addEventListener('touchstart', closeShopTooltips, { passive: true });
     }
 
     return { 
@@ -5600,14 +6646,7 @@ const DiceGame = (function() {
         const dp = document.getElementById('debugPanel');
         if (GameState.debugEnabled && dp) dp.style.display = 'flex';
         
-        const t = LANG_DATA[GameState.lang];
-        const subNames = { standard: t.smStd, bet: t.smBet, casino: t.smCasino };
-        const disp = document.getElementById('current-mode-display');
-        if (disp) {
-            disp.innerText = subNames[GameState.subModes.dice].toUpperCase();
-            disp.style.display = 'inline';
-        }
-        
+        // Всю логику отрисовки заголовка теперь безопасно выполняет эта функция:
         updateModeDisplay();
     }
 
@@ -5750,8 +6789,14 @@ const DiceGame = (function() {
         if (!GameState.isQuestionHidden && !q && forcedIdx === null && typeof App !== 'undefined') {
             App.triggerButtonError();
             App.showError(t.error); 
-            return;
+            return; // <-- Если ошибка, скрипт прерывается здесь!
         }
+        
+        // --- 🚀 СЮДА ДОБАВЛЯЕМ ВЫЗОВ HUD ---
+        if (typeof window.spawnTerminatorData === 'function') {
+            window.spawnTerminatorData();
+        }
+        // ------------------------------------
         
         if(typeof App !== 'undefined') App.hideError();
         isDragging = false; velX = 0; velY = 0;
@@ -6039,7 +7084,8 @@ const DiceGame = (function() {
         // ==============================================
         const RouletteGame = (function() {
             const chamberMap = [4, 5, 0, 1, 2, 3]; 
-            const debugToChamberMap = [4, 5, 0, 1, 2, 3]; 
+            const debugToChamberMap = [4, 5, 0, 1, 2, 3];
+			document.body.classList.add('is-roulette-run');
 
             let subStates = {
                 standard: { loadedBullets: 0, chamberState: [false,false,false,false,false,false], stashState: [false,false,false,false,false], drumRotation: 0, survivalCount: 0, survivalInitialBullets: 0 },
@@ -6640,6 +7686,18 @@ const DiceGame = (function() {
             function mount() {
                 isGameActive = true;
                 
+				// 🚀 ЖЕЛЕЗОБЕТОННЫЙ ТЕЛЕПОРТ ЭМОДЗИ (ТОЛЬКО ДЛЯ РУЛЕТКИ)
+    const rCont = document.getElementById('res-content');
+    if (rCont) {
+        rCont.style.setProperty('position', 'fixed', 'important');
+        rCont.style.setProperty('top', '25vh', 'important'); /* Выше/ниже (vh = % от высоты экрана) */
+        rCont.style.setProperty('left', '8vw', 'important'); /* Правее/левее (vw = % ширины экрана) */
+        rCont.style.setProperty('bottom', 'auto', 'important');
+        rCont.style.setProperty('right', 'auto', 'important');
+        rCont.style.setProperty('transform', 'translateY(-50%)', 'important');
+        rCont.style.setProperty('z-index', '9999', 'important');
+    }
+	
                 const rs = document.getElementById('rouletteStage'); 
                 if(rs) rs.style.display = 'flex';
                 
@@ -6713,6 +7771,7 @@ const DiceGame = (function() {
                 justFired = false;
                 tempCoins = 0;
                 tempCrystals = 0;
+				document.body.classList.remove('is-roulette-run');
 
                 // РОДНАЯ ЛОГИКА v39: Явно прячем КАЖДЫЙ элемент рулетки
                 const rs = document.getElementById('rouletteStage');
@@ -7026,6 +8085,8 @@ const DiceGame = (function() {
                 isWaitingResult = false; // КРИТИЧНО: Снимаем флаг ожидания
                 
                 // Очистка UI
+				const rouIcon = document.getElementById('roulette-isolated-icon');
+				if (rouIcon) { rouIcon.style.opacity = '0'; } // Добавили очистку
 				const sc = document.getElementById('survivalCounter'); if(sc) sc.classList.remove('visible');
 				const dr = document.getElementById('drumRotator'); if(dr) { dr.style.transition = 'none'; dr.style.transform = `rotate(0deg)`; } 
             
@@ -7049,6 +8110,8 @@ const DiceGame = (function() {
             }
 
             function spinRandomly() {
+				const rouIcon = document.getElementById('roulette-isolated-icon');
+				if (rouIcon) rouIcon.style.opacity = '0';
                 const rsBtn = document.getElementById('rouletteStatusBtn');
                 if ((rsBtn && rsBtn.disabled) || isSpinningDrum || isDragging || GameState.mode !== 'roulette') return; 
                 
@@ -7257,6 +8320,8 @@ const DiceGame = (function() {
             }
 
             function play(forcedIdx = null) {
+			const rouIcon = document.getElementById('roulette-isolated-icon');
+				if (rouIcon) rouIcon.style.opacity = '0';
                 if (forcedIdx === null && (isSpinningDrum || isWaitingResult || isDragging || isBetting)) return;
 
                 if (pendingDeathReset) reset();
@@ -7384,8 +8449,8 @@ const DiceGame = (function() {
                 else if (activeBooster === 'super') boosterTag = ' <span class="glow-gold" style="font-weight: bold; font-size: 14px;">x2</span>';
 
                 let uiColor = "", snd = "", mainSubI = "", histSubI = "", histDispTxt = "";
-                const resSub = document.getElementById('res-sub');
-                if (resSub) resSub.classList.remove('heart-pulse', 'skull-aura');
+                const rouIcon = document.getElementById('roulette-isolated-icon');
+				if (rouIcon) rouIcon.classList.remove('heart-pulse', 'skull-aura');
                 
                 isSpinningDrum = false; 
                 isWaitingResult = true;
@@ -7406,7 +8471,7 @@ const DiceGame = (function() {
 
                     const ch = document.getElementById(`ch-${topChamberIdx}`);
                     if (ch) ch.classList.add('fired');
-                    if (resSub) resSub.classList.add('skull-aura'); 
+                    if (rouIcon) rouIcon.classList.add('skull-aura');
                     
                     uiColor = "#ff0000"; 
                     snd = 'gunshot'; 
@@ -7541,7 +8606,7 @@ const DiceGame = (function() {
                     } else { streakSlots135 = 0; }
 
                     if (totalSurvivalsThisSession === 1) Achievements.unlock('first_surv');
-                    if (resSub) resSub.classList.add('heart-pulse'); 
+                    if (rouIcon) rouIcon.classList.add('heart-pulse'); 
                     
                     uiColor = "#ccffcc"; 
                     snd = 'safe_click'; 
@@ -7657,25 +8722,13 @@ const DiceGame = (function() {
                     }
                 }
 
-                const rm = document.getElementById('res-main');
-                if (rm) rm.innerHTML = ""; 
-                
-                if (resSub) {
-                    resSub.innerHTML = mainSubI;
-                    resSub.style.color = uiColor; 
-                    resSub.style.textShadow = `0 0 25px ${uiColor}`;
-                }
-                
-                const rd = document.getElementById('res-desc');
-                if (rd) rd.innerHTML = "";
-
-                const rCont = document.getElementById('res-content');
-                if (rCont) {
-                    rCont.style.color = uiColor;
-                    rCont.style.textShadow = `0 0 15px ${uiColor}`;
-                    void rCont.offsetWidth; 
-                    rCont.classList.add('visible');
-                }
+                if (rouIcon) {
+    rouIcon.innerHTML = mainSubI;
+    rouIcon.style.color = uiColor;
+    rouIcon.style.filter = `drop-shadow(0 0 20px ${uiColor})`;
+    void rouIcon.offsetWidth; // Магия браузера для рестарта анимации
+    rouIcon.style.opacity = '1';
+}
                 
                 if(typeof App !== 'undefined') App.playSoundEffect('result', snd);
 
@@ -8151,6 +9204,8 @@ const DiceGame = (function() {
             }
 
             function handlePointerDown(e) {
+				const rouIcon = document.getElementById('roulette-isolated-icon');
+				if (rouIcon) rouIcon.style.opacity = '0';
                 const rollBtn = document.getElementById('rollBtn');
                 if (!rollBtn || rollBtn.disabled || GameState.mode !== 'coin') return;
                 lastDownTime = Date.now();
@@ -8546,6 +9601,9 @@ const FlowerGame = (function() {
     }
 
     function resetToIdle(animate = true) {
+	if (typeof window.spawnTerminatorData === 'function') window.spawnTerminatorData();
+
+    isGameActive = false;
         tornCount = 0;
         totalPetals = 0;
         tornIndices = [];
@@ -8843,6 +9901,7 @@ const FlowerGame = (function() {
         
         if(typeof App !== 'undefined') App.hideError();
         isGameActive = true;
+		if (typeof window.spawnTerminatorData === 'function') window.spawnTerminatorData();
         isSpinning = true;
         tornCount = 0;
         tornIndices = [];
@@ -9661,6 +10720,10 @@ const RPSGame = (function() {
                     
                     const runFight = (e) => {
                         if (e) e.stopPropagation();
+                        
+                        // 🚀 ВСТАВКА ДЛЯ ТЕРМИНАТОРА: Сработает в момент клика по мечам (старт боя PvP)
+                        if (typeof window.spawnTerminatorData === 'function') window.spawnTerminatorData();
+
                         leftHand.classList.add('sword-clash-anim');
                         rightHand.classList.add('sword-clash-anim');
                         setTimeout(() => {
@@ -9918,40 +10981,43 @@ const RPSGame = (function() {
         let step = 0;
 
         function nextAnimStep() {
-            if (session !== currentSessionId) return;
+    if (session !== currentSessionId) return;
 
-            if (step < 3) {
-                if (animText) {
-                    animText.style.fontSize = "28px";
-                    animText.innerText = sequenceText[step];
-                    animText.style.animation = 'none';
-                    void animText.offsetWidth; 
-                    animText.style.animation = 'rps-text-pop 0.6s ease-out';
-                }
-                
-                leftHand.innerText = sequenceEmoji[step];
-                rightHand.innerText = sequenceEmoji[step];
-                
-                if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
-                if (typeof App !== 'undefined') App.playSoundEffect('tick');
-                
-                step++;
-                setTimeout(nextAnimStep, 600); 
-            } else {
-                if (animText) {
-                    animText.style.fontSize = "45px"; 
-                    animText.innerText = sequenceText[3];
-                    animText.style.animation = 'none';
-                    void animText.offsetWidth;
-                    animText.style.animation = 'rps-text-pop 0.6s ease-out';
-                    
-                    setTimeout(() => {
-                        if (currentSessionId === session && animText) animText.style.opacity = 0;
-                    }, 1200);
-                }
-                finalizeGame(session);
-            }
+    if (step < 3) {
+        // 🚀 ВСТАВКА ДЛЯ ТЕРМИНАТОРА: Сработает только на самом первом шаге отсчета (step === 0)
+        if (step === 0 && typeof window.spawnTerminatorData === 'function') window.spawnTerminatorData();
+
+        if (animText) {
+            animText.style.fontSize = "28px";
+            animText.innerText = sequenceText[step];
+            animText.style.animation = 'none';
+            void animText.offsetWidth; 
+            animText.style.animation = 'rps-text-pop 0.6s ease-out';
         }
+        
+        leftHand.innerText = sequenceEmoji[step];
+        rightHand.innerText = sequenceEmoji[step];
+        
+        if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+        if (typeof App !== 'undefined') App.playSoundEffect('tick');
+        
+        step++;
+        setTimeout(nextAnimStep, 600); 
+    } else {
+        if (animText) {
+            animText.style.fontSize = "45px"; 
+            animText.innerText = sequenceText[3];
+            animText.style.animation = 'none';
+            void animText.offsetWidth;
+            animText.style.animation = 'rps-text-pop 0.6s ease-out';
+            
+            setTimeout(() => {
+                if (currentSessionId === session && animText) animText.style.opacity = 0;
+            }, 1200);
+        }
+        finalizeGame(session);
+    }
+}
 
         nextAnimStep();
     }
@@ -10275,7 +11341,7 @@ const RPSGame = (function() {
 
             /* Текст анимации */
             #rps-animation-text {
-                position: absolute; top: -40px; left: 50%; transform: translateX(-50%);
+                position: absolute; top: -10px; left: 50%; transform: translateX(-50%);
                 font-size: 28px; font-weight: 900; color: #ff9f43; text-shadow: 0 0 15px rgba(255,159,67,0.8);
                 text-transform: uppercase; opacity: 0; transition: opacity 0.2s, font-size 0.2s; white-space: nowrap;
             }
@@ -10914,6 +11980,7 @@ const SticksGame = (function() {
 
     function finishPull(sObj) {
         sObj.drawn = true;
+		if (typeof window.spawnTerminatorData === 'function') window.spawnTerminatorData();
         isAnimating = true; 
         const mySession = currentSessionId; // 🛑 ЗАПОМИНАЕМ СЕССИЮ
         
@@ -11545,7 +12612,7 @@ try {
 } catch (err) { console.error("Start error:", err); }
 
 // ==============================================
-// 🌌 ИНЖЕКЦИЯ V3.6: БЕСКОНЕЧНАЯ ПАНОРАМА (0 ЛАГОВ + ФИКС ИНВЕНТАРЯ)
+// 🌌 ИНЖЕКЦИЯ V3.6: БЕСКОНЕЧНАЯ ПАНОРАМА (0 ЛАГОВ + ФИКС ИНВЕНТАРЯ + ДАЛЕКИЕ ЗВЕЗДЫ)
 // ==============================================
 (function injectFlawlessPanorama() {
     let targetX = 0, targetY = 0;
@@ -11613,7 +12680,11 @@ try {
         if (e.alpha === null || e.beta === null) return;
         
         const p = (typeof GameState !== 'undefined' && GameState.activeProfileIdx !== -1) ? GameState.profiles[GameState.activeProfileIdx] : null;
-        const hasGyro = p && p.equipped && p.equipped['perk_gyro_stars'] === true && isMobile;
+        
+        // 🚀 ФИКС: Проверяем оба перка
+        const hasNormalStars = p && p.equipped && p.equipped['perk_gyro_stars'];
+        const hasFarStars = p && p.equipped && p.equipped['perk_gyro_stars_far'];
+        const hasGyro = (hasNormalStars || hasFarStars) && isMobile;
         
         if (!hasGyro) { lastAlpha = null; lastBeta = null; return; }
         if (lastAlpha === null || lastBeta === null) { lastAlpha = e.alpha; lastBeta = e.beta; return; }
@@ -11627,8 +12698,11 @@ try {
         if (deltaAlpha > 12) deltaAlpha = 12; if (deltaAlpha < -12) deltaAlpha = -12;
         if (deltaBeta > 12) deltaBeta = 12; if (deltaBeta < -12) deltaBeta = -12;
 
-        targetX += deltaAlpha; 
-        targetY += deltaBeta;   
+        // 🚀 ФИКС: Математика замедления. Если надеты Далекие Звезды, множитель 0.15
+        const speedMultiplier = hasFarStars ? 0.15 : 1.0;
+
+        targetX += deltaAlpha * speedMultiplier; 
+        targetY += deltaBeta * speedMultiplier;   
 
         lastAlpha = e.alpha; lastBeta = e.beta;
 
@@ -11654,7 +12728,11 @@ try {
     setInterval(() => {
         initPremiumStars();
         const p = (typeof GameState !== 'undefined' && GameState.activeProfileIdx !== -1) ? GameState.profiles[GameState.activeProfileIdx] : null;
-        const hasGyro = p && p.equipped && p.equipped['perk_gyro_stars'] === true && isMobile;
+        
+        // 🚀 ФИКС: Проверяем оба перка в контроллере
+        const hasNormalStars = p && p.equipped && p.equipped['perk_gyro_stars'];
+        const hasFarStars = p && p.equipped && p.equipped['perk_gyro_stars_far'];
+        const hasGyro = (hasNormalStars || hasFarStars) && isMobile;
         
         const premiumLayer = document.getElementById('premium-vr-stars');
         const nativeStars = document.querySelectorAll('.stars-layer'); 
@@ -11698,6 +12776,67 @@ try {
         </div>
     </div>
 </div>
+
+<script>
+// Оживляем заголовки внутри самих игр
+window.addEventListener('DOMContentLoaded', () => {
+    const gameTitleEl = document.getElementById('ui-title');
+    
+    if (gameTitleEl) {
+        // Словари лора для каждой игры
+        const gameLore = {
+            dice: {
+                ru: '🎲 <b>КОСТЬ ИСТИНЫ</b><br><br>Древний артефакт, дающий ответы на любые вопросы. Задай вопрос, и пусть случай решит твою судьбу.',
+                en: '🎲 <b>DICE OF TRUTH</b><br><br>An ancient artifact that answers any question. Ask, and let chance decide your fate.'
+            },
+            roulette: {
+                ru: '💀 <b>РОКОВАЯ ПУЛЯ</b><br><br>Смертельная игра с вероятностью. Заряжай барабан, крути и надейся, что сегодня удача на твоей стороне.',
+                en: '💀 <b>FATAL BULLET</b><br><br>A deadly game of probability. Load the drum, spin, and hope luck is on your side today.'
+            },
+            coin: {
+                ru: '🪙 <b>ГРАНЬ ВЫБОРА</b><br><br>Самый простой и древний способ разрешения споров. Орел или решка? А может, монета встанет на ребро?',
+                en: '🪙 <b>EDGE OF CHOICE</b><br><br>The simplest and oldest way to settle disputes. Heads or tails? Or maybe it will land on the edge?'
+            },
+            flower: {
+                ru: '🌼 <b>ЦВЕТОК ОРАКУЛА</b><br><br>Хрупкий цветок, хранящий истину. Отрывай лепестки один за другим, чтобы узнать, что тебя ждет.',
+                en: '🌼 <b>THE ORACLE FLOWER</b><br><br>A fragile flower holding the truth. Tear the petals one by one to find out what awaits you.'
+            },
+            rps: {
+                ru: '✊✌️✋ <b>К-Н-Б</b><br><br>Классическая битва разумов. Камень ломает ножницы, ножницы режут бумагу, бумага кроет камень.',
+                en: '✊✌️✋ <b>R-P-S</b><br><br>A classic battle of minds. Rock breaks scissors, scissors cut paper, paper covers rock.'
+            },
+            sticks: { 
+                ru: '🥢 <b>НИТЬ ЖРЕБИЯ</b><br><br>Испытание нервов. Вытяни короткую палочку — и ты проиграл. Кто рискнет первым?',
+                en: '🥢 <b>THE THREADS OF FATE</b><br><br>A test of nerves. Draw the short stick and you lose. Who will risk it first?'
+            },
+            lots: { // Дублируем для совместимости с внутренними ключами Ядра
+                ru: '🥢 <b>НИТЬ ЖРЕБИЯ</b><br><br>Испытание нервов. Вытяни короткую палочку — и ты проиграл. Кто рискнет первым?',
+                en: '🥢 <b>THE THREADS OF FATE</b><br><br>A test of nerves. Draw the short stick and you lose. Who will risk it first?'
+            },
+            shop: {
+                ru: '🛒 <b>МАГАЗИН</b><br><br>Таинственная лавка, где можно обменять заработанное на уникальные стили, перки и фоны.',
+                en: '🛒 <b>SHOP</b><br><br>A mysterious shop where you can exchange earnings for unique styles, perks, and backgrounds.'
+            }
+        };
+
+        gameTitleEl.addEventListener('click', (e) => {
+            // Узнаем, какая игра сейчас активна
+            const currentMode = (typeof GameState !== 'undefined' && GameState.mode) ? GameState.mode : 'dice';
+            const lore = gameLore[currentMode] || gameLore.dice;
+            
+            // Вызываем твое всплывающее окно
+            if (window.showStatInfo) {
+                window.showStatInfo(e, lore.ru, lore.en);
+                
+                // Легкая отдача при тапе
+                if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.HapticFeedback) {
+                    window.Telegram.WebApp.HapticFeedback.selectionChanged();
+                }
+            }
+        });
+    }
+});
+</script>
 </body>
 </html>
 <!-- --- КОНЕЦ ДВЕНАДЦАТОЙ ЧАСТИ --- -->
