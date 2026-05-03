@@ -13126,21 +13126,20 @@ try {
     }
 
 // ==============================================
-// 🤖 АВТОНОМНЫЙ HUD ПРОЦЕССОР V8 (ФИКС ВЕЧНОГО СВЕЧЕНИЯ)
+// 🤖 АВТОНОМНЫЙ HUD ПРОЦЕССОР V9 (ТЕРМИНАТОР ТЕКСТ + ФИКС КИБЕРПАНКА)
 // ==============================================
 (function startAutonomousHUDScanner() {
     function triggerScan() {
         const isTerminator = document.body.classList.contains('theme-perk_crt_terminator');
         const isMatrix = document.body.classList.contains('theme-perk_crt_matrix');
         const isBWCrt = document.body.classList.contains('theme-perk_crt_bw');
-        
-        // 🚀 ФИКС 1: Теперь проверяем именно Киберпанк (Майами)!
         const isCyberpunk = document.body.classList.contains('theme-perk_crt_miami') || document.body.classList.contains('theme-perk_crt_miami_sunset');
         
         const TOP_Z_INDEX = '10005';
 
-        // 🔴 ЛОГИКА ТЕРМИНАТОРА
+        // 🔴 ЛОГИКА ТЕРМИНАТОРА (Сетка + Текст)
         if (isTerminator) {
+            // --- ЭФФЕКТ 1: СКАНИРОВАНИЕ СЕТКИ ---
             const scanner = document.createElement('div');
             scanner.style.setProperty('pointer-events', 'none', 'important');
             scanner.style.setProperty('user-select', 'none', 'important');
@@ -13179,6 +13178,80 @@ try {
                 scanner.style.opacity = '0';
                 setTimeout(() => scanner.remove(), 1500);
             }, 1500 + Math.random() * 2000);
+
+            // --- ЭФФЕКТ 2: ПЕЧАТЬ ДАННЫХ T-100 ---
+            // Даем шанс 70%, что вместе со сканером появится текстовый блок
+            if (Math.random() > 0.3) {
+                setTimeout(() => {
+                    const textContainer = document.createElement('div');
+                    textContainer.style.setProperty('pointer-events', 'none', 'important');
+                    textContainer.style.setProperty('user-select', 'none', 'important');
+                    textContainer.style.setProperty('z-index', TOP_Z_INDEX, 'important'); 
+                    textContainer.style.setProperty('position', 'fixed', 'important');
+                    
+                    // Брутальные шрифты машин
+                    textContainer.style.setProperty('color', '#ff3333', 'important');
+                    textContainer.style.setProperty('text-shadow', '0 0 4px red', 'important');
+                    textContainer.style.setProperty('font-family', '"Courier New", Courier, monospace', 'important');
+                    textContainer.style.setProperty('font-size', (11 + Math.random() * 4) + 'px', 'important');
+                    textContainer.style.setProperty('line-height', '1.2', 'important');
+                    textContainer.style.setProperty('font-weight', 'bold', 'important');
+                    
+                    // Появляемся в рандомном месте (с отступами от краев)
+                    textContainer.style.left = (10 + Math.random() * 50) + 'vw';
+                    textContainer.style.top = (15 + Math.random() * 60) + 'vh';
+                    
+                    document.body.appendChild(textContainer);
+
+                    // База данных фраз Скайнета
+                    const db = [
+                        "SYS_DIAGNOSTIC... OK", "ANALYZING_TARGET...", "MATCH: 99.9%", 
+                        "THREAT_LEVEL: MINIMAL", "OVERRIDE_PROTOCOL_7", "CPU_TEMP: 88C", 
+                        "MEM_DUMP: 0xFF8A91C", "CALCULATING_TRAJECTORY...", "GRID_ACTIVE",
+                        "SEARCHING_CONNOR...", "WEAPON_SYS: OFFLINE", "AUDIO_MATCH: CONFIRMED"
+                    ];
+                    
+                    // Формируем блок из 3-5 строк
+                    let linesCount = 3 + Math.floor(Math.random() * 3);
+                    let targetLines = [];
+                    for(let i = 0; i < linesCount; i++) {
+                        targetLines.push(db[Math.floor(Math.random() * db.length)]);
+                    }
+                    
+                    let currentLine = 0;
+                    let currentChar = 0;
+                    let printedText = "";
+
+                    // Эффект посимвольной печати
+                    function typeText() {
+                        if (currentLine < targetLines.length) {
+                            if (currentChar < targetLines[currentLine].length) {
+                                printedText += targetLines[currentLine].charAt(currentChar);
+                                textContainer.innerHTML = printedText + "█"; // Блочный курсор
+                                currentChar++;
+                                setTimeout(typeText, 15 + Math.random() * 30); // Рваная скорость печати
+                            } else {
+                                printedText += "<br>";
+                                currentLine++;
+                                currentChar = 0;
+                                setTimeout(typeText, 100 + Math.random() * 300); // Задержка перед новой строкой
+                            }
+                        } else {
+                            textContainer.innerHTML = printedText; // Убираем курсор в конце
+                            
+                            // Висим пару секунд и растворяемся
+                            textContainer.style.transition = 'opacity 1s ease';
+                            setTimeout(() => {
+                                textContainer.style.opacity = '0';
+                                setTimeout(() => textContainer.remove(), 1000);
+                            }, 2000 + Math.random() * 2000);
+                        }
+                    }
+                    
+                    typeText(); // Запускаем печать
+                    
+                }, Math.random() * 1500); // Появляется с легкой рассинхронизацией от сетки
+            }
         }
 
         // 🟢 ЛОГИКА МАТРИЦЫ
@@ -13264,7 +13337,7 @@ try {
             doGlitch();
         }
 
-        // 🟣 ЛОГИКА КИБЕРПАНКА (Только 2D UI элементы + Автоочистка)
+        // 🟣 ЛОГИКА КИБЕРПАНКА (Майами)
         if (isCyberpunk) {
             let rawElements = Array.from(document.querySelectorAll('button, input, [class*="card"], [class*="btn"], .shop-grid-container > div, [class*="player"]'));
             
@@ -13283,7 +13356,6 @@ try {
                 const cx = epiRect.left + epiRect.width / 2;
                 const cy = epiRect.top + epiRect.height / 2;
                 
-                // 🚀 ФИКС РАДИУСА: Считаем по меньшей стороне экрана, чтобы волна была аккуратной зоной
                 const radius = Math.min(window.innerWidth, window.innerHeight) * 0.7; 
                 
                 const colors = ['#ff00ff', '#00ffff', '#facc15'];
@@ -13317,20 +13389,18 @@ try {
                         });
 
                         setTimeout(() => {
-                            // 🚀 ГЛАВНЫЙ ФИКС: Элементы гарантированно тухнут сами!
                             el.style.boxShadow = oldBoxShadow || '';
                             el.style.borderColor = oldBorderColor || '';
                             setTimeout(() => {
                                 el.style.transition = oldTransition || '';
                                 delete el.dataset.cyberGlow;
                             }, 1500); 
-                        }, 2000 + Math.random() * 2000); // Светимся от 2 до 4 секунд и гаснем
+                        }, 2000 + Math.random() * 2000); 
                     }
                 });
             }
         } else {
-            // 🧹 РЕЖИМ УБОРЩИКА: Если Киберпанк СНЯТ
-            // Ищем все элементы, на которых мог "застрять" неон, и безжалостно сбрасываем стили
+            // 🧹 РЕЖИМ УБОРЩИКА
             document.querySelectorAll('[data-cyber-glow="true"]').forEach(el => {
                 el.style.boxShadow = '';
                 el.style.borderColor = '';
