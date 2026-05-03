@@ -13126,7 +13126,7 @@ try {
     }
 
 // ==============================================
-// 🤖 АВТОНОМНЫЙ HUD ПРОЦЕССОР V7 (ФИКС КИБЕРПАНКА И ОЧИСТКИ)
+// 🤖 АВТОНОМНЫЙ HUD ПРОЦЕССОР V8 (ФИКС ВЕЧНОГО СВЕЧЕНИЯ)
 // ==============================================
 (function startAutonomousHUDScanner() {
     function triggerScan() {
@@ -13134,9 +13134,8 @@ try {
         const isMatrix = document.body.classList.contains('theme-perk_crt_matrix');
         const isBWCrt = document.body.classList.contains('theme-perk_crt_bw');
         
-        // 🚀 ФИКС 1: Теперь проверяем именно Киберпанк!
-        // (Если у тебя в CSS класс называется немного иначе, поправь название тут)
-        const isCyberpunk = document.body.classList.contains('theme-perk_crt_cyberpunk'); 
+        // 🚀 ФИКС 1: Теперь проверяем именно Киберпанк (Майами)!
+        const isCyberpunk = document.body.classList.contains('theme-perk_crt_miami') || document.body.classList.contains('theme-perk_crt_miami_sunset');
         
         const TOP_Z_INDEX = '10005';
 
@@ -13284,7 +13283,8 @@ try {
                 const cx = epiRect.left + epiRect.width / 2;
                 const cy = epiRect.top + epiRect.height / 2;
                 
-                const radius = Math.max(window.innerWidth, window.innerHeight) * 0.5; 
+                // 🚀 ФИКС РАДИУСА: Считаем по меньшей стороне экрана, чтобы волна была аккуратной зоной
+                const radius = Math.min(window.innerWidth, window.innerHeight) * 0.7; 
                 
                 const colors = ['#ff00ff', '#00ffff', '#facc15'];
                 const color = colors[Math.floor(Math.random() * colors.length)];
@@ -13317,16 +13317,14 @@ try {
                         });
 
                         setTimeout(() => {
-                            // Если карточка Киберпанка всё еще надета — плавно затухаем
-                            if (document.body.classList.contains('theme-perk_crt_cyberpunk')) {
-                                el.style.boxShadow = oldBoxShadow || '';
-                                el.style.borderColor = oldBorderColor || '';
-                                setTimeout(() => {
-                                    el.style.transition = oldTransition || '';
-                                    delete el.dataset.cyberGlow;
-                                }, 1500); 
-                            }
-                        }, 2000 + Math.random() * 2000);
+                            // 🚀 ГЛАВНЫЙ ФИКС: Элементы гарантированно тухнут сами!
+                            el.style.boxShadow = oldBoxShadow || '';
+                            el.style.borderColor = oldBorderColor || '';
+                            setTimeout(() => {
+                                el.style.transition = oldTransition || '';
+                                delete el.dataset.cyberGlow;
+                            }, 1500); 
+                        }, 2000 + Math.random() * 2000); // Светимся от 2 до 4 секунд и гаснем
                     }
                 });
             }
