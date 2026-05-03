@@ -12991,7 +12991,7 @@ try {
 } catch (err) { console.error("Start error:", err); }
 
 // ==============================================
-// 🌌 ИНЖЕКЦИЯ V3.6: БЕСКОНЕЧНАЯ ПАНОРАМА (0 ЛАГОВ + ФИКС ИНВЕНТАРЯ + ДАЛЕКИЕ ЗВЕЗДЫ)
+// 🌌 ИНЖЕКЦИЯ V3.7: СТАБИЛЬНЫЙ ПАРАЛЛАКС (ФИКС Z-FIGHTING И ПРЫЖКОВ)
 // ==============================================
 (function injectFlawlessPanorama() {
     let targetX = 0, targetY = 0;
@@ -13002,7 +13002,7 @@ try {
 
     const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || navigator.maxTouchPoints > 0;
 
-    // 1. ИЗОЛИРОВАННЫЙ СЛОЙ (Не ломаем родные стили!)
+    // 1. ИЗОЛИРОВАННЫЙ СЛОЙ
     function initPremiumStars() {
         if (document.getElementById('premium-vr-stars')) return;
 
@@ -13010,10 +13010,12 @@ try {
         layer.id = 'premium-vr-stars';
         layer.style.cssText = `
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            pointer-events: none; z-index: -95; opacity: 0; 
+            pointer-events: none; opacity: 0; 
             transition: opacity 0.5s ease;
             will-change: background-position;
-            transform: translateZ(0);
+            /* 🚀 ФИКС Z-FIGHTING: Отправляем на самое дно, но без конфликтов аппаратного ускорения */
+            z-index: -9999;
+            transform: translate3d(0,0,0);
             background-image: 
                 radial-gradient(1px 1px at 10% 20%, #ffffff, transparent), 
                 radial-gradient(1.5px 1.5px at 40% 60%, rgba(255,255,255,0.8), transparent), 
@@ -13028,12 +13030,12 @@ try {
 
     // 2. ДВИЖОК ОТРИСОВКИ
     function updateParallax() {
+        // 🚀 Плавная интерполяция
         currentX += (targetX - currentX) * 0.15;
         currentY += (targetY - currentY) * 0.15;
 
         const layer = document.getElementById('premium-vr-stars');
         if (layer) {
-            // Бесконечный скролл 6 слоев с разной скоростью
             layer.style.backgroundPosition = `
                 ${currentX * 1}px ${currentY * 1}px,  
                 ${currentX * 2}px ${currentY * 2}px,    
@@ -13054,13 +13056,12 @@ try {
         }
     }
 
-    // 3. МАТЕМАТИКА ДЕЛЬТЫ
+    // 3. МАТЕМАТИКА ДЕЛЬТЫ (ФИКС ПРЫЖКОВ)
     function handleOrientation(e) {
         if (e.alpha === null || e.beta === null) return;
         
         const p = (typeof GameState !== 'undefined' && GameState.activeProfileIdx !== -1) ? GameState.profiles[GameState.activeProfileIdx] : null;
         
-        // 🚀 ФИКС: Проверяем оба перка
         const hasNormalStars = p && p.equipped && p.equipped['perk_gyro_stars'];
         const hasFarStars = p && p.equipped && p.equipped['perk_gyro_stars_far'];
         const hasGyro = (hasNormalStars || hasFarStars) && isMobile;
@@ -13071,13 +13072,15 @@ try {
         let deltaAlpha = e.alpha - lastAlpha;
         let deltaBeta = e.beta - lastBeta;
 
+        // 🚀 ФИКС ПРЫЖКОВ: Нормализация углов Эйлера (Gimbal Lock protection)
+        // Если телефон перешел границу 360/0 градусов, мы компенсируем прыжок
         if (deltaAlpha > 180) deltaAlpha -= 360;
         if (deltaAlpha < -180) deltaAlpha += 360;
 
+        // Жесткое ограничение скорости (clamp), чтобы предотвратить резкие рывки от датчика
         if (deltaAlpha > 12) deltaAlpha = 12; if (deltaAlpha < -12) deltaAlpha = -12;
         if (deltaBeta > 12) deltaBeta = 12; if (deltaBeta < -12) deltaBeta = -12;
 
-        // 🚀 ФИКС: Математика замедления. Если надеты Далекие Звезды, множитель 0.15
         const speedMultiplier = hasFarStars ? 0.15 : 1.0;
 
         targetX += deltaAlpha * speedMultiplier; 
@@ -13108,7 +13111,6 @@ try {
         initPremiumStars();
         const p = (typeof GameState !== 'undefined' && GameState.activeProfileIdx !== -1) ? GameState.profiles[GameState.activeProfileIdx] : null;
         
-        // 🚀 ФИКС: Проверяем оба перка в контроллере
         const hasNormalStars = p && p.equipped && p.equipped['perk_gyro_stars'];
         const hasFarStars = p && p.equipped && p.equipped['perk_gyro_stars_far'];
         const hasGyro = (hasNormalStars || hasFarStars) && isMobile;
