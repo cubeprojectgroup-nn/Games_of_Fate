@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Игры Судьбы. v0.9.0.11</title>
+    <title>Игры Судьбы. v0.9.0.12</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 	<style>
@@ -2245,6 +2245,139 @@ body.is-shop-active #gameUI > .debug-panel {
     mask-image: linear-gradient(to bottom, transparent 0%, black 4%, black 96%, transparent 100%) !important;
 }
 
+/* ========================================================== */
+/* 💖 ФИКС: АНИМАЦИЯ СЕРДЦА И ЧЕРЕПА ПРИ ЛЮБЫХ ТЕМАХ И ФИЛЬТРАХ */
+/* ========================================================== */
+.heart-pulse { 
+    animation: heartbeat-double-pulse 0.7s ease-in-out !important; 
+    transition: none !important; /* Убиваем конфликт с transition */
+    will-change: transform, filter !important; /* Выделяем отдельный слой GPU */
+}
+
+.skull-aura { 
+    animation: aura-shot-pulse 0.8s ease-out !important; 
+    transition: none !important; /* Убиваем конфликт с transition */
+    will-change: transform, filter !important; /* Выделяем отдельный слой GPU */
+}
+
+/* ========================================================== */
+/* 🌼 ФИКС: УБИРАЕМ ПУСТОТУ ПОД ПОЛЕМ ВОПРОСА В ЦВЕТКЕ        */
+/* ========================================================== */
+body.is-flower-game-active #gameUI > .input-section {
+    margin-bottom: 2px !important; /* Убираем огромный отступ под полем ввода */
+}
+
+body.is-flower-game-active #gameUI > .header-wrapper {
+    margin-top: 0 !important; /* Подтягиваем блок с табами вплотную наверх */
+}
+
+/* ========================================================== */
+/* 📚 ФИКС: РАЗДЕЛЕНИЕ ИСТОРИИ ДЛЯ МОНЕТЫ И ПАЛОЧЕК           */
+/* ========================================================== */
+
+/* Монета: прячем Вопросы в режиме Броска и наоборот */
+#historyListCoin[data-mode="standard"] .hist-question { display: none !important; }
+#historyListCoin[data-mode="question"] .hist-standard { display: none !important; }
+
+/* Нить Жребия: прячем PvP в режиме Оракула и наоборот */
+/* (Учитываем два варианта ID для надежности) */
+#historyListSticks[data-mode="standard"] .hist-pvp { display: none !important; }
+#historyListSticks[data-mode="pvp"] .hist-standard { display: none !important; }
+#historyListLots[data-mode="standard"] .hist-pvp { display: none !important; }
+#historyListLots[data-mode="pvp"] .hist-standard { display: none !important; }
+
+/* ========================================================== */
+/* 🛒 МАСТЕР-ФИКС МАГАЗИНА: СЕТКА, СВЕЧЕНИЕ И ПЛАВНОСТЬ       */
+/* ========================================================== */
+
+/* Контейнер сетки: теперь он строго 4-х колончатый */
+.shop-grid-container {
+    display: grid !important;
+    grid-template-columns: repeat(4, 1fr) !important;
+    gap: 8px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    /* 🚀 ФИКС: Убрали overflow: visible !important; который убивал скролл! */
+    align-content: start;
+}
+
+/* Выдаем padding точечно главному окну и ЖЕСТКО ВОЗВРАЩАЕМ СКРОЛЛ */
+#shopGrid {
+    padding: 15px 12px 40px 12px !important; 
+    overflow-y: auto !important; /* 🚀 ФИКС: Заставляем блок скроллиться внутри себя */
+    overflow-x: hidden !important; 
+}
+
+/* Новая сетка специально для инвентаря */
+.inner-shop-grid {
+    display: grid !important;
+    grid-template-columns: repeat(4, 1fr) !important;
+    gap: 8px !important;
+    width: 100% !important;
+    box-sizing: border-box !important; 
+    padding: 5px 12px 15px 12px !important;
+    overflow: visible !important; /* Здесь можно, т.к. внешний контейнер инвентаря скроллится сам */
+}
+
+/* Фикс для мобилок: применяем к обеим сеткам */
+@media (max-width: 340px) {
+    .shop-grid-container, .inner-shop-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+    }
+}
+
+/* Сама карточка: базовая плавность для возврата из анимаций */
+.shop-item-card {
+    position: relative;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    margin: 0 !important;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), 
+                box-shadow 0.4s ease, 
+                border-color 0.4s ease,
+                opacity 0.4s ease !important;
+    z-index: 1;
+    overflow: visible !important;
+}
+
+/* ✨ Эффект покупки: плавное всплытие и мягкий неоновый свет */
+.card-purchase-success {
+    pointer-events: none;
+    box-shadow: 0 0 20px 2px var(--friendly-green), inset 0 0 10px var(--friendly-green) !important;
+    border-color: var(--friendly-green) !important;
+    transform: scale(1.08) translateY(-8px) !important;
+    z-index: 100 !important;
+}
+
+/* Эффект растворения при продаже */
+.card-dissolving {
+    pointer-events: none;
+    transform: scale(0.7) translateY(-30px) rotate(-5deg) !important;
+    opacity: 0 !important;
+    filter: blur(15px) brightness(1.5);
+}
+
+/* Магия частиц */
+.shop-particle {
+    position: fixed;
+    pointer-events: none;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    z-index: 10001;
+    animation: shop-particle-fly 0.6s ease-out forwards;
+}
+
+@keyframes shop-particle-fly {
+    0% { transform: translate(0, 0) scale(1); opacity: 1; }
+    100% { transform: translate(var(--dx), var(--dy)) scale(0); opacity: 0; }
+}
+
 </style>
 </head>
 <!-- --- КОНЕЦ ПЕРВОЙ ЧАСТИ --- -->
@@ -2715,13 +2848,31 @@ bar.appendChild(scrollBtn);
             }
         }, 150);
     }
+	
+	// ==========================================================
+// 📚 ФИКС: СИНХРОНИЗАТОР ИСТОРИИ ДЛЯ ВСЕХ ИГР
+// ==========================================================
+setInterval(() => {
+    if (typeof GameState !== 'undefined' && GameState.subModes) {
+        // Синхронизируем Монету
+        const hlCoin = document.getElementById('historyListCoin');
+        if (hlCoin) hlCoin.setAttribute('data-mode', GameState.subModes.coin || 'standard');
+        
+        // Синхронизируем Нить Жребия (проверяем оба возможных ID на всякий случай)
+        const hlSticks = document.getElementById('historyListSticks') || document.getElementById('historyListLots');
+        if (hlSticks) {
+            const sMode = GameState.subModes.sticks || GameState.subModes.lots || 'standard';
+            hlSticks.setAttribute('data-mode', sMode);
+        }
+    }
+}, 500);
 </script>
 
 <body>
     <div id="stars" class="stars-layer stars-active bg1-stars"></div>
 
     <div id="mainMenuOverlay">
-        <div class="version">v0.9.0.11</div> 
+        <div class="version">v0.9.0.12</div> 
 		<div class="global-bottom-nav">
             <div class="nav-btn" onclick="if(typeof App !== 'undefined' && App.playSoundEffect) App.playSoundEffect('click'); if(typeof ShopGame !== 'undefined') ShopGame.toggleInventory(true);">
                 <i class="fas fa-box-open" style="color: var(--sun-gold);"></i>
@@ -3325,7 +3476,7 @@ const App = (function() {
             }
 
 			// 🤖 HUD ПРОЦЕССОР ТЕРМИНАТОРА и МАТРИЦЫ
-			window.spawnTerminatorData = function() {
+window.spawnTerminatorData = function() {
     const isTerminator = document.body.classList.contains('theme-perk_crt_terminator');
     const isMatrix = document.body.classList.contains('theme-perk_crt_matrix');
 
@@ -3336,8 +3487,8 @@ const App = (function() {
         // Каноничный набор: Японская катакана (полуширинная) + латиница + цифры
         const chars = "ｱｲｳｴｵｶｷｸｹｺｻｼｽｾｿﾀﾁﾂﾃﾄﾅﾆﾇﾈﾉﾊﾋﾌﾍﾎﾏﾐﾑﾒﾓﾔﾕﾖﾗﾘﾙﾚﾛﾜﾝ1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ";
         
-        // За один бросок пускаем 2-4 потока дождя
-        const dropsCount = 2 + Math.floor(Math.random() * 3);
+        // 🚀 ФИКС: Рандомное количество капель от 3 до 6
+        const dropsCount = 3 + Math.floor(Math.random() * 4);
 
         for (let i = 0; i < dropsCount; i++) {
             setTimeout(() => {
@@ -3422,8 +3573,10 @@ const App = (function() {
         
         document.body.appendChild(container);
 
+        // 🚀 ФИКС: Рандомное количество строк от 3 до 7
+        const linesCount = 3 + Math.floor(Math.random() * 5); 
         let lines = [];
-        for(let i=0; i<3; i++) {
+        for(let i = 0; i < linesCount; i++) {
             lines.push(phrases[Math.floor(Math.random() * phrases.length)]);
         }
 
@@ -5390,6 +5543,28 @@ const ShopGame = (function() {
     let isGameActive = false;
     let syncInterval = null;
     let pendingVisualUpdates = false;
+    
+    function createShopParticles(element, isPurchase = true) {
+        const rect = element.getBoundingClientRect();
+        const centerX = rect.left + rect.width / 2;
+        const centerY = rect.top + rect.height / 2;
+        const color = isPurchase ? 'var(--friendly-green)' : 'var(--angry-red)';
+        
+        for (let i = 0; i < 15; i++) {
+            const p = document.createElement('div');
+            p.className = 'shop-particle';
+            const dx = (Math.random() - 0.5) * 180 + 'px';
+            const dy = (Math.random() - 0.5) * 180 + 'px';
+            p.style.left = centerX + 'px';
+            p.style.top = centerY + 'px';
+            p.style.setProperty('--dx', dx);
+            p.style.setProperty('--dy', dy);
+            // Для покупки мешаем зеленый с золотом, для продажи — красный с фиолетовым
+            p.style.background = Math.random() > 0.4 ? color : (isPurchase ? 'var(--sun-gold)' : 'var(--magic-color)');
+            document.body.appendChild(p);
+            setTimeout(() => p.remove(), 600);
+        }
+    }
 
     function getPlayerCoins(p) {
         if (!p) return 0;
@@ -5496,7 +5671,7 @@ const ShopGame = (function() {
             { id: 'perk_x2_win', name: { ru: 'Х2 Выигрыш', en: 'x2 Win' }, priceCoins: 100, priceCrystals: 20, icon: '🤑', isStackable: true, desc: { ru: 'Умножает выигрыш в Банке х2.<br><br><span style="color:#ff6666; font-weight:bold;">Сгорает после 1 игры (победа или поражение).</span>', en: 'Multiplies Bank win x2.<br><br><span style="color:#ff6666; font-weight:bold;">Burns after 1 game (win or loss).</span>' } },
             { id: 'perk_x2_super', name: { ru: 'Супер Х2', en: 'Super x2' }, priceCoins: 200, priceCrystals: 40, icon: '🔥', isStackable: true, desc: { ru: 'Умножает выигрыш в Банке х2.<br><br><span style="color:var(--friendly-green); font-weight:bold;">Не сгорает при проигрыше.</span> Тратится только при успешном умножении.', en: 'Multiplies Bank win x2.<br><br><span style="color:var(--friendly-green); font-weight:bold;">Does not burn on loss.</span> Only consumed on a successful win.' } },
             { id: 'perk_gyro_stars', name: { ru: 'Живые Звезды', en: 'Live Stars' }, priceCoins: 0, priceCrystals: 300, icon: '🌌', isStackable: false, desc: { ru: 'Звезды реагируют на наклон телефона.<br><br><span style="color:var(--magic-color); font-weight:bold;">Глобальный 3D эффект.</span>', en: 'Stars react to phone tilt.<br><br><span style="color:var(--magic-color); font-weight:bold;">Global 3D effect.</span>' } },
-			{ id: 'perk_gyro_stars_far', name: { ru: 'Далекие Звезды', en: 'Distant Stars' }, priceCoins: 0, priceCrystals: 300, icon: '🔭', isStackable: false, desc: { ru: 'Звезды реагируют на наклон плавно и мягко, создавая эффект огромного расстояния.<br><br><span style="color:var(--magic-color); font-weight:bold;">Глубокий 3D эффект.</span>', en: 'Stars react to tilt smoothly, creating a massive distance effect.<br><br><span style="color:var(--magic-color); font-weight:bold;">Deep 3D effect.</span>' } },
+            { id: 'perk_gyro_stars_far', name: { ru: 'Далекие Звезды', en: 'Distant Stars' }, priceCoins: 0, priceCrystals: 300, icon: '🔭', isStackable: false, desc: { ru: 'Звезды реагируют на наклон плавно и мягко, создавая эффект огромного расстояния.<br><br><span style="color:var(--magic-color); font-weight:bold;">Глубокий 3D эффект.</span>', en: 'Stars react to tilt smoothly, creating a massive distance effect.<br><br><span style="color:var(--magic-color); font-weight:bold;">Deep 3D effect.</span>' } },
             { id: 'perk_crt_filter', name: { ru: 'Ретро CRT', en: 'Retro CRT' }, priceCoins: 0, priceCrystals: 200, icon: '📺', isStackable: false, desc: { ru: 'Эффект старого пузатого телевизора.<br><br><span style="color:var(--magic-color); font-weight:bold;">Глобальный фильтр.</span>', en: 'Old CRT TV effect.<br><br><span style="color:var(--magic-color); font-weight:bold;">Global filter.</span>' } },
             { id: 'perk_crt_bw', name: { ru: 'Ч/Б Кинескоп', en: 'B/W CRT' }, priceCoins: 0, priceCrystals: 250, icon: '📻', isStackable: false, desc: { ru: 'Эффект античного черно-белого телевизора с высокой контрастностью.<br><br><span style="color:var(--magic-color); font-weight:bold;">Глобальный фильтр.</span>', en: 'Antique B/W TV effect.<br><br><span style="color:var(--magic-color); font-weight:bold;">Global filter.</span>' } },
             { id: 'perk_crt_matrix', name: { ru: 'Матрица', en: 'Matrix' }, priceCoins: 0, priceCrystals: 250, icon: '📟', isStackable: false, desc: { ru: 'Цифровой мир в зеленых тонах. Снижена интенсивность.', en: 'Digital world in green tones. Reduced intensity.' } },
@@ -5578,20 +5753,23 @@ const ShopGame = (function() {
         const grid = document.getElementById('shopGrid');
         if (!stage || !grid) return;
         
-        // === 1. ЖЕЛЕЗОБЕТОННО УБИВАЕМ СКРОЛЛБАР ЧЕРЕЗ JS ===
+        const savedGridScroll = grid.scrollTop || 0;
+        const oldInvScroll = grid.querySelector('.inv-scroll-container');
+        const savedInvScroll = oldInvScroll ? oldInvScroll.scrollTop : 0;
+
         if (!document.getElementById('shop-scroll-killer')) {
             const style = document.createElement('style');
             style.id = 'shop-scroll-killer';
-            // Прописываем width: 0 и display: none с !important
             style.innerHTML = `
                 #shopGrid { scrollbar-width: none !important; -ms-overflow-style: none !important; }
                 #shopGrid::-webkit-scrollbar { width: 0 !important; height: 0 !important; display: none !important; }
+                .inv-scroll-container { scrollbar-width: none !important; -ms-overflow-style: none !important; }
+                .inv-scroll-container::-webkit-scrollbar { display: none !important; }
             `;
             document.head.appendChild(style);
         }
 
-        // === 2. ДИНАМИЧЕСКАЯ ПОДСТРОЙКА ВЫСОТЫ (Без vh и процентов) ===
-        // Привязываем блок намертво к верхнему и нижнему краю экрана
+        // 🚀 ВОЗВРАЩАЕМ ТВОЙ ИДЕАЛЬНЫЙ КОД БЕЗ БОРДЮРОВ И 100dvh
         stage.style.position = 'absolute';
         stage.style.top = '0';
         stage.style.bottom = '0';
@@ -5599,20 +5777,19 @@ const ShopGame = (function() {
         stage.style.right = '0';
         stage.style.display = 'flex';
         stage.style.flexDirection = 'column';
-        stage.style.overflow = 'hidden'; // Внешний контейнер не скроллится
-        stage.style.height = 'auto'; // Сбрасываем старые значения
+        stage.style.overflow = 'hidden';
+        stage.style.height = 'auto'; // Оставляем auto, как было в оригинале
         
-        // Флекс сетки: забирает ровно то место (1 1 0), которое осталось под шапкой
+        // 🚀 Секрет идеального скролла внутри flex-контейнера: min-height: 0
         grid.style.flex = '1 1 0'; 
-        grid.style.overflowY = 'auto'; // Скроллится только сетка
-        grid.style.paddingBottom = '30px'; // Небольшой отступ для нижнего ряда
-        // =========================================================
+        grid.style.minHeight = '0'; // Запрещает гриду распирать экран
+        grid.style.overflowY = 'auto';
+        grid.style.paddingBottom = '30px';
 
         const p = GameState.activeProfileIdx !== -1 ? GameState.profiles[GameState.activeProfileIdx] : null;
         const balanceCoins = getPlayerCoins(p);
         const balanceCrystals = p ? (p.crystals || 0) : 0;
         const lang = GameState.lang || 'ru';
-        const inv = p ? (p.inventory || []) : [];
 
         renderShopStructure(stage, grid, balanceCoins, balanceCrystals);
 
@@ -5626,16 +5803,19 @@ const ShopGame = (function() {
         
         if (mode === 'exchange') { 
             renderExchangeTab(grid, p, lang); 
-            return; 
-        }
-
-        if (mode === 'perks') {
+        } else if (mode === 'perks') {
             renderPerksTab(grid, balanceCoins, balanceCrystals, lang);
         } else if (mode === 'backgrounds') {
             renderBackgroundsTab(grid, balanceCoins, balanceCrystals, lang);
         } else if (mode === 'standard') {
             renderStylesTab(grid, balanceCoins, balanceCrystals, lang);
         }
+
+        setTimeout(() => {
+            if (grid) grid.scrollTop = savedGridScroll;
+            const newInvScroll = grid.querySelector('.inv-scroll-container');
+            if (newInvScroll) newInvScroll.scrollTop = savedInvScroll;
+        }, 30);
     }
 
     function renderShopStructure(stage, grid, coins, crystals) {
@@ -5652,7 +5832,8 @@ const ShopGame = (function() {
             stickyHeader = document.createElement('div');
             stickyHeader.id = 'shopStickyHeader';
             
-            // Шапка: flex-shrink: 0 запрещает ей сжиматься, фон прозрачный
+            // 🚀 ОТКАТ ШАПКИ К ТВОЕМУ ОРИГИНАЛУ! Никаких position: sticky и темных фонов.
+            // Благодаря flex-shrink: 0 она сама "прилипнет" к верху и будет отталкивать карточки.
             stickyHeader.style.cssText = 'flex-shrink: 0; width: 100%; max-width: 400px; z-index: 150; background: transparent; display: flex; flex-direction: column; align-items: center; margin-bottom: 10px; padding-bottom: 5px; margin-left: auto; margin-right: auto;';
             
             stage.insertBefore(stickyHeader, grid);
@@ -5824,13 +6005,14 @@ const ShopGame = (function() {
             const titleTxt = def.mode === 'buy' ? (lang==='ru'?'КУПИТЬ':'BUY') : (lang==='ru'?'ПРОДАТЬ':'SELL');
             const color = def.mode === 'buy' ? 'var(--friendly-green)' : 'var(--angry-red)';
             
+            // 🚀 ФИКС: flex-shrink: 0, чтобы элементы не сплющивались
             card.innerHTML = `
                 ${getTooltipHTML(titleTxt, def.desc, lang)}
-                <div class="shop-item-icon" style="margin-bottom:0;">${def.icon}</div>
-                <div class="shop-item-title" style="color: ${color}; font-size: 10px !important;">${titleTxt}</div>
-                <input type="number" min="1" step="1" class="exch-input" placeholder="0" style="display: block !important; width: 85%; background: rgba(0,0,0,0.8); border: 1px solid rgba(255,255,255,0.2); color: #fff; text-align: center; border-radius: 4px; font-size: 13px; padding: 4px; -moz-appearance: textfield; margin: 2px 0; box-sizing: border-box;">
-                <div class="exch-result" style="font-size: 11px; font-weight: bold; color: #aaa; height: 14px; margin-bottom: 2px;">...</div>
-                <button class="exch-btn" disabled style="width: 90%; background: var(--sun-gold); color: #000; border: none; border-radius: 4px; font-weight: 900; font-size: 10px; padding: 6px; opacity: 0.4; cursor: not-allowed; margin-top: auto;">${lang === 'ru' ? 'ОБМЕН' : 'EXCHANGE'}</button>
+                <div class="shop-item-icon" style="margin-bottom:0; flex-shrink:0;">${def.icon}</div>
+                <div class="shop-item-title" style="color: ${color}; font-size: 10px !important; flex-shrink:0;">${titleTxt}</div>
+                <input type="number" min="1" step="1" class="exch-input" placeholder="0" style="display: block !important; width: 85%; min-height: 24px; flex-shrink: 0; background: rgba(0,0,0,0.8); border: 1px solid rgba(255,255,255,0.2); color: #fff; text-align: center; border-radius: 4px; font-size: 13px; padding: 4px; -moz-appearance: textfield; margin: 2px 0; box-sizing: border-box;">
+                <div class="exch-result" style="font-size: 11px; font-weight: bold; color: #aaa; height: 14px; margin-bottom: 2px; flex-shrink: 0;">...</div>
+                <button class="exch-btn" disabled style="width: 90%; background: var(--sun-gold); color: #000; border: none; border-radius: 4px; font-weight: 900; font-size: 10px; padding: 6px; opacity: 0.4; cursor: not-allowed; margin-top: auto; flex-shrink: 0;">${lang === 'ru' ? 'ОБМЕН' : 'EXCHANGE'}</button>
             `;
             
             const input = card.querySelector('.exch-input');
@@ -5874,7 +6056,9 @@ const ShopGame = (function() {
                 if (hlShop) hlShop.innerHTML = p.historyShop;
 
                 if(typeof App !== 'undefined' && App.requestProfileSave) App.requestProfileSave(); 
-                updateTopUI(); renderShop();
+                if(typeof ShopGame !== 'undefined' && typeof ShopGame.applyAllEquippedVisuals === 'function') ShopGame.applyAllEquippedVisuals();
+                if(typeof updateTopUI === 'function') updateTopUI(); 
+                renderShop();
             };
             grid.appendChild(card);
         });
@@ -5916,6 +6100,7 @@ const ShopGame = (function() {
             invWrapper.appendChild(createCategoryHeader(lang==='ru'?'Ваш Инвентарь':'Your Inventory', 'var(--magic-color)'));
             
             const invScroll = document.createElement('div');
+            invScroll.className = 'inv-scroll-container'; // 🚀 ФИКС: Сохраняет скролл
             invScroll.style.cssText = `
                 display: grid !important;
                 grid-template-columns: repeat(4, 1fr) !important;
@@ -5975,32 +6160,39 @@ const ShopGame = (function() {
                     `;
                     
                     card.querySelector('.sell-btn').onclick = () => {
+                        const currentScroll = invScroll.scrollTop;
+
+                        // 🚀 ЭФФЕКТЫ ПРИ ПРОДАЖЕ ИЗ ИНВЕНТАРЯ
+                        card.classList.add('card-dissolving');
+                        if (typeof createShopParticles === 'function') createShopParticles(card, false); 
+                        
                         if (typeof App !== 'undefined' && App.playSoundEffect) App.playSoundEffect('coins');
                         if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.HapticFeedback) window.Telegram.WebApp.HapticFeedback.impactOccurred('medium');
                         
-                        const idx = p.inventory.indexOf(d.item.id);
-                        if (idx > -1) p.inventory.splice(idx, 1);
-                        
-                        if (!d.item.isStackable && p.equipped) {
-                           if (p.equipped[d.item.id]) delete p.equipped[d.item.id];
-                           Object.keys(p.equipped).forEach(k => {
-                               if(p.equipped[k] === d.item.id) delete p.equipped[k];
-                           });
-                        }
-                        
-                        if (sCoins > 0) { if (p.bank !== undefined) p.bank += sCoins; else p.rStats.bank += sCoins; }
-                        if (sCryst > 0) p.crystals += sCryst;
-                        
-                        const actionName = (sCoins > 0 || sCryst > 0) ? (lang==='ru'?'Продажа':'Sale') : (lang==='ru'?'Удаление':'Discard');
-                        p.historyShop = `<div class="history-item"><span style="color:var(--angry-red); font-weight:bold;">[${actionName}]</span> ${d.item.icon} ${d.item.name[lang]}<br><span style="color:#aaa; font-size:10px;">+$${sCoins.toFixed(2)} | +${sCryst}💎</span></div>` + (p.historyShop || '');
-                        
-                        const hlShop = document.getElementById('historyListShop');
-                        if (hlShop) hlShop.innerHTML = p.historyShop;
-                        
-                        if(typeof App !== 'undefined' && App.requestProfileSave) App.requestProfileSave(); 
-                        if(typeof ShopGame !== 'undefined' && typeof ShopGame.applyAllEquippedVisuals === 'function') ShopGame.applyAllEquippedVisuals();
-                        if(typeof updateTopUI === 'function') updateTopUI(); 
-                        renderShop();
+                        setTimeout(() => {
+                            const idx = p.inventory.indexOf(d.item.id);
+                            if (idx > -1) p.inventory.splice(idx, 1);
+                            
+                            if (!d.item.isStackable && p.equipped) {
+                               if (p.equipped[d.item.id]) delete p.equipped[d.item.id];
+                               Object.keys(p.equipped).forEach(k => {
+                                   if(p.equipped[k] === d.item.id) delete p.equipped[k];
+                               });
+                            }
+                            
+                            if (sCoins > 0) { if (p.bank !== undefined) p.bank += sCoins; else p.rStats.bank += sCoins; }
+                            if (sCryst > 0) p.crystals += sCryst;
+                            
+                            if(typeof App !== 'undefined' && App.requestProfileSave) App.requestProfileSave(); 
+                            if(typeof ShopGame !== 'undefined' && typeof ShopGame.applyAllEquippedVisuals === 'function') ShopGame.applyAllEquippedVisuals();
+                            
+                            renderShop();
+
+                            requestAnimationFrame(() => {
+                                const newScroll = document.getElementById('activeInventoryScroll');
+                                if (newScroll) newScroll.scrollTop = Math.min(currentScroll, newScroll.scrollHeight - newScroll.clientHeight);
+                            });
+                        }, 400);
                     };
                     invScroll.appendChild(card);
                 });
@@ -6013,7 +6205,6 @@ const ShopGame = (function() {
     function renderPerksTab(grid, balanceCoins, balanceCrystals, lang) {
         // 1. Сортируем перки по логическим группам
         const betBoosters = shopItems.perks.filter(i => i.id.startsWith('perk_x2_'));
-        // 🚀 ФИКС: Используем startsWith, чтобы захватить обе версии звезд!
         const dynamicBg = shopItems.perks.filter(i => i.id.startsWith('perk_gyro_stars'));
         const crtFilters = shopItems.perks.filter(i => i.id.startsWith('perk_crt_'));
         
@@ -6023,7 +6214,7 @@ const ShopGame = (function() {
             !i.id.startsWith('exchange_') && 
             !i.id.startsWith('perk_crt_') && 
             !i.id.startsWith('perk_sparkle_') && 
-            !i.id.startsWith('perk_gyro_stars') // 🚀 ФИКС: Исключаем все варианты звезд
+            !i.id.startsWith('perk_gyro_stars')
         );
 
         // 2. Отрисовываем категории в нужном порядке
@@ -6117,7 +6308,6 @@ const ShopGame = (function() {
         const safeEn = enDesc.replace(/'/g, "&#39;").replace(/"/g, "&quot;").replace(/\n/g, "<br>");
         const displayDesc = lang === 'en' ? (safeEn || safeRu) : (safeRu || safeEn);
 
-        // В onclick добавлено условие if (el !== tt), чтобы скрипт не убивал сам себя!
         return `
             <div class="info-icon-btn" style="position: absolute; top: 4px; left: 4px; z-index: 20;" onclick="event.stopPropagation(); const tt = this.nextElementSibling; const isVis = tt.style.opacity === '1'; document.querySelectorAll('.shop-tooltip-new').forEach(el => { if (el !== tt) { el.style.opacity = '0'; el.style.pointerEvents = 'none'; setTimeout(() => { el.style.display = 'none'; }, 200); } }); if (!isVis) { tt.style.display = 'block'; requestAnimationFrame(() => { const b = this.getBoundingClientRect(); const t = tt.getBoundingClientRect(); tt.style.bottom = 'auto'; tt.style.top = '25px'; if (b.bottom + t.height > window.innerHeight - 15) { tt.style.top = 'auto'; tt.style.bottom = '25px'; } tt.style.left = '15px'; tt.style.right = 'auto'; if (b.left + 15 + t.width > window.innerWidth - 10) { tt.style.left = 'auto'; tt.style.right = '10px'; } tt.style.opacity = '1'; tt.style.pointerEvents = 'auto'; }); } else { tt.style.opacity = '0'; tt.style.pointerEvents = 'none'; setTimeout(() => { tt.style.display = 'none'; }, 200); }">
                 <div style="background: rgba(255,249,174,0.1); border: 1px solid var(--sun-gold); color: var(--sun-gold); border-radius: 4px; width: 14px; height: 14px; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: bold; cursor: pointer; box-shadow: 0 0 5px rgba(255,249,174,0.3);">?</div>
@@ -6224,55 +6414,84 @@ const ShopGame = (function() {
                         return; 
                     }
 
-                    if (typeof App !== 'undefined' && App.playSoundEffect) App.playSoundEffect('click');
-                    if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.HapticFeedback) window.Telegram.WebApp.HapticFeedback.impactOccurred('medium');
-
-                    if (priceCoinsNum > 0) deductPlayerCoins(p, priceCoinsNum);
-                    if (priceCrystNum > 0) {
-                        if (!p.crystals) p.crystals = 0;
-                        p.crystals -= priceCrystNum;
-                    }
-                    
-                    if (item.isConsumable) {
-                        if (item.rewardCoins) {
-                            if (p.bank !== undefined) p.bank += item.rewardCoins;
-                            else if (p.rStats && p.rStats.bank !== undefined) p.rStats.bank += item.rewardCoins;
-                        }
-                        if (item.rewardCrystals) {
-                            if (p.crystals === undefined) p.crystals = 0;
-                            p.crystals += item.rewardCrystals;
-                        }
-                    } else {
-                        if (!p.inventory) p.inventory = [];
-                        p.inventory.push(item.id);
-                    }
-
-                    const actionName = lang === 'ru' ? "Покупка" : "Purchase";
-                    const freeTxtLog = lang === 'ru' ? "Бесплатно" : "Free";
-                    
-                    let logPriceStr = '';
-                    if (priceCoinsNum > 0 && priceCrystNum > 0) logPriceStr = `- $${priceCoinsNum.toFixed(2)} | - ${priceCrystNum} 💎`;
-                    else if (priceCrystNum > 0) logPriceStr = `- ${priceCrystNum} 💎`;
-                    else if (priceCoinsNum > 0) logPriceStr = `- $${priceCoinsNum.toFixed(2)}`;
-                    else logPriceStr = freeTxtLog;
-
-                    const itemHTML = `
-                        <div class="history-item">
-                            <span style="color:var(--friendly-green); font-weight:bold;">[${actionName}]</span> ${item.icon} ${itemName}
-                            <br><span style="color:#aaa; font-size:9px;">${logPriceStr}</span>
-                        </div>`;
-                    
-                    p.historyShop = itemHTML + (p.historyShop || '');
-                    const hlShop = document.getElementById('historyListShop');
-                    if (hlShop) hlShop.innerHTML = p.historyShop;
-
-                    if (typeof App !== 'undefined' && App.requestProfileSave) App.requestProfileSave();
-                    if (typeof App !== 'undefined' && App.updateHistoryView) App.updateHistoryView();
-                    if (typeof updateTopUI === 'function') updateTopUI(); 
-                    renderShop();
-
-                    if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.HapticFeedback) window.Telegram.WebApp.HapticFeedback.notificationOccurred('success');
                     if (typeof App !== 'undefined' && App.playSoundEffect) App.playSoundEffect('achievement');
+                    if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.HapticFeedback) window.Telegram.WebApp.HapticFeedback.impactOccurred('heavy');
+
+                    // 🚀 ЗАПУСК ЧАСТИЦ
+                    if (typeof createShopParticles === 'function') {
+                        createShopParticles(card, true);
+                    }
+
+                    // 🚀 БЕСШОВНОЕ СВЕЧЕНИЕ: Мгновенно подменяем верстку карточки
+                    if (!item.isConsumable && !item.isStackable) {
+                        card.classList.add('card-purchase-success');
+                        card.classList.remove('locked');
+                        card.classList.add('unlocked');
+                        
+                        const badge = card.querySelector('.shop-price-badge');
+                        if (badge) {
+                            badge.innerHTML = lang === 'ru' ? 'КУПЛЕНО' : 'BOUGHT';
+                            badge.style.color = 'var(--friendly-green)';
+                            badge.style.borderColor = 'rgba(204, 255, 204, 0.2)';
+                            badge.style.opacity = '1';
+                            badge.style.filter = 'none';
+                        }
+
+                        // Убираем яркое свечение через 350мс
+                        setTimeout(() => {
+                            card.classList.remove('card-purchase-success');
+                        }, 350);
+                    }
+
+                    // Ждем завершения анимации и тихо списываем деньги
+                    setTimeout(() => {
+                        if (priceCoinsNum > 0) deductPlayerCoins(p, priceCoinsNum);
+                        if (priceCrystNum > 0) {
+                            if (!p.crystals) p.crystals = 0;
+                            p.crystals -= priceCrystNum;
+                        }
+                        
+                        if (item.isConsumable) {
+                            if (item.rewardCoins) {
+                                if (p.bank !== undefined) p.bank += item.rewardCoins;
+                                else if (p.rStats && p.rStats.bank !== undefined) p.rStats.bank += item.rewardCoins;
+                            }
+                            if (item.rewardCrystals) {
+                                if (p.crystals === undefined) p.crystals = 0;
+                                p.crystals += item.rewardCrystals;
+                            }
+                        } else {
+                            if (!p.inventory) p.inventory = [];
+                            p.inventory.push(item.id);
+                        }
+
+                        const actionName = lang === 'ru' ? "Покупка" : "Purchase";
+                        const freeTxtLog = lang === 'ru' ? "Бесплатно" : "Free";
+                        
+                        let logPriceStr = '';
+                        if (priceCoinsNum > 0 && priceCrystNum > 0) logPriceStr = `- $${priceCoinsNum.toFixed(2)} | - ${priceCrystNum} 💎`;
+                        else if (priceCrystNum > 0) logPriceStr = `- ${priceCrystNum} 💎`;
+                        else if (priceCoinsNum > 0) logPriceStr = `- $${priceCoinsNum.toFixed(2)}`;
+                        else logPriceStr = freeTxtLog;
+
+                        const itemHTML = `
+                            <div class="history-item">
+                                <span style="color:var(--friendly-green); font-weight:bold;">[${actionName}]</span> ${item.icon} ${itemName}
+                                <br><span style="color:#aaa; font-size:9px;">${logPriceStr}</span>
+                            </div>`;
+                        
+                        p.historyShop = itemHTML + (p.historyShop || '');
+                        const hlShop = document.getElementById('historyListShop');
+                        if (hlShop) hlShop.innerHTML = p.historyShop;
+
+                        if (typeof App !== 'undefined' && App.requestProfileSave) App.requestProfileSave();
+                        if (typeof App !== 'undefined' && App.updateHistoryView) App.updateHistoryView();
+                        if (typeof updateTopUI === 'function') updateTopUI(); 
+                        
+                        renderShop(); // Финальная тихая перерисовка
+
+                        if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.HapticFeedback) window.Telegram.WebApp.HapticFeedback.notificationOccurred('success');
+                    }, 750);
                 };
             }
             grid.appendChild(card);
@@ -6282,6 +6501,12 @@ const ShopGame = (function() {
     function renderInventoryList(skipAnimation = false) {
         const list = document.getElementById('inventoryList');
         if (!list) return;
+
+        // 🚀 ФИКС СКРОЛЛА: Умное запоминание позиции
+        // Если мы перерисовываем инвентарь при надевании вещи (skipAnimation = true), мы запоминаем скролл.
+        // Если мы только что открыли инвентарь (false), позиция сбросится в 0 (в самое начало).
+        const oldScrollContainer = list.querySelector('.inv-scroll-container');
+        const savedScroll = (oldScrollContainer && skipAnimation) ? oldScrollContainer.scrollTop : 0;
 
         const p = GameState.activeProfileIdx !== -1 ? GameState.profiles[GameState.activeProfileIdx] : null;
         const inv = p ? (p.inventory || []) : [];
@@ -6299,9 +6524,8 @@ const ShopGame = (function() {
         const mapItems = (arr, cat, subRu, subEn) => arr.map(i => ({ ...i, _cat: cat, _subRu: subRu, _subEn: subEn }));
         
         const rouletteSVG = `<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10" stroke-width="2"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="5.5" r="2.5"/><circle cx="12" cy="5.5" r="1.2" fill="currentColor" stroke="none"/><circle cx="17.6" cy="8.8" r="2.5"/><circle cx="17.6" cy="15.2" r="2.5"/><circle cx="12" cy="18.5" r="2.5"/><circle cx="6.4" cy="15.2" r="2.5"/><circle cx="6.4" cy="8.8" r="2.5"/></svg>`;
-        const coinSVG = `<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 6.5l5.5 5.5-5.5 5.5-5.5-5.5z"/><circle cx="12" cy="12" r="2" fill="currentColor" stroke="none"/></svg>`;
+        const coinSVG = `<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 6.5l5.5 5.5-5.5-5.5-5.5-5.5z"/><circle cx="12" cy="12" r="2" fill="currentColor" stroke="none"/></svg>`;
 
-        // 🚀 ФИКС: Красиво разбитая первая вкладка (Молния) с учетом новых Далеких Звезд
         const categories = [
             { 
                 key: 'boosters', icon: '<i class="fas fa-bolt"></i>', title: { ru: 'Бустеры', en: 'Boosters' }, color: 'var(--angry-red)', 
@@ -6331,7 +6555,7 @@ const ShopGame = (function() {
         staticBlock.className = 'shop-tabs-container';
         
         const tabBar = document.createElement('div');
-        tabBar.style.cssText = 'display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 10px;';
+        tabBar.style.cssText = 'display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 10px; flex-shrink: 0;';
 
         categories.forEach(cat => {
             const btn = document.createElement('div');
@@ -6352,6 +6576,7 @@ const ShopGame = (function() {
                 btn.onclick = () => {
                     if (typeof App !== 'undefined' && App.playSoundEffect) App.playSoundEffect('tick');
                     list.dataset.activeTab = cat.key;
+                    // Сбрасываем скролл, так как это новая вкладка
                     renderInventoryList(false); 
                 };
             }
@@ -6364,6 +6589,14 @@ const ShopGame = (function() {
         if (activeCat) {
             const scrollContainer = document.createElement('div');
             scrollContainer.className = 'inv-scroll-container';
+            
+            // Задаем корректные стили скролла для внутренностей
+            scrollContainer.style.cssText = `
+                flex: 1 1 auto; min-height: 0; width: 100%; overflow-y: auto; overflow-x: visible;
+                padding-bottom: 20px; scrollbar-width: none;
+                -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 15px, black calc(100% - 25px), transparent 100%);
+                mask-image: linear-gradient(to bottom, transparent 0%, black 15px, black calc(100% - 25px), transparent 100%);
+            `;
             
             scrollContainer.appendChild(createCategoryHeader(activeCat.title[lang] || activeCat.title.ru, activeCat.color));
 
@@ -6379,6 +6612,7 @@ const ShopGame = (function() {
                 
                 const grid = document.createElement('div');
                 grid.className = 'shop-grid-container';
+                grid.style.cssText = 'display: grid !important; grid-template-columns: repeat(4, 1fr) !important; gap: 6px !important; margin-bottom: 10px;';
                 
                 groups[subLabel].forEach(item => {
                     let isEquipped = (item._cat === 'gameStyles' || item._cat === 'perks') 
@@ -6391,7 +6625,6 @@ const ShopGame = (function() {
                     const itemName = item.name[lang] || item.name.ru;
                     const badgeHTML = item.isStackable ? `<div style="position: absolute; top: -2px; right: 4px; color: var(--friendly-green); font-weight: 900; font-size: 12px; z-index: 10;">${inv.filter(id => id === item.id).length}</div>` : '';
 
-                    // Вызываем подсказку напрямую, без сломанного div class="smart-info-wrap"
                     card.innerHTML = `
                         ${badgeHTML}
                         ${typeof getTooltipHTML === 'function' ? getTooltipHTML(itemName, item.desc, lang) : ''}
@@ -6411,6 +6644,15 @@ const ShopGame = (function() {
                 scrollContainer.appendChild(grid);
             });
             list.appendChild(scrollContainer);
+
+            // 🚀 МАГИЯ ЗДЕСЬ: Жестко ставим скролл туда, куда нам надо
+            requestAnimationFrame(() => {
+                scrollContainer.scrollTop = savedScroll;
+                // Принудительно отматываем внешнее модальное окно в самый верх, чтобы не проваливалось
+                if (list.parentElement) {
+                    list.parentElement.scrollTop = 0;
+                }
+            });
         }
     }
 
@@ -6607,9 +6849,7 @@ const ShopGame = (function() {
             }
         }, 300);
 
-        // 🚀 ФИКС: Умный закрыватель подсказок для мобилок и ПК
         const closeShopTooltips = (e) => {
-            // Защита: если тапнули по самой кнопке с вопросиком или внутри открытой подсказки — не закрываем ее принудительно
             if (e.target.closest('.info-icon-btn') || e.target.closest('.shop-tooltip-new') || e.target.closest('.shop-tt') || e.target.closest('.float-corner-btn')) {
                 return;
             }
@@ -6620,7 +6860,6 @@ const ShopGame = (function() {
             });
         };
 
-        // Вешаем слушатель и на клик мыши, и на касание пальцем
         document.addEventListener('click', closeShopTooltips);
         document.addEventListener('touchstart', closeShopTooltips, { passive: true });
     }
@@ -7138,7 +7377,6 @@ const DiceGame = (function() {
         const RouletteGame = (function() {
             const chamberMap = [4, 5, 0, 1, 2, 3]; 
             const debugToChamberMap = [4, 5, 0, 1, 2, 3];
-			document.body.classList.add('is-roulette-run');
 
             let subStates = {
                 standard: { loadedBullets: 0, chamberState: [false,false,false,false,false,false], stashState: [false,false,false,false,false], drumRotation: 0, survivalCount: 0, survivalInitialBullets: 0 },
@@ -7739,27 +7977,42 @@ const DiceGame = (function() {
             function mount() {
                 isGameActive = true;
                 
-				// 🚀 ЖЕЛЕЗОБЕТОННЫЙ ТЕЛЕПОРТ ЭМОДЗИ (ТОЛЬКО ДЛЯ РУЛЕТКИ)
-    const rCont = document.getElementById('res-content');
-    if (rCont) {
-        rCont.style.setProperty('position', 'fixed', 'important');
-        rCont.style.setProperty('top', '25vh', 'important'); /* Выше/ниже (vh = % от высоты экрана) */
-        rCont.style.setProperty('left', '8vw', 'important'); /* Правее/левее (vw = % ширины экрана) */
-        rCont.style.setProperty('bottom', 'auto', 'important');
-        rCont.style.setProperty('right', 'auto', 'important');
-        rCont.style.setProperty('transform', 'translateY(-50%)', 'important');
-        rCont.style.setProperty('z-index', '9999', 'important');
-    }
-	
+                // ✅ Включаем спец-класс именно при открытии рулетки
+                document.body.classList.add('is-roulette-run');
+                
+                // 🚀 ЖЕЛЕЗОБЕТОННЫЙ ТЕЛЕПОРТ ЭМОДЗИ
+                const rCont = document.getElementById('res-content');
+                if (rCont) {
+                    rCont.style.setProperty('position', 'fixed', 'important');
+                    rCont.style.setProperty('top', '25vh', 'important');
+                    rCont.style.setProperty('left', '8vw', 'important');
+                    rCont.style.setProperty('bottom', 'auto', 'important');
+                    rCont.style.setProperty('right', 'auto', 'important');
+                    rCont.style.setProperty('transform', 'translateY(-50%)', 'important');
+                    rCont.style.setProperty('z-index', '9999', 'important');
+                }
+
+                // 🚀 ГЛАВНЫЙ ФИКС ПУСТОТЫ: Вырываем пустую коробку из макета JS-ом
+                const ansBox = document.getElementById('answer-box');
+                if (ansBox) {
+                    ansBox.style.setProperty('position', 'absolute', 'important');
+                    ansBox.style.setProperty('min-height', '0px', 'important');
+                    ansBox.style.setProperty('opacity', '0', 'important');
+                    ansBox.style.setProperty('pointer-events', 'none', 'important');
+                }
+
                 const rs = document.getElementById('rouletteStage'); 
                 if(rs) rs.style.display = 'flex';
                 
-                // РОДНАЯ ЛОГИКА: Показываем барабан и пули
                 const dw = document.getElementById('drumWrapper');
                 if (dw) dw.style.display = ''; 
                 
                 const bs = document.getElementById('bulletStash'); 
-                if(bs) bs.style.display = 'flex';
+                if(bs) {
+                    bs.style.display = 'flex';
+                    // Поджимаем патроны ближе к кнопкам
+                    bs.style.setProperty('margin-bottom', '5px', 'important'); 
+                }
                 
                 const rsb = document.getElementById('rouletteStatusBtn'); 
                 if(rsb) rsb.style.display = 'flex';
@@ -7787,7 +8040,6 @@ const DiceGame = (function() {
                     newBtn.style.alignItems = 'center';
                     newBtn.style.justifyContent = 'center';
                     newBtn.addEventListener('click', () => {
-                        // Исправлено: используем правильные переменные плагина
                         if(isSpinningDrum || isWaitingResult || isBetting || !isGameActive) return;
                         
                         const sm = GameState.subModes.roulette;
@@ -7796,24 +8048,19 @@ const DiceGame = (function() {
                         if(loadedBullets > 0 || (typeof justFired !== 'undefined' && justFired)) {
                             if (typeof justFired !== 'undefined' && justFired) {
                                 justFired = false;
-                                // Если у тебя есть функция updateStatus, вызывай её, 
-                                // если нет — просто игнорируй или вызови updateButtonStates()
                                 if(typeof updateStatus === 'function') updateStatus();
                                 else updateButtonStates();
                             } else {
-                                // Вызываем функцию выстрела (у тебя она может называться play)
                                 play();
                             }
                         }
                     });
                 }
 
-                // === ФИНАЛЬНЫЕ ОБНОВЛЕНИЯ ИНТЕРФЕЙСА ===
                 if (typeof updateGlobalCounters === 'function') updateGlobalCounters();
                 if (typeof updateBankUI === 'function') updateBankUI(); 
                 if (typeof updateBoosterUI === 'function') updateBoosterUI();
                 
-                // === ФИКС 3: ПРИЗРАКИ КОСТИ ===
                 loadCurrentSubState();
                 restoreDrumVisuals();
             }
@@ -7824,7 +8071,28 @@ const DiceGame = (function() {
                 justFired = false;
                 tempCoins = 0;
                 tempCrystals = 0;
-				document.body.classList.remove('is-roulette-run');
+                
+                document.body.classList.remove('is-roulette-run');
+
+                // 🚀 ВОЗВРАЩАЕМ ЭЛЕМЕНТАМ НОРМАЛЬНЫЙ ВИД ДЛЯ ДРУГИХ ИГР
+                const ansBox = document.getElementById('answer-box');
+                if (ansBox) {
+                    ansBox.style.removeProperty('position');
+                    ansBox.style.removeProperty('min-height');
+                    ansBox.style.removeProperty('opacity');
+                    ansBox.style.removeProperty('pointer-events');
+                }
+                
+                const rCont = document.getElementById('res-content');
+                if (rCont) {
+                    rCont.style.removeProperty('position');
+                    rCont.style.removeProperty('top');
+                    rCont.style.removeProperty('left');
+                    rCont.style.removeProperty('bottom');
+                    rCont.style.removeProperty('right');
+                    rCont.style.removeProperty('transform');
+                    rCont.style.removeProperty('z-index');
+                }
 
                 // РОДНАЯ ЛОГИКА v39: Явно прячем КАЖДЫЙ элемент рулетки
                 const rs = document.getElementById('rouletteStage');
@@ -7834,7 +8102,10 @@ const DiceGame = (function() {
                 if (dw) dw.style.display = 'none';
 
                 const bs = document.getElementById('bulletStash');
-                if (bs) bs.style.display = 'none';
+                if (bs) {
+                    bs.style.display = 'none';
+                    bs.style.removeProperty('margin-bottom'); // Убираем отступ
+                }
 
                 const rsb = document.getElementById('rouletteStatusBtn');
                 if (rsb) rsb.style.display = 'none';
@@ -7844,8 +8115,8 @@ const DiceGame = (function() {
 
                 const hlr = document.getElementById('historyListRoulette');
                 if (hlr) hlr.style.display = 'none';
-				
-				const hlb = document.getElementById('historyListBank');
+                
+                const hlb = document.getElementById('historyListBank');
                 if (hlb) hlb.style.display = 'none';
                 
                 const hls = document.getElementById('historyListSurvival');
@@ -8776,12 +9047,21 @@ const DiceGame = (function() {
                 }
 
                 if (rouIcon) {
-    rouIcon.innerHTML = mainSubI;
-    rouIcon.style.color = uiColor;
-    rouIcon.style.filter = `drop-shadow(0 0 20px ${uiColor})`;
-    void rouIcon.offsetWidth; // Магия браузера для рестарта анимации
-    rouIcon.style.opacity = '1';
-}
+                    // 1. Снимаем классы анимации (даже если снимали в начале, делаем контрольный выстрел)
+                    rouIcon.classList.remove('heart-pulse', 'skull-aura');
+                    
+                    // 2. Настраиваем внешность
+                    rouIcon.innerHTML = mainSubI;
+                    rouIcon.style.color = uiColor;
+                    rouIcon.style.filter = `drop-shadow(0 0 20px ${uiColor})`;
+                    
+                    // 3. МАГИЯ: принудительно заставляем браузер отрисовать кадр БЕЗ классов анимации
+                    void rouIcon.offsetWidth; 
+                    
+                    // 4. Вешаем нужный класс обратно — теперь браузер 100% запустит её с нуля!
+                    rouIcon.classList.add(isGunshotResult ? 'skull-aura' : 'heart-pulse');
+                    rouIcon.style.opacity = '1';
+                }
                 
                 if(typeof App !== 'undefined') App.playSoundEffect('result', snd);
 
@@ -9784,7 +10064,9 @@ const FlowerGame = (function() {
                         selector.classList.remove('visible');
                     }
                 }
-                rollBtn.disabled = false;
+                
+                // 🚀 ФИКС: Кнопка "отдыхает", пока игрок занят цветком или цифрами
+                rollBtn.disabled = true; 
                 rollBtn.classList.remove('gold-text-active');
             }
             if (rs) rs.classList.remove('visible'); 
@@ -9820,8 +10102,7 @@ const FlowerGame = (function() {
     function mount() {
         const st = document.getElementById('flowerStage'); if(st) st.style.display = 'flex';
         document.body.classList.add('is-flower-game-active');
-        
-        // Помечаем, если зашли в интуицию, чтобы CSS переключил кнопки
+
         if (GameState.subModes.flower === 'intuition') {
             document.body.classList.add('flower-int-active');
         } else {
@@ -9830,11 +10111,30 @@ const FlowerGame = (function() {
 
         const t = LANG_DATA[GameState.lang];
         if (document.getElementById('ui-title')) document.getElementById('ui-title').innerText = t.menuFlower || "Цветок оракула";
-        
+
+        // 🚀 ФИКС ПУСТОТЫ: Сжимаем коробку до 0px, сохраняя её в потоке страницы
+        const ansBox = document.getElementById('answer-box');
+        if (ansBox) {
+            ansBox.style.setProperty('position', 'relative', 'important');
+            ansBox.style.setProperty('min-height', '0px', 'important');
+            ansBox.style.setProperty('height', '0px', 'important');
+        }
+
+        // 🚀 ТЕКСТ РЕЗУЛЬТАТА: Центрируем его поверх невидимой надписи "Оракул ждет"
+        const rCont = document.getElementById('res-content');
+        if (rCont) {
+            rCont.style.setProperty('position', 'absolute', 'important');
+            rCont.style.setProperty('top', '15px', 'important'); 
+            rCont.style.setProperty('left', '50%', 'important');
+            rCont.style.setProperty('transform', 'translateX(-50%)', 'important');
+            rCont.style.setProperty('width', '100%', 'important');
+            rCont.style.setProperty('z-index', '100', 'important');
+        }
+
         restoreUI();
     }
-
-    function unmount() {
+	
+	function unmount() {
         const st = document.getElementById('flowerStage'); if(st) st.style.display = 'none';
         // Убираем все метки — кнопки 1-6 вернутся сами по CSS
         document.body.classList.remove('is-flower-game-active', 'flower-int-active');
@@ -9842,6 +10142,24 @@ const FlowerGame = (function() {
         const rs = document.getElementById('res-status'); if(rs) rs.classList.remove('visible');
         const rc = document.getElementById('res-content'); if(rc) rc.classList.remove('visible');
         const selector = document.getElementById('flowerNumberSelector'); if(selector) selector.classList.remove('visible');
+
+        // 🚀 ОЧИСТКА: Возвращаем элементам нормальный вид для Кости и Монетки
+        const ansBox = document.getElementById('answer-box');
+        if (ansBox) {
+            ansBox.style.removeProperty('position');
+            ansBox.style.removeProperty('min-height');
+            ansBox.style.removeProperty('height');
+        }
+
+        const rCont = document.getElementById('res-content');
+        if (rCont) {
+            rCont.style.removeProperty('position');
+            rCont.style.removeProperty('top');
+            rCont.style.removeProperty('left');
+            rCont.style.removeProperty('transform');
+            rCont.style.removeProperty('width');
+            rCont.style.removeProperty('z-index');
+        }
     }
 
     function updateFlowerUIState() {
@@ -10256,12 +10574,13 @@ const FlowerGame = (function() {
         if (selector) selector.classList.remove('visible');
 
         if(rollBtn) {
+			rollBtn.disabled = false;
             rollBtn.innerText = t.flowerDone || "СУДЬБА РЕШИЛА"; 
         }
     }
 
     function getState() {
-        return { tornCount, totalPetals, isGameActive, targetStubs, selectedStubCount };
+        return { tornCount, totalPetals, isGameActive, targetStubs, selectedStubCount, isSpinning };
     }
 
     return { init, mount, unmount, play, resetAll, selectStubCount, saveCurrentSubState, loadCurrentSubState, isGameActive: () => isGameActive, getState };
@@ -10281,8 +10600,8 @@ const FlowerGame = (function() {
         }
         LANG_DATA.ru.menuFlower = "Цветок оракула";
         LANG_DATA.en.menuFlower = "The Oracle flower";
-        LANG_DATA.ru.smFlowerStd = "Нить Жребия";
-        LANG_DATA.en.smFlowerStd = "Draw";
+        LANG_DATA.ru.smFlowerStd = "Лепестки";
+        LANG_DATA.en.smFlowerStd = "Petals";
         LANG_DATA.ru.histFlowerHead = "История лепестков";
         LANG_DATA.en.histFlowerHead = "The Oracle flower History";
         LANG_DATA.ru.smFlowerInt = "Интуиция";
@@ -10535,7 +10854,8 @@ const FlowerGame = (function() {
             if (fState && fState.isGameActive) {
                 const rollBtn = document.getElementById('rollBtn');
                 if (rollBtn) {
-                    if (rollBtn.disabled) {
+                    // 🚀 ФИКС: Теперь таймер смотрит на реальную анимацию, а не на блокировку кнопки!
+                    if (fState.isSpinning) {
                         rollBtn.innerText = t.waiting || (GameState.lang === 'ru' ? "ОРАКУЛ ЖДЕТ..." : "WAITING...");
                     } else if (GameState.subModes.flower === 'intuition' && fState.selectedStubCount === null) {
                         rollBtn.innerText = t.flowerChoose || (GameState.lang === 'ru' ? "ВЫБЕРИ ЧИСЛО" : "CHOOSE A NUMBER");
@@ -12807,6 +13127,30 @@ try {
     }, 300);
 
 })();
+
+// =========================================================================
+// 🧠 SMART UX ENGINE v3.1: ЩИТ ПОДСКАЗОК И УМНЫЕ ОШИБКИ
+// =========================================================================
+window.addEventListener('DOMContentLoaded', () => {
+
+    /* --- АБСОЛЮТНАЯ ЗАЩИТА ОТ КЛИКОВ "СКВОЗЬ" ПОДСКАЗКУ --- */
+    const clickShield = document.createElement('div');
+    clickShield.id = 'global-click-shield';
+    clickShield.style.cssText = 'position:fixed; top:0; left:0; width:100vw; height:100vh; z-index:9990; display:none; background:transparent;';
+    document.body.appendChild(clickShield);
+
+    const triggerSelector = '.info-icon-btn, .info-mode-btn, .ach-icon, .hub-item, #ui-top-money, #ui-bank, .top-bank-val, h1#ui-title';
+
+    document.addEventListener('click', (e) => {
+        const isTooltipTrigger = e.target.closest(triggerSelector);
+        if (isTooltipTrigger) {
+            clickShield.style.display = 'block';
+        } else {
+            clickShield.style.display = 'none';
+        }
+    }, true);
+
+});
 </script>
 
 <div class="settings-overlay" id="inventoryOverlay" style="display:none;">
