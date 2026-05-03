@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Игры Судьбы. v0.9.0.12</title>
+    <title>Игры Судьбы. v0.9.0.14</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 	<style>
@@ -1072,14 +1072,6 @@ body.theme-perk_crt_miami::before {
     background: linear-gradient(180deg, #ff007f 0%, #00f0ff 100%); 
 }
 
-/* 🌅 3. МАЙАМИ 80-х (Огненный закат) */
-/* Мы используем ID miami, но теперь это настоящий солнечный закат */
-body.theme-perk_crt_miami_sunset::before { 
-    background: linear-gradient(180deg, #ff4500 0%, #ff8c00 40%, #ffcc33 70%, #2f4f4f 100%); 
-}
-body.theme-perk_crt_miami_sunset::after {
-    box-shadow: inset 0 0 150px rgba(50, 20, 0, 0.6);
-}
 
 /* 🤖 4. T-100 (HUD Терминатора) */
 body.theme-perk_crt_terminator::before { background: rgba(255, 0, 0, 0.45); }
@@ -2150,22 +2142,50 @@ body.theme-perk_crt_miami::after {
     background-size: 100% 3px;
 }
 
-/* 🌅 МАЙАМИ 80-х (Яркий закат сверху, нуар снизу) */
-body.theme-perk_crt_miami_sunset::before { 
-    /* Окрашивание: сверху слепящий желтый, в центре оранжевый, внизу глубокий фиолетово-черный */
-    background: linear-gradient(180deg, #ffea00 0%, #ff5e00 35%, #1a0033 75%, #000000 100%) !important; 
-	background-size: 100% 2px;
+/* ========================================================== */
+/* 🌅 МАЙАМИ 80-Х: ДЫХАНИЕ ЗАКАТА И ФИКС НИЗА                 */
+/* ========================================================== */
+
+/* 1. Основной фон: читаемый низ и теплый ретро-градиент */
+body.theme-perk_crt_miami_sunset {
+    background: linear-gradient(180deg, #2a0845 0%, #641551 40%, #1a1025 100%) !important;
 }
 
+/* 2. CRT-полосы (Сканлайны) и жесткий фикс мерцания кнопок */
+body.theme-perk_crt_miami_sunset::before {
+    content: "";
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    z-index: 8999;
+    pointer-events: none !important; /* Гарантирует, что слой не перекрывает клики */
+    background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.15) 50%);
+    background-size: 100% 4px;
+    /* Аппаратное ускорение выносит слой на GPU, убивая баг с мерцанием */
+    transform: translate3d(0, 0, 0); 
+    backface-visibility: hidden;
+}
+
+/* 3. Дышащее неоновое солнце (Рассвет/Закат) */
 body.theme-perk_crt_miami_sunset::after {
-    /* Чуть усиливаем темную виньетку по краям для кинематографичности */
-    box-shadow: inset 0 0 150px rgba(20, 0, 10, 0.8) !important;
-    background: 
-        /* 1. Наши современные тонкие сканлайны (сетка) */
-        linear-gradient(rgba(0, 0, 0, 0) 75%, rgba(50, 20, 0, 0.2) 75%),
-        /* 2. Физическое затемнение (нуар), поднимающееся снизу вверх */
-        linear-gradient(to top, rgba(0, 0, 0, 0.95) 0%, rgba(0, 0, 0, 0.5) 25%, transparent 60%) !important;
-    background-size: 100% 2px, 100% 100% !important;
+    content: "";
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    z-index: 8998;
+    pointer-events: none !important;
+    /* Возвращаем ровный линейный градиент на всю ширину сверху вниз */
+    background: linear-gradient(180deg, rgba(255, 140, 0, 0.4) 0%, rgba(255, 50, 150, 0.15) 40%, transparent 100%);
+    /* Плавная анимация: 35 сек разгорается, 35 сек затухает */
+    animation: miami-sunrise 35s ease-in-out infinite alternate;
+    transform: translate3d(0, 0, 0);
+}
+
+@keyframes miami-sunrise {
+    0% { 
+        opacity: 0.3; 
+    }
+    100% { 
+        opacity: 1; 
+    }
 }
 
 /* ========================================================== */
@@ -2872,7 +2892,7 @@ setInterval(() => {
     <div id="stars" class="stars-layer stars-active bg1-stars"></div>
 
     <div id="mainMenuOverlay">
-        <div class="version">v0.9.0.12</div> 
+        <div class="version">v0.9.0.14</div> 
 		<div class="global-bottom-nav">
             <div class="nav-btn" onclick="if(typeof App !== 'undefined' && App.playSoundEffect) App.playSoundEffect('click'); if(typeof ShopGame !== 'undefined') ShopGame.toggleInventory(true);">
                 <i class="fas fa-box-open" style="color: var(--sun-gold);"></i>
@@ -2960,7 +2980,7 @@ setInterval(() => {
         </div>
 
         <div class="input-section" id="inputWrapper">
-            <input type="text" id="userQuestion" placeholder="Введи вопрос судьбе..." autocomplete="off">
+            <input type="text" id="userQuestion" placeholder="Задай вопрос судьбе..." autocomplete="off">
             <div id="playerBank" class="bank-display glow-green"><i class="fas fa-wallet"></i> <span id="bankVal">50.00</span></div>
             <input type="number" step="0.01" id="betInput" placeholder="Ставка!" min="0.10">
             <button id="betSubmitBtn" onclick="RouletteGame.placeBet()"><i class="fas fa-check"></i></button>
@@ -3307,7 +3327,7 @@ window.findItemById = function(id) {
 
         const LANG_DATA = {
             ru: { 
-                title: "Кость Истины", titleRoulette: "РОКОВАЯ ПУЛЯ", placeholder: "Введи вопрос судьбе...", placeBet: "Ставка!", 
+                title: "Кость Истины", titleRoulette: "РОКОВАЯ ПУЛЯ", placeholder: "Задай вопрос судьбе...", placeBet: "Ставка!", 
                 error: "Сперва задай вопрос оракулу!", errBullet: "Заряди хоть один патрон!", errBank: "Ставка должна быть от 0.10$!", errNoMoney: "У тебя недостаточно денег на балансе!",
                 idle: "Оракул ожидает вопроса...", idleNoQ: "Судьба ждет...", idleBet: "Жду ставку...", waiting: "Судьба решает...", 
                 rollBtn: "Испытать судьбу", stTitle: "Настройки", stClose: "Закрыть", ruTitleRules: "Правила Игры", menuTitle: "Игры Судьбы", 
@@ -3544,6 +3564,7 @@ window.spawnTerminatorData = function() {
 
     // 🔴 ЛОГИКА ДЛЯ ТЕРМИНАТОРА (T-100)
     if (isTerminator) {
+        // --- 1. ГЕНЕРАЦИЯ ТЕКСТА ---
         const phrases = [
             "ANALYSIS: PROBABILITY 67.4%", "TARGET_LOCK: STABLE", "VOLTAGE_CHECK: OK", 
             "CORE_TEMP: 34.2C", "SENSORS: ACTIVE", "INPUT_DETECTED...", "CALCULATING_FATE...",
@@ -3573,7 +3594,6 @@ window.spawnTerminatorData = function() {
         
         document.body.appendChild(container);
 
-        // 🚀 ФИКС: Рандомное количество строк от 3 до 7
         const linesCount = 3 + Math.floor(Math.random() * 5); 
         let lines = [];
         for(let i = 0; i < linesCount; i++) {
@@ -3605,6 +3625,8 @@ window.spawnTerminatorData = function() {
         }
         
         typeEffect();
+
+     
     }
 };
 
@@ -6523,8 +6545,8 @@ const ShopGame = (function() {
 
         const mapItems = (arr, cat, subRu, subEn) => arr.map(i => ({ ...i, _cat: cat, _subRu: subRu, _subEn: subEn }));
         
-        const rouletteSVG = `<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10" stroke-width="2"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="5.5" r="2.5"/><circle cx="12" cy="5.5" r="1.2" fill="currentColor" stroke="none"/><circle cx="17.6" cy="8.8" r="2.5"/><circle cx="17.6" cy="15.2" r="2.5"/><circle cx="12" cy="18.5" r="2.5"/><circle cx="6.4" cy="15.2" r="2.5"/><circle cx="6.4" cy="8.8" r="2.5"/></svg>`;
-        const coinSVG = `<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 6.5l5.5 5.5-5.5-5.5-5.5-5.5z"/><circle cx="12" cy="12" r="2" fill="currentColor" stroke="none"/></svg>`;
+        const rouletteSVG = `<svg viewBox="0 0 24 24" width="22" height="22"><path fill-rule="evenodd" clip-rule="evenodd" fill="currentColor" d="M22,12 A10,10 0 1,1 2,12 A10,10 0 1,1 22,12 Z M13.5,12 A1.5,1.5 0 1,0 10.5,12 A1.5,1.5 0 1,0 13.5,12 Z M14.2,5.5 A2.2,2.2 0 1,0 9.8,5.5 A2.2,2.2 0 1,0 14.2,5.5 Z M19.8,8.8 A2.2,2.2 0 1,0 15.4,8.8 A2.2,2.2 0 1,0 19.8,8.8 Z M19.8,15.2 A2.2,2.2 0 1,0 15.4,15.2 A2.2,2.2 0 1,0 19.8,15.2 Z M14.2,18.5 A2.2,2.2 0 1,0 9.8,18.5 A2.2,2.2 0 1,0 14.2,18.5 Z M8.6,15.2 A2.2,2.2 0 1,0 4.2,15.2 A2.2,2.2 0 1,0 8.6,15.2 Z M8.6,8.8 A2.2,2.2 0 1,0 4.2,8.8 A2.2,2.2 0 1,0 8.6,8.8 Z"/></svg>`;
+        const coinSVG = `<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"/><path d="M12 8.5 L15.5 12 L12 15.5 L8.5 12 Z"/></svg>`;
 
         const categories = [
             { 
@@ -13102,6 +13124,222 @@ try {
             window.addEventListener('deviceorientation', handleOrientation);
         }
     }
+
+// ==============================================
+// 🤖 АВТОНОМНЫЙ HUD ПРОЦЕССОР V6 (ФИКС ДИКОГО НЕОНА)
+// ==============================================
+(function startAutonomousHUDScanner() {
+    function triggerScan() {
+        const isTerminator = document.body.classList.contains('theme-perk_crt_terminator');
+        const isMatrix = document.body.classList.contains('theme-perk_crt_matrix');
+        const isBWCrt = document.body.classList.contains('theme-perk_crt_bw');
+        const isMiami = document.body.classList.contains('theme-perk_crt_miami') || document.body.classList.contains('theme-perk_crt_miami_sunset'); 
+        
+        const TOP_Z_INDEX = '10005';
+
+        // 🔴 ТЕРМИНАТОР
+        if (isTerminator) {
+            const scanner = document.createElement('div');
+            scanner.style.setProperty('pointer-events', 'none', 'important');
+            scanner.style.setProperty('user-select', 'none', 'important');
+            scanner.style.setProperty('z-index', TOP_Z_INDEX, 'important'); 
+            scanner.style.setProperty('position', 'fixed', 'important');
+            scanner.style.setProperty('top', '0', 'important');
+            scanner.style.setProperty('left', '0', 'important');
+            scanner.style.setProperty('width', '100vw', 'important');
+            scanner.style.setProperty('height', '100vh', 'important');
+            
+            scanner.style.backgroundSize = '40px 40px'; 
+            scanner.style.backgroundPosition = '0 0';
+            scanner.style.backgroundImage = `
+                linear-gradient(rgba(255, 50, 50, 1) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 50, 50, 1) 1px, transparent 1px)
+            `;
+            scanner.style.filter = 'drop-shadow(0 0 2px red) drop-shadow(0 0 5px red)';
+            
+            const size = 20 + Math.random() * 25; 
+            const x = Math.random() * 100;
+            const y = Math.random() * 100;
+            
+            const maskStr = `radial-gradient(circle ${size}vw at ${x}vw ${y}vh, black 0%, transparent 80%)`;
+            scanner.style.WebkitMaskImage = maskStr;
+            scanner.style.maskImage = maskStr;
+            
+            scanner.style.transform = 'translate3d(0,0,0)'; 
+            scanner.style.opacity = '0';
+            scanner.style.transition = 'opacity 1.5s ease-in-out'; 
+            
+            document.body.appendChild(scanner);
+
+            requestAnimationFrame(() => scanner.style.opacity = '1');
+
+            setTimeout(() => {
+                scanner.style.opacity = '0';
+                setTimeout(() => scanner.remove(), 1500);
+            }, 1500 + Math.random() * 2000);
+        }
+
+        // 🟢 МАТРИЦА
+        if (isMatrix) {
+            const chars = "ｱｲｳｴｵｶｷｸｹｺｻｼｽｾｿﾀﾁﾂﾃﾄﾅﾆﾇﾈﾉﾊﾋﾌﾍﾎﾏﾐﾑﾒﾓﾔﾕﾖﾗﾘﾙﾚﾛﾜﾝ1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+            const zoneLeft = 5 + Math.random() * 80; 
+            const zoneTop = Math.random() * 30; 
+            const dropsCount = 2 + Math.floor(Math.random() * 4); 
+
+            for (let i = 0; i < dropsCount; i++) {
+                setTimeout(() => {
+                    const container = document.createElement('div');
+                    container.style.setProperty('pointer-events', 'none', 'important');
+                    container.style.setProperty('user-select', 'none', 'important');
+                    container.style.setProperty('z-index', TOP_Z_INDEX, 'important'); 
+                    container.style.setProperty('position', 'fixed', 'important');
+                    container.style.setProperty('color', '#4ade80', 'important');
+                    container.style.setProperty('text-shadow', '0 0 8px #22c55e, 0 0 2px #ffffff', 'important');
+                    container.style.setProperty('font-family', '"Courier New", monospace', 'important');
+                    container.style.setProperty('font-size', (10 + Math.random() * 14) + 'px', 'important');
+                    container.style.setProperty('line-height', '0.9', 'important');
+                    container.style.setProperty('white-space', 'pre', 'important');
+                    container.style.setProperty('text-align', 'center', 'important');
+                    container.style.setProperty('font-weight', 'bold', 'important');
+
+                    container.style.left = (zoneLeft + (Math.random() * 10 - 5)) + 'vw';
+                    container.style.top = (zoneTop + Math.random() * 10) + 'vh'; 
+                    document.body.appendChild(container);
+
+                    let currentText = "";
+                    let maxLen = 8 + Math.floor(Math.random() * 15); 
+                    let currentLen = 0;
+
+                    function dropRain() {
+                        if (currentLen < maxLen) {
+                            currentText += chars.charAt(Math.floor(Math.random() * chars.length)) + "\n";
+                            container.textContent = currentText;
+                            currentLen++;
+                            requestAnimationFrame(() => setTimeout(dropRain, 20 + Math.random() * 40));
+                        } else {
+                            setTimeout(() => {
+                                container.style.opacity = '0';
+                                setTimeout(() => container.remove(), 800);
+                            }, 500 + Math.random() * 1000);
+                        }
+                    }
+                    dropRain();
+                }, i * 150); 
+            }
+        }
+
+        // ⚪⚫ Ч/Б КИНЕСКОП
+        if (isBWCrt) {
+            const glitchLayer = document.createElement('div');
+            glitchLayer.style.setProperty('pointer-events', 'none', 'important');
+            glitchLayer.style.setProperty('user-select', 'none', 'important');
+            glitchLayer.style.setProperty('z-index', TOP_Z_INDEX, 'important'); 
+            glitchLayer.style.setProperty('position', 'fixed', 'important');
+            glitchLayer.style.setProperty('top', '0', 'important');
+            glitchLayer.style.setProperty('left', '0', 'important');
+            glitchLayer.style.setProperty('width', '100vw', 'important');
+            glitchLayer.style.setProperty('height', '150vh', 'important'); 
+
+            glitchLayer.style.backgroundImage = `
+                repeating-linear-gradient(0deg, transparent, transparent 4px, rgba(255,255,255,0.4) 4px, rgba(255,255,255,0.4) 8px)
+            `;
+            glitchLayer.style.mixBlendMode = 'difference';
+            document.body.appendChild(glitchLayer);
+
+            let flickers = 0;
+            const maxFlickers = 4 + Math.floor(Math.random() * 16); 
+            
+            function doGlitch() {
+                if (flickers < maxFlickers) {
+                    glitchLayer.style.transform = `translate3d(0, -${Math.random() * 30}vh, 0) scaleY(${1 + Math.random() * 0.5})`;
+                    glitchLayer.style.opacity = 0.2 + Math.random() * 0.8;
+                    flickers++;
+                    setTimeout(doGlitch, Math.random() > 0.8 ? 100 + Math.random() * 150 : 20 + Math.random() * 40); 
+                } else {
+                    glitchLayer.remove(); 
+                }
+            }
+            doGlitch();
+        }
+
+        // 🟣 ЛОГИКА КИБЕРПАНКА (Только 2D UI элементы - Возврат к стабильности)
+        if (isMiami) {
+            // Ищем только плоские UI элементы (кнопки, инпуты, карточки, плашки)
+            // Полностью исключаем canvas, svg, img и сложные игровые элементы
+            let rawElements = Array.from(document.querySelectorAll('button, input, [class*="card"], [class*="btn"], .shop-grid-container > div, [class*="player"]'));
+            
+            // Фильтруем: элемент должен быть видимым и не слишком огромным (отсекаем полноэкранные обертки)
+            let targets = rawElements.filter(el => {
+                const rect = el.getBoundingClientRect();
+                return rect.width > 15 && rect.height > 15 && rect.width < window.innerWidth * 0.8 && rect.height < window.innerHeight * 0.8 && getComputedStyle(el).opacity !== '0' && getComputedStyle(el).display !== 'none';
+            });
+
+            // Исключаем контейнеры, внутри которых есть другие наши цели (защита от "матрешки")
+            targets = targets.filter(el => {
+                return !Array.from(el.querySelectorAll('*')).some(child => targets.includes(child));
+            });
+
+            if (targets.length > 0) {
+                // Выбираем эпицентр из наших кнопок
+                const epicenterElement = targets[Math.floor(Math.random() * targets.length)];
+                const epiRect = epicenterElement.getBoundingClientRect();
+                const cx = epiRect.left + epiRect.width / 2;
+                const cy = epiRect.top + epiRect.height / 2;
+                
+                const radius = Math.max(window.innerWidth, window.innerHeight) * 0.5; 
+                
+                const colors = ['#ff00ff', '#00ffff', '#facc15'];
+                const color = colors[Math.floor(Math.random() * colors.length)];
+
+                targets.forEach(el => {
+                    if (el.dataset.cyberGlow) return;
+
+                    const rect = el.getBoundingClientRect();
+                    const elCx = rect.left + rect.width / 2;
+                    const elCy = rect.top + rect.height / 2;
+                    const dist = Math.sqrt(Math.pow(elCx - cx, 2) + Math.pow(elCy - cy, 2));
+                    
+                    if (dist < radius) {
+                        el.dataset.cyberGlow = "true";
+                        const intensity = 1 - (dist / radius); 
+                        
+                        const oldTransition = el.style.transition;
+                        const oldBoxShadow = el.style.boxShadow;
+                        const oldBorderColor = el.style.borderColor;
+
+                        el.style.transition = 'box-shadow 1.5s ease-in-out, border-color 1.5s ease-in-out';
+                        
+                        requestAnimationFrame(() => {
+                            // Мягкое неоновое свечение исключительно для UI (box-shadow)
+                            const outerBlur = 8 + (20 * intensity); 
+                            const innerBlur = 2 + (5 * intensity); 
+                            
+                            const baseShadow = (oldBoxShadow && oldBoxShadow !== 'none') ? oldBoxShadow + ', ' : '';
+                            el.style.boxShadow = `${baseShadow}0 0 ${outerBlur}px ${color}, inset 0 0 ${innerBlur}px ${color}`;
+                            el.style.borderColor = color;
+                        });
+
+                        setTimeout(() => {
+                            // Возвращаем все родные стили кнопок на место
+                            el.style.boxShadow = oldBoxShadow || '';
+                            el.style.borderColor = oldBorderColor || '';
+                            
+                            setTimeout(() => {
+                                el.style.transition = oldTransition || '';
+                                delete el.dataset.cyberGlow;
+                            }, 1500); 
+                        }, 2000 + Math.random() * 2000);
+                    }
+                });
+            }
+        }
+
+        const nextScanTime = 4000 + Math.random() * 20000;
+        setTimeout(triggerScan, nextScanTime);
+    }
+
+    setTimeout(triggerScan, 3000);
+})();
 
     document.addEventListener('click', requestGyroPermissions, { once: true });
     document.addEventListener('touchstart', requestGyroPermissions, { once: true, passive: true });
