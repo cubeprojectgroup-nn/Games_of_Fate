@@ -6791,6 +6791,12 @@ const ShopGame = (function() {
                             if (eqId.startsWith('perk_crt_')) delete p.equipped[eqId];
                         });
                     }
+                    // 🚀 ФИКС: Делаем фоны со звездами взаимоисключающими
+                    if (id.startsWith('perk_gyro_stars')) {
+                        Object.keys(p.equipped).forEach(eqId => {
+                            if (eqId.startsWith('perk_gyro_stars')) delete p.equipped[eqId];
+                        });
+                    }
                 }
                 
                 p.equipped[id] = true; 
