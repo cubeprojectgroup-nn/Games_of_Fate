@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Игры Судьбы. v0.9.0.10</title>
+    <title>Игры Судьбы. v0.9.0.11</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 	<style>
@@ -2187,11 +2187,62 @@ body.is-shop-active #gameUI > #error-msg {
 }
 
 /* ========================================================== */
-/* 🛠 ФИКС: ДЕБАГ-ПАНЕЛЬ АБСОЛЮТНО ПОВЕРХ ВСЕГО               */
+/* 🛠 ФИКСЫ: ДЕБАГ-ПАНЕЛЬ, СКРОЛЛ И СВАЙПЫ ТЕЛЕГРАМА          */
 /* ========================================================== */
-.debug-panel { 
-    z-index: 2147483647 !important; /* Максимальный лимит z-index в CSS */
-    transform: translateX(-50%) translateZ(1000px) !important; /* Выталкиваем в самый верхний 3D-слой */
+
+/* 1. Дебаг панель: ставим в общий поток строго над кнопками */
+#gameUI > .debug-panel {
+    position: relative !important;
+    bottom: auto !important;
+    left: auto !important;
+    transform: translateZ(1000px) !important; /* Убираем сдвиг X, оставляем 3D-защиту слоев */
+    margin: 0 auto 15px auto !important;
+    order: 3 !important; /* Встанет ровно над action-row */
+    width: 100% !important;
+    z-index: 2147483647 !important; /* Оставляем максимальный лимит защиты */
+}
+
+/* 2. Скролл магазина и инвентаря: исправляем отступы */
+.shop-grid-container {
+    padding-bottom: 10px !important; /* 🚀 Возвращаем нормальный, компактный отступ между блоками */
+}
+
+/* А гигантский "воздух" для скролла даем только самим окнам в самом низу */
+#shopGrid, .inv-scroll-container {
+    padding-bottom: 130px !important; 
+}
+
+/* 3. Базовая защита от свайпов (чтобы браузер не тянул страницу) */
+body {
+    overscroll-behavior-y: none !important; 
+}
+
+/* ========================================================== */
+/* 🛒 ФИКС: ПОЗИЦИЯ ДЕБАГ-ПАНЕЛИ В МАГАЗИНЕ                   */
+/* ========================================================== */
+body.is-shop-active #gameUI > .debug-panel {
+    position: fixed !important;
+    bottom: 85px !important; /* Жестко фиксируем над нижней навигацией */
+    left: 50% !important;
+    transform: translateX(-50%) translateZ(1000px) !important; /* Центрируем и выносим наверх в 3D */
+    margin: 0 !important;
+}
+
+/* ========================================================== */
+/* 🌫️ ФИКС: ВОЗВРАЩАЕМ ПЛАВНОЕ РАЗМЫТИЕ КАРТОЧКАМ МАГАЗИНА    */
+/* ========================================================== */
+
+/* 1. Снимаем жесткую маску со всей сцены магазина (шапка больше не будет размываться) */
+#shopStage {
+    -webkit-mask-image: none !important;
+    mask-image: none !important;
+}
+
+/* 2. Накладываем умную маску только на сетку товаров, которая скроллится. 
+   Сверху (0-4%) и снизу (96-100%) карточки будут плавно растворяться в воздухе */
+#shopGrid {
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 4%, black 96%, transparent 100%) !important;
+    mask-image: linear-gradient(to bottom, transparent 0%, black 4%, black 96%, transparent 100%) !important;
 }
 
 </style>
@@ -2670,7 +2721,7 @@ bar.appendChild(scrollBtn);
     <div id="stars" class="stars-layer stars-active bg1-stars"></div>
 
     <div id="mainMenuOverlay">
-        <div class="version">v0.9.0.10</div> 
+        <div class="version">v0.9.0.11</div> 
 		<div class="global-bottom-nav">
             <div class="nav-btn" onclick="if(typeof App !== 'undefined' && App.playSoundEffect) App.playSoundEffect('click'); if(typeof ShopGame !== 'undefined') ShopGame.toggleInventory(true);">
                 <i class="fas fa-box-open" style="color: var(--sun-gold);"></i>
@@ -2993,6 +3044,8 @@ bar.appendChild(scrollBtn);
     <script>
         const tg = window.Telegram.WebApp; 
         tg.expand();
+		// 🚀 АБСОЛЮТНОЕ ОРУЖИЕ ПРОТИВ СВОРАЧИВАНИЯ ТЕЛЕГРАМА
+        if (tg.disableVerticalSwipes) tg.disableVerticalSwipes();
 
             // === БЕЗОПАСНАЯ ЗАГРУЗКА ===
             let savedProfiles = [];
