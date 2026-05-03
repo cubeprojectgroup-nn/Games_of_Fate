@@ -13126,18 +13126,21 @@ try {
     }
 
 // ==============================================
-// 🤖 АВТОНОМНЫЙ HUD ПРОЦЕССОР V6 (ФИКС ДИКОГО НЕОНА)
+// 🤖 АВТОНОМНЫЙ HUD ПРОЦЕССОР V7 (ФИКС КИБЕРПАНКА И ОЧИСТКИ)
 // ==============================================
 (function startAutonomousHUDScanner() {
     function triggerScan() {
         const isTerminator = document.body.classList.contains('theme-perk_crt_terminator');
         const isMatrix = document.body.classList.contains('theme-perk_crt_matrix');
         const isBWCrt = document.body.classList.contains('theme-perk_crt_bw');
-        const isMiami = document.body.classList.contains('theme-perk_crt_miami') || document.body.classList.contains('theme-perk_crt_miami_sunset'); 
+        
+        // 🚀 ФИКС 1: Теперь проверяем именно Киберпанк!
+        // (Если у тебя в CSS класс называется немного иначе, поправь название тут)
+        const isCyberpunk = document.body.classList.contains('theme-perk_crt_cyberpunk'); 
         
         const TOP_Z_INDEX = '10005';
 
-        // 🔴 ТЕРМИНАТОР
+        // 🔴 ЛОГИКА ТЕРМИНАТОРА
         if (isTerminator) {
             const scanner = document.createElement('div');
             scanner.style.setProperty('pointer-events', 'none', 'important');
@@ -13179,7 +13182,7 @@ try {
             }, 1500 + Math.random() * 2000);
         }
 
-        // 🟢 МАТРИЦА
+        // 🟢 ЛОГИКА МАТРИЦЫ
         if (isMatrix) {
             const chars = "ｱｲｳｴｵｶｷｸｹｺｻｼｽｾｿﾀﾁﾂﾃﾄﾅﾆﾇﾈﾉﾊﾋﾌﾍﾎﾏﾐﾑﾒﾓﾔﾕﾖﾗﾘﾙﾚﾛﾜﾝ1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ";
             const zoneLeft = 5 + Math.random() * 80; 
@@ -13228,7 +13231,7 @@ try {
             }
         }
 
-        // ⚪⚫ Ч/Б КИНЕСКОП
+        // ⚪⚫ ЛОГИКА Ч/Б КИНЕСКОПА
         if (isBWCrt) {
             const glitchLayer = document.createElement('div');
             glitchLayer.style.setProperty('pointer-events', 'none', 'important');
@@ -13262,25 +13265,20 @@ try {
             doGlitch();
         }
 
-        // 🟣 ЛОГИКА КИБЕРПАНКА (Только 2D UI элементы - Возврат к стабильности)
-        if (isMiami) {
-            // Ищем только плоские UI элементы (кнопки, инпуты, карточки, плашки)
-            // Полностью исключаем canvas, svg, img и сложные игровые элементы
+        // 🟣 ЛОГИКА КИБЕРПАНКА (Только 2D UI элементы + Автоочистка)
+        if (isCyberpunk) {
             let rawElements = Array.from(document.querySelectorAll('button, input, [class*="card"], [class*="btn"], .shop-grid-container > div, [class*="player"]'));
             
-            // Фильтруем: элемент должен быть видимым и не слишком огромным (отсекаем полноэкранные обертки)
             let targets = rawElements.filter(el => {
                 const rect = el.getBoundingClientRect();
                 return rect.width > 15 && rect.height > 15 && rect.width < window.innerWidth * 0.8 && rect.height < window.innerHeight * 0.8 && getComputedStyle(el).opacity !== '0' && getComputedStyle(el).display !== 'none';
             });
 
-            // Исключаем контейнеры, внутри которых есть другие наши цели (защита от "матрешки")
             targets = targets.filter(el => {
                 return !Array.from(el.querySelectorAll('*')).some(child => targets.includes(child));
             });
 
             if (targets.length > 0) {
-                // Выбираем эпицентр из наших кнопок
                 const epicenterElement = targets[Math.floor(Math.random() * targets.length)];
                 const epiRect = epicenterElement.getBoundingClientRect();
                 const cx = epiRect.left + epiRect.width / 2;
@@ -13310,7 +13308,6 @@ try {
                         el.style.transition = 'box-shadow 1.5s ease-in-out, border-color 1.5s ease-in-out';
                         
                         requestAnimationFrame(() => {
-                            // Мягкое неоновое свечение исключительно для UI (box-shadow)
                             const outerBlur = 8 + (20 * intensity); 
                             const innerBlur = 2 + (5 * intensity); 
                             
@@ -13320,18 +13317,28 @@ try {
                         });
 
                         setTimeout(() => {
-                            // Возвращаем все родные стили кнопок на место
-                            el.style.boxShadow = oldBoxShadow || '';
-                            el.style.borderColor = oldBorderColor || '';
-                            
-                            setTimeout(() => {
-                                el.style.transition = oldTransition || '';
-                                delete el.dataset.cyberGlow;
-                            }, 1500); 
+                            // Если карточка Киберпанка всё еще надета — плавно затухаем
+                            if (document.body.classList.contains('theme-perk_crt_cyberpunk')) {
+                                el.style.boxShadow = oldBoxShadow || '';
+                                el.style.borderColor = oldBorderColor || '';
+                                setTimeout(() => {
+                                    el.style.transition = oldTransition || '';
+                                    delete el.dataset.cyberGlow;
+                                }, 1500); 
+                            }
                         }, 2000 + Math.random() * 2000);
                     }
                 });
             }
+        } else {
+            // 🧹 РЕЖИМ УБОРЩИКА: Если Киберпанк СНЯТ
+            // Ищем все элементы, на которых мог "застрять" неон, и безжалостно сбрасываем стили
+            document.querySelectorAll('[data-cyber-glow="true"]').forEach(el => {
+                el.style.boxShadow = '';
+                el.style.borderColor = '';
+                el.style.transition = '';
+                delete el.dataset.cyberGlow;
+            });
         }
 
         const nextScanTime = 4000 + Math.random() * 20000;
