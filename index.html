@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Игры Судьбы. v0.9.0.18</title>
+    <title>Игры Судьбы. v0.9.0.19</title>
     <!-- Эмодзи-иконка для вкладки браузера -->
     <link rel="icon" href='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">🔮</text></svg>'>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
@@ -3171,7 +3171,7 @@ setInterval(() => {
         <div style="position: absolute; bottom: 15px; left: 15px; font-size: 10px; color: rgba(162, 155, 254, 0.6); font-weight: bold; letter-spacing: 1px; text-transform: uppercase; z-index: 500;">
             <a href="https://t.me/Antis_Corpus" style="color: inherit; text-decoration: none;">t.me/Antis_Corpus</a>
         </div>
-        <div class="version" style="position: absolute; bottom: 15px; right: 15px; pointer-events: none; z-index: 500;">v0.9.0.18</div>
+        <div class="version" style="position: absolute; bottom: 15px; right: 15px; pointer-events: none; z-index: 500;">v0.9.0.19</div>
     </div>
 
     <!-- ========================================== -->
@@ -3745,48 +3745,177 @@ window.findItemById = function(id) {
 // ==============================================
 const App = (function() {
     let globalPlayMode = 'arcade';
+	
+	// Функция-предохранитель на 500мс
+function startNavLock() {
+    window.navLock = true;
+    setTimeout(() => { window.navLock = false; }, 500);
+}
+
+
+	function returnToWelcomeScreen() {
+        if (window.navLock) return;
+        startNavLock();
+
+        const welcomeEl = document.getElementById('welcomeScreenOverlay');
+        const mainMenuEl = document.getElementById('mainMenuOverlay');
+        
+        if (mainMenuEl) {
+            mainMenuEl.style.opacity = '0';
+            if (window.mainMenuTimer) clearTimeout(window.mainMenuTimer);
+            window.mainMenuTimer = setTimeout(() => {
+                if (mainMenuEl) { 
+                    mainMenuEl.classList.add('menu-fade-out'); 
+                    mainMenuEl.style.opacity = ''; 
+                    mainMenuEl.style.display = 'none'; 
+                }
+            }, 400);
+        }
+        
+        if (welcomeEl) {
+            if (window.welcomeTimer) clearTimeout(window.welcomeTimer);
+            welcomeEl.style.display = 'flex';
+            setTimeout(() => {
+                welcomeEl.classList.remove('welcome-hidden');
+                welcomeEl.style.opacity = '1';
+            }, 10); 
+        }
+    }
 
     function enterMainScreen(mode) {
-        // 🚀 Если режим сменился (например, с Аркады на Историю)
+        if (window.navLock) return;
+        startNavLock();
+
         if (globalPlayMode !== mode) {
             if (typeof requestProfileSave === 'function' && GameState.activeProfileIdx !== -1) requestProfileSave();
             globalPlayMode = mode;
             if (GameState.activeProfileIdx !== -1) loadProfileData(GameState.activeProfileIdx);
         }
 
-        const welcome = document.getElementById('welcomeScreenOverlay');
-        const mainMenu = document.getElementById('mainMenuOverlay');
+        const welcomeEl = document.getElementById('welcomeScreenOverlay');
+        const mainMenuEl = document.getElementById('mainMenuOverlay');
         
-        if (welcome) welcome.style.opacity = '0';
-        setTimeout(() => {
-            if (welcome) { 
-                welcome.classList.add('welcome-hidden'); 
-                welcome.style.display = 'none'; // 💀 УБИВАЕМ ПРИЗРАКОВ: физически прячем экран
-                welcome.style.opacity = ''; 
-            }
-        }, 400);
+        if (welcomeEl) {
+            welcomeEl.style.opacity = '0';
+            if (window.welcomeTimer) clearTimeout(window.welcomeTimer);
+            window.welcomeTimer = setTimeout(() => {
+                if (welcomeEl) { 
+                    welcomeEl.classList.add('welcome-hidden'); 
+                    welcomeEl.style.display = 'none';
+                    welcomeEl.style.opacity = ''; 
+                }
+            }, 400);
+        }
 
-        if (mainMenu) mainMenu.classList.remove('menu-fade-out');
+        if (mainMenuEl) {
+            if (window.mainMenuTimer) clearTimeout(window.mainMenuTimer);
+            mainMenuEl.classList.remove('menu-fade-out');
+            mainMenuEl.style.display = 'flex';
+            setTimeout(() => { mainMenuEl.style.opacity = '1'; }, 10);
+        }
 
         const oracleBtn = document.getElementById('btnOracleHalls');
         if (oracleBtn) oracleBtn.style.display = (mode === 'history') ? 'flex' : 'none';
     }
 
-    function returnToWelcomeScreen() {
-        const welcome = document.getElementById('welcomeScreenOverlay');
-        const mainMenu = document.getElementById('mainMenuOverlay');
-        
-        if (mainMenu) mainMenu.style.opacity = '0';
-        setTimeout(() => {
-            if (mainMenu) { mainMenu.classList.add('menu-fade-out'); mainMenu.style.opacity = ''; }
-        }, 400);
-        
-        if (welcome) {
-            welcome.style.display = 'flex'; // 🌅 ВОСКРЕШАЕМ ЭКРАН перед показом
-            setTimeout(() => {
-                welcome.classList.remove('welcome-hidden');
-            }, 10); // Микро-пауза, чтобы браузер успел применить display: flex
+    function selectGameMode() {
+        if (window.navLock) return;
+        startNavLock();
+
+        const gui = document.getElementById('gameUI');
+        if (gui) {
+            gui.classList.add('game-ui-visible');
+            gui.style.opacity = '1';
+            gui.style.pointerEvents = 'auto';
         }
+
+        GameState.mode = GameState.previewMode || 'dice'; 
+        if (typeof playSoundEffect === 'function') playSoundEffect('tick');
+        if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
+
+        ['mainStage', 'rouletteStage', 'coinStage', 'flowerStage', 'rpsStage', 'shopStage', 'drumWrapper', 'bulletStash', 'rouletteStatusBtn', 'randomLoadBtn'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.style.display = 'none';
+        });
+
+        const mmoEl = document.getElementById('mainMenuOverlay');
+        if(mmoEl) {
+            mmoEl.classList.add('menu-fade-out');
+            if (window.mainMenuTimer) clearTimeout(window.mainMenuTimer);
+
+            try {
+                if (typeof mountActiveGame === 'function') {
+                    mountActiveGame();
+                    renderGameTabs();
+                }
+            } catch(e) {
+                console.error("Ошибка при монтировании игры:", e);
+            }
+
+            window.mainMenuTimer = setTimeout(() => {
+                if(mmoEl) {
+                    mmoEl.style.display = 'none';
+                    mmoEl.style.opacity = ''; 
+                }
+            }, 400); 
+        }
+    }
+
+    function openMainMenu() {
+        if (window.navLock) return;
+        startNavLock();
+
+        if (typeof App !== 'undefined' && App.playSoundEffect) App.playSoundEffect('click');
+        if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.HapticFeedback) {
+            window.Telegram.WebApp.HapticFeedback.impactOccurred('light');
+        }
+
+        const gui = document.getElementById('gameUI');
+        if (gui) {
+            gui.classList.remove('game-ui-visible');
+            gui.style.opacity = '0';
+        }
+
+        setTimeout(() => {
+            if (GameState.previewMode === 'shop' || GameState.mode === 'shop') {
+                const p = (GameState.activeProfileIdx !== -1) ? GameState.profiles[GameState.activeProfileIdx] : null;
+                GameState.previewMode = (p && p.lastMode && p.lastMode !== 'shop') ? p.lastMode : 'dice';
+                GameState.mode = GameState.previewMode;
+            }
+
+            previewGame(GameState.previewMode, true); 
+            
+            const menuEl = document.getElementById('mainMenuOverlay');
+            if (menuEl) {
+                if (window.mainMenuTimer) clearTimeout(window.mainMenuTimer);
+                menuEl.classList.remove('menu-fade-out'); 
+                menuEl.style.display = 'flex';
+                setTimeout(() => {
+                    menuEl.style.opacity = '1';
+                    menuEl.style.pointerEvents = 'auto';
+                }, 10);
+            }
+            
+            const welcomeOverlayEl = document.getElementById('welcomeScreenOverlay');
+            if (welcomeOverlayEl) {
+                welcomeOverlayEl.style.opacity = '0';
+                if (window.welcomeTimer) clearTimeout(window.welcomeTimer);
+                window.welcomeTimer = setTimeout(() => { 
+                    welcomeOverlayEl.classList.add('welcome-hidden'); 
+                    welcomeOverlayEl.style.opacity = ''; 
+                    welcomeOverlayEl.style.display = 'none'; 
+                }, 400);
+            }
+
+            if (typeof unmountActiveGame === 'function') unmountActiveGame();
+            if (typeof OracleHallsGame !== 'undefined' && OracleHallsGame.unmount) OracleHallsGame.unmount();
+            
+            ['mainStage', 'rouletteStage', 'shopStage', 'flowerStage', 'rpsStage'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.style.display = 'none';
+            });
+            
+        }, 400);
     }
 
     // 🚀 МАГИЯ ЗДЕСЬ: Выкидываем функции в глобальную область (window),
@@ -4915,65 +5044,6 @@ function addCrystal(game = null, subMode = null, customAmount = null) {
             }
 
 
-            function openMainMenu() {
-    if (typeof App !== 'undefined' && App.playSoundEffect) App.playSoundEffect('click');
-    if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.HapticFeedback) {
-        window.Telegram.WebApp.HapticFeedback.impactOccurred('light');
-    }
-
-    // 1. Начинаем плавное исчезновение ВСЕГО интерфейса игры
-    const gui = document.getElementById('gameUI');
-    if (gui) {
-        gui.classList.remove('game-ui-visible');
-        gui.style.opacity = '0'; // Дополнительная страховка
-    }
-
-    // 2. ЖДЕМ 400мс, пока интерфейс не станет прозрачным
-    setTimeout(() => {
-        // 🛡️ ЗАЩИТА: Если мы выходим из магазина, принудительно восстанавливаем последнюю игру
-        if (GameState.previewMode === 'shop' || GameState.mode === 'shop') {
-            const p = (GameState.activeProfileIdx !== -1) ? GameState.profiles[GameState.activeProfileIdx] : null;
-            // Убеждаемся, что не восстанавливаем shop как последнюю игру
-            GameState.previewMode = (p && p.lastMode && p.lastMode !== 'shop') ? p.lastMode : 'dice';
-            GameState.mode = GameState.previewMode;
-        }
-
-        // 3. Вызываем превью с уже исправленным режимом (isLoading = true для корректной отрисовки)
-        previewGame(GameState.previewMode, true); 
-        
-        // 4. ОЖИВЛЯЕМ ГЛАВНОЕ МЕНЮ
-        const menu = document.getElementById('mainMenuOverlay');
-        if (menu) {
-            menu.classList.remove('menu-fade-out'); // КРИТИЧЕСКИЙ ФИКС: Снимаем блокировку видимости
-            menu.style.display = 'flex';
-            setTimeout(() => {
-                menu.style.opacity = '1';
-                menu.style.pointerEvents = 'auto'; // Возвращаем кликабельность
-            }, 10);
-        }
-		
-		// 🚀 НОВОЕ: ПРЯЧЕМ ЭКРАН ПРИВЕТСТВИЯ
-            const welcome = document.getElementById('welcomeScreenOverlay');
-            if (welcome) {
-                welcome.style.opacity = '0';
-                setTimeout(() => { welcome.classList.add('welcome-hidden'); welcome.style.opacity = ''; }, 400);
-            }
-        
-        // 5. Отмонтируем текущую игру (включая магазин)
-        if (typeof unmountActiveGame === 'function') unmountActiveGame();
-        
-		// 🛡️ ЖЕСТКАЯ ОЧИСТКА ЧЕРТОГОВ ПРИ ВЫХОДЕ В МЕНЮ
-        if (typeof OracleHallsGame !== 'undefined' && OracleHallsGame.unmount) OracleHallsGame.unmount();
-		
-        // Дополнительно прячем все стационарные сцены
-        ['mainStage', 'rouletteStage', 'shopStage', 'flowerStage', 'rpsStage'].forEach(id => {
-            const el = document.getElementById(id);
-            if (el) el.style.display = 'none';
-        });
-        
-    }, 400);
-}
-
             function updateSubModeHighlights() {
     const games = ['dice', 'roulette', 'coin', 'flower', 'rps', 'shop', 'sticks'];
     games.forEach(g => {
@@ -5070,73 +5140,18 @@ function addCrystal(game = null, subMode = null, customAmount = null) {
         }
     }
 
-        function selectGameMode() {
-            const gui = document.getElementById('gameUI');
-            if (gui) {
-                gui.classList.add('game-ui-visible');
-                gui.style.opacity = '1';
-                gui.style.pointerEvents = 'auto';
-            }
 
-            GameState.mode = GameState.previewMode || 'dice'; 
-            if (typeof playSoundEffect === 'function') playSoundEffect('tick');
-            if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
-
-            ['mainStage', 'rouletteStage', 'coinStage', 'flowerStage', 'rpsStage', 'shopStage', 'drumWrapper', 'bulletStash', 'rouletteStatusBtn', 'randomLoadBtn'].forEach(id => {
-                const el = document.getElementById(id);
-                if (el) el.style.display = 'none';
-            });
-
-            const rollBtn = document.getElementById('rollBtn');
-            if (rollBtn) {
-                const newBtn = rollBtn.cloneNode(true);
-                rollBtn.parentNode.replaceChild(newBtn, rollBtn);
-                newBtn.disabled = false;
-                newBtn.style.display = ''; 
-                newBtn.innerText = ''; 
-            }
-
-            if (GameState.activeProfileIdx !== -1 && GameState.profiles[GameState.activeProfileIdx]) {
-                const p = GameState.profiles[GameState.activeProfileIdx];
-                if (p.equipped) {
-                    ['style_dice', 'roulette_drum', 'roulette_bullets', 'style_coin', 'style_flower', 'style_rps'].forEach(id => {
-                        if (p.equipped[id]) document.body.classList.add(`theme-${id}`);
-                        else document.body.classList.remove(`theme-${id}`);
-                    });
-                }
-            }
-
-            const mmo = document.getElementById('mainMenuOverlay');
-            if(mmo) mmo.classList.add('menu-fade-out');
-
-            // 🚀 СРАЗУ монтируем игру, чтобы она появилась плавно ПОД растворяющимся меню
-            try {
-                if (typeof mountActiveGame === 'function') {
-                    mountActiveGame();
-                    renderGameTabs();
-                }
-            } catch(e) {
-                console.error("Ошибка при монтировании игры:", e);
-            }
-
-            // ⏳ И только через 400мс физически прячем меню, давая ему красиво раствориться
-            setTimeout(() => {
-                if(mmo) mmo.style.display = 'none';
-            }, 400); 
-        }
-            
-            function selectSubMode(game, mode, e) {
+function selectSubMode(game, mode, e) {
     if (e) e.stopPropagation();
     
     if (!GameState.subModes) GameState.subModes = {};
     GameState.subModes[game] = mode;
 
-    // СИНХРОНИЗАЦИЯ С ПРОФИЛЕМ
     const p = GameState.profiles[GameState.activeProfileIdx];
     if (p) {
         if (!p.settings) p.settings = {};
         if (!p.settings.subModes) p.settings.subModes = {};
-        p.settings.subModes[game] = mode; // Пишем прямо в настройки профиля
+        p.settings.subModes[game] = mode; 
     }
     
     if (typeof updateSubModeHighlights === 'function') updateSubModeHighlights();
@@ -12730,6 +12745,10 @@ const SticksGame = (function() {
         isAnimating = false;
         currentTurn = 1;
         rotY = 0;
+		// 🚀 ДОБАВИТЬ: Снимаем замок, если игру сбросили
+		if (typeof App !== 'undefined' && App.setTopNavLocked) App.setTopNavLocked(false);
+		const rbUnlock = document.getElementById('rollBtn');
+		if (rbUnlock) rbUnlock.disabled = false; // Снимаем сигнал со сканера
         if (typeof inertiaFrame !== 'undefined' && inertiaFrame) cancelAnimationFrame(inertiaFrame); 
         boxVelocity = 0; 
         finalMessageHtml = "";
@@ -12805,6 +12824,10 @@ const SticksGame = (function() {
     }
 
     function startGame() {
+		// 🚀 ДОБАВИТЬ: Жестко блокируем интерфейс при старте!
+		if (typeof App !== 'undefined' && App.setTopNavLocked) App.setTopNavLocked(true);
+		const rbLock = document.getElementById('rollBtn');
+		if (rbLock) rbLock.disabled = true; // Даем сигнал сканеру
         if (isGameActive || isGameOver) return;
         if (boxDrag && Math.abs(rotY - boxStartRotY) > 5) return; 
 
@@ -13009,6 +13032,11 @@ const SticksGame = (function() {
         isGameActive = false;
         isGameOver = true;
         const lang = GameState.lang || 'ru';
+		
+		// Снимаем блокировку, так как раунд завершен
+		if (typeof App !== 'undefined' && App.setTopNavLocked) App.setTopNavLocked(false);
+		const rbEnd = document.getElementById('rollBtn');
+		if (rbEnd) rbEnd.disabled = false;
 
         let msg = "";
         let isPlayerWin = false;
@@ -13097,6 +13125,11 @@ const SticksGame = (function() {
         if (stage) stage.style.display = 'none';
         document.body.classList.remove('sticks-active');
         
+		// 🚀 ДОБАВИТЬ: Снимаем замок при переходе в меню
+		if (typeof App !== 'undefined' && App.setTopNavLocked) App.setTopNavLocked(false);
+		const rbUnmount = document.getElementById('rollBtn');
+		if (rbUnmount) rbUnmount.disabled = false;
+		
         const scene = document.getElementById('sticksScene');
         if (scene) {
             scene.onmousedown = null;
