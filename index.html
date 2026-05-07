@@ -2653,6 +2653,16 @@ body.is-game-busy .menu-top-bar * {
     cursor: default !important;
 }
 
+/* 🚀 ФИКС: Текст кнопки "Новый игрок" в две строки */
+.profile-btn {
+    white-space: normal !important;
+    word-wrap: break-word !important;
+    line-height: 1.1 !important;
+    text-align: center !important;
+}
+
+
+
 </style>
 </head>
 <!-- --- КОНЕЦ ПЕРВОЙ ЧАСТИ --- -->
@@ -2730,6 +2740,9 @@ setInterval(() => {
     if (pkLbl) pkLbl.innerText = isEng ? 'PERKS' : 'ПЕРКИ';
 }, 10);
 
+// Глобальный статус режима игры по умолчанию
+window.globalPlayMode = 'menu';
+
 // === ОБНОВЛЕННАЯ ФУНКЦИЯ ИСТОРИИ (С УМНЫМ ЗАГОЛОВКОМ) ===
 window.toggleHistory = function(show) {
     const overlay = document.getElementById('historyOverlay');
@@ -2795,23 +2808,10 @@ window.clearCurrentHistory = function() {
         // 1. Очищаем визуально на экране
         activeList.innerHTML = ''; 
         
-        // 2. 💥 УБИВАЕМ ИСТОРИЮ ИЗ ПАМЯТИ!
-        if (typeof GameState !== 'undefined' && GameState.activeProfileIdx !== -1) {
-            const p = GameState.profiles[GameState.activeProfileIdx];
-            if (p) {
-                if (GameState.mode === 'shop') {
-                    p.historyShop = ''; // Чистим историю покупок
-                } else {
-                    p.history = ''; // Чистим общую историю игр
-                    p.historyShop = ''; // На всякий случай бьем и по магазину
-                }
-            }
-        }
-        
-        // 3. Просим Ядро сохранить ПУСТОЙ профиль
+        // 2. Просим Ядро сохранить чистый профиль
+        // Благодаря новому умному сохранению (Шаг 2), Ядро само увидит пустоту на экране и сохранит её в память!
         if (typeof App !== 'undefined' && App.requestProfileSave) App.requestProfileSave();
         
-        // Маленький вибро-отклик для красоты
         if (typeof tg !== 'undefined' && tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
     }
 };
@@ -3205,7 +3205,15 @@ setInterval(() => {
                  </button>
                  
                  <button class="square-game-btn" onclick="if(typeof App !== 'undefined' && App.playSoundEffect) App.playSoundEffect('tick'); GameState.previewMode = 'coin'; App.selectGameMode(); setTimeout(renderGameTabs, 50);">
-                    <svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="8" style="height: 24px; width: auto; margin-bottom: 4px;"><circle cx="50" cy="50" r="40"/><rect x="38" y="38" width="24" height="24" rx="4" stroke-width="6" transform="rotate(45 50 50)"/></svg>
+                    <svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" style="height: 24px; width: auto; margin-bottom: 4px;">
+    <ellipse cx="50" cy="35" rx="40" ry="20"/>
+    <path d="M10 35 v 20 a 40 20 0 0 0 80 0 v -20"/>
+    <path d="M30 52 v 20"/>
+    <path d="M50 55 v 20"/>
+    <path d="M70 52 v 20"/>
+    <path d="M 25 32 Q 40 18 55 22"/>
+    <path d="M 45 48 Q 65 52 75 38"/>
+</svg>
                     <span>Грань<br>Выбора</span>
                  </button>
                  
@@ -3571,7 +3579,30 @@ window.findItemById = function(id) {
     }
     return null;
 };
-		
+
+        // 🛡️ ГЛОБАЛЬНЫЙ АВТОСЕЙВ ПРИ ЗАКРЫТИИ/СВОРАЧИВАНИИ ИГРЫ
+(function setupAutoSaveListeners() {
+    const saveOnExit = () => {
+        if (typeof requestProfileSave === 'function' && 
+            typeof GameState !== 'undefined' && 
+            GameState.activeProfileIdx !== -1) {
+            requestProfileSave();
+        }
+    };
+
+    // Срабатывает, когда пользователь смахивает или закрывает вкладку/приложение Telegram
+    window.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'hidden') {
+            saveOnExit();
+        }
+    });
+
+    // Классическое закрытие вкладки (для десктопа)
+    window.addEventListener('beforeunload', () => {
+        saveOnExit();
+    });
+})();
+
 		// ==============================================
         // 🚑 АВТО-ХИРУРГ V2: HTML-ФИКСЫ + SVG-ЛИНЗА
         // ==============================================
@@ -3608,6 +3639,27 @@ window.findItemById = function(id) {
                         hlr.parentNode.insertBefore(el, hlr.nextSibling);
                     }
                 });
+            }
+
+            // 🚀 3. ФИКС АВТОСОХРАНЕНИЯ: Умный наблюдатель за историей
+            const histBlock = document.getElementById('historyBlock');
+            if (histBlock) {
+                const observer = new MutationObserver(() => {
+                    // Ядро само проверит защиту isSwitchingProfile и безопасно сохранит данные
+                    if (typeof App !== 'undefined' && App.requestProfileSave) {
+                        App.requestProfileSave();
+                    }
+                });
+                // Следим за добавлением элементов во все списки истории
+                observer.observe(histBlock, { childList: true, subtree: true });
+            }
+
+        }); // <-- Конец блока АВТО-ХИРУРГ
+
+        // 🚀 4. ГЛОБАЛЬНОЕ СОХРАНЕНИЕ ПРИ ЗАКРЫТИИ (ИЛИ СВАЙПЕ ВНИЗ)
+        window.addEventListener('beforeunload', () => {
+            if (typeof App !== 'undefined' && App.requestProfileSave) {
+                App.requestProfileSave();
             }
         });
 
@@ -3754,69 +3806,83 @@ function startNavLock() {
 
 
 	function returnToWelcomeScreen() {
-        if (window.navLock) return;
-        startNavLock();
+    if (window.navLock) return;
+    startNavLock();
 
-        const welcomeEl = document.getElementById('welcomeScreenOverlay');
-        const mainMenuEl = document.getElementById('mainMenuOverlay');
-        
-        if (mainMenuEl) {
-            mainMenuEl.style.opacity = '0';
-            if (window.mainMenuTimer) clearTimeout(window.mainMenuTimer);
-            window.mainMenuTimer = setTimeout(() => {
-                if (mainMenuEl) { 
-                    mainMenuEl.classList.add('menu-fade-out'); 
-                    mainMenuEl.style.opacity = ''; 
-                    mainMenuEl.style.display = 'none'; 
-                }
-            }, 400);
-        }
-        
-        if (welcomeEl) {
-            if (window.welcomeTimer) clearTimeout(window.welcomeTimer);
-            welcomeEl.style.display = 'flex';
-            setTimeout(() => {
-                welcomeEl.classList.remove('welcome-hidden');
-                welcomeEl.style.opacity = '1';
-            }, 10); 
-        }
+    // Сохраняем активную игру
+    if (typeof requestProfileSave === 'function' && GameState.activeProfileIdx !== -1) {
+        requestProfileSave();
     }
+    
+    GameState.playMode = 'menu'; // 🛑 СБРАСЫВАЕМ СТАТУС (Защита от записи в меню)
+
+    const welcomeEl = document.getElementById('welcomeScreenOverlay');
+    const mainMenuEl = document.getElementById('mainMenuOverlay');
+    
+    if (mainMenuEl) {
+        mainMenuEl.style.opacity = '0';
+        if (window.mainMenuTimer) clearTimeout(window.mainMenuTimer);
+        window.mainMenuTimer = setTimeout(() => {
+            if (mainMenuEl) { 
+                mainMenuEl.classList.add('menu-fade-out'); 
+                mainMenuEl.style.opacity = ''; 
+                mainMenuEl.style.display = 'none'; 
+            }
+        }, 400);
+    }
+    
+    if (welcomeEl) {
+        if (window.welcomeTimer) clearTimeout(window.welcomeTimer);
+        welcomeEl.style.display = 'flex';
+        setTimeout(() => {
+            welcomeEl.classList.remove('welcome-hidden');
+            welcomeEl.style.opacity = '1';
+        }, 10); 
+    }
+}
 
     function enterMainScreen(mode) {
-        if (window.navLock) return;
-        startNavLock();
+    if (window.navLock) return;
+    startNavLock();
 
-        if (globalPlayMode !== mode) {
-            if (typeof requestProfileSave === 'function' && GameState.activeProfileIdx !== -1) requestProfileSave();
-            globalPlayMode = mode;
-            if (GameState.activeProfileIdx !== -1) loadProfileData(GameState.activeProfileIdx);
-        }
+    // Инициализируем статус, если его еще нет
+    if (!GameState.playMode) GameState.playMode = 'menu';
 
-        const welcomeEl = document.getElementById('welcomeScreenOverlay');
-        const mainMenuEl = document.getElementById('mainMenuOverlay');
+    if (GameState.playMode !== mode) {
+        // Сохраняем старый режим ПЕРЕД сменой
+        if (typeof requestProfileSave === 'function' && GameState.activeProfileIdx !== -1) requestProfileSave();
         
-        if (welcomeEl) {
-            welcomeEl.style.opacity = '0';
-            if (window.welcomeTimer) clearTimeout(window.welcomeTimer);
-            window.welcomeTimer = setTimeout(() => {
-                if (welcomeEl) { 
-                    welcomeEl.classList.add('welcome-hidden'); 
-                    welcomeEl.style.display = 'none';
-                    welcomeEl.style.opacity = ''; 
-                }
-            }, 400);
-        }
-
-        if (mainMenuEl) {
-            if (window.mainMenuTimer) clearTimeout(window.mainMenuTimer);
-            mainMenuEl.classList.remove('menu-fade-out');
-            mainMenuEl.style.display = 'flex';
-            setTimeout(() => { mainMenuEl.style.opacity = '1'; }, 10);
-        }
-
-        const oracleBtn = document.getElementById('btnOracleHalls');
-        if (oracleBtn) oracleBtn.style.display = (mode === 'history') ? 'flex' : 'none';
+        GameState.playMode = mode; // 🟢 НАДЕЖНЫЙ СТАТУС В ОБЪЕКТЕ
+        
+        // Загружаем данные нового режима
+        if (GameState.activeProfileIdx !== -1) loadProfileData(GameState.activeProfileIdx);
     }
+
+    const welcomeEl = document.getElementById('welcomeScreenOverlay');
+    const mainMenuEl = document.getElementById('mainMenuOverlay');
+    
+    if (welcomeEl) {
+        welcomeEl.style.opacity = '0';
+        if (window.welcomeTimer) clearTimeout(window.welcomeTimer);
+        window.welcomeTimer = setTimeout(() => {
+            if (welcomeEl) { 
+                welcomeEl.classList.add('welcome-hidden'); 
+                welcomeEl.style.display = 'none';
+                welcomeEl.style.opacity = ''; 
+            }
+        }, 400);
+    }
+
+    if (mainMenuEl) {
+        if (window.mainMenuTimer) clearTimeout(window.mainMenuTimer);
+        mainMenuEl.classList.remove('menu-fade-out');
+        mainMenuEl.style.display = 'flex';
+        setTimeout(() => { mainMenuEl.style.opacity = '1'; }, 10);
+    }
+
+    const oracleBtn = document.getElementById('btnOracleHalls');
+    if (oracleBtn) oracleBtn.style.display = (mode === 'history') ? 'flex' : 'none';
+}
 
     function selectGameMode() {
         if (window.navLock) return;
@@ -4465,172 +4531,152 @@ function updateHistoryModalTitle() {
 
             // === 1. ЗАГРУЗКА ПРОФИЛЯ ===
     function loadProfileData(idx) {
-        isSwitchingProfile = true; 
-        const uq = document.getElementById('userQuestion');
-        if (uq) uq.value = '';
-        GameState.questionDrafts = {};
+    isSwitchingProfile = true; 
+    const uq = document.getElementById('userQuestion');
+    if (uq) uq.value = '';
+    GameState.questionDrafts = {};
+    GameState.activeProfileIdx = idx;
 
-        GameState.activeProfileIdx = idx;
+    try { if (typeof DiceGame !== 'undefined' && DiceGame.updateModeDisplay) DiceGame.updateModeDisplay(); } catch(e){} 
+    try { if (typeof FlowerGame !== 'undefined' && FlowerGame.resetAll) FlowerGame.resetAll(); } catch(e){}
+    try { if (typeof RPSGame !== 'undefined' && RPSGame.resetAll) RPSGame.resetAll(); } catch(e){}
+    try { if (typeof RouletteGame !== 'undefined' && RouletteGame.reset) RouletteGame.reset(); } catch(e){}
+    try { if (typeof SticksGame !== 'undefined' && SticksGame.reset) SticksGame.reset(); } catch(e){}
 
-        // Очистка памяти
-        try { if (typeof DiceGame !== 'undefined' && DiceGame.updateModeDisplay) DiceGame.updateModeDisplay(); } catch(e){} 
-        try { if (typeof FlowerGame !== 'undefined' && FlowerGame.resetAll) FlowerGame.resetAll(); } catch(e){}
-        try { if (typeof RPSGame !== 'undefined' && RPSGame.resetAll) RPSGame.resetAll(); } catch(e){}
-        try { if (typeof RouletteGame !== 'undefined' && RouletteGame.reset) RouletteGame.reset(); } catch(e){}
-        try { if (typeof SticksGame !== 'undefined' && SticksGame.reset) SticksGame.reset(); } catch(e){}
+    // АБСОЛЮТНАЯ ОЧИСТКА DOM (при каждом вызове!)
+    const lists = ['historyListDice', 'historyListRoulette', 'historyListBank', 'historyListSurvival', 'historyListCoin', 'historyListFlower', 'historyListRPS', 'historyListShop', 'historyListSticks'];
+    lists.forEach(id => { const el = document.getElementById(id); if(el) el.innerHTML = ''; });
 
-        const histBlock = document.getElementById('historyBlock');
-        const lists = ['historyListDice', 'historyListRoulette', 'historyListBank', 'historyListSurvival', 'historyListCoin', 'historyListFlower', 'historyListRPS', 'historyListShop', 'historyListSticks'];
-        if (histBlock) {
-            lists.forEach(id => {
-                if (!document.getElementById(id)) {
-                    const el = document.createElement('div');
-                    el.id = id; el.style.display = 'none';
-                    histBlock.appendChild(el);
-                }
-            });
+    if (idx !== -1 && GameState.profiles[idx]) {
+        const p = GameState.profiles[idx];
+        
+        if (!p.arcade_data) {
+            p.arcade_data = { historyDice: p.historyDice||'', historyRoulette: p.historyRoulette||'', historySurvival: p.historySurvival||'', historyBank: p.historyBank||'', historyCoin: p.historyCoin||'', historyFlower: p.historyFlower||'', historyRPS: p.historyRPS||'', historyShop: p.historyShop||'', historySticks: p.historySticks||'' };
+            p.history_data = { historyDice: '', historyRoulette: '', historySurvival: '', historyBank: '', historyCoin: '', historyFlower: '', historyRPS: '', historyShop: '', historySticks: '' };
         }
 
-        const setH = (id, val) => { 
-            const el = document.getElementById(id);
-            if (el) {
-                Array.from(el.children).forEach(child => {
-                    if (child.classList.contains('history-item') || child.classList.contains('history-header')) child.remove();
-                });
-                if (val && val.trim() !== '') {
+        const currentMode = GameState.playMode || 'menu';
+        
+        // ЗАГРУЗКА ИСТОРИИ И БАЛАНСОВ (Только для активного режима)
+        if (currentMode === 'arcade' || currentMode === 'history') {
+            const activeBucket = (currentMode === 'history') ? p.history_data : p.arcade_data;
+            
+            // Копируем балансы и прочее в корень для игры
+            Object.assign(p, JSON.parse(JSON.stringify(activeBucket)));
+            
+            // Наполняем DOM строго из бакета
+            const setH = (id, val) => { 
+                const el = document.getElementById(id);
+                if (el && val && val.trim() !== '') {
                     const temp = document.createElement('div');
                     temp.innerHTML = val;
                     Array.from(temp.children).reverse().forEach(child => el.prepend(child));
                 }
-            }
-        };
+            };
 
-        lists.forEach(id => { const el = document.getElementById(id); if(el) el.innerHTML = ''; });
-
-        if (idx !== -1 && GameState.profiles[idx]) {
-            const p = GameState.profiles[idx];
-            
-            // 🧬 МИГРАЦИЯ СТАРЫХ ПРОФИЛЕЙ
-            if (!p.arcade_data) {
-                const oldData = {
-                    bank: p.bank || 50, pool: p.pool || 0, crystals: p.crystals || 0, lastMode: p.lastMode || 'dice',
-                    equipped: p.equipped || {}, unlocked: p.unlocked || {}, order: p.order || [], rStats: p.rStats || {},
-                    historyDice: p.historyDice || '', historyRoulette: p.historyRoulette || '', historySurvival: p.historySurvival || '',
-                    historyBank: p.historyBank || '', historyCoin: p.historyCoin || '', historyFlower: p.historyFlower || '',
-                    historyRPS: p.historyRPS || '', historyShop: p.historyShop || '', historySticks: p.historySticks || ''
-                };
-                p.arcade_data = JSON.parse(JSON.stringify(oldData));
-                // История получает "чистый лист"
-                p.history_data = { bank: 50, pool: 0, crystals: 0, lastMode: 'dice', equipped: {}, unlocked: {}, order: [], rStats: {}, historyDice: '', historyRoulette: '', historySurvival: '', historyBank: '', historyCoin: '', historyFlower: '', historyRPS: '', historyShop: '', historySticks: '' };
-            }
-
-            // 🧬 РАСПАКОВКА: Берем нужный резервуар и выливаем его в корень профиля
-            const activeBucket = (globalPlayMode === 'history') ? p.history_data : p.arcade_data;
-            Object.assign(p, activeBucket);
-            
-            setH('historyListDice', p.historyDice);
-            setH('historyListRoulette', p.historyRoulette);
-            setH('historyListBank', p.historyBank); 
-            setH('historyListSurvival', p.historySurvival);
-            setH('historyListCoin', p.historyCoin);
-            setH('historyListFlower', p.historyFlower);
-            setH('historyListRPS', p.historyRPS);
-            setH('historyListShop', p.historyShop);
-            setH('historyListSticks', p.historySticks);
-
-            GameState.subModes = (p.settings && p.settings.subModes) 
-                ? JSON.parse(JSON.stringify(p.settings.subModes)) 
-                : { dice: 'standard', roulette: 'standard', coin: 'standard', flower: 'standard', rps: 'standard', shop: 'standard', sticks: 'standard' };
-
-            const profileLastGame = p.lastMode || 'dice';
-            if (typeof previewGame === 'function') previewGame(profileLastGame, true);
-
-            try { if(typeof Achievements !== 'undefined' && Achievements.load) Achievements.load(p.unlocked, p.order); } catch(e){}
-            try { if(typeof RouletteGame !== 'undefined' && RouletteGame.loadStats) RouletteGame.loadStats(p.rStats); } catch(e){}
-            
-            if (typeof changeBackground === 'function') changeBackground(true);
-            if (p.settings && typeof applySettings === 'function') applySettings(p.settings);
-        } else {
-            GameState.subModes = { dice: 'standard', roulette: 'standard', coin: 'standard', flower: 'standard', rps: 'standard', shop: 'standard', sticks: 'standard' };
-            if (typeof previewGame === 'function') previewGame('dice', true);
+            setH('historyListDice', activeBucket.historyDice);
+            setH('historyListRoulette', activeBucket.historyRoulette);
+            setH('historyListBank', activeBucket.historyBank); 
+            setH('historyListSurvival', activeBucket.historySurvival);
+            setH('historyListCoin', activeBucket.historyCoin);
+            setH('historyListFlower', activeBucket.historyFlower);
+            setH('historyListRPS', activeBucket.historyRPS);
+            setH('historyListShop', activeBucket.historyShop);
+            setH('historyListSticks', activeBucket.historySticks);
         }
 
-        updateHistoryView();
-        if (typeof updateSubModeHighlights === 'function') updateSubModeHighlights();
+        GameState.subModes = (p.settings && p.settings.subModes) 
+            ? JSON.parse(JSON.stringify(p.settings.subModes)) 
+            : { dice: 'standard', roulette: 'standard', coin: 'standard', flower: 'standard', rps: 'standard', shop: 'standard', sticks: 'standard' };
 
-        setTimeout(() => { isSwitchingProfile = false; }, 150);
+        const profileLastGame = p.lastMode || 'dice';
+        if (typeof previewGame === 'function') previewGame(profileLastGame, true);
+
+        try { if(typeof Achievements !== 'undefined' && Achievements.load) Achievements.load(p.unlocked, p.order); } catch(e){}
+        try { if(typeof RouletteGame !== 'undefined' && RouletteGame.loadStats) RouletteGame.loadStats(p.rStats); } catch(e){}
+        
+        if (typeof changeBackground === 'function') changeBackground(true);
+        if (p.settings && typeof applySettings === 'function') applySettings(p.settings);
+    } else {
+        GameState.subModes = { dice: 'standard', roulette: 'standard', coin: 'standard', flower: 'standard', rps: 'standard', shop: 'standard', sticks: 'standard' };
+        if (typeof previewGame === 'function') previewGame('dice', true);
     }
+
+    if (typeof updateHistoryView === 'function') updateHistoryView();
+    if (typeof updateSubModeHighlights === 'function') updateSubModeHighlights();
+
+    setTimeout(() => { isSwitchingProfile = false; }, 150);
+}
 
             // === 2. СОХРАНЕНИЕ ПРОФИЛЯ ===
     function requestProfileSave() {
-        if (typeof isSwitchingProfile !== 'undefined' && isSwitchingProfile) return;
-        if (GameState.activeProfileIdx === -1 || !GameState.profiles[GameState.activeProfileIdx]) return;
-        
-        const p = GameState.profiles[GameState.activeProfileIdx];
-        
-        // 🚀 БРОНЕЖИЛЕТ 4.0: Упрощенный, но абсолютно надежный сбор истории.
-        // Мы убрали дурацкие фильтры по классам. Теперь всё, что имеет класс 'history-item',
-        // гарантированно сохраняется в профиль. Больше никаких потерь при новых режимах!
-        const getCleanH = (id, fallbackData) => { 
-            const el = document.getElementById(id);
-            if (!el) return fallbackData || '';
-            const hasItems = Array.from(el.children).some(child => child.classList.contains('history-item'));
-            if (!hasItems) return fallbackData || ''; 
-            let cleanContent = '';
-            Array.from(el.children).forEach(child => {
-                if (child.classList.contains('history-item')) {
-                    cleanContent += child.outerHTML; // Забираем ВСЕ элементы истории
+    if (typeof isSwitchingProfile !== 'undefined' && isSwitchingProfile) return;
+    if (GameState.activeProfileIdx === -1 || !GameState.profiles[GameState.activeProfileIdx]) return;
+    
+    const p = GameState.profiles[GameState.activeProfileIdx];
+    const currentMode = GameState.playMode || 'menu';
+
+    // 1. Сохраняем общие настройки (они едины)
+    const bgSel = document.getElementById('bgSelect');
+    const spTog = document.getElementById('sparkleToggle');
+    
+    p.settings = {
+        lang: GameState.lang, sound: GameState.sound, isClassic: GameState.isClassic,
+        diceMode: 'standard', bgTheme: bgSel ? bgSel.value : (p.settings ? p.settings.bgTheme : 'bg1'), 
+        sparkles: spTog ? spTog.checked : true,
+        subModes: JSON.parse(JSON.stringify(GameState.subModes || {}))
+    };
+
+    // 2. Изолированное сохранение истории и баланса
+    if (currentMode === 'arcade' || currentMode === 'history') {
+        const bucket = (currentMode === 'history') ? p.history_data : p.arcade_data;
+        if (bucket) {
+            bucket.bank = p.bank || 50;
+            bucket.pool = p.pool || 0;
+            bucket.crystals = p.crystals || 0;
+            bucket.equipped = p.equipped || {};
+            try { if (typeof Achievements !== 'undefined' && Achievements.getUnlocked) bucket.unlocked = Achievements.getUnlocked(); } catch(e){}
+            try { if (typeof Achievements !== 'undefined' && Achievements.getOrder) bucket.order = Achievements.getOrder(); } catch(e){}
+            try { if (typeof RouletteGame !== 'undefined' && RouletteGame.getStats) bucket.rStats = RouletteGame.getStats(); } catch(e){}
+            bucket.lastMode = GameState.mode !== 'shop' ? GameState.mode : (bucket.lastMode || 'dice');
+
+            // Читаем строго с экрана прямо в активный бакет
+            const getCleanH = (id, propName) => { 
+                const el = document.getElementById(id);
+                if (!el) return bucket[propName] || '';
+                
+                const hasItems = Array.from(el.children).some(child => child.classList.contains('history-item'));
+                if (!hasItems) {
+                    const gameUI = document.getElementById('gameUI');
+                    if (gameUI && !gameUI.classList.contains('game-ui-visible')) {
+                        return bucket[propName] || ''; // Спасаем историю при скрытии интерфейса
+                    }
+                    return ''; // Реальная очистка корзиной
                 }
-            });
-            return cleanContent.trim().length > 5 ? cleanContent : (fallbackData || ''); 
-        };
+                
+                let cleanContent = '';
+                Array.from(el.children).forEach(child => {
+                    if (child.classList.contains('history-item')) cleanContent += child.outerHTML; 
+                });
+                return cleanContent.trim(); 
+            };
 
-        p.historyDice = getCleanH('historyListDice', p.historyDice);
-        p.historyRoulette = getCleanH('historyListRoulette', p.historyRoulette);
-        p.historyBank = getCleanH('historyListBank', p.historyBank);
-        p.historySurvival = getCleanH('historyListSurvival', p.historySurvival);
-        p.historyCoin = getCleanH('historyListCoin', p.historyCoin); 
-        p.historyFlower = getCleanH('historyListFlower', p.historyFlower);
-        p.historyRPS = getCleanH('historyListRPS', p.historyRPS);
-        p.historyShop = getCleanH('historyListShop', p.historyShop);
-        p.historySticks = getCleanH('historyListSticks', p.historySticks);
-
-        const bgSel = document.getElementById('bgSelect');
-        const spTog = document.getElementById('sparkleToggle');
-
-        p.settings = {
-            lang: GameState.lang, sound: GameState.sound, isClassic: GameState.isClassic,
-            diceMode: 'standard', bgTheme: bgSel ? bgSel.value : 'bg1', sparkles: spTog ? spTog.checked : true,
-            subModes: JSON.parse(JSON.stringify(GameState.subModes || {}))
-        };
-
-        try { if (typeof Achievements !== 'undefined' && Achievements.getUnlocked) p.unlocked = Achievements.getUnlocked(); } catch(e){}
-        try { if (typeof Achievements !== 'undefined' && Achievements.getOrder) p.order = Achievements.getOrder(); } catch(e){}
-        try { if (typeof RouletteGame !== 'undefined' && RouletteGame.getStats) p.rStats = RouletteGame.getStats(); } catch(e){}
-
-        const safeLastMode = (GameState.mode === 'shop') ? (p.lastMode || 'dice') : GameState.mode;
-
-        // 📦 УПАКОВКА: Собираем все корневые данные в контейнер
-        const packedBucket = {
-            bank: p.bank || 50, pool: p.pool || 0, crystals: p.crystals || 0, lastMode: safeLastMode,
-            equipped: p.equipped || {}, unlocked: p.unlocked || {}, order: p.order || [], rStats: p.rStats || {},
-            historyDice: p.historyDice, historyRoulette: p.historyRoulette,
-            historySurvival: p.historySurvival, historyBank: p.historyBank,
-            historyCoin: p.historyCoin, historyFlower: p.historyFlower,
-            historyRPS: p.historyRPS, historyShop: p.historyShop, historySticks: p.historySticks
-        };
-
-        // 🧬 Прячем контейнер в правильный резервуар
-        if (typeof globalPlayMode !== 'undefined') {
-            if (globalPlayMode === 'history') p.history_data = packedBucket;
-            else p.arcade_data = packedBucket;
+            bucket.historyDice = getCleanH('historyListDice', 'historyDice');
+            bucket.historyRoulette = getCleanH('historyListRoulette', 'historyRoulette');
+            bucket.historyBank = getCleanH('historyListBank', 'historyBank');
+            bucket.historySurvival = getCleanH('historyListSurvival', 'historySurvival');
+            bucket.historyCoin = getCleanH('historyListCoin', 'historyCoin'); 
+            bucket.historyFlower = getCleanH('historyListFlower', 'historyFlower');
+            bucket.historyRPS = getCleanH('historyListRPS', 'historyRPS');
+            bucket.historyShop = getCleanH('historyListShop', 'historyShop');
+            bucket.historySticks = getCleanH('historyListSticks', 'historySticks');
         }
-
-        localStorage.setItem('gof_profiles', JSON.stringify(GameState.profiles));
-
-        if (typeof renderProfiles === 'function') renderProfiles();
-        if (typeof updateMenuBankUI === 'function') updateMenuBankUI();
     }
+
+    localStorage.setItem('gof_profiles', JSON.stringify(GameState.profiles));
+    if (typeof renderProfiles === 'function') renderProfiles();
+    if (typeof updateMenuBankUI === 'function') updateMenuBankUI();
+}
 
     // === 3. СОЗДАНИЕ ИГРОКА БЕЗ УТЕЧЕК ===
     function createNewProfile(e) {
@@ -4694,14 +4740,6 @@ function updateHistoryModalTitle() {
     const histBlock = document.getElementById('historyBlock');
     if (!histBlock) return;
 
-    // 🚀 АВТО-ВОССТАНОВЛЕНИЕ: Если контейнера магазина нет, создаем его на лету
-    if (!document.getElementById('historyListShop')) {
-        const shopList = document.createElement('div');
-        shopList.id = 'historyListShop';
-        shopList.className = 'history';
-        shopList.style.display = 'none';
-        histBlock.appendChild(shopList);
-    }
 
     // 1. Прячем все списки
     const allLists = ['historyListDice', 'historyListRoulette', 'historyListBank', 'historyListSurvival', 'historyListCoin', 'historyListFlower', 'historyListRPS', 'historyListShop', 'historyListSticks'];
@@ -5111,7 +5149,7 @@ function addCrystal(game = null, subMode = null, customAmount = null) {
         const cardConfigs = {
             'dice': { color: 'var(--magic-color)', shadow: 'rgba(162, 155, 254, 0.2)', icon: '<i class="fas fa-dice-d6"></i>', title: t.menuDice || 'Кость Истины' },
             'roulette': { color: 'var(--angry-red)', shadow: 'rgba(255, 102, 102, 0.2)', icon: '<svg viewBox="0 0 200 200" style="height: 45px; width: auto;" fill="currentColor"><path fill-rule="evenodd" d="M 100,4 A 96,96 0 1,1 100,196 A 96,96 0 1,1 100,4 Z M 100,86 A 14,14 0 1,0 100,114 A 14,14 0 1,0 100,86 Z M 100,6 A 22,22 0 1,0 100,50 A 22,22 0 1,0 100,6 Z M 162.35,42 A 22,22 0 1,0 162.35,86 A 22,22 0 1,0 162.35,42 Z M 162.35,114 A 22,22 0 1,0 162.35,158 A 22,22 0 1,0 162.35,114 Z M 100,150 A 22,22 0 1,0 100,194 A 22,22 0 1,0 100,150 Z M 37.65,114 A 22,22 0 1,0 37.65,158 A 22,22 0 1,0 37.65,114 Z M 37.65,42 A 22,22 0 1,0 37.65,86 A 22,22 0 1,0 37.65,42 Z"></path></svg>', title: t.menuRoulette || 'Роковая Пуля' },
-            'coin': { color: '#cbd5e1', shadow: 'rgba(255, 255, 255, 0.2)', icon: '<svg viewBox="0 0 100 100" style="height: 45px; width: auto;" fill="none" stroke="currentColor" stroke-width="8"><circle cx="50" cy="50" r="40"/><rect x="38" y="38" width="24" height="24" rx="4" stroke-width="6" transform="rotate(45 50 50)"/></svg>', title: t.menuCoin || 'Грань Выбора' },
+            'coin': { color: '#cbd5e1', shadow: 'rgba(255, 255, 255, 0.2)', icon: '<svg viewBox="0 0 100 100" style="height: 45px; width: auto;" fill="none" stroke="currentColor" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="50" cy="35" rx="40" ry="20"/><path d="M10 35 v 20 a 40 20 0 0 0 80 0 v -20"/><path d="M30 52 v 20"/><path d="M50 55 v 20"/><path d="M70 52 v 20"/><path d="M 25 32 Q 40 18 55 22"/><path d="M 45 48 Q 65 52 75 38"/></svg>', title: t.menuCoin || 'Грань Выбора' },
             'flower': { color: 'var(--friendly-green)', shadow: 'rgba(204, 255, 204, 0.2)', icon: '<i class="fas fa-seedling"></i>', title: t.menuFlower || 'Цветок Оракула' },
             'rps': { color: '#ff9f43', shadow: 'rgba(255, 159, 67, 0.2)', icon: '<i class="fas fa-hand-rock"></i>', title: t.menuRPS || 'К-Н-Б' },
             'lots': { color: '#00d2d3', shadow: 'rgba(0, 210, 211, 0.2)', icon: '<i class="fas fa-grip-lines-vertical"></i>', title: t.btnSticks || 'Нить Жребия' },
@@ -6109,6 +6147,134 @@ function selectSubMode(game, mode, e) {
 // ==============================================
 const ShopGame = (function() {
     let activeTab = 'exchange';
+	
+	// 🧠 1. УМНЫЙ ПОМОЩНИК: Ищет категорию и группу стиля
+    function getStyleGroup(id, fallbackCat) {
+        let cat = fallbackCat;
+        for (let c in shopItems) {
+            if (Array.isArray(shopItems[c]) && shopItems[c].find(i => i.id === id)) {
+                cat = c; break;
+            }
+        }
+        let group = cat;
+        if (cat === 'gameStyles') {
+            if (id.startsWith('roulette_drum')) group = 'roulette_drum';
+            else if (id.startsWith('roulette_bullet')) group = 'roulette_bullet';
+            else group = id.match(/^(style_dice|style_coin|style_flower|style_lots|style_rps)/)?.[0] || cat;
+        }
+        return { cat, group };
+    }
+
+    // 🧠 2. СКАНЕР АКТИВНОСТИ
+    function isItemActive(p, item, fallbackCat) {
+        if (!p || !p.equipped) return false;
+        const equipped = p.equipped;
+        const { cat, group } = getStyleGroup(item.id, item._cat || fallbackCat || 'gameStyles');
+
+        const isCanon = item.id.includes('orig') || item.id.includes('original') || item.id === 'roulette_drum_indigo';
+
+        if (cat === 'perks') {
+            return equipped[item.id] === true;
+        } 
+        
+        if (cat === 'gameStyles') {
+            if (isCanon) {
+                // Канон светится ТОЛЬКО если нет активных кастомных скинов
+                const hasCustomActive = Object.keys(equipped).some(k => k !== item.id && k.startsWith(group) && equipped[k] === true);
+                return equipped[item.id] === true || !hasCustomActive;
+            }
+            return equipped[item.id] === true;
+        }
+        
+        // Эксклюзивные режимы (Облики кости, сердцевины и т.д.)
+        let currentEq = equipped[cat];
+        if (!currentEq) {
+            // Самовосстановление: Если профиль пустой, дефолтные вещи надеты автоматом
+            return (item.id === 'dice_dots' || item.id === 'flower_core_original' || item.id === 'lots_box_original' || item.id === 'lots_stick_original');
+        }
+        return currentEq === item.id;
+    }
+
+    // 🎒 3. БРОНЕБОЙНАЯ ЭКИПИРОВКА (v0.9.5)
+    function equipItem(fallbackCat, id, silent = false) {
+        const p = GameState.activeProfileIdx !== -1 ? GameState.profiles[GameState.activeProfileIdx] : null;
+        if (!p) return;
+        if (!p.equipped) p.equipped = {};
+
+        const { cat, group } = getStyleGroup(id, fallbackCat);
+        if (!cat) return;
+
+        // Передаем фейковый объект, чтобы сканер понял, с чем имеет дело
+        const isActive = isItemActive(p, { id: id, _cat: cat });
+
+        const isCanon = id.includes('orig') || id.includes('original') || id === 'roulette_drum_indigo';
+        const isPerk = (cat === 'perks');
+        const isGameStyle = (cat === 'gameStyles');
+        const isExclusiveMode = (!isPerk && !isGameStyle);
+
+        // --- ЛОГИКА СНЯТИЯ (Клик по АКТИВНОЙ карточке) ---
+        if (isActive) {
+            if (isCanon || isExclusiveMode) {
+                if (typeof App !== 'undefined' && App.triggerButtonError) App.triggerButtonError();
+                if (!silent && window.Telegram?.WebApp?.HapticFeedback) window.Telegram.WebApp.HapticFeedback.notificationOccurred('error');
+                return; 
+            }
+            
+            if (isGameStyle) {
+                // 🛑 НОВАЯ ПРОВЕРКА: Если нет канона в инвентаре, снимать нельзя!
+                let canonId = null;
+                if (typeof shopItems !== 'undefined' && shopItems.gameStyles) {
+                    const canonItem = shopItems.gameStyles.find(i => 
+                        i.id.startsWith(group) && 
+                        (i.id.includes('orig') || i.id.includes('original') || i.id === 'roulette_drum_indigo')
+                    );
+                    if (canonItem) canonId = canonItem.id;
+                }
+
+                if (canonId && (!p.inventory || !p.inventory.includes(canonId))) {
+                    // Канона в инвентаре нет, снимать единственный кастомный скин запрещено
+                    if (typeof App !== 'undefined' && App.triggerButtonError) App.triggerButtonError();
+                    if (!silent && window.Telegram?.WebApp?.HapticFeedback) window.Telegram.WebApp.HapticFeedback.notificationOccurred('error');
+                    return;
+                }
+
+                delete p.equipped[id];
+            } else if (isPerk) {
+                delete p.equipped[id];
+            } else {
+                delete p.equipped[cat];
+            }
+        } 
+        // --- ЛОГИКА НАДЕВАНИЯ (Клик по НЕАКТИВНОЙ карточке) ---
+        else {
+            if (isPerk) {
+                p.equipped[id] = true;
+            } else if (isGameStyle) {
+                // ВЫЖИГАЕМ ДУБЛИКАТЫ: Удаляем все старые скины в этой группе перед тем как надеть новый
+                Object.keys(p.equipped).forEach(eqId => {
+                    if (eqId.startsWith(group)) delete p.equipped[eqId];
+                });
+                if (!isCanon) p.equipped[id] = true; 
+            } else {
+                // Перезаписываем эксклюзивный режим
+                p.equipped[cat] = id;
+            }
+        }
+
+        // --- 4. СОХРАНЕНИЕ ---
+        if (typeof App !== 'undefined' && App.requestProfileSave) App.requestProfileSave();
+        
+        if (typeof renderInventoryList === 'function') renderInventoryList(true);
+        
+        // 🛑 ФИКС: Возвращаем отложенное обновление вместо моментального!
+        window.pendingVisualUpdates = true;
+        
+        if (!silent) {
+            if (window.Telegram?.WebApp?.HapticFeedback) window.Telegram.WebApp.HapticFeedback.impactOccurred('light');
+            if (typeof App !== 'undefined' && App.playSoundEffect) App.playSoundEffect('click');
+        }
+    }
+	
     let isGameActive = false;
     let syncInterval = null;
     let pendingVisualUpdates = false;
@@ -6523,8 +6689,16 @@ const ShopGame = (function() {
             sTC.style.cssText = 'width: 95%; margin-bottom: 5px; flex-shrink: 0;';
             const styleCats = [
                 { k: 'dice', i: '<i class="fas fa-cube"></i>', c: 'var(--magic-color)' },
-                { k: 'roulette', i: '<i class="fas fa-bullseye"></i>', c: 'var(--angry-red)' },
-                { k: 'coin', i: '<i class="fas fa-coins"></i>', c: 'var(--sun-gold)' },
+                { 
+                    k: 'roulette', 
+                    i: '<svg viewBox="0 0 200 200" fill="currentColor" style="height: 1.2em; width: auto; margin-top: -2px;"><path fill-rule="evenodd" d="M 100,4 A 96,96 0 1,1 100,196 A 96,96 0 1,1 100,4 Z M 100,86 A 14,14 0 1,0 100,114 A 14,14 0 1,0 100,86 Z M 100,6 A 22,22 0 1,0 100,50 A 22,22 0 1,0 100,6 Z M 162.35,42 A 22,22 0 1,0 162.35,86 A 22,22 0 1,0 162.35,42 Z M 162.35,114 A 22,22 0 1,0 162.35,158 A 22,22 0 1,0 162.35,114 Z M 100,150 A 22,22 0 1,0 100,194 A 22,22 0 1,0 100,150 Z M 37.65,114 A 22,22 0 1,0 37.65,158 A 22,22 0 1,0 37.65,114 Z M 37.65,42 A 22,22 0 1,0 37.65,86 A 22,22 0 1,0 37.65,42 Z"></path></svg>', 
+                    c: 'var(--angry-red)' 
+                },
+                { 
+					k: 'coin', 
+					i: '<svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" style="height: 1.2em; width: auto; margin-top: -2px;"><ellipse cx="50" cy="35" rx="40" ry="20"/><path d="M10 35 v 20 a 40 20 0 0 0 80 0 v -20"/><path d="M30 52 v 20"/><path d="M50 55 v 20"/><path 	d="M70 52 v 20"/><path d="M 25 32 Q 40 18 55 22"/><path d="M 45 48 Q 65 52 75 38"/></svg>', 
+					c: 'var(--sun-gold)' 
+				},
                 { k: 'flower', i: '<i class="fas fa-seedling"></i>', c: 'var(--friendly-green)' },
                 { k: 'rps', i: '<i class="fas fa-hand-rock"></i>', c: '#ff9f43' },
                 { k: 'lots', i: '<i class="fas fa-pause"></i>', c: '#00d2d3' }
@@ -6976,6 +7150,10 @@ const ShopGame = (function() {
 
                 if (!canAffordBoth) {
                     if (window.Telegram?.WebApp?.HapticFeedback) window.Telegram.WebApp.HapticFeedback.notificationOccurred('error');
+                    
+                    // 👇 ДОБАВЛЯЕМ ЗВУК ОШИБКИ СЮДА 👇
+                    if (typeof App !== 'undefined' && App.playSoundEffect) App.playSoundEffect('error_pyn');
+                    
                     if (window.showStatInfo) window.showStatInfo(e, 'Недостаточно средств!', 'Not enough funds!');
                     return; 
                 }
@@ -7049,7 +7227,13 @@ const ShopGame = (function() {
         },
         { key: 'dice', icon: '<i class="fas fa-cube"></i>', title: { ru: 'Кость Истины', en: 'Dice of Fate' }, color: 'var(--magic-color)', items: [ ...mapItems(shopItems.gameStyles.filter(i=>i.id.startsWith('style_dice')), 'gameStyles', 'Тема интерфейса', 'UI Theme'), ...mapItems(shopItems.diceModes, 'diceModes', 'Облик кости', 'Dice Faces'), ...mapItems(shopItems.perks.filter(i => i.id === 'perk_sparkle_dice'), 'perks', 'Дополнительные функции', 'Extra Features') ] },
         { key: 'roulette', icon: rouletteSVG, title: { ru: 'Роковая Пуля', en: 'Fatal Bullet' }, color: 'var(--angry-red)', items: [ ...mapItems(shopItems.gameStyles.filter(i => i.id.startsWith('roulette_drum_')), 'gameStyles', 'Барабаны', 'Drums'), ...mapItems(shopItems.gameStyles.filter(i => i.id.startsWith('roulette_bullet_')), 'gameStyles', 'Пули', 'Bullets') ] },
-        { key: 'coin', icon: coinSVG, title: { ru: 'Грань Выбора', en: 'Edge of Choice' }, color: 'var(--sun-gold)', items: [ ...mapItems(shopItems.gameStyles.filter(i=>i.id.startsWith('style_coin')), 'gameStyles', 'Облик монеты', 'Coin Styles'), ...mapItems(shopItems.perks.filter(i => i.id === 'perk_sparkle_coin'), 'perks', 'Дополнительные функции', 'Extra Features') ] },
+        { 
+            key: 'coin', 
+            icon: '<svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" style="height: 1.2em; width: auto; margin-top: -2px;"><ellipse cx="50" cy="35" rx="40" ry="20"/><path d="M10 35 v 20 a 40 20 0 0 0 80 0 v -20"/><path d="M30 52 v 20"/><path d="M50 55 v 20"/><path d="M70 52 v 20"/><path d="M 25 32 Q 40 18 55 22"/><path d="M 45 48 Q 65 52 75 38"/></svg>', 
+            title: { ru: 'Грань Выбора', en: 'Edge of Choice' }, 
+            color: 'var(--sun-gold)', 
+            items: [ ...mapItems(shopItems.gameStyles.filter(i=>i.id.startsWith('style_coin')), 'gameStyles', 'Облик монеты', 'Coin Styles'), ...mapItems(shopItems.perks.filter(i => i.id === 'perk_sparkle_coin'), 'perks', 'Дополнительные функции', 'Extra Features') ] 
+        },
         { key: 'flower', icon: '<i class="fas fa-seedling"></i>', title: { ru: 'Цветок оракула', en: 'The Oracle flower' }, color: 'var(--friendly-green)', items: [ ...mapItems(shopItems.gameStyles.filter(i=>i.id.startsWith('style_flower')), 'gameStyles', 'Тема интерфейса', 'UI Theme'), ...mapItems(shopItems.flowerCores, 'flowerCores', 'Облик сердцевины', 'Core Styles'), ...mapItems(shopItems.flowerPetals, 'flowerPetals', 'Цвет лепестков', 'Petal Colors') ] },
         { key: 'lots', icon: '<i class="fas fa-pause"></i>', title: { ru: 'Нить Жребия', en: 'The Threads of Fate' }, color: '#00d2d3', items: [ ...mapItems(shopItems.gameStyles.filter(i=>i.id.startsWith('style_lots')), 'gameStyles', 'Тема интерфейса', 'UI Theme'), ...mapItems(shopItems.lotsBoxes, 'lotsBoxes', 'Облик коробки', 'Box Styles'), ...mapItems(shopItems.lotsSticks, 'lotsSticks', 'Вид палочек', 'Stick Styles') ] },
         { key: 'rps', icon: '<i class="fas fa-hand-rock"></i>', title: { ru: 'К-Н-Б', en: 'R-P-S' }, color: '#ff9f43', items: mapItems(shopItems.gameStyles.filter(i=>i.id.startsWith('style_rps')), 'gameStyles', 'Тема интерфейса', 'UI Theme') },
@@ -7124,41 +7308,37 @@ const ShopGame = (function() {
             grid.style.cssText = 'display: grid !important; grid-template-columns: repeat(4, 1fr) !important; gap: 6px !important; margin-bottom: 10px;';
             
             groups[subLabel].forEach(item => {
-                    const currentEquippedInCat = equipped[item._cat];
-                    const isCanon = item.id.includes('orig') || item.id.includes('original');
+                    // 1. Умная проверка активности
+                    let isActive = isItemActive(p, item);
                     
-                    let isEquipped = false;
-                    // 1. Прямая проверка (надет именно этот ID)
-                    if (currentEquippedInCat === item.id || equipped[item.id] === true) {
-                        isEquipped = true;
-                    } 
-                    // 2. Умная проверка Канона: активен, если Канон ЕСТЬ в инвентаре, а категория ПУСТА
-                    else if (isCanon && !currentEquippedInCat && inv.includes(item.id)) {
-                        isEquipped = true;
-                    }
-
+                    let statusText = isActive ? (lang === 'ru' ? 'АКТИВНО' : 'ACTIVE') : (lang === 'ru' ? 'НАДЕТЬ' : 'EQUIP');
+                    let statusColor = isActive ? 'var(--friendly-green)' : 'rgba(255,255,255,0.6)';
+                    
+                    const badgeHTML = item.isStackable ? `<div style="position: absolute; top: -2px; right: 4px; color: var(--friendly-green); font-weight: 900; font-size: 12px; z-index: 10;">${inv.filter(id => id === item.id).length}</div>` : '';
+                    
                     const card = document.createElement('div');
-                    card.className = isEquipped ? 'inv-card active' : 'inv-card';
-                
-                const itemName = item.name[lang] || item.name.ru;
-                const badgeHTML = item.isStackable ? `<div style="position: absolute; top: -2px; right: 4px; color: var(--friendly-green); font-weight: 900; font-size: 12px; z-index: 10;">${inv.filter(id => id === item.id).length}</div>` : '';
-
-                card.innerHTML = `
-                    ${badgeHTML}
-                    ${typeof getTooltipHTML === 'function' ? getTooltipHTML(itemName, item.desc, lang) : ''}
-                    <div class="shop-item-icon" style="position: relative; z-index: 1;">${item.icon}</div>
-                    <div class="shop-item-title" style="position: relative; z-index: 1;">${itemName}</div>
-                    <div class="shop-price-badge" style="color:${isEquipped ? 'var(--friendly-green)' : '#aaa'}; position: relative; z-index: 1;">
-                        ${isEquipped ? (lang === 'ru' ? 'АКТИВНО' : 'ACTIVE') : (lang === 'ru' ? 'НАДЕТЬ' : 'EQUIP')}
-                    </div>
-                `;
-                
-                card.onclick = (e) => {
-                    e.stopPropagation();
-                    if (typeof equipItem === 'function') equipItem(item._cat, item.id);
-                };
-                grid.appendChild(card);
-            });
+                    // Добавляем класс 'active' напрямую карточке
+                    card.className = `inv-card ${isActive ? 'active' : ''}`;
+                    
+                    const itemName = item.name[lang] || item.name.ru;
+                    card.innerHTML = `
+                        ${badgeHTML}
+                        ${typeof getTooltipHTML === 'function' ? getTooltipHTML(itemName, item.desc, lang) : ''}
+                        <div class="shop-item-icon">${item.icon}</div>
+                        <div class="shop-item-title">${itemName}</div>
+                        <div class="shop-price-badge" style="color: ${statusColor}; border-color: ${isActive ? 'rgba(204,255,204,0.3)' : 'rgba(255,255,255,0.1)'}">${statusText}</div>
+                    `;
+                    
+                    card.onclick = (e) => {
+                        // Блокируем клик по иконке вопроса
+                        if (e.target.closest('.info-icon-btn')) return;
+                        
+                        // Запускаем переодевание
+                        equipItem(item._cat, item.id);
+                    };
+                    
+                    grid.appendChild(card);
+                });
             scrollContainer.appendChild(grid);
         });
         list.appendChild(scrollContainer);
@@ -7305,97 +7485,7 @@ const ShopGame = (function() {
         }
     }
 
-    function equipItem(cat, id, silent = false) {
-    const p = GameState.activeProfileIdx !== -1 ? GameState.profiles[GameState.activeProfileIdx] : null;
-    if (!p) return;
-    if (!p.equipped) p.equipped = {};
-    
-    const isCanon = id.includes('orig') || id.includes('original');
-    const currentEquippedId = p.equipped[cat];
-    const isCurrentlyActive = (currentEquippedId === id) || (isCanon && !currentEquippedId);
-
-    // === СНЯТИЕ ===
-    if (isCurrentlyActive) {
-        if (isCanon) return; 
-
-        const canonItem = (shopItems[cat] || []).find(i => i.id.includes('orig') || i.id.includes('original'));
-        if (canonItem && p.inventory && p.inventory.includes(canonItem.id)) {
-            delete p.equipped[cat];
-            delete p.equipped[id]; 
-        } else {
-            if (typeof App !== 'undefined' && App.triggerButtonError) App.triggerButtonError();
-            return;
-        }
-    } 
-    // === НАДЕВАНИЕ ===
-    else {
-        if (!isCanon) {
-            const canonItem = (shopItems[cat] || []).find(i => i.id.includes('orig') || i.id.includes('original'));
-            if (canonItem) delete p.equipped[canonItem.id];
-        }
-
-        // Логика префиксов для очистки категории
-        let prefix = id.split('_').slice(0, 2).join('_') + '_'; 
-        Object.keys(p.equipped).forEach(key => {
-            if (key.startsWith(prefix)) delete p.equipped[key];
-        });
-
-        p.equipped[id] = true;
-        p.equipped[cat] = id;
-    }
-
-    if (typeof App !== 'undefined' && App.requestProfileSave) App.requestProfileSave();
-    
-    // Обновляем только кнопки в меню
-    renderInventoryList(true); 
-    
-    // 🚩 ПОМЕТКА: Визуал изменится только при выходе из инвентаря
-    window.pendingVisualUpdates = true; 
-
-    if (!silent) {
-        if (window.Telegram?.WebApp?.HapticFeedback) window.Telegram.WebApp.HapticFeedback.impactOccurred('light');
-        if (typeof App !== 'undefined' && App.playSoundEffect) App.playSoundEffect('click');
-    }
-
-    // === НАДЕВАНИЕ ===
-    else {
-        // Если надеваем НЕ канон, на всякий случай чистим старые записи Канона
-        if (!isCanon) {
-            const canonItem = (shopItems[cat] || []).find(i => i.id.includes('orig') || i.id.includes('original'));
-            if (canonItem) delete p.equipped[canonItem.id];
-        }
-
-        if (cat === 'gameStyles' || cat === 'perks') {
-            // Твоя логика префиксов для очистки категории
-            let prefix = null;
-            if (id.startsWith('roulette_drum_')) prefix = 'roulette_drum_';
-            else if (id.startsWith('roulette_bullet_')) prefix = 'roulette_bullet_';
-            else {
-                const prefixMatch = id.match(/^(style_dice|roulette|style_coin|style_flower|style_lots|style_rps)/);
-                if (prefixMatch) prefix = prefixMatch[1];
-            }
-
-            if (prefix) {
-                Object.keys(p.equipped).forEach(eqId => {
-                    if (eqId.startsWith(prefix)) delete p.equipped[eqId];
-                });
-            }
-            p.equipped[id] = true;
-        }
-        p.equipped[cat] = id;
-    }
-    
-    if (typeof App !== 'undefined' && App.requestProfileSave) App.requestProfileSave();
-    
-    renderInventoryList(true); 
-    if (typeof applyAllEquippedVisuals === 'function') applyAllEquippedVisuals();
-    
-    if (!silent) {
-        if (window.Telegram?.WebApp?.HapticFeedback) window.Telegram.WebApp.HapticFeedback.impactOccurred('light');
-        if (typeof App !== 'undefined' && App.playSoundEffect) App.playSoundEffect('click');
-    }
-}
-
+	
     function consumePerk(perkId) {
         const p = GameState.activeProfileIdx !== -1 ? GameState.profiles[GameState.activeProfileIdx] : null;
         if (!p || !p.inventory) return false;
@@ -7863,10 +7953,16 @@ const DiceGame = (function() {
         item.innerHTML = `${qMark} ${GameState.isQuestionHidden?'---':originalQuestion}${mTag}<br><span style="color:${uiColor};">➔ ${subI} ${histDispTxt}</span>`;
         
         const hlDice = document.getElementById('historyListDice');
-        if(hlDice) hlDice.prepend(item);
+        if(hlDice) {
+            hlDice.prepend(item);
+            // 🚀 ФИКС: Принудительно синхронизируем HTML с памятью профиля перед сохранением Ядром
+            if (typeof GameState !== 'undefined' && GameState.activeProfileIdx !== -1 && GameState.profiles[GameState.activeProfileIdx]) {
+                GameState.profiles[GameState.activeProfileIdx].historyDice = hlDice.innerHTML;
+            }
+        }
 
-        if(typeof App !== 'undefined') { 
-            let isWin = false;
+        if(typeof App !== 'undefined') { 
+            let isWin = false;
             // 🛑 ФИКС: Используем faceMode вместо старого сломанного dMode
             if (faceMode === 'trader') isWin = (rIdx === 0 || rIdx === 2 || rIdx === 4);
             else if (faceMode === 'alco') isWin = (rIdx !== 5);
@@ -7893,7 +7989,7 @@ const DiceGame = (function() {
     return { init, mount, unmount, play, updateModeDisplay, stopAll, isDragging: () => isDragging };
 })();
 
-// ИНЖЕКТ КРАСИВЫХ СТИЛЕЙ ДЛЯ КУБИКА (БЕЗ ПАРАЗИТНОЙ ФИЛЬТРАЦИИ ИСТОРИИ)
+// ИНЖЕКТ КРАСИВЫХ СТИЛЕЙ ДЛЯ КУБИКА (С РАБОЧЕЙ ПЛАВНОСТЬЮ!)
 (function injectDiceStyles() {
     const existingStyles = document.querySelectorAll('.dice-3d-styles');
     existingStyles.forEach(el => el.remove());
@@ -7901,7 +7997,8 @@ const DiceGame = (function() {
     style.className = 'dice-3d-styles';
     style.innerHTML = `
         .face { 
-            background: radial-gradient(circle at 30% 30%, #3e3863 0%, #151324 100%) !important; 
+            /* 🚀 ФИКС ПЛАВНОСТИ: Сплошной цвет вместо градиента */
+            background: #1e1b30 !important; 
             border: 2px solid #6c5ce7 !important; 
             box-sizing: border-box !important; 
             box-shadow: inset 0 0 15px rgba(0,0,0,0.9), inset 1px 1px 3px rgba(255,255,255,0.3) !important; 
@@ -7913,6 +8010,9 @@ const DiceGame = (function() {
             width: 100% !important; 
             height: 100% !important;
             backface-visibility: hidden !important;
+            
+            /* 🚀 Вшиваем плавность прямо в лицо кубику */
+            transition: background 0.8s ease, color 0.8s ease, border-color 0.8s ease, box-shadow 0.8s ease, text-shadow 0.8s ease !important;
         }
         
         #face1 { transform: rotateY(0deg) translateZ(60px) !important; }
@@ -7923,17 +8023,28 @@ const DiceGame = (function() {
         #face6 { transform: rotateX(-90deg) translateZ(60px) !important; }
         
         .cube.classic-mode .face { 
-            background: radial-gradient(circle at 30% 30%, #ffffff 0%, #e2e8f0 50%, #94a3b8 100%) !important; 
+            /* 🚀 ФИКС ПЛАВНОСТИ: Каноничный серо-белый цвет */
+            background: #e2e8f0 !important; 
             border: 2px solid #94a3b8 !important; 
             box-shadow: inset 0 0 15px rgba(0,0,0,0.2), inset 1px 1px 5px rgba(255,255,255,1) !important; 
             color: #1e293b !important; 
             text-shadow: 1px 1px 2px rgba(0,0,0,0.3) !important; 
         }
-        .dot { background: radial-gradient(circle at 30% 30%, #ffffff 0%, #a29bfe 100%) !important; box-shadow: inset 0 3px 6px rgba(0,0,0,0.8), inset 0 -1px 2px rgba(255,255,255,0.3), 0 2px 2px rgba(0,0,0,0.5) !important; }
-        .cube.classic-mode .dot { background: radial-gradient(circle at 30% 30%, #475569 0%, #0f172a 100%) !important; box-shadow: inset 0 3px 6px rgba(0,0,0,0.9), inset 0 -1px 2px rgba(255,255,255,0.4), 0 2px 2px rgba(255,255,255,1) !important; }
         
+        /* 🚀 Точки тоже переводим на сплошной цвет */
+        .dot { 
+            background: #a29bfe !important; 
+            box-shadow: inset 0 3px 6px rgba(0,0,0,0.8), inset 0 -1px 2px rgba(255,255,255,0.3), 0 2px 2px rgba(0,0,0,0.5) !important; 
+            transition: background 0.8s ease, box-shadow 0.8s ease !important;
+        }
+        .cube.classic-mode .dot { 
+            background: #0f172a !important; 
+            box-shadow: inset 0 3px 6px rgba(0,0,0,0.9), inset 0 -1px 2px rgba(255,255,255,0.4), 0 2px 2px rgba(255,255,255,1) !important; 
+        }
+        
+        /* 🚀 Внутреннее ядро тоже должно перетекать плавно */
         .cube-core { position: absolute; width: 100%; height: 100%; transform-style: preserve-3d; }
-        .core-face { position: absolute; width: 116px; height: 116px; left: 2px; top: 2px; border-radius: 12px; background: #151324; box-shadow: 0 0 8px #151324; backface-visibility: hidden; }
+        .core-face { position: absolute; width: 116px; height: 116px; left: 2px; top: 2px; border-radius: 12px; background: #151324; box-shadow: 0 0 8px #151324; backface-visibility: hidden; transition: background 0.8s ease, box-shadow 0.8s ease; }
         body.classic-mode-active .core-face { background: #ffffff; box-shadow: 0 0 8px #ffffff; }
     `;
     document.head.appendChild(style);
@@ -9693,12 +9804,18 @@ const DiceGame = (function() {
                 else if (mode === 'bank') targetContainerId = 'historyListBank';
                 
                 const container = document.getElementById(targetContainerId);
-                if (container) {
-                    container.prepend(item);
-                }
-                // =================================================================
+                if (container) {
+                    container.prepend(item);
+                    // 🚀 ФИКС: Принудительно синхронизируем память в зависимости от подрежима рулетки
+                    if (typeof GameState !== 'undefined' && GameState.activeProfileIdx !== -1 && GameState.profiles[GameState.activeProfileIdx]) {
+                        if (mode === 'survival') GameState.profiles[GameState.activeProfileIdx].historySurvival = container.innerHTML;
+                        else if (mode === 'bank') GameState.profiles[GameState.activeProfileIdx].historyBank = container.innerHTML;
+                        else GameState.profiles[GameState.activeProfileIdx].historyRoulette = container.innerHTML;
+                    }
+                }
+                // =================================================================
 
-                if(typeof App !== 'undefined') {
+                if(typeof App !== 'undefined') {
                     App.clearQuestionDraft();
                     if (!isGunshotResult) {
                         App.addCrystal('roulette', mode);
