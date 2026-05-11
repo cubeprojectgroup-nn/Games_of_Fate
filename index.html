@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Игры Судьбы. v0.9.0.25</title>
+    <title>Игры Судьбы. v0.9.0.26</title>
     <!-- Эмодзи-иконка для вкладки браузера -->
     <link rel="icon" href='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">🔮</text></svg>'>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
@@ -3215,7 +3215,7 @@ setInterval(() => {
         <div style="position: absolute; bottom: 15px; left: 15px; font-size: 10px; color: rgba(162, 155, 254, 0.6); font-weight: bold; letter-spacing: 1px; text-transform: uppercase; z-index: 500;">
             <a href="https://t.me/Antis_Corpus" style="color: inherit; text-decoration: none;">t.me/Antis_Corpus</a>
         </div>
-        <div class="version" style="position: absolute; bottom: 15px; right: 15px; pointer-events: none; z-index: 500;">v0.9.0.25</div>
+        <div class="version" style="position: absolute; bottom: 15px; right: 15px; pointer-events: none; z-index: 500;">v0.9.0.26</div>
     </div>
 
     <!-- ========================================== -->
@@ -13579,7 +13579,7 @@ const AbsoluteGame = (function() {
         /* ⬆️ ПРИБИВАЕМ ЯЧЕЙКИ К САМОМУ ВЕРХУ ЭКРАНА */
         #absoluteGameStage > div:first-child {
             position: absolute !important;
-            top: -60px !important; /* <-- Меняй это значение, чтобы двигать блок выше/ниже */
+            top: -60px !important;
             left: 0 !important;
             width: 100% !important;
             margin-top: 0 !important; 
@@ -13589,18 +13589,18 @@ const AbsoluteGame = (function() {
 
         /* ⬇️ СДВИГАЕМ АБСОЛЮТ (СФЕРУ) ВНИЗ */
         #absoluteScene {
-            margin-top: 160px !important; /* <-- Увеличь значение (например, до 120px), если нужно опустить еще ниже */
+            margin-top: 160px !important; 
         }
 
-        /* 👇 НОВОЕ: СДВИГ ТЕКСТА И КНОПКИ ВНИЗ 👇 */
+        /* 👇 СДВИГ ТЕКСТА И КНОПКИ ВНИЗ 👇 */
         #abs-face-info {
-            margin-top: 110px !important; /* Отталкиваем текст от сферы вниз */
+            margin-top: 110px !important; 
         }
         #abs-action-hint {
-            margin-bottom: -6px !important; /* Немного воздуха между подсказкой и кнопкой */
+            margin-bottom: -6px !important; 
         }
         #absoluteGameStage .action-row {
-            margin-top: 16px !important; /* Дополнительно сдвигаем саму кнопку ниже */
+            margin-top: 16px !important; 
         }
 
         /* 🚫 ИЗНИЧТОЖАЕМ ЗАРАЗУ: ЖЕСТКАЯ БЛОКИРОВКА ОСТАЛЬНЫХ ИГР 🚫 */
@@ -13666,16 +13666,21 @@ const AbsoluteGame = (function() {
             font-weight: 900; font-size: 16px; text-transform: uppercase;
             border: 2px solid rgba(255,255,255,0.2); border-radius: 14px;
             box-shadow: 0 6px 0 #6c5ce7, 0 10px 15px rgba(0,0,0,0.4);
-            transition: transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.5s cubic-bezier(0.2, 0.8, 0.2, 1), filter 0.5s ease, background-color 0.5s ease;
+            
+            /* Стартовая точка для фильтра */
+            filter: brightness(1); 
+            
+            transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.3s cubic-bezier(0.2, 0.8, 0.2, 1), filter 0.3s ease, background-color 0.3s ease;
             cursor: pointer; display: flex; align-items: center; justify-content: center;
             text-shadow: 0 1px 2px rgba(0,0,0,0.3); outline: none; margin-bottom: 5px;
             position: relative; z-index: 100;
         }
         .abs-btn-roll:active:not(:disabled) {
-            transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1), filter 0.2s ease, background-color 0.2s ease;
+            transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.15s cubic-bezier(0.4, 0, 0.2, 1), filter 0.15s ease, background-color 0.15s ease;
             transform: translateY(8px);
             box-shadow: 0 0 0 #6c5ce7, 0 2px 4px rgba(0,0,0,0.4);
-            filter: brightness(0.2) !important;
+            /* Мягкое затенение вместо черного провала */
+            filter: brightness(0.85) !important;
         }
         .abs-btn-roll:disabled {
             transform: translateY(6px);
@@ -13691,11 +13696,10 @@ const AbsoluteGame = (function() {
         }
         .abs-btn-roll.gold:active:not(:disabled) {
             box-shadow: 0 0 0 #b3a125, 0 4px 5px rgba(0,0,0,0.4);
+            filter: brightness(0.85) !important;
         }
 
         /* === ИДЕАЛЬНАЯ ГЕОМЕТРИЯ НА 42 ГРАНИ === */
-
-        /* Базовая грань: чистый 3D, никаких фильтров и никакого transform в transition! */
         .absolute-face {
             position: absolute;
             width: 38px !important; height: 38px !important;
@@ -13709,35 +13713,30 @@ const AbsoluteGame = (function() {
             color: rgba(255, 255, 255, 0.75);
             touch-action: none;
             
-            /* Плавность только для цвета, теней и прозрачности. Transform управляется ТОЛЬКО через JS! */
             transition: background 0.4s, border-color 0.4s, box-shadow 0.4s, opacity 0.4s, transform 0.4s ease;
             transform-style: preserve-3d;
             will-change: transform, opacity;
         }
 
-        /* 🚀 КЛАСС ДЛЯ ПРИНУДИТЕЛЬНОЙ СБОРКИ (МАГИЯ ВЛЕТА) */
+        /* 🚀 КЛАСС ДЛЯ ПРИНУДИТЕЛЬНОЙ СБОРКИ */
         .abs-assembling {
-            /* Здесь transform нужен, чтобы грани плавно долетели из космоса */
             transition: transform 3.0s cubic-bezier(0.1, 0.8, 0.2, 1), 
                         opacity 2.5s ease !important;
-            pointer-events: none; /* Пока летят — сквозь них проходят клики */
+            pointer-events: none; 
         }
 
-        /* 🛡️ КЛАСС-ЗАГЛУШКА: отключаем блюр, чтобы не сплющило симбиоты во время 3D-полета */
+        /* 🛡️ КЛАСС-ЗАГЛУШКА */
         .no-blur {
             filter: none !important;
         }
-     
-    /* 🚀 ФИКС МОБИЛЬНЫХ ТАПОВ: Убиваем системные задержки и двойные клики */
-    touch-action: none !important; 
-    -webkit-tap-highlight-color: transparent !important;
-    user-select: none !important;
+        
+        /* 🚀 ФИКС МОБИЛЬНЫХ ТАПОВ: Защищено селектором! */
+        #absoluteGameStage * {
+            touch-action: none !important; 
+            -webkit-tap-highlight-color: transparent !important;
+            user-select: none !important;
+        }
 
-    /* 🚀 ПЛАВНОСТЬ ДЛЯ ФИЧИ: Добавили transform и filter, чтобы блюр и глубина были мягкими */
-    transition: background 0.4s ease, border-color 0.4s ease, box-shadow 0.4s ease, opacity 0.4s ease, transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1), filter 0.6s ease !important;
-}
-
-       
         /* === ЯДРО === */
         #absoluteCore {
             position: absolute !important;
@@ -13755,14 +13754,14 @@ const AbsoluteGame = (function() {
             display: flex !important;
             align-items: center !important;
             position: fixed !important; 
-            bottom: 24px !important; /* Подняли ровно на уровень кнопок навигации */
+            bottom: 24px !important; 
             left: 50% !important; 
             transform: translateX(-50%) !important;
             z-index: 10000 !important; 
             pointer-events: auto !important; 
         }
         
-        /* Скрываем мусор других игр и Чертогов, чтобы не было наслоений */
+        /* Скрываем мусор других игр и Чертогов */
         body.is-abs-game-active .header-wrapper,
         body.is-abs-game-active #gameUI #answer-box,
         body.is-abs-game-active .subtitle-row,
@@ -13774,7 +13773,7 @@ const AbsoluteGame = (function() {
         #abs-debug-container {
             display: none; 
             position: fixed !important;
-            bottom: 70px !important; /* Над надписью АБСОЛЮТ */
+            bottom: 70px !important; 
             left: 50% !important;
             transform: translateX(-50%) scale(0.85) !important;
             z-index: 9999999 !important; 
@@ -13796,7 +13795,8 @@ const AbsoluteGame = (function() {
             opacity: 0 !important; 
             pointer-events: none !important; 
         }
-            /* 🌌 АНИМАЦИЯ СБОРКИ И РАЗБОРКИ 🌌 */
+        
+        /* 🌌 АНИМАЦИЯ СБОРКИ И РАЗБОРКИ 🌌 */
         .abs-face-assembling {
             transition: transform 3.0s cubic-bezier(0.16, 1, 0.3, 1), opacity 2.5s ease !important;
         }
@@ -14459,7 +14459,6 @@ const AbsoluteGame = (function() {
 
     function updateScoreAndTension() {
         let pScore = 0; let oScore = 0;
-        let gLocks = 0; let rLocks = 0;
 
         facesData.forEach(fd => {
             if (fd.layers === 3) {
@@ -14480,66 +14479,58 @@ const AbsoluteGame = (function() {
                 core.innerHTML = `
                     <style>
                         @keyframes nebula-breathe {
-                            /* 👇 ИСПРАВЛЕНО: Убрали translate, оставили только scale для чистой пульсации */
                             0% { transform: scale(0.85); opacity: var(--nebula-op); }
                             50% { transform: scale(1.1); opacity: calc(var(--nebula-op) * 1.5); }
                             100% { transform: scale(0.85); opacity: var(--nebula-op); }
                         }
                     </style>
-                    <div id="coreAuraWrapper" style="position: absolute; top: 50%; left: 50%; transform-style: preserve-3d; z-index: 1;">
-                        <div id="coreAura" style="position: absolute; margin: -110px 0 0 -110px; width: 220px; height: 220px; border-radius: 50%; pointer-events: none; transition: background 1s ease; animation: nebula-breathe 7s ease-in-out infinite;"></div>
+                    <div id="wrapperBack" style="position: absolute; top: 50%; left: 50%; transform-style: preserve-3d;">
+                        <div id="coreAuraBack" style="position: absolute; margin: -120px 0 0 -120px; width: 240px; height: 240px; border-radius: 50%; pointer-events: none; transition: background 1s ease; animation: nebula-breathe 7s ease-in-out infinite;"></div>
                     </div>
+                    
                     <div id="pSphere" style="position: absolute; top: 50%; left: 50%; border-radius: 50%; transform-style: preserve-3d; background: #fff; z-index: 10;"></div>
                     <div id="oSphere" style="position: absolute; top: 50%; left: 50%; border-radius: 50%; transform-style: preserve-3d; background: #050816; z-index: 5;"></div>
+                    
+                    <div id="wrapperFront" style="position: absolute; top: 50%; left: 50%; transform-style: preserve-3d;">
+                        <div id="coreAuraFront" style="position: absolute; margin: -120px 0 0 -120px; width: 240px; height: 240px; border-radius: 50%; pointer-events: none; transition: background 1s ease; animation: nebula-breathe 6s ease-in-out infinite;"></div>
+                    </div>
                 `;
                 safeTimeout(() => { updateTransform(); }, 50); 
             }
 
-            const nebula = document.getElementById('coreAura');
+            const nebulaBack = document.getElementById('coreAuraBack');
+            const nebulaFront = document.getElementById('coreAuraFront');
             const pSph = document.getElementById('pSphere');
             const oSph = document.getElementById('oSphere');
 
-            // --- 🔧 НАСТРОЙКИ ТУМАННОСТИ 🔧 ---
-            const baseDensity = 0.25; // Изначальная густота (от 0 до 1)
-            const blurPower = 35;     // Сила размытия (в px)
-            // --------------------------------
-
-            // 🧬 ЛОГИКА ЦВЕТА ТУМАННОСТИ (Смешивание с индиго)
-            if (nebula) {
+            if (nebulaBack && nebulaFront) {
                 const totalLocks = pScore + oScore;
-                const pWeight = totalLocks > 0 ? pScore / 16 : 0; // Вес игрока
-                const oWeight = totalLocks > 0 ? oScore / 16 : 0; // Вес оракула
+                const pWeight = totalLocks > 0 ? pScore / 16 : 0; 
+                const oWeight = totalLocks > 0 ? oScore / 16 : 0; 
                 
-                // Базовый Индиго: rgb(99, 102, 241)
                 const pRGB = myColor === 'green' ? [34, 197, 94] : [239, 68, 68];
                 const oRGB = oracleColor === 'green' ? [34, 197, 94] : [239, 68, 68];
 
-                // Смешиваем каналы: Индиго + вклад Игрока + вклад Оракула
                 const r = Math.round(99 * (1 - pWeight - oWeight) + pRGB[0] * pWeight + oRGB[0] * oWeight);
                 const g = Math.round(102 * (1 - pWeight - oWeight) + pRGB[1] * pWeight + oRGB[1] * oWeight);
                 const b = Math.round(241 * (1 - pWeight - oWeight) + pRGB[2] * pWeight + oRGB[2] * oWeight);
 
-                nebula.style.setProperty('--nebula-op', baseDensity);
-                nebula.style.filter = 'none'; // Жестко отключаем блюр
+                // Задняя туманность плотная
+                nebulaBack.style.setProperty('--nebula-op', '0.25');
+                nebulaBack.style.background = `radial-gradient(circle, rgba(${r}, ${g}, ${b}, 0.9) 0%, rgba(${r}, ${g}, ${b}, 0) 70%)`;
                 
-                // 👇 ИСПРАВЛЕНО: Удалили строку с transform, которая делала из туманности "блин"
-                
-                nebula.style.background = `radial-gradient(circle, rgba(${r}, ${g}, ${b}, 0.8) 0%, rgba(${r}, ${g}, ${b}, 0) 70%)`;
+                // Передняя туманность полупрозрачная (создает эффект погружения в туман)
+                nebulaFront.style.setProperty('--nebula-op', '0.12');
+                nebulaFront.style.background = `radial-gradient(circle, rgba(${r}, ${g}, ${b}, 0.6) 0%, rgba(${r}, ${g}, ${b}, 0) 70%)`;
             }
 
             // --- ЛОГИКА СИМБИОТОВ ---
             const pRatio = Math.min(1, pScore / 16); 
             const oRatio = Math.min(1, oScore / 16);
 
-            // Функция для расчета текущего цвета: Свет (для Зеленых) или Тьма (для Красных)
             const getSymbioteRGB = (color, ratio) => {
-                if (color === 'green') {
-                    // От Белого к Зеленому
-                    return `${Math.round(255 + (34 - 255) * ratio)}, ${Math.round(255 + (197 - 255) * ratio)}, ${Math.round(255 + (94 - 255) * ratio)}`;
-                } else {
-                    // От Черного к Красному
-                    return `${Math.round(20 + (239 - 20) * ratio)}, ${Math.round(20 + (68 - 20) * ratio)}, ${Math.round(25 + (68 - 25) * ratio)}`;
-                }
+                if (color === 'green') return `${Math.round(255 + (34 - 255) * ratio)}, ${Math.round(255 + (197 - 255) * ratio)}, ${Math.round(255 + (94 - 255) * ratio)}`;
+                else return `${Math.round(20 + (239 - 20) * ratio)}, ${Math.round(20 + (68 - 20) * ratio)}, ${Math.round(25 + (68 - 25) * ratio)}`;
             };
 
             const pCurRGB = getSymbioteRGB(myColor, pRatio);
@@ -14553,15 +14544,8 @@ const AbsoluteGame = (function() {
             if (pSph) {
                 pSph.style.width = `${pSize}px`; pSph.style.height = `${pSize}px`;
                 pSph.style.marginLeft = `${-pSize / 2}px`; pSph.style.marginTop = `${-pSize / 2}px`;
-
-                // 👇 ФИКС ПРОЗРАЧНОСТИ 👇
-                if (myColor === 'green') {
-                    // Светлая фракция: Непробиваемое белое ядро
-                    pSph.style.background = `radial-gradient(circle at 30% 30%, #ffffff 0%, rgba(${pCurRGB}, 1) 40%, rgba(${pCurRGB}, 0.9) 80%, #000 100%)`;
-                } else {
-                    // Темная фракция: Плотная тьма (alpha: 1) с серым 3D-бликом
-                    pSph.style.background = `radial-gradient(circle at 30% 30%, #555555 0%, rgba(${pCurRGB}, 1) 40%, rgba(${pCurRGB}, 0.95) 80%, #000 100%)`;
-                }
+                if (myColor === 'green') pSph.style.background = `radial-gradient(circle at 30% 30%, #ffffff 0%, rgba(${pCurRGB}, 1) 40%, rgba(${pCurRGB}, 0.9) 80%, #000 100%)`;
+                else pSph.style.background = `radial-gradient(circle at 30% 30%, #555555 0%, rgba(${pCurRGB}, 1) 40%, rgba(${pCurRGB}, 0.95) 80%, #000 100%)`;
                 pSph.style.boxShadow = `0 0 40px ${5 + pScore*2}px rgba(${pTargetRArr}, ${0.5 * pRatio}), inset -2px -2px 10px rgba(0,0,0,0.5)`;
                 pSph.style.filter = 'blur(1.5px)';
             }
@@ -14569,13 +14553,8 @@ const AbsoluteGame = (function() {
             if (oSph) {
                 oSph.style.width = `${oSize}px`; oSph.style.height = `${oSize}px`;
                 oSph.style.marginLeft = `${-oSize / 2}px`; oSph.style.marginTop = `${-oSize / 2}px`;
-
-                // 👇 ФИКС ПРОЗРАЧНОСТИ 👇
-                if (oracleColor === 'green') {
-                    oSph.style.background = `radial-gradient(circle at 30% 30%, #ffffff 0%, rgba(${oCurRGB}, 1) 40%, rgba(${oCurRGB}, 0.9) 80%, #000 100%)`;
-                } else {
-                    oSph.style.background = `radial-gradient(circle at 30% 30%, #555555 0%, rgba(${oCurRGB}, 1) 40%, rgba(${oCurRGB}, 0.95) 80%, #000 100%)`;
-                }
+                if (oracleColor === 'green') oSph.style.background = `radial-gradient(circle at 30% 30%, #ffffff 0%, rgba(${oCurRGB}, 1) 40%, rgba(${oCurRGB}, 0.9) 80%, #000 100%)`;
+                else oSph.style.background = `radial-gradient(circle at 30% 30%, #555555 0%, rgba(${oCurRGB}, 1) 40%, rgba(${oCurRGB}, 0.95) 80%, #000 100%)`;
                 oSph.style.boxShadow = `0 0 40px ${5 + oScore*2}px rgba(${oTargetRArr}, ${0.5 * oRatio}), inset -2px -2px 10px rgba(0,0,0,0.8)`;
                 oSph.style.filter = 'blur(1.5px)';
             }
@@ -14673,20 +14652,18 @@ const AbsoluteGame = (function() {
 
     // === БЛОК ОБНОВЛЕНИЯ ПОЗИЦИЙ И СЧЕТА (БЕЗОПАСНЫЙ) ===
     function updateTransform() {
-        // 1. ЗАЩИТА: Если идет сборка, не мешаем
         if (typeof isAssembling !== 'undefined' && isAssembling) return; 
 
         const obj = document.getElementById('absoluteObj');
         const pSph = document.getElementById('pSphere');
         const oSph = document.getElementById('oSphere');
         
-        // 👇 ВОТ ЭТА СТРОКА ПОТЕРЯЛАСЬ! Без нее скрипт падает 👇
-        const auraWrap = document.getElementById('coreAuraWrapper'); 
+        // Наши новые обертки для сэндвича
+        const wrapBack = document.getElementById('wrapperBack');
+        const wrapFront = document.getElementById('wrapperFront');
 
-        // 2. Вращаем саму невидимую 3D-сферу (грани вращаются вместе с ней автоматически!)
         if(obj) obj.style.transform = `rotateX(${rotX}deg) rotateY(${rotY}deg) rotateZ(${rotZ}deg)`;
 
-        // 3. Формула обратного вращения ТОЛЬКО для симбиотов внутри, чтобы они не крутились как в стиральной машине
         const invRot = `rotateZ(${-rotZ}deg) rotateY(${-rotY}deg) rotateX(${-rotX}deg)`;
         
         let pPos = 'translate3d(-20px, -10px, 20px)'; 
@@ -14704,11 +14681,13 @@ const AbsoluteGame = (function() {
             else if (oLocks >= 16) oPos = 'translate3d(0, 0, 0)';
         }
 
+        // ВЕРНУЛИ ВРАЩЕНИЕ СИМБИОТАМ!
         if(pSph) pSph.style.transform = `${pPos} ${invRot}`;
         if(oSph) oSph.style.transform = `${oPos} ${invRot}`;
 
-        // Теперь auraWrap существует, и скрипт отработает как по маслу!
-        if(auraWrap) auraWrap.style.transform = `translateZ(-10px) ${invRot}`;
+        // 🔥 МАГИЯ СЭНДВИЧА: Задний туман глубоко внутри, передний туман прямо перед глазами.
+        if(wrapBack) wrapBack.style.transform = `${invRot} translateZ(-45px)`;
+        if(wrapFront) wrapFront.style.transform = `${invRot} translateZ(45px)`;
     }
 
     function initDragEvents() {
@@ -14814,31 +14793,41 @@ const AbsoluteGame = (function() {
         const obj = document.getElementById('absoluteObj');
         const pSph = document.getElementById('pSphere');
         const oSph = document.getElementById('oSphere');
-        const auraWrap = document.getElementById('coreAuraWrapper'); // 👈 ДОБАВИЛИ
+        
+        // 👇 БЕРЕМ НОВЫЕ СЛОИ СЭНДВИЧА ВМЕСТО СТАРОГО auraWrap 👇
+        const wrapBack = document.getElementById('wrapperBack');
+        const wrapFront = document.getElementById('wrapperFront');
 
         if (obj) {
             obj.style.transition = 'none';
             obj.style.transform = `rotateX(${currX}deg) rotateY(${currY}deg) rotateZ(${currZ}deg)`;
+            
+            // Задаем стартовые позиции для анимации возврата
             let invCurr = `rotateZ(${-currZ}deg) rotateY(${-currY}deg) rotateX(${-currX}deg)`;
             if(pSph) { pSph.style.transition = 'none'; pSph.style.transform = `translate3d(-20px, -10px, 20px) ${invCurr}`; }
             if(oSph) { oSph.style.transition = 'none'; oSph.style.transform = `translate3d(20px, 10px, -20px) ${invCurr}`; }
-            if(auraWrap) { auraWrap.style.transition = 'none'; auraWrap.style.transform = `translateZ(-10px) ${invCurr}`; } // 👈 ДОБАВИЛИ
+            if(wrapBack) { wrapBack.style.transition = 'none'; wrapBack.style.transform = `${invCurr} translateZ(-45px)`; }
+            if(wrapFront) { wrapFront.style.transition = 'none'; wrapFront.style.transform = `${invCurr} translateZ(45px)`; }
             
             void obj.offsetWidth; 
 
+            // Запускаем плавный полет к нужной грани
             obj.style.transition = 'transform 0.8s cubic-bezier(0.25, 0.1, 0.25, 1)';
             obj.style.transform = `rotateX(${targetRotX}deg) rotateY(${targetRotY}deg) rotateZ(${targetRotZ}deg)`;
             
+            // Симбиоты и туман летят синхронно со сферой
             let invTarget = `rotateZ(${-targetRotZ}deg) rotateY(${-targetRotY}deg) rotateX(${-targetRotX}deg)`;
             if(pSph) { pSph.style.transition = 'transform 0.8s cubic-bezier(0.25, 0.1, 0.25, 1)'; pSph.style.transform = `translate3d(-20px, -10px, 20px) ${invTarget}`; }
             if(oSph) { oSph.style.transition = 'transform 0.8s cubic-bezier(0.25, 0.1, 0.25, 1)'; oSph.style.transform = `translate3d(20px, 10px, -20px) ${invTarget}`; }
-            if(auraWrap) { auraWrap.style.transition = 'transform 0.8s cubic-bezier(0.25, 0.1, 0.25, 1)'; auraWrap.style.transform = `translateZ(-10px) ${invTarget}`; } // 👈 ДОБАВИЛИ
+            if(wrapBack) { wrapBack.style.transition = 'transform 0.8s cubic-bezier(0.25, 0.1, 0.25, 1)'; wrapBack.style.transform = `${invTarget} translateZ(-45px)`; }
+            if(wrapFront) { wrapFront.style.transition = 'transform 0.8s cubic-bezier(0.25, 0.1, 0.25, 1)'; wrapFront.style.transform = `${invTarget} translateZ(45px)`; }
 
             safeTimeout(() => { 
                 if(obj) obj.style.transition = 'none'; 
                 if(pSph) pSph.style.transition = 'width 1s, height 1s, margin 1s, background 1s, box-shadow 1s';
                 if(oSph) oSph.style.transition = 'width 1s, height 1s, margin 1s, background 1s, box-shadow 1s';
-                if(auraWrap) auraWrap.style.transition = 'none'; // 👈 ДОБАВИЛИ
+                if(wrapBack) wrapBack.style.transition = 'none'; 
+                if(wrapFront) wrapFront.style.transition = 'none'; 
                 rotX = targetRotX; rotY = targetRotY; rotZ = targetRotZ; 
                 pokeEngine(); 
             }, 850);
@@ -15005,7 +14994,9 @@ const AbsoluteGame = (function() {
         const pSph = document.getElementById('pSphere');
         const oSph = document.getElementById('oSphere');
         const scene = document.getElementById('absoluteScene');
-        const auraWrap = document.getElementById('coreAuraWrapper'); 
+        
+        const wrapBack = document.getElementById('wrapperBack'); 
+        const wrapFront = document.getElementById('wrapperFront'); 
         
         document.querySelectorAll('.absolute-face').forEach(f => {
             const faceIdx = parseInt(f.id.replace('abs-face-', ''));
@@ -15032,7 +15023,8 @@ const AbsoluteGame = (function() {
             const invRot = `rotateZ(0deg) rotateY(${-overY}deg) rotateX(${-overX}deg)`;
             if(pSph) { pSph.style.transition = `transform ${flightDur / 1000}s cubic-bezier(0.25, 0.1, 0.4, 1)`; pSph.style.transform = `translate3d(-20px, -10px, 20px) ${invRot}`; }
             if(oSph) { oSph.style.transition = `transform ${flightDur / 1000}s cubic-bezier(0.25, 0.1, 0.4, 1)`; oSph.style.transform = `translate3d(20px, 10px, -20px) ${invRot}`; }
-            if(auraWrap) { auraWrap.style.transition = `transform ${flightDur / 1000}s cubic-bezier(0.25, 0.1, 0.4, 1)`; auraWrap.style.transform = `translateZ(-10px) ${invRot}`; } 
+            if(wrapBack) { wrapBack.style.transition = `transform ${flightDur / 1000}s cubic-bezier(0.25, 0.1, 0.4, 1)`; wrapBack.style.transform = `${invRot} translateZ(-45px)`; }
+            if(wrapFront) { wrapFront.style.transition = `transform ${flightDur / 1000}s cubic-bezier(0.25, 0.1, 0.4, 1)`; wrapFront.style.transform = `${invRot} translateZ(45px)`; }
         }
 
         safeTimeout(() => { triggerImpact('heavy'); playHeavyThud(); }, flightDur);
@@ -15045,7 +15037,8 @@ const AbsoluteGame = (function() {
                 const invRot2 = `rotateZ(${-rotZ}deg) rotateY(${-rotY}deg) rotateX(${-rotX}deg)`;
                 if(pSph) { pSph.style.transition = `transform ${wobbleDur / 1000}s cubic-bezier(0.34, 1.56, 0.64, 1)`; pSph.style.transform = `translate3d(-20px, -10px, 20px) ${invRot2}`; }
                 if(oSph) { oSph.style.transition = `transform ${wobbleDur / 1000}s cubic-bezier(0.34, 1.56, 0.64, 1)`; oSph.style.transform = `translate3d(20px, 10px, -20px) ${invRot2}`; }
-                if(auraWrap) { auraWrap.style.transition = `transform ${wobbleDur / 1000}s cubic-bezier(0.34, 1.56, 0.64, 1)`; auraWrap.style.transform = `translateZ(-10px) ${invRot2}`; } 
+                if(wrapBack) { wrapBack.style.transition = `transform ${wobbleDur / 1000}s cubic-bezier(0.34, 1.56, 0.64, 1)`; wrapBack.style.transform = `${invRot2} translateZ(-45px)`; }
+                if(wrapFront) { wrapFront.style.transition = `transform ${wobbleDur / 1000}s cubic-bezier(0.34, 1.56, 0.64, 1)`; wrapFront.style.transform = `${invRot2} translateZ(45px)`; }
             }
         }, flightDur);
         
@@ -15053,7 +15046,8 @@ const AbsoluteGame = (function() {
             if(obj) { obj.style.transition = 'none'; }
             if(pSph) pSph.style.transition = 'width 1s, height 1s, margin 1s, background 1s, box-shadow 1s';
             if(oSph) oSph.style.transition = 'width 1s, height 1s, margin 1s, background 1s, box-shadow 1s';
-            if(auraWrap) auraWrap.style.transition = 'none'; 
+            if(wrapBack) wrapBack.style.transition = 'none';
+            if(wrapFront) wrapFront.style.transition = 'none';
             
             document.querySelectorAll('.absolute-face').forEach(f => {
                 f.style.transition = 'background 0.3s, border 0.3s, box-shadow 0.3s, opacity 0.4s, transform 0.4s ease, filter 0.4s ease';
@@ -15331,7 +15325,9 @@ const AbsoluteGame = (function() {
         const pSph = document.getElementById('pSphere');
         const oSph = document.getElementById('oSphere');
         const scene = document.getElementById('absoluteScene');
-        const auraWrap = document.getElementById('coreAuraWrapper'); 
+        
+        const wrapBack = document.getElementById('wrapperBack'); 
+        const wrapFront = document.getElementById('wrapperFront'); 
         
         document.querySelectorAll('.absolute-face').forEach(f => {
             const faceIdx = parseInt(f.id.replace('abs-face-', ''));
@@ -15358,7 +15354,8 @@ const AbsoluteGame = (function() {
             const invRot = `rotateZ(0deg) rotateY(${-overY}deg) rotateX(${-overX}deg)`;
             if(pSph) { pSph.style.transition = `transform ${flightDur / 1000}s cubic-bezier(0.25, 0.1, 0.4, 1)`; pSph.style.transform = `translate3d(-20px, -10px, 20px) ${invRot}`; }
             if(oSph) { oSph.style.transition = `transform ${flightDur / 1000}s cubic-bezier(0.25, 0.1, 0.4, 1)`; oSph.style.transform = `translate3d(20px, 10px, -20px) ${invRot}`; }
-            if(auraWrap) { auraWrap.style.transition = `transform ${flightDur / 1000}s cubic-bezier(0.25, 0.1, 0.4, 1)`; auraWrap.style.transform = `translateZ(-10px) ${invRot}`; } 
+            if(wrapBack) { wrapBack.style.transition = `transform ${flightDur / 1000}s cubic-bezier(0.25, 0.1, 0.4, 1)`; wrapBack.style.transform = `${invRot} translateZ(-45px)`; }
+            if(wrapFront) { wrapFront.style.transition = `transform ${flightDur / 1000}s cubic-bezier(0.25, 0.1, 0.4, 1)`; wrapFront.style.transform = `${invRot} translateZ(45px)`; }
         }
 
         safeTimeout(() => { triggerImpact('heavy'); playHeavyThud(); }, flightDur);
@@ -15371,7 +15368,8 @@ const AbsoluteGame = (function() {
                 const invRot2 = `rotateZ(${-rotZ}deg) rotateY(${-rotY}deg) rotateX(${-rotX}deg)`;
                 if(pSph) { pSph.style.transition = `transform ${wobbleDur / 1000}s cubic-bezier(0.34, 1.56, 0.64, 1)`; pSph.style.transform = `translate3d(-20px, -10px, 20px) ${invRot2}`; }
                 if(oSph) { oSph.style.transition = `transform ${wobbleDur / 1000}s cubic-bezier(0.34, 1.56, 0.64, 1)`; oSph.style.transform = `translate3d(20px, 10px, -20px) ${invRot2}`; }
-                if(auraWrap) { auraWrap.style.transition = `transform ${wobbleDur / 1000}s cubic-bezier(0.34, 1.56, 0.64, 1)`; auraWrap.style.transform = `translateZ(-10px) ${invRot2}`; } 
+                if(wrapBack) { wrapBack.style.transition = `transform ${wobbleDur / 1000}s cubic-bezier(0.34, 1.56, 0.64, 1)`; wrapBack.style.transform = `${invRot2} translateZ(-45px)`; }
+                if(wrapFront) { wrapFront.style.transition = `transform ${wobbleDur / 1000}s cubic-bezier(0.34, 1.56, 0.64, 1)`; wrapFront.style.transform = `${invRot2} translateZ(45px)`; }
             }
         }, flightDur);
         
@@ -15379,7 +15377,8 @@ const AbsoluteGame = (function() {
             if(obj) { obj.style.transition = 'none'; }
             if(pSph) pSph.style.transition = 'width 1s, height 1s, margin 1s, background 1s, box-shadow 1s';
             if(oSph) oSph.style.transition = 'width 1s, height 1s, margin 1s, background 1s, box-shadow 1s';
-            if(auraWrap) auraWrap.style.transition = 'none'; 
+            if(wrapBack) wrapBack.style.transition = 'none';
+            if(wrapFront) wrapFront.style.transition = 'none';
             
             document.querySelectorAll('.absolute-face').forEach(f => {
                 f.style.transition = 'background 0.3s, border 0.3s, box-shadow 0.3s, opacity 0.4s, transform 0.4s ease, filter 0.4s ease';
