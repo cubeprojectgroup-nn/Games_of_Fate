@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Игры Судьбы. v0.9.0.27</title>
+    <title>Игры Судьбы. v0.9.0.29</title>
     <!-- Эмодзи-иконка для вкладки браузера -->
     <link rel="icon" href='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">🔮</text></svg>'>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
@@ -3215,7 +3215,7 @@ setInterval(() => {
         <div style="position: absolute; bottom: 15px; left: 15px; font-size: 10px; color: rgba(162, 155, 254, 0.6); font-weight: bold; letter-spacing: 1px; text-transform: uppercase; z-index: 500;">
             <a href="https://t.me/Antis_Corpus" style="color: inherit; text-decoration: none;">t.me/Antis_Corpus</a>
         </div>
-        <div class="version" style="position: absolute; bottom: 15px; right: 15px; pointer-events: none; z-index: 500;">v0.9.0.27</div>
+        <div class="version" style="position: absolute; bottom: 15px; right: 15px; pointer-events: none; z-index: 500;">v0.9.0.29</div>
     </div>
 
     <!-- ========================================== -->
@@ -13546,6 +13546,92 @@ const AbsoluteGame = (function() {
         gameTimeouts = [];
     }
 
+    // === ГЛОБАЛЬНАЯ БЛОКИРОВКА (ТОЛЬКО КНОПКА "ДОМОЙ") ===
+    function lockNavigation(locked) {
+        if (typeof App !== 'undefined' && App.setTopNavLocked) {
+            App.setTopNavLocked(locked);
+        }
+
+        if (locked) {
+            document.body.classList.add('abs-home-locked');
+        } else {
+            document.body.classList.remove('abs-home-locked');
+        }
+
+        let style = document.getElementById('abs-lock-style');
+        if (!style) {
+            style = document.createElement('style');
+            style.id = 'abs-lock-style';
+            // 🔥 Бьем прицельно только по кнопке "Домой"
+            style.innerHTML = `
+                body.abs-home-locked [id*="home"],
+                body.abs-home-locked [id*="Home"] {
+                    opacity: 0.3 !important;
+                    filter: grayscale(1) !important;
+                    pointer-events: none !important;
+                    transition: opacity 0.3s ease, filter 0.3s ease !important;
+                }
+            `;
+            document.head.appendChild(style);
+        }
+
+        // 🔥 ФИЗИЧЕСКИЙ ЩИТ: 100x100 пикселей строго в левом нижнем углу
+        let shield = document.getElementById('abs-click-shield');
+        if (!shield) {
+            shield = document.createElement('div');
+            shield.id = 'abs-click-shield';
+            shield.style.cssText = 'position: fixed; bottom: 0; left: 0; width: 100px; height: 100px; z-index: 2147483647; background: transparent; touch-action: none; cursor: default;';
+            document.body.appendChild(shield);
+        }
+        shield.style.display = locked ? 'block' : 'none';
+    }
+
+    // === ЖИВЫЕ ГРАНИ И СТАБИЛИЗАЦИЯ ===
+    function updateFaceVisual(idx) {
+        const face = document.getElementById(`abs-face-${idx}`);
+        const fd = facesData[idx];
+        if(!face) return;
+        
+        face.style.animation = 'none'; 
+
+        if (fd.owner === null) {
+            face.style.background = '#151b29';
+            face.style.border = '2px solid rgba(99,102,241,0.25)';
+            // 🛡 Идеальная база для мягкой пульсации
+            face.style.boxShadow = '0 0 10px 2px rgba(129, 140, 248, 0.2), inset 0 0 8px rgba(0,0,0,0.8), 0 5px 15px rgba(0,0,0,0.6)';
+            face.innerHTML = `<span>${idx + 1}</span>`;
+            
+            // 🌀 ПУЛЬСАЦИЯ: Ускорена в 2 раза (цикл от 3 до 5 секунд)
+            if (typeof isAssembling !== 'undefined' && !isAssembling) {
+                setTimeout(() => {
+                    if (facesData[idx].owner === null) {
+                        face.style.animation = `neutral-pulse ${3 + Math.random() * 2}s infinite ease-in-out alternate`;
+                    }
+                }, 50);
+            }
+        } else {
+            let hex, bgColors, rgb;
+            if (fd.owner === 'green') { hex = '#22c55e'; bgColors = gColors; rgb = '34, 197, 94'; } 
+            else { hex = '#ef4444'; bgColors = rColors; rgb = '239, 68, 68'; }
+            
+            face.style.background = bgColors[fd.layers - 1];
+
+            if (fd.layers === 1) {
+                face.style.border = `2px solid rgba(${rgb}, 0.4)`;
+                face.style.boxShadow = `0 0 6px 2px rgba(${rgb}, 0.35), inset 0 0 10px rgba(0,0,0,0.7), 0 5px 15px rgba(0,0,0,0.6)`;
+                face.innerHTML = `<span>${idx + 1}</span>`;
+            } else if (fd.layers === 2) {
+                face.style.border = `2px solid rgba(${rgb}, 0.8)`;
+                face.style.boxShadow = `0 0 12px 4px rgba(${rgb}, 0.65), inset 0 0 10px rgba(${rgb}, 0.4), 0 5px 15px rgba(0,0,0,0.6)`;
+                face.innerHTML = `<span>${idx + 1}</span>`;
+            } else if (fd.layers === 3) {
+                face.style.border = `2px solid ${hex}`;
+                face.style.boxShadow = `0 0 20px 8px rgba(${rgb}, 0.95), inset 0 0 15px rgba(${rgb}, 0.7), 0 5px 15px rgba(0,0,0,0.6)`;
+                face.innerHTML = `<span>🔒</span>`;
+            }
+        }
+    }
+
     // === ХИРУРГИЧЕСКАЯ ИНИЦИАЛИЗАЦИЯ (Предварительное объявление) ===
     function executeOracleLogic() {
         // Тело функции будет ниже, но JS уже знает о ней
@@ -13563,6 +13649,18 @@ const AbsoluteGame = (function() {
     const rColors = ['#991b1b', '#dc2626', '#ef4444'];
 
 const animStyle = document.createElement('style');
+
+    // 🔥 МАГИЯ ПУЛЬСАЦИИ НЕЙТРАЛЬНЫХ ГРАНЕЙ 🔥
+    const pulseStyle = document.createElement('style');
+    pulseStyle.innerHTML = `
+        @keyframes neutral-pulse {
+            0% { box-shadow: 0 0 10px 2px rgba(129, 140, 248, 0.2), inset 0 0 8px rgba(0,0,0,0.8), 0 5px 15px rgba(0,0,0,0.6); }
+            50% { box-shadow: 0 0 25px 6px rgba(129, 140, 248, 0.5), inset 0 0 12px rgba(129, 140, 248, 0.3), 0 5px 15px rgba(0,0,0,0.6); border-color: rgba(129, 140, 248, 0.5); }
+            100% { box-shadow: 0 0 10px 2px rgba(129, 140, 248, 0.2), inset 0 0 8px rgba(0,0,0,0.8), 0 5px 15px rgba(0,0,0,0.6); }
+        }
+    `;
+    document.head.appendChild(pulseStyle);
+
     animStyle.innerHTML = `
         /* === 3D ФИКС И СЦЕНА === */
         #absoluteGameStage { 
@@ -13759,25 +13857,50 @@ const animStyle = document.createElement('style');
             display: none !important; 
         }
 
-        /* === ДЕБАГ КНОПКИ АБСОЛЮТА === */
+        /* === ДЕБАГ КНОПКИ АБСОЛЮТА (УЛЬТРА-КОМПАКТ) === */
         #abs-debug-container {
             display: none; 
             position: fixed !important;
-            bottom: 70px !important; 
+            bottom: 60px !important; 
             left: 50% !important;
-            transform: translateX(-50%) scale(0.85) !important;
+            transform: translateX(-50%) !important; 
             z-index: 9999999 !important; 
-            flex-wrap: wrap;
-            gap: 4px;
-            justify-content: center;
-            width: 95%;
-            max-width: 360px;
+            width: 98%;
+            max-width: 420px; /* Ужали панель */
             background: rgba(5, 8, 15, 0.95);
-            padding: 10px;
-            border-radius: 12px;
+            padding: 6px; /* Меньше отступы */
+            border-radius: 10px;
             border: 2px solid var(--magic-color);
             box-shadow: 0 10px 30px rgba(0,0,0,0.9);
             backdrop-filter: blur(8px);
+        }
+        
+        #abs-debug-grid {
+            display: grid;
+            grid-template-columns: repeat(14, 1fr) auto; /* 14 колонок цифр + 1 колонка эмодзи */
+            gap: 3px; /* Минимальные зазоры */
+            align-items: center;
+        }
+
+        /* Квадратные милипиздрические кнопочки для граней */
+        #abs-debug-container button {
+            width: 24px !important; /* Ужали ширину */
+            height: 24px !important; /* Ужали высоту */
+            padding: 0 !important;
+            font-size: 10px !important; /* Мелкий шрифт */
+            font-weight: bold;
+            border-radius: 4px !important;
+            display: flex; align-items: center; justify-content: center;
+            background: #2d3436; color: #fff; border: 1px solid #636e72;
+            cursor: pointer;
+            box-sizing: border-box;
+        }
+        
+        /* Кнопки действий (Эмодзи) */
+        #abs-debug-container button.debug-action-btn {
+            width: 32px !important; /* Чуть шире для эмодзи */
+            font-size: 14px !important;
+            margin-left: 4px; /* Отступ от цифр */
         }
         
         /* Прячем стандартную панель в Абсолюте */
@@ -13902,6 +14025,13 @@ const animStyle = document.createElement('style');
                 try {
                     const s = JSON.parse(stateStr);
                     if (s.gameState && s.gameState !== 'INIT') {
+                        
+                        // 🔥 ФИКС ЛИМБО: Если игрок сбежал во время/после финала, 
+                        // сбрасываем игру на стартовый экран!
+                        if (s.gameState === 'GAME_OVER') {
+                            return false; 
+                        }
+                        
                         myColor = s.myColor; 
                         oracleColor = s.oracleColor; 
                         
@@ -13910,7 +14040,6 @@ const animStyle = document.createElement('style');
                         pCells = s.pCells !== undefined ? s.pCells : pSlots.filter(x => x).length;
                         oCells = s.oCells !== undefined ? s.oCells : oSlots.filter(x => x).length;
                         
-                        // Строгая загрузка граней, чтобы не было сброса при изменении их количества
                         if (s.facesData && s.facesData.length === TOTAL_FACES) {
                             facesData = s.facesData;
                         } else {
@@ -13920,12 +14049,11 @@ const animStyle = document.createElement('style');
                         activeFaceIndex = s.activeFaceIndex !== undefined ? s.activeFaceIndex : -1; 
                         freeRemovalUsed = s.freeRemovalUsed || false;
                         
-                        // Умное восстановление: если вышли во время хода Оракула или вращения куба
                         if (s.gameState === 'ORACLE_TURN') {
                             gameState = 'ORACLE_TURN';
-                            safeTimeout(executeOracleLogic, 1000); // Пинаем Оракула доходить
+                            safeTimeout(executeOracleLogic, 1000); 
                         } else if (s.gameState === 'ROLL' || s.gameState === 'SHIFTING') {
-                            gameState = 'PLAYER_TURN'; // Защита от вечного зависания
+                            gameState = 'PLAYER_TURN'; 
                         } else {
                             gameState = s.gameState;
                         }
@@ -14443,7 +14571,6 @@ const animStyle = document.createElement('style');
         syncTurnHighlight();
     }
 
-
     function updateScoreAndTension() {
         let pScore = 0; let oScore = 0;
 
@@ -14452,17 +14579,20 @@ const animStyle = document.createElement('style');
                 if (fd.owner === myColor) pScore++;
                 else if (fd.owner === oracleColor) oScore++;
             }
-            syncDebugUI();
-        });
+        }); 
+        
+        syncDebugUI(); 
 
         const pLocks = document.getElementById('p-locks');
         const oLocks = document.getElementById('o-locks');
-        if (pLocks) pLocks.innerText = pScore;
-        if (oLocks) oLocks.innerText = oScore;
+        // Ограничиваем счетчик для интерфейса
+        if (pLocks) pLocks.innerText = Math.min(16, pScore);
+        if (oLocks) oLocks.innerText = Math.min(16, oScore);
 
         const core = document.getElementById('absoluteCore');
         if (core) {
-            if (!document.getElementById('pSphere')) {
+            // 🔥 Ищем именно туманность, а не сферу!
+            if (!document.getElementById('coreAuraBack')) {
                 core.innerHTML = `
                     <style>
                         @keyframes nebula-breathe {
@@ -14482,7 +14612,7 @@ const animStyle = document.createElement('style');
                         <div id="coreAuraFront" style="position: absolute; margin: -120px 0 0 -120px; width: 240px; height: 240px; border-radius: 50%; pointer-events: none; transition: background 1s ease; animation: nebula-breathe 6s ease-in-out infinite;"></div>
                     </div>
                 `;
-                safeTimeout(() => { updateTransform(); }, 50); 
+                safeTimeout(() => { if(typeof updateTransform === 'function') updateTransform(); }, 50); 
             }
 
             const nebulaBack = document.getElementById('coreAuraBack');
@@ -14491,9 +14621,12 @@ const animStyle = document.createElement('style');
             const oSph = document.getElementById('oSphere');
 
             if (nebulaBack && nebulaFront) {
-                const totalLocks = pScore + oScore;
-                const pWeight = totalLocks > 0 ? pScore / 16 : 0; 
-                const oWeight = totalLocks > 0 ? oScore / 16 : 0; 
+                // 🔥 ФИКС ТУМАННОСТИ: Ограничиваем базу до 16, чтобы RGB не уходил в минус при 42 гранях
+                const cp = Math.min(16, pScore);
+                const co = Math.min(16, oScore);
+                const tot = cp + co;
+                const pWeight = tot > 0 ? cp / tot : 0; 
+                const oWeight = tot > 0 ? co / tot : 0; 
                 
                 const pRGB = myColor === 'green' ? [34, 197, 94] : [239, 68, 68];
                 const oRGB = oracleColor === 'green' ? [34, 197, 94] : [239, 68, 68];
@@ -14502,57 +14635,227 @@ const animStyle = document.createElement('style');
                 const g = Math.round(102 * (1 - pWeight - oWeight) + pRGB[1] * pWeight + oRGB[1] * oWeight);
                 const b = Math.round(241 * (1 - pWeight - oWeight) + pRGB[2] * pWeight + oRGB[2] * oWeight);
 
-                // Задняя туманность плотная
                 nebulaBack.style.setProperty('--nebula-op', '0.25');
                 nebulaBack.style.background = `radial-gradient(circle, rgba(${r}, ${g}, ${b}, 0.9) 0%, rgba(${r}, ${g}, ${b}, 0) 70%)`;
                 
-                // Передняя туманность полупрозрачная (создает эффект погружения в туман)
                 nebulaFront.style.setProperty('--nebula-op', '0.12');
                 nebulaFront.style.background = `radial-gradient(circle, rgba(${r}, ${g}, ${b}, 0.6) 0%, rgba(${r}, ${g}, ${b}, 0) 70%)`;
             }
 
-            // --- ЛОГИКА СИМБИОТОВ ---
-            const pRatio = Math.min(1, pScore / 16); 
-            const oRatio = Math.min(1, oScore / 16);
+            // 🔥 ФИКС СИМБИОТОВ: Защита спящего режима (до выбора цвета)
+            if (!window.isAbsCinematicPlaying && gameState !== 'GAME_OVER') {
+                const pRatio = Math.min(1, pScore / 16); 
+                const oRatio = Math.min(1, oScore / 16);
 
-            const getSymbioteRGB = (color, ratio) => {
-                if (color === 'green') return `${Math.round(255 + (34 - 255) * ratio)}, ${Math.round(255 + (197 - 255) * ratio)}, ${Math.round(255 + (94 - 255) * ratio)}`;
-                else return `${Math.round(20 + (239 - 20) * ratio)}, ${Math.round(20 + (68 - 20) * ratio)}, ${Math.round(25 + (68 - 25) * ratio)}`;
-            };
+                const getSymbioteRGB = (color, ratio) => {
+                    if (color === 'green') return `${Math.round(255 + (34 - 255) * ratio)}, ${Math.round(255 + (197 - 255) * ratio)}, ${Math.round(255 + (94 - 255) * ratio)}`;
+                    else if (color === 'red') return `${Math.round(20 + (239 - 20) * ratio)}, ${Math.round(20 + (68 - 20) * ratio)}, ${Math.round(25 + (68 - 25) * ratio)}`;
+                    else return `99, 102, 241`; // Нейтральный цвет (Сон)
+                };
 
-            const pCurRGB = getSymbioteRGB(myColor, pRatio);
-            const oCurRGB = getSymbioteRGB(oracleColor, oRatio);
-            const pTargetRArr = myColor === 'green' ? '34,197,94' : '239,68,68';
-            const oTargetRArr = oracleColor === 'green' ? '34,197,94' : '239,68,68';
+                const pCurRGB = getSymbioteRGB(myColor, pRatio);
+                const oCurRGB = getSymbioteRGB(oracleColor, oRatio);
+                
+                // Заглушки на случай myColor = null
+                const pTargetRArr = myColor === 'green' ? '34,197,94' : (myColor === 'red' ? '239,68,68' : '99,102,241');
+                const oTargetRArr = oracleColor === 'green' ? '34,197,94' : (oracleColor === 'red' ? '239,68,68' : '99,102,241');
 
-            let pSize = 25 + pScore * 4; 
-            let oSize = 25 + oScore * 4; 
+                // Маленький размер, пока цвет не выбран
+                let pSize = myColor ? 25 + pScore * 4 : 20; 
+                let oSize = oracleColor ? 25 + oScore * 4 : 20; 
 
-            if (pSph) {
-                pSph.style.width = `${pSize}px`; pSph.style.height = `${pSize}px`;
-                pSph.style.marginLeft = `${-pSize / 2}px`; pSph.style.marginTop = `${-pSize / 2}px`;
-                if (myColor === 'green') pSph.style.background = `radial-gradient(circle at 30% 30%, #ffffff 0%, rgba(${pCurRGB}, 1) 40%, rgba(${pCurRGB}, 0.9) 80%, #000 100%)`;
-                else pSph.style.background = `radial-gradient(circle at 30% 30%, #555555 0%, rgba(${pCurRGB}, 1) 40%, rgba(${pCurRGB}, 0.95) 80%, #000 100%)`;
-                pSph.style.boxShadow = `0 0 40px ${5 + pScore*2}px rgba(${pTargetRArr}, ${0.5 * pRatio}), inset -2px -2px 10px rgba(0,0,0,0.5)`;
-                pSph.style.filter = 'blur(1.5px)';
-            }
-            
-            if (oSph) {
-                oSph.style.width = `${oSize}px`; oSph.style.height = `${oSize}px`;
-                oSph.style.marginLeft = `${-oSize / 2}px`; oSph.style.marginTop = `${-oSize / 2}px`;
-                if (oracleColor === 'green') oSph.style.background = `radial-gradient(circle at 30% 30%, #ffffff 0%, rgba(${oCurRGB}, 1) 40%, rgba(${oCurRGB}, 0.9) 80%, #000 100%)`;
-                else oSph.style.background = `radial-gradient(circle at 30% 30%, #555555 0%, rgba(${oCurRGB}, 1) 40%, rgba(${oCurRGB}, 0.95) 80%, #000 100%)`;
-                oSph.style.boxShadow = `0 0 40px ${5 + oScore*2}px rgba(${oTargetRArr}, ${0.5 * oRatio}), inset -2px -2px 10px rgba(0,0,0,0.8)`;
-                oSph.style.filter = 'blur(1.5px)';
+                if (pSph) {
+                    pSph.style.transition = 'width 0.8s cubic-bezier(0.34, 1.56, 0.64, 1), height 0.8s cubic-bezier(0.34, 1.56, 0.64, 1), margin 0.8s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.8s ease, background 0.8s ease';
+                    pSph.style.width = `${pSize}px`; pSph.style.height = `${pSize}px`;
+                    pSph.style.marginLeft = `${-pSize / 2}px`; pSph.style.marginTop = `${-pSize / 2}px`;
+                    
+                    if (myColor === 'green') pSph.style.background = `radial-gradient(circle at 30% 30%, #ffffff 0%, rgba(${pCurRGB}, 1) 40%, rgba(${pCurRGB}, 0.9) 80%, #000 100%)`;
+                    else if (myColor === 'red') pSph.style.background = `radial-gradient(circle at 30% 30%, #555555 0%, rgba(${pCurRGB}, 1) 40%, rgba(${pCurRGB}, 0.95) 80%, #000 100%)`;
+                    else pSph.style.background = `radial-gradient(circle at 30% 30%, #a5b4fc 0%, rgba(${pCurRGB}, 0.8) 40%, #000 100%)`; // Спящее состояние
+                    
+                    pSph.style.boxShadow = `0 0 40px ${myColor ? 5 + pScore*2 : 2}px rgba(${pTargetRArr}, ${myColor ? 0.5 * pRatio : 0.2}), inset -2px -2px 10px rgba(0,0,0,0.5)`;
+                    pSph.style.filter = 'blur(1.5px)';
+                }
+                
+                if (oSph) {
+                    oSph.style.transition = 'width 0.8s cubic-bezier(0.34, 1.56, 0.64, 1), height 0.8s cubic-bezier(0.34, 1.56, 0.64, 1), margin 0.8s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.8s ease, background 0.8s ease';
+                    oSph.style.width = `${oSize}px`; oSph.style.height = `${oSize}px`;
+                    oSph.style.marginLeft = `${-oSize / 2}px`; oSph.style.marginTop = `${-oSize / 2}px`;
+                    
+                    if (oracleColor === 'green') oSph.style.background = `radial-gradient(circle at 30% 30%, #ffffff 0%, rgba(${oCurRGB}, 1) 40%, rgba(${oCurRGB}, 0.9) 80%, #000 100%)`;
+                    else if (oracleColor === 'red') oSph.style.background = `radial-gradient(circle at 30% 30%, #555555 0%, rgba(${oCurRGB}, 1) 40%, rgba(${oCurRGB}, 0.95) 80%, #000 100%)`;
+                    else oSph.style.background = `radial-gradient(circle at 30% 30%, #a5b4fc 0%, rgba(${oCurRGB}, 0.8) 40%, #000 100%)`; // Спящее состояние
+                    
+                    oSph.style.boxShadow = `0 0 40px ${oracleColor ? 5 + oScore*2 : 2}px rgba(${oTargetRArr}, ${oracleColor ? 0.5 * oRatio : 0.2}), inset -2px -2px 10px rgba(0,0,0,0.8)`;
+                    oSph.style.filter = 'blur(1.5px)';
+                }
             }
         }
 
-        if (pScore >= 16 || oScore >= 16) {
+        // Запуск финала только если игра еще не окончена
+        if ((pScore >= 16 || oScore >= 16) && !window.isAbsCinematicPlaying && gameState !== 'GAME_OVER') {
+            window.isAbsCinematicPlaying = true; 
             gameState = 'GAME_OVER';
             const win = pScore >= 16;
-            if(typeof App !== 'undefined' && typeof App.showError === 'function') App.showError(win ? "ВЫ ПОКОРИЛИ АБСОЛЮТ!" : "ОРАКУЛ ЗАХВАТИЛ АБСОЛЮТ!");
-            updateActionBtn(win ? "<i class='fas fa-trophy'></i> ВЫ ПОБЕДИЛИ" : "<i class='fas fa-skull'></i> ПОРАЖЕНИЕ", false, win);
+            playEpicEnding(win);
         }
+    }
+
+    // 🎬 ФИНАЛЬНАЯ БИТВА НА ОРБИТЕ (Единственная и неповторимая версия)
+    function playEpicEnding(win) {
+        const t = LANG_DATA[GameState.lang];
+        const winnerColor = win ? myColor : oracleColor;
+        const loserColor = win ? oracleColor : myColor;
+
+        window.isAbsCinematicPlaying = true;
+        
+        if (typeof lockNavigation === 'function') lockNavigation(true);
+        document.body.style.pointerEvents = 'none';
+
+        window.currentCinematicId = (window.currentCinematicId || 0) + 1;
+        const myCinematicId = window.currentCinematicId;
+
+        const obj = document.getElementById('absoluteObj');
+        if (obj) obj.style.transition = 'none';
+
+        let cinematicFrame;
+        window.absSymbioteOffset = 1.0; 
+
+        const rotateCinematic = () => {
+            if (window.currentCinematicId !== myCinematicId) return; 
+            if (!window.isAbsCinematicPlaying) return;
+            rotY += 0.25; rotX += 0.05; 
+            
+            // Стягивание в центр растянуто на 18 секунд
+            window.absSymbioteOffset *= 0.992; 
+            
+            updateTransform();
+            cinematicFrame = requestAnimationFrame(rotateCinematic);
+        };
+        rotateCinematic();
+
+        let targets = [];
+        facesData.forEach((fd, i) => {
+            if (fd.owner !== winnerColor || fd.layers < 3) targets.push(i);
+        });
+        targets.sort(() => Math.random() - 0.5);
+
+        // 🔥 ЭПИЧНЫЙ ХРОНОМЕТРАЖ: 14 СЕКУНД НА ЗАХВАТ
+        const battleDuration = 14000;
+        const step = targets.length > 0 ? battleDuration / targets.length : 100;
+
+        const updateCinematicScore = () => {
+            let pScore = 0; let oScore = 0;
+            facesData.forEach(f => {
+                if (f.layers === 3) {
+                    if (f.owner === myColor) pScore++;
+                    else if (f.owner === oracleColor) oScore++;
+                }
+            });
+            const pLocks = document.getElementById('p-locks');
+            const oLocks = document.getElementById('o-locks');
+            if (pLocks) pLocks.innerText = Math.min(16, pScore);
+            if (oLocks) oLocks.innerText = Math.min(16, oScore);
+        };
+
+        targets.forEach((faceIdx, i) => {
+            safeTimeout(() => {
+                if (window.currentCinematicId !== myCinematicId) return;
+
+                const fd = facesData[faceIdx];
+                let exactColor = '#a5b4fc'; 
+                if (fd.owner) exactColor = getLayerColor(fd.owner, fd.layers);
+
+                const faceEl = document.getElementById(`abs-face-${faceIdx}`);
+                
+                if (faceEl) {
+                    // 🔥 РАЗДЕЛЯЕМ ТАЙМИНГИ: Трансформации плавные (0.4s), а цвета меняются быстрее
+                    faceEl.style.transition = 'transform 0.4s ease-in, filter 0.4s ease, background 0.2s, box-shadow 0.2s';
+                }
+
+                animateFaceBurn(faceIdx); 
+                if (typeof spawnBurnParticles === 'function') spawnBurnParticles(faceIdx, exactColor);
+                
+                safeTimeout(() => {
+                    if (window.currentCinematicId !== myCinematicId) return;
+                    fd.owner = winnerColor; 
+                    fd.layers = 3;
+                    
+                    if (faceEl) {
+                        // 🔥 ИДЕАЛЬНАЯ ПЛАВНОСТЬ: transform летит 0.6s с красивым изгибом, а цвета вбиваются за 0.1s!
+                        faceEl.style.transition = 'transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.1s, box-shadow 0.1s, border-color 0.1s, filter 0.4s ease';
+                    }
+                    
+                    updateFaceVisual(faceIdx); 
+                    animateFaceClaim(faceIdx);
+                    updateCinematicScore();
+                }, 600);
+
+            }, 200 + (i * step));
+        });
+
+        const winSph = win ? document.getElementById('pSphere') : document.getElementById('oSphere');
+        const loseSph = win ? document.getElementById('oSphere') : document.getElementById('pSphere');
+        
+        const winRGBStr = winnerColor === 'green' ? '34, 197, 94' : '239, 68, 68';
+        const winCenter = winnerColor === 'green' ? '#ffffff' : '#555555'; 
+
+        if (winSph) {
+            // 🔥 РАСТЯГИВАЕМ РОСТ СИМБИОТА НА ВСЕ 18 СЕКУНД
+            winSph.style.transition = 'width 18s cubic-bezier(0.4, 0, 0.2, 1), height 18s cubic-bezier(0.4, 0, 0.2, 1), margin 18s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 18s ease, filter 18s ease, background 18s ease';
+            winSph.style.zIndex = '100';
+            winSph.style.width = '230px'; 
+            winSph.style.height = '230px'; 
+            winSph.style.marginLeft = '-115px'; 
+            winSph.style.marginTop = '-115px';
+            winSph.style.filter = 'blur(0px)';
+            
+            winSph.style.background = `radial-gradient(circle at 30% 30%, ${winCenter} 0%, rgba(${winRGBStr}, 1) 40%, rgba(${winRGBStr}, 0.95) 80%, #000 100%)`;
+            winSph.style.boxShadow = `0 0 100px 40px rgba(${winRGBStr}, 0.9), inset -10px -10px 30px rgba(0,0,0,0.8)`;
+        }
+
+        if (loseSph) { loseSph.style.transition = 'opacity 4s ease'; loseSph.style.opacity = '0'; }
+
+        // 🔥 ФИНАЛ ЧЕРЕЗ 18 СЕКУНД (После захвата всех граней Абсолют еще 4 секунды величественно крутится)
+        safeTimeout(() => {
+            if (window.currentCinematicId !== myCinematicId) return;
+
+            window.isAbsCinematicPlaying = false; 
+            cancelAnimationFrame(cinematicFrame);
+            gameState = 'GAME_OVER';
+            if (loseSph) loseSph.style.display = 'none';
+
+            updateScoreAndTension(); 
+
+            if (typeof updateActionBtn === 'function') {
+                updateActionBtn(win ? (t.victory || "👑 ВЫ ПОБЕДИЛИ") : (t.defeat || "💀 ПОБЕДИЛ ОРАКУЛ"), false, win);
+                
+                const finalBtn = document.getElementById('absoluteActionBtn');
+                if (finalBtn) {
+                    if (win) {
+                        finalBtn.style.background = '#065f46';
+                        finalBtn.style.borderColor = '#10b981';
+                        finalBtn.style.boxShadow = '0 6px 0 #047857, 0 10px 15px rgba(0,0,0,0.6)';
+                        finalBtn.style.color = '#4ade80';
+                        finalBtn.style.textShadow = '0 0 10px rgba(74, 222, 128, 0.8)';
+                    } else {
+                        finalBtn.style.background = '#1a0b0b'; 
+                        finalBtn.style.borderColor = '#7f1d1d';
+                        finalBtn.style.boxShadow = '0 6px 0 #450a0a, 0 10px 15px rgba(0,0,0,0.8)';
+                        finalBtn.style.color = '#ef4444'; 
+                        finalBtn.style.textShadow = '0 0 10px rgba(239, 68, 68, 0.8)';
+                    }
+                }
+            }
+            
+            document.body.style.pointerEvents = 'auto'; 
+            const scene = document.getElementById('absoluteScene');
+            if (scene) scene.style.pointerEvents = 'auto';
+            if (obj) obj.style.pointerEvents = 'auto';
+            
+            autoRotate = true; 
+            if(typeof App !== 'undefined') App.playSoundEffect(win ? 'victory' : 'defeat');
+        }, 18000);
     }
 
     function start(mode) {
@@ -14581,7 +14884,6 @@ const animStyle = document.createElement('style');
         else { resetGameState(); renderColorSelection(); }
         
         // 3. Подготавливаем дебаг
-        injectDebugButtons();
         syncDebugUI();
 
         // 4. 🚀 ЗАПУСКАЕМ СБОРКУ СРАЗУ
@@ -14606,13 +14908,13 @@ const animStyle = document.createElement('style');
         clearAllTimeouts(); clearTimeout(engineTimer);
         cancelAnimationFrame(inertiaFrame);
 
-        // 👇 Ждем 500мс, пока сработает глобальная анимация выхода, и только потом скрываем сцену и сбрасываем стили!
+        // 👇 Увеличили паузу, чтобы animateExit успела плавно растворить грани!
         setTimeout(() => {
             document.body.classList.remove('is-abs-game-active');
             const stage = document.getElementById('absoluteGameStage'); 
             if (stage) stage.style.display = 'none';
 
-            // ВОЗВРАЩАЕМ ИНТЕРФЕЙСУ НОРМАЛЬНЫЙ ВИД (Невидимо для игрока)
+            // ВОЗВРАЩАЕМ ИНТЕРФЕЙСУ НОРМАЛЬНЫЙ ВИД
             const uiElements = [
                 document.getElementById('abs-face-info'),
                 document.getElementById('abs-action-hint'),
@@ -14621,9 +14923,8 @@ const animStyle = document.createElement('style');
                 document.getElementById('p-label')?.parentElement, 
                 document.getElementById('o-label')?.parentElement,
                 document.querySelector('.abs-legend-block'),
-                // Замени на свои реальные селекторы:
                 document.querySelector('.bottom-nav-bar'), 
-                document.getElementById('btn-home'),       
+                document.getElementById('btn-home'),        
                 document.getElementById('btn-inventory')   
             ];
             uiElements.forEach(el => {
@@ -14634,61 +14935,9 @@ const animStyle = document.createElement('style');
                     el.style.transition = '';
                 }
             });
-        }, 500); 
+        }, 1200); // Было 500, стало 1200!
     }
 
-    // === БЛОК ОБНОВЛЕНИЯ ПОЗИЦИЙ И СЧЕТА (БЕЗОПАСНЫЙ) ===
-    function updateTransform() {
-        if (typeof isAssembling !== 'undefined' && isAssembling) return; 
-
-        const obj = document.getElementById('absoluteObj');
-        const pSph = document.getElementById('pSphere');
-        const oSph = document.getElementById('oSphere');
-        
-        // Наши новые обертки для сэндвича
-        const wrapBack = document.getElementById('wrapperBack');
-        const wrapFront = document.getElementById('wrapperFront');
-
-        if(obj) obj.style.transform = `rotateX(${rotX}deg) rotateY(${rotY}deg) rotateZ(${rotZ}deg)`;
-
-        const invRot = `rotateZ(${-rotZ}deg) rotateY(${-rotY}deg) rotateX(${-rotX}deg)`;
-        
-        let pPos = 'translate3d(-20px, -10px, 20px)'; 
-        let oPos = 'translate3d(20px, 10px, -20px)'; 
-
-        if (gameState === 'GAME_OVER') {
-            let pLocks = 0; let oLocks = 0;
-            facesData.forEach(fd => {
-                if (fd.layers === 3) {
-                    if (fd.owner === myColor) pLocks++;
-                    else if (fd.owner === oracleColor) oLocks++;
-                }
-            });
-            if (pLocks >= 16) pPos = 'translate3d(0, 0, 0)';
-            else if (oLocks >= 16) oPos = 'translate3d(0, 0, 0)';
-        }
-
-        // ВЕРНУЛИ ВРАЩЕНИЕ СИМБИОТАМ!
-        if(pSph) pSph.style.transform = `${pPos} ${invRot}`;
-        if(oSph) oSph.style.transform = `${oPos} ${invRot}`;
-
-        // 🔥 МАГИЯ СЭНДВИЧА: Задний туман глубоко внутри, передний туман прямо перед глазами.
-        if(wrapBack) wrapBack.style.transform = `${invRot} translateZ(-45px)`;
-        if(wrapFront) wrapFront.style.transform = `${invRot} translateZ(45px)`;
-    }
-
-    function initDragEvents() {
-        const stage = document.getElementById('absoluteScene');
-        if(!stage || stage.dataset.dragInit) return;
-        stage.dataset.dragInit = "true";
-
-        stage.addEventListener('mousedown', onDown);
-        document.addEventListener('mousemove', onMove, {passive: false});
-        document.addEventListener('mouseup', onUp);
-        stage.addEventListener('touchstart', onDown, {passive: false});
-        document.addEventListener('touchmove', onMove, {passive: false});
-        document.addEventListener('touchend', onUp);
-    }
 
     let engineTimer = null;
     function pokeEngine() {
@@ -14722,10 +14971,12 @@ const animStyle = document.createElement('style');
         const deltaX = clientX - lastX; const deltaY = clientY - lastY;
         dragDistance += Math.abs(deltaX) + Math.abs(deltaY);
         
+        // 🛠 Плавность: снижаем чувствительность для тачскринов (0.2 вместо 0.5)
+        const sensitivity = e.touches ? 0.2 : 0.4;
         let radX = rotX * Math.PI / 180;
-        rotY += deltaX * Math.cos(radX) * 0.5; 
-        rotZ -= deltaX * Math.sin(radX) * 0.5; 
-        rotX -= deltaY * 0.5;
+        rotY += deltaX * Math.cos(radX) * sensitivity; 
+        rotZ -= deltaX * Math.sin(radX) * sensitivity; 
+        rotX -= deltaY * sensitivity;
         
         updateTransform();
         velX = deltaX; velY = deltaY; lastX = clientX; lastY = clientY;
@@ -14821,22 +15072,37 @@ const animStyle = document.createElement('style');
         }
     }
 
-    function startEngine() {
+   function startEngine() {
         if (window.absoluteEngineRunning) return;
         window.absoluteEngineRunning = true;
-        function tick() {
-            if(!isGameActive) { window.absoluteEngineRunning = false; return; }
 
-            // 🔥 ФИКС РЕЗКОГО СКАЧКА: Если идет сборка, замораживаем математику полностью!
+        function tick() {
+            if (!isGameActive) { 
+                window.absoluteEngineRunning = false; 
+                return; 
+            }
+
+            // 1. Если идет сборка (вход в игру), не мешаем CSS-анимации
             if (typeof isAssembling !== 'undefined' && isAssembling) {
                 requestAnimationFrame(tick);
                 return;
             }
 
-            if(autoRotate && !isDragging && gameState !== 'ROLL' && gameState !== 'ORACLE_TURN' && gameState !== 'SHIFTING') {
-                rotY += 0.15; rotX += 0.05; 
+            // 2. Если идет финальная битва (кино), основной движок отдыхает
+            // (вращением в этот момент управляет сама функция playEpicEnding)
+            if (window.isAbsCinematicPlaying) {
+                requestAnimationFrame(tick);
+                return;
+            }
+
+            // 3. УСЛОВИЕ ВРАЩЕНИЯ: крутим всегда, когда шар не трогают руками
+            // Теперь нам плевать на gameState (будь то ход или финал)
+            if (autoRotate && !isDragging) {
+                rotY += 0.15; 
+                rotX += 0.05; 
                 updateTransform();
             }
+
             requestAnimationFrame(tick);
         }
         tick();
@@ -14844,27 +15110,58 @@ const animStyle = document.createElement('style');
 
 
     function resetGameState() {
+        // Убиваем старые фреймы
+        clearAllTimeouts(); 
+        cancelAnimationFrame(inertiaFrame);
+        window.currentCinematicId = (window.currentCinematicId || 0) + 1;
+
         gameState = 'COLOR_SELECT'; myColor = null; oracleColor = null; 
         pSlots = [false, false, false]; oSlots = [false, false, false];
         pCells = 0; oCells = 0;
         activeFaceIndex = -1; freeRemovalUsed = false;
-        
-        // 👇 ЭКЗОРЦИЗМ: Убиваем память о грани из прошлой игры!
         lastActiveFace = -1; 
+        window.isAbsCinematicPlaying = false;
         
         facesData.forEach(f => { f.owner = null; f.layers = 0; });
-        saveState();
-        restoreVisualsFromState();
+        
+        const nBack = document.getElementById('coreAuraBack');
+        const nFront = document.getElementById('coreAuraFront');
+        if (nBack) nBack.style.animation = 'nebula-breathe 7s ease-in-out infinite';
+        if (nFront) nFront.style.animation = 'nebula-breathe 6s ease-in-out infinite';
+
+        if (typeof lockNavigation === 'function') lockNavigation(false);
+        
+        saveState(); 
+        
+        // 🔥 Вызываем единую функцию! Она воскресит всё сама.
+        restoreVisualsFromState(); 
     }
 
     function restoreVisualsFromState() {
+        // 🔥 ЖЕЛЕЗОБЕТОННОЕ ВОСКРЕШЕНИЕ: Снимаем невидимость от animateExit
+        const els = [
+            document.getElementById('pSphere'), document.getElementById('oSphere'),
+            document.getElementById('coreAuraBack'), document.getElementById('coreAuraFront'),
+            document.getElementById('wrapperBack'), document.getElementById('wrapperFront'),
+            document.getElementById('absoluteBottomTitle')
+        ];
+        els.forEach(s => { 
+            if(s) { 
+                s.style.display = 'block'; 
+                s.style.opacity = '1'; 
+                s.style.transform = 'none'; // Сброс scale(0) от прошлого выхода
+                s.style.transition = 'none'; // Мгновенное появление
+            } 
+        });
+
         for (let i=0; i<TOTAL_FACES; i++) updateFaceVisual(i);
-        updateEnergyUI(); updateScoreAndTension(); updateTransform();
+        updateEnergyUI(); 
+        updateScoreAndTension(); 
+        updateTransform();
         
         if (gameState === 'COLOR_SELECT') {
             renderColorSelection();
         } else if (gameState === 'PLAYER_TURN') {
-            // 👇 ИСПРАВЛЕНИЕ: Жестко забываем старую грань и прячем её в сферу
             activeFaceIndex = -1; 
             highlightFace(-1);
             
@@ -14878,7 +15175,13 @@ const animStyle = document.createElement('style');
         } else if (gameState === 'GAME_OVER') {
             activeFaceIndex = -1;
             highlightFace(-1);
-            updateScoreAndTension(); updateFaceInfoText(-1);
+            updateScoreAndTension(); 
+            updateFaceInfoText(-1);
+            
+            document.body.style.pointerEvents = 'auto'; 
+            const stage = document.getElementById('absoluteScene');
+            if (stage) stage.style.pointerEvents = 'auto';
+            pokeEngine();
         }
     }
 
@@ -14924,13 +15227,12 @@ const animStyle = document.createElement('style');
     }
 
     function handleMainAction() {
-        // 🛡️ Безопасный вызов звука!
-        if(typeof App !== 'undefined' && typeof App.playSoundEffect === 'function') {
-            App.playSoundEffect('click');
-        }
+        if(typeof App !== 'undefined' && typeof App.playSoundEffect === 'function') App.playSoundEffect('click');
 
         if (gameState === 'PLAYER_TURN' || gameState === 'FREE_REROLL') {
             gameState = 'ROLL'; autoRotate = false; clearTimeout(engineTimer);
+            
+            lockNavigation(true); // 🔒 БЛОКИРУЕМ ВЫХОД ИЗ ИГРЫ ПРИ БРОСКЕ
             
             document.querySelectorAll('.absolute-face').forEach(face => {
                 const idx = parseInt(face.id.replace('abs-face-', ''));
@@ -14953,6 +15255,56 @@ const animStyle = document.createElement('style');
         } else if (gameState === 'GAME_OVER') {
             resetGameState();
         }
+    }
+
+    function finalizeRoll(faceIdx) {
+        freeRemovalUsed = false;
+        let fd = facesData[faceIdx];
+        
+        if (fd.layers === 3) {
+            if (fd.owner === myColor) gameState = 'FREE_REROLL';
+            else gameState = 'ACTION_PENDING';
+        } else {
+            gameState = 'ACTION_PENDING';
+        }
+        
+        lockNavigation(false); // 🔓 РАЗБЛОКИРУЕМ КНОПКИ ПОСЛЕ ПАДЕНИЯ
+        saveState(); highlightFace(faceIdx); updateFaceInfoText(faceIdx); pokeEngine(); 
+    }
+
+    function triggerTurnTransfer(toOwner) {
+        gameState = 'SHIFTING'; updateFaceInfoText(-1);
+        updateActionBtn("СМЕЩЕНИЕ...", true);
+        
+        lockNavigation(true); // 🔒 БЛОКИРУЕМ ИГРУ ВО ВРЕМЯ ХОДА ОРАКУЛА
+
+        const currentOwner = toOwner === 'o' ? 'p' : 'o';
+        highlightFace(-1);
+
+        shiftEnergy(currentOwner, () => {
+            if (toOwner === 'o') {
+                gameState = 'ORACLE_TURN';
+                updateActionBtn("ХОД ОРАКУЛА...", true);
+                safeTimeout(() => {
+                    gainEnergy('o'); saveState();
+                    safeTimeout(rollOracleAbsolute, 800);
+                }, 200);
+            } else {
+                gameState = 'PLAYER_TURN';
+                activeFaceIndex = -1;
+                highlightFace(-1);
+                
+                updateActionBtn("БРОСИТЬ АБСОЛЮТ", false);
+                updateFaceInfoText(-1); 
+                
+                safeTimeout(() => {
+                    gainEnergy('p'); saveState();
+                    if(typeof App !== 'undefined') App.playSoundEffect('positive');
+                    lockNavigation(false); // 🔓 РАЗБЛОКИРУЕМ, КОГДА ХОД ВЕРНУЛСЯ НАМ
+                }, 200);
+                pokeEngine();
+            }
+        });
     }
 
     function rollAbsolute() {
@@ -15043,61 +15395,121 @@ const animStyle = document.createElement('style');
         }, rollDuration + 50);
     }
 
-    function finalizeRoll(faceIdx) {
-        freeRemovalUsed = false;
-        let fd = facesData[faceIdx];
+
+    // 1. ВОЗВРАЩАЕМ СВАЙПЫ (чтобы игра не падала с ошибкой)
+    function initDragEvents() {
+        const stage = document.getElementById('absoluteScene');
+        if(!stage || stage.dataset.dragInit) return;
+        stage.dataset.dragInit = "true";
+
+        stage.addEventListener('mousedown', onDown);
+        document.addEventListener('mousemove', onMove, {passive: false});
+        document.addEventListener('mouseup', onUp);
+        stage.addEventListener('touchstart', onDown, {passive: false});
+        document.addEventListener('touchmove', onMove, {passive: false});
+        document.addEventListener('touchend', onUp);
+    }
+
+    // 2. СПАСАЕМ МОНОЛИТ ОТ СПЛЮЩИВАНИЯ И СРЕЗОВ
+    function updateTransform() {
+        const obj = document.getElementById('absoluteObj');
+        const pSph = document.getElementById('pSphere');
+        const oSph = document.getElementById('oSphere');
+        const wrapBack = document.getElementById('wrapperBack');
+        const wrapFront = document.getElementById('wrapperFront');
+
+        if(obj && (typeof isAssembling === 'undefined' || !isAssembling)) {
+            obj.style.transform = `rotateX(${rotX}deg) rotateY(${rotY}deg) rotateZ(${rotZ}deg)`;
+        }
+
+        const invRot = `rotateZ(${-rotZ}deg) rotateY(${-rotY}deg) rotateX(${-rotX}deg)`;
         
-        if (fd.layers === 3) {
-            if (fd.owner === myColor) {
-                gameState = 'FREE_REROLL';
-            } else {
-                gameState = 'ACTION_PENDING';
-            }
+        const isFinishing = window.isAbsCinematicPlaying || gameState === 'GAME_OVER';
+        
+        // 🔥 ПЛАВНОЕ СКОЛЬЖЕНИЕ В ЦЕНТР
+        // Вычисляем текущий отступ. В финале он плавно умножается на 0.985 каждый кадр
+        let off = 1;
+        if (isFinishing) {
+            off = (typeof window.absSymbioteOffset !== 'undefined') ? window.absSymbioteOffset : 0;
         } else {
-            gameState = 'ACTION_PENDING';
+            window.absSymbioteOffset = 1;
+        }
+
+        // Применяем отступ (умножаем базовые 20px и 10px на наш множитель off)
+        if(pSph) pSph.style.transform = `translate3d(${-20 * off}px, ${-10 * off}px, ${20 * off}px) ${invRot}`;
+        if(oSph) oSph.style.transform = `translate3d(${20 * off}px, ${10 * off}px, ${-20 * off}px) ${invRot}`;
+
+        if(wrapBack) { 
+            wrapBack.style.transform = `${invRot} translateZ(-45px)`; 
+            wrapBack.style.opacity = '1'; 
+        }
+        if(wrapFront) { 
+            wrapFront.style.transform = `${invRot} translateZ(45px)`; 
+            wrapFront.style.opacity = '1'; 
+        }
+    }
+    
+  
+
+    // 5. ГЕНЕРАТОР ПАНЕЛИ (Компакт: цифры слева, эмодзи справа)
+    function buildAbsDebugPanel() {
+        let container = document.getElementById('abs-debug-container');
+        if (!container) {
+            container = document.createElement('div');
+            container.id = 'abs-debug-container';
+            document.body.appendChild(container);
         }
         
-        saveState(); highlightFace(faceIdx); updateFaceInfoText(faceIdx); pokeEngine(); 
-    }
-
-   // 🚀 АБСОЛЮТНО НЕЗАВИСИМЫЕ КНОПКИ ДЕБАГА
-    function injectDebugButtons() {
-        if (!document.getElementById('abs-standalone-debug')) {
-            const grid = document.createElement('div');
-            grid.id = 'abs-standalone-debug';
-            // Жесткая фиксация в BODY
-            grid.style.cssText = "display:none; position:fixed; bottom:80px; left:50%; transform:translateX(-50%); width:95%; max-width:350px; background:rgba(5,8,15,0.98); border:2px solid #818cf8; border-radius:15px; padding:10px; z-index:9999999; box-shadow:0 0 30px #000; flex-direction:column; gap:8px;";
-            
-            let html = `
-                <div style="display:flex; gap:5px; width:100%; justify-content:center;">
-                    <button class="debug-btn" style="width:auto; padding:5px 15px;" onclick="AbsoluteGame.debugWin()">WIN ABS</button>
-                    <button class="debug-btn" style="width:auto; padding:5px 15px;" onclick="AbsoluteGame.debugLose()">LOSE ABS</button>
-                </div>
-                <div style="display:grid; grid-template-columns: repeat(7, 1fr); gap:4px;">
-            `;
-            for(let i=0; i<42; i++) {
-                html += `<button class="debug-btn" style="width:100%; height:30px; font-size:10px; padding:0;" onclick="AbsoluteGame.debugClickFace(${i})">${i+1}</button>`;
-            }
-            html += `</div>`;
-            grid.innerHTML = html;
-            document.body.appendChild(grid);
+        // Горизонтальный макет (flex-direction: row)
+        container.style.cssText = "display: none; position: fixed !important; bottom: 70px !important; left: 50% !important; transform: translateX(-50%) !important; z-index: 9999999 !important; width: 98%; max-width: 440px; background: rgba(5, 8, 15, 0.95); padding: 8px; border-radius: 12px; border: 2px solid #818cf8; box-shadow: 0 10px 30px rgba(0,0,0,0.9); backdrop-filter: blur(8px); flex-direction: row; gap: 6px; opacity: 1 !important; filter: none !important; pointer-events: auto !important;";
+        
+        let html = `
+            <div style="display: grid; grid-template-columns: repeat(14, 1fr); gap: 3px; flex-grow: 1;">
+        `;
+        
+        for(let i=0; i<42; i++) {
+            html += `<button onclick="debugSuperTap(${i})" style="width: 100%; aspect-ratio: 1/1; font-size: 10px; font-weight: bold; background: #2d3436; color: #fff; border: 1px solid #636e72; border-radius: 4px; padding: 0; cursor: pointer; pointer-events: auto !important; transition: none !important;">${i+1}</button>`;
         }
+        
+        html += `
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 4px; width: 45px; justify-content: space-between;">
+                <button onclick="debugSuperTap('win')" style="flex: 1; font-size: 18px; background: #f39c12; border: 1px solid #e67e22; border-radius: 6px; cursor: pointer; pointer-events: auto !important; transition: none !important;" title="Победа">👑</button>
+                <button onclick="debugSuperTap('lose')" style="flex: 1; font-size: 18px; background: #c0392b; border: 1px solid #e74c3c; border-radius: 6px; cursor: pointer; pointer-events: auto !important; transition: none !important;" title="Поражение">💀</button>
+                <button onclick="debugSuperTap('energy')" style="flex: 1; font-size: 18px; background: #27ae60; border: 1px solid #2ecc71; border-radius: 6px; cursor: pointer; pointer-events: auto !important; transition: none !important;" title="+1 Энергия">⚡</button>
+            </div>
+        `;
+        container.innerHTML = html;
     }
 
+    // 6. СИНХРОНИЗАЦИЯ UI
     function syncDebugUI() {
-        const absDebug = document.getElementById('abs-standalone-debug');
-        const dp = document.getElementById('debugPanel');
-        
-        if (absDebug) {
-            // Читаем, открыта ли глобальная панель (игнорируем opacity, проверяем display)
-            let isGlobalOn = dp && window.getComputedStyle(dp).display !== 'none';
-            absDebug.style.setProperty('display', (isGameActive && isGlobalOn) ? 'flex' : 'none', 'important');
+        let absDebug = document.getElementById('abs-debug-container');
+        if (!absDebug || !absDebug.innerHTML.includes('debugSuperTap')) {
+            if (typeof buildAbsDebugPanel === 'function') buildAbsDebugPanel();
+            absDebug = document.getElementById('abs-debug-container');
         }
+        const dp = document.getElementById('debugPanel');
+        let isGlobalOn = false;
+        
+        if (typeof GameState !== 'undefined' && GameState.debugEnabled) { isGlobalOn = true; } 
+        else if (dp && window.getComputedStyle(dp).display !== 'none') { isGlobalOn = true; }
 
+        if (absDebug) {
+            if (typeof isGameActive !== 'undefined' && isGameActive && isGlobalOn) {
+                absDebug.style.setProperty('display', 'flex', 'important');
+                absDebug.style.setProperty('opacity', '1', 'important');
+                absDebug.style.setProperty('filter', 'none', 'important');
+                absDebug.style.setProperty('pointer-events', 'auto', 'important');
+            } else {
+                absDebug.style.setProperty('display', 'none', 'important');
+            }
+        }
+        
         if (typeof gameState !== 'undefined' && syncDebugUI.lastState !== gameState) {
             syncDebugUI.lastState = gameState;
             if (gameState === 'IDLE' || gameState === 'TURN_TRANSITION' || gameState === 'ROLLING') {
-                highlightFace(-1);
+                if (typeof highlightFace === 'function') highlightFace(-1);
             }
         }
     }
@@ -15145,6 +15557,11 @@ const animStyle = document.createElement('style');
     }
 
     function animateFaceClaim(idx) {
+        // 🔥 Оставляем только легкую вибрацию телефона, без тряски экрана
+        if (typeof tg !== 'undefined' && tg.HapticFeedback) {
+            tg.HapticFeedback.impactOccurred('light');
+        }
+
         const face = document.getElementById(`abs-face-${idx}`);
         if(!face) return;
         const fd = facesData[idx];
@@ -15165,6 +15582,7 @@ const animStyle = document.createElement('style');
     }
 
     function animateFaceBurn(idx) {
+        triggerImpact('heavy');
         const face = document.getElementById(`abs-face-${idx}`); if(!face) return;
         const fd = facesData[idx];
         const rotation = `rotateY(${fd.rotY}deg) rotateX(${fd.rotX}deg)`;
@@ -15183,44 +15601,6 @@ const animStyle = document.createElement('style');
                 face.style.transform = `${rotation} translateZ(126px) scale(1)`; 
             }
         }, 600);
-    }
-
-    function updateFaceVisual(idx) {
-        const face = document.getElementById(`abs-face-${idx}`);
-        const fd = facesData[idx];
-        if(!face) return;
-        
-        if (fd.owner === null) {
-            face.style.background = '#151b29';
-            face.style.border = '2px solid rgba(99,102,241,0.25)';
-            // 🚀 МАГИЯ ТУТ: Выбрасываем плотное индиго-свечение наружу (spread: 5px)
-            face.style.boxShadow = '0 0 15px 5px rgba(129, 140, 248, 0.35), inset 0 0 8px rgba(0,0,0,0.8), 0 5px 15px rgba(0,0,0,0.6)';
-            face.innerHTML = `<span>${idx + 1}</span>`;
-        } else {
-            let hex, bgColors, rgb;
-            if (fd.owner === 'green') { hex = '#22c55e'; bgColors = gColors; rgb = '34, 197, 94'; } 
-            else { hex = '#ef4444'; bgColors = rColors; rgb = '239, 68, 68'; }
-            
-            face.style.background = bgColors[fd.layers - 1];
-
-            // Градуированное свечение и рамки в зависимости от слоя
-            if (fd.layers === 1) {
-                face.style.border = `2px solid rgba(${rgb}, 0.4)`;
-                // 1 слой: Тусклое, компактное свечение
-                face.style.boxShadow = `0 0 6px 2px rgba(${rgb}, 0.35), inset 0 0 10px rgba(0,0,0,0.7), 0 5px 15px rgba(0,0,0,0.6)`;
-                face.innerHTML = `<span>${idx + 1}</span>`;
-            } else if (fd.layers === 2) {
-                face.style.border = `2px solid rgba(${rgb}, 0.8)`;
-                // 2 слой: Более широкое и яркое свечение
-                face.style.boxShadow = `0 0 12px 4px rgba(${rgb}, 0.65), inset 0 0 10px rgba(${rgb}, 0.4), 0 5px 15px rgba(0,0,0,0.6)`;
-                face.innerHTML = `<span>${idx + 1}</span>`;
-            } else if (fd.layers === 3) {
-                face.style.border = `2px solid ${hex}`;
-                // 3 слой: Максимальное свечение (Замок)
-                face.style.boxShadow = `0 0 20px 8px rgba(${rgb}, 0.95), inset 0 0 15px rgba(${rgb}, 0.7), 0 5px 15px rgba(0,0,0,0.6)`;
-                face.innerHTML = `<span>🔒</span>`;
-            }
-        }
     }
 
 
@@ -15295,42 +15675,44 @@ const animStyle = document.createElement('style');
         }
     }
 
-    // === ПЕРЕДАЧА ХОДА И АНИМАЦИЯ СДВИГА ===
-    function triggerTurnTransfer(toOwner) {
-        gameState = 'SHIFTING'; updateFaceInfoText(-1);
-        updateActionBtn("СМЕЩЕНИЕ...", true);
-
-        const currentOwner = toOwner === 'o' ? 'p' : 'o';
+    // 💥 ЭПИЧНЫЙ ВЗРЫВ ПОБЕЖДЕННОГО СИМБИОТА
+    function spawnEpicExplosion(colorStr) {
+        const core = document.getElementById('wrapperFront'); 
+        if(!core) return;
         
-        // Прячем грани на время перелета энергии
-        highlightFace(-1);
+        for(let i=0; i<40; i++) {
+            const p = document.createElement('div');
+            const size = 6 + Math.random() * 18; // Крупные ошметки
+            
+            p.style.position = 'absolute';
+            p.style.width = `${size}px`; p.style.height = `${size}px`;
+            p.style.left = '50%'; p.style.top = '50%';
+            p.style.margin = `${-size/2}px 0 0 ${-size/2}px`;
+            p.style.background = colorStr;
+            p.style.boxShadow = `0 0 25px 5px ${colorStr}`;
+            p.style.borderRadius = Math.random() > 0.4 ? '50%' : '2px';
+            p.style.zIndex = '500'; p.style.pointerEvents = 'none';
 
-        shiftEnergy(currentOwner, () => {
-            if (toOwner === 'o') {
-                gameState = 'ORACLE_TURN';
-                updateActionBtn("ХОД ОРАКУЛА...", true);
-                safeTimeout(() => {
-                    gainEnergy('o'); saveState();
-                    safeTimeout(rollOracleAbsolute, 800);
-                }, 200);
-            } else {
-                gameState = 'PLAYER_TURN';
-                
-                // 👇 ИСПРАВЛЕНИЕ: При возврате хода игроку сбрасываем фокус
-                activeFaceIndex = -1;
-                highlightFace(-1);
-                
-                updateActionBtn("БРОСИТЬ АБСОЛЮТ", false);
-                updateFaceInfoText(-1); 
-                
-                safeTimeout(() => {
-                    gainEnergy('p'); saveState();
-                    if(typeof App !== 'undefined') App.playSoundEffect('positive');
-                }, 200);
-                pokeEngine();
-            }
-        });
+            core.appendChild(p);
+
+            const ang = Math.random() * Math.PI * 2;
+            const dist = 60 + Math.random() * 200; // Разлет на весь куб
+            const dx = Math.cos(ang) * dist;
+            const dy = Math.sin(ang) * dist;
+            const dz = (Math.random() - 0.5) * 150; // Глубокий 3D-взрыв
+
+            p.animate([
+                { transform: `translate3d(0,0,0) scale(1.5) rotate(0deg)`, opacity: 1 },
+                { transform: `translate3d(${dx}px, ${dy}px, ${dz}px) scale(0) rotate(${Math.random()*720}deg)`, opacity: 0 }
+            ], {
+                duration: 1500 + Math.random() * 1500, // Осколки живут долго
+                easing: 'cubic-bezier(0.1, 0.8, 0.3, 1)',
+                fill: 'forwards'
+            });
+            setTimeout(() => p.remove(), 3100);
+        }
     }
+
 
     function passTurnToOracle() {
         triggerTurnTransfer('o');
@@ -15550,34 +15932,76 @@ const animStyle = document.createElement('style');
         } else { safeTimeout(passTurnToPlayer, 800); }
     }
 
-    function debugWin() {
-        if(!isGameActive || gameState === 'COLOR_SELECT') return;
-        facesData.forEach((fd, i) => { if (i < 16) { fd.owner = myColor; fd.layers = 3; } });
-        pSlots = [false,false,false]; oSlots = [false,false,false]; pCells = 0; oCells = 0;
-        for(let i=0; i<TOTAL_FACES; i++) updateFaceVisual(i);
-        updateScoreAndTension(); updateEnergyUI(); saveState(); updateTransform();
-    }
-    
-    function debugLose() {
-        if(!isGameActive || gameState === 'COLOR_SELECT') return;
-        facesData.forEach((fd, i) => { if (i < 16) { fd.owner = oracleColor; fd.layers = 3; } });
-        pSlots = [false,false,false]; oSlots = [false,false,false]; pCells = 0; oCells = 0;
-        for(let i=0; i<TOTAL_FACES; i++) updateFaceVisual(i);
-        updateScoreAndTension(); updateEnergyUI(); saveState(); updateTransform();
-    }
-    
-    function debugClickFace(i) {
-        if(!isGameActive || gameState === 'COLOR_SELECT') return;
-        let fd = facesData[i];
-        if (fd.owner === myColor && fd.layers === 3) {
-             fd.owner = oracleColor; fd.layers = 3;
-        } else if (fd.owner === oracleColor && fd.layers === 3) {
-             fd.owner = null; fd.layers = 0;
-        } else {
-             fd.owner = myColor; fd.layers = 3;
+// ⚡ 1. ЛОГИКА КНОПОК (Супер-Тап) — ИСПРАВЛЕННАЯ
+    window.debugSuperTap = function(action) {
+        if (!isGameActive) return;
+        if ((gameState === 'COLOR_SELECT' || myColor === null) && action !== 'energy') {
+            if(typeof App !== 'undefined' && typeof App.showError === 'function') App.showError("Сначала выбери цвет!");
+            return;
         }
-        updateFaceVisual(i); updateScoreAndTension(); saveState();
+
+        // 🔥 ВМЕСТО МГНОВЕННОЙ СМЕРТИ — ЗАПУСКАЕМ ЭПИК 🔥
+        if (action === 'win') { 
+        playEpicEnding(true); 
+        return; 
+    } else if (action === 'lose') { 
+        playEpicEnding(false); 
+        return; 
     }
+        else if (action === 'energy') { 
+            if (typeof gainEnergy === 'function') gainEnergy('p'); 
+        } 
+        else if (typeof action === 'number') {
+            let idx = action; let fd = facesData[idx];
+            if (fd.owner !== null && fd.owner !== myColor) {
+                let removedColor = getLayerColor(fd.owner, fd.layers); fd.layers--; if (fd.layers === 0) fd.owner = null;
+                updateFaceVisual(idx); animateFaceBurn(idx); spawnBurnParticles(idx, removedColor);
+            } else if (fd.layers < 3) {
+                fd.owner = myColor; fd.layers++; animateFaceClaim(idx); updateFaceVisual(idx);
+            }
+            if(typeof App !== 'undefined' && typeof App.playSoundEffect === 'function') App.playSoundEffect('tick');
+        }
+
+        facesData.forEach((_, i) => updateFaceVisual(i)); 
+        updateScoreAndTension(); 
+        saveState();
+        if (typeof updateTransform === 'function') updateTransform();
+    };
+
+    // 🛠️ 2. ГЕНЕРАТОР ПАНЕЛИ
+    function buildAbsDebugPanel() {
+        let container = document.getElementById('abs-debug-container');
+        if (!container) {
+            container = document.createElement('div'); container.id = 'abs-debug-container';
+            document.body.appendChild(container);
+        }
+        container.style.cssText = "display: none; position: fixed !important; bottom: 70px !important; left: 50% !important; transform: translateX(-50%) !important; z-index: 9999999 !important; width: 98%; max-width: 440px; background: rgba(5, 8, 15, 0.95); padding: 8px; border-radius: 12px; border: 2px solid #818cf8; box-shadow: 0 10px 30px rgba(0,0,0,0.9); backdrop-filter: blur(8px); flex-direction: row; gap: 6px; opacity: 1 !important; filter: none !important; pointer-events: auto !important;";
+        let html = '<div style="display: grid; grid-template-columns: repeat(14, 1fr); gap: 3px; flex-grow: 1;">';
+        for(let i=0; i<42; i++) {
+            html += `<button onclick="debugSuperTap(${i})" style="width: 100%; aspect-ratio: 1/1; font-size: 10px; font-weight: bold; background: #2d3436; color: #fff; border: 1px solid #636e72; border-radius: 4px; padding: 0; cursor: pointer; pointer-events: auto !important;">${i+1}</button>`;
+        }
+        html += `</div><div style="display: flex; flex-direction: column; gap: 4px; width: 45px; justify-content: space-between;">
+            <button onclick="debugSuperTap('win')" style="flex: 1; font-size: 18px; background: #f39c12; border: 1px solid #e67e22; border-radius: 6px; cursor: pointer; pointer-events: auto !important;">👑</button>
+            <button onclick="debugSuperTap('lose')" style="flex: 1; font-size: 18px; background: #c0392b; border: 1px solid #e74c3c; border-radius: 6px; cursor: pointer; pointer-events: auto !important;">💀</button>
+            <button onclick="debugSuperTap('energy')" style="flex: 1; font-size: 18px; background: #27ae60; border: 1px solid #2ecc71; border-radius: 6px; cursor: pointer; pointer-events: auto !important;">⚡</button>
+        </div>`;
+        container.innerHTML = html;
+    }
+
+    // 🔄 3. СВАЙПЫ (Фикс ReferenceError)
+    function initDragEvents() {
+        const stage = document.getElementById('absoluteScene');
+        if(!stage || stage.dataset.dragInit) return;
+        stage.dataset.dragInit = "true";
+        stage.addEventListener('mousedown', onDown);
+        document.addEventListener('mousemove', onMove, {passive: false});
+        document.addEventListener('mouseup', onUp);
+        stage.addEventListener('touchstart', onDown, {passive: false});
+        document.addEventListener('touchmove', onMove, {passive: false});
+        document.addEventListener('touchend', onUp);
+    }
+
+    
 
     function animateEntrance() {
         const faces = document.querySelectorAll('.absolute-face');
@@ -15585,148 +16009,128 @@ const animStyle = document.createElement('style');
         const oSph = document.getElementById('oSphere');
 
         if (faces.length === 0) return;
-
         isAssembling = true; 
+        
+        if (typeof lockNavigation === 'function') lockNavigation(true); 
 
-        // 1. РАСКИДЫВАЕМ ГРАНИ В КОСМОС
         faces.forEach((face) => {
             face.style.transition = 'none'; 
             face.style.opacity = '0';
+            // 🔥 Задаем "пустые" цвета, чтобы было откуда плавно загораться
+            face.style.boxShadow = '0 0 0px rgba(129, 140, 248, 0), inset 0 0 0px rgba(0,0,0,0), 0 0 0px rgba(0,0,0,0)'; 
+            face.style.borderColor = 'rgba(99,102,241,0)'; 
+            face.style.animation = 'none'; 
             
             const z = (Math.random() > 0.5 ? 3000 : -3000);
             const x = (Math.random() - 0.5) * 5000;
             const y = (Math.random() - 0.5) * 5000;
             const rX = Math.random() * 720;
-            
             face.style.transform = `translate3d(${x}px, ${y}px, ${z}px) rotateX(${rX}deg)`;
-            void face.offsetWidth; // Пинок браузеру
+            void face.offsetWidth; 
         });
 
         if(pSph) { pSph.style.opacity = '0'; pSph.style.filter = 'none'; }
         if(oSph) { oSph.style.opacity = '0'; oSph.style.filter = 'none'; }
 
-        // 2. ЗАПУСКАЕМ ПОЛЕТ
         setTimeout(() => {
             if(pSph) { pSph.style.transition = 'opacity 2s ease'; pSph.style.opacity = '1'; }
             if(oSph) { oSph.style.transition = 'opacity 2s ease 0.4s'; oSph.style.opacity = '1'; }
 
             faces.forEach((face, i) => {
-                face.style.transition = `transform 3s cubic-bezier(0.1, 0.8, 0.2, 1) ${i * 15}ms, opacity 2s ease ${i * 15}ms`;
+                // 🔥 ВСЕ транзиции задаем ОДИН раз. Цветам ставим задержку 2200ms. Полет не прервется!
+                face.style.transition = `
+                    transform 3s cubic-bezier(0.1, 0.8, 0.2, 1) ${i * 15}ms, 
+                    opacity 2s ease ${i * 15}ms, 
+                    box-shadow 0.8s ease 2200ms, 
+                    border-color 0.8s ease 2200ms, 
+                    background 0.8s ease 2200ms
+                `;
                 face.style.opacity = '1';
                 
                 const fd = facesData[i];
-                if (fd) {
-                    // 🔥 ИСПРАВЛЕНО: Убрали invRot! 
-                    // Грани летят ровно на свои законные места по сетке сферы.
-                    face.style.transform = `rotateY(${fd.rotY}deg) rotateX(${fd.rotX}deg) translateZ(126px)`;
-                }
+                if (fd) face.style.transform = `rotateY(${fd.rotY}deg) rotateX(${fd.rotX}deg) translateZ(126px)`;
+                
+                // Сразу командуем зажечься, но из-за delay 2200ms они начнут вспыхивать только на подлете!
+                updateFaceVisual(i); 
             });
 
-            // 3. ЗАКАНЧИВАЕМ СБОРКУ
             setTimeout(() => {
-                faces.forEach(f => {
+                faces.forEach((f, i) => { 
                     f.classList.remove('abs-assembling'); 
-                    f.style.transition = ''; 
+                    if (facesData[i] && facesData[i].owner === null) {
+                        f.style.animation = `neutral-pulse ${3 + Math.random() * 2}s infinite ease-in-out alternate`;
+                    }
                 });
-                
                 if(pSph) pSph.style.filter = 'blur(1.5px)';
                 if(oSph) oSph.style.filter = 'blur(1.5px)';
-
                 isAssembling = false; 
                 
-                // 🚀 ЖЕСТКАЯ СИНХРОНИЗАЦИЯ: гарантирует, что после сборки 
-                // хитбоксы граней будут на 100% совпадать с их визуалом
+                if (typeof lockNavigation === 'function') lockNavigation(false); 
                 highlightFace(activeFaceIndex);
                 pokeEngine();
-                
             }, 4500);
         }, 100);
     }
-    
 
     function animateExit(onDone) {
         const faces = document.querySelectorAll('.absolute-face');
         const pSph = document.getElementById('pSphere');
         const oSph = document.getElementById('oSphere');
-        const auraWrap = document.getElementById('coreAuraWrapper');
+        const nebulaBack = document.getElementById('coreAuraBack');
+        const nebulaFront = document.getElementById('coreAuraFront');
+        
+        // 🔥 Берем заголовок, чтобы погасить его плавно
+        const bottomTitle = document.getElementById('absoluteBottomTitle');
 
-        // Блокируем экран от случайных тапов
+        if (typeof lockNavigation === 'function') lockNavigation(true); 
         document.body.style.pointerEvents = 'none';
 
-        // 👇 1. КИНЕМАТОГРАФИЧНОЕ РАСТВОРЕНИЕ ИНТЕРФЕЙСА 👇
-        // 👇 КИНЕМАТОГРАФИЧНОЕ РАСТВОРЕНИЕ ИНТЕРФЕЙСА 👇
-        const uiElements = [
-            document.getElementById('abs-face-info'),
-            document.getElementById('abs-action-hint'),
-            document.querySelector('#absoluteGameStage .action-row'),
-            document.getElementById('absoluteBottomTitle'),
-            document.getElementById('p-label')?.parentElement, 
-            document.getElementById('o-label')?.parentElement, 
-            document.getElementById('abs-standalone-debug'),
-            
-            // 👇 ДОБАВЛЕНО: Блок легенды (который мы пометили в syncStaticUI)
-            document.querySelector('.abs-legend-block'),
-            
-            // 👇 ДОБАВЛЕНО: Глобальная навигация (Замени на свои реальные ID или классы!)
-            document.querySelector('.bottom-nav-bar'), // Если у тебя есть общий контейнер навигации
-            // ИЛИ поштучно:
-            document.getElementById('btn-home'),       // ВПИШИ СВОЙ ID КНОПКИ ДОМ
-            document.getElementById('btn-inventory')   // ВПИШИ СВОЙ ID КНОПКИ ИНВЕНТАРЬ
-        ];
+        // Гасим заголовок "АБСОЛЮТ"
+        if (bottomTitle) {
+            bottomTitle.style.transition = 'opacity 0.4s ease';
+            bottomTitle.style.opacity = '0';
+        }
 
-        uiElements.forEach(el => {
-            if (el) {
-                // Плавное растворение в блюре с легким уменьшением (эффект ухода в глубину)
-                el.style.transition = 'all 1s cubic-bezier(0.4, 0, 1, 1)';
-                el.style.opacity = '0';
-                el.style.filter = 'blur(10px)';
-                el.style.transform = 'scale(0.95)'; 
-            }
-        });
+        if(nebulaBack) { nebulaBack.style.transition = 'opacity 0.6s ease'; nebulaBack.style.opacity = '0'; }
+        if(nebulaFront) { nebulaFront.style.transition = 'opacity 0.6s ease'; nebulaFront.style.opacity = '0'; }
+        if(pSph) { pSph.style.transition = 'all 0.6s ease-in'; pSph.style.opacity = '0'; pSph.style.transform += ' scale(0)'; }
+        if(oSph) { oSph.style.transition = 'all 0.6s ease-in'; oSph.style.opacity = '0'; oSph.style.transform += ' scale(0)'; }
 
-        // 2. Мягко растворяем туманность и симбиотов
-        if(auraWrap) { auraWrap.style.transition = 'all 0.8s ease-in'; auraWrap.style.opacity = '0'; auraWrap.style.transform = 'scale(0) translateZ(-10px)'; }
-        if(pSph) { pSph.style.transition = 'all 0.8s ease-in'; pSph.style.opacity = '0'; pSph.style.transform = 'translate(-50%, -50%) scale(0)'; }
-        if(oSph) { oSph.style.transition = 'all 0.8s ease-in'; oSph.style.opacity = '0'; oSph.style.transform = 'translate(-50%, -50%) scale(0)'; }
-
-        // 3. Эпичный разлет граней (твой рабочий код)
+        // Мягкий разлет граней без резких скачков цвета
         faces.forEach((f, i) => {
-            f.classList.remove('abs-assembling');
-            f.style.transition = `transform 1.5s cubic-bezier(0.4, 0, 1, 1), opacity 1.2s ease-in`;
+            f.style.animation = 'none';
+            // Оставляем родные цвета, гасим только opacity и меняем transform
+            f.style.transition = `transform 0.8s cubic-bezier(0.4, 0, 1, 1) ${i * 10}ms, opacity 0.6s ease ${i * 10}ms`;
+            f.style.opacity = '0'; 
             
-            const z = (Math.random() > 0.5 ? 2000 : -2000);
-            const x = (Math.random() - 0.5) * 3000;
-            const y = (Math.random() - 0.5) * 3000;
-
-            setTimeout(() => {
-                f.style.opacity = '0';
-                f.style.transform = `translate3d(${x}px, ${y}px, ${z}px) rotate(720deg)`;
-            }, i * 12); 
+            const z = (Math.random() > 0.5 ? 1000 : -1000);
+            const x = (Math.random() - 0.5) * 2000;
+            const y = (Math.random() - 0.5) * 2000;
+            
+            // Задаем чистую абсолютную трансформацию от центра, чтобы браузер не сходил с ума
+            const faceIdx = parseInt(f.id.replace('abs-face-', ''));
+            const fd = facesData[faceIdx];
+            const baseRot = `rotateY(${fd.rotY}deg) rotateX(${fd.rotX}deg)`;
+            
+            f.style.transform = `${baseRot} translate3d(${x}px, ${y}px, ${z}px) rotate(720deg)`; 
         });
 
-        // 4. Гарантированный выход ровно по таймингу
-        setTimeout(() => {
-            document.body.style.pointerEvents = 'auto';
-            if(onDone) onDone();
-        }, 1600);
+        setTimeout(() => { 
+            document.body.style.pointerEvents = 'auto'; 
+            if (typeof lockNavigation === 'function') lockNavigation(false); 
+            if(onDone) onDone(); 
+        }, 1200);
     }
 
-//абсолют
+    // 📦 5. ЭКСПОРТ (return)
     return { 
-        start, stop, 
-        mount: start, unmount: stop,
+        start, stop, mount: start, unmount: stop,
         saveCurrentSubState: saveState, loadCurrentSubState: loadState, 
-        setColors, handleMainAction, 
-        debugWin, debugLose, debugClickFace,
-        syncDebugUI, 
-        injectDebugButtons, 
-        // 👇 ДОБАВИЛИ ЭТИ ДВЕ СТРОЧКИ, ЧТОБЫ ОНИ БЫЛИ ВИДНЫ СНАРУЖИ 👇
-        animateEntrance, 
-        animateExit,
-        isGameActive: () => isGameActive 
+        setColors, handleMainAction, syncDebugUI, 
+        animateEntrance, animateExit, isGameActive: () => isGameActive 
     };
-})();
-// --- КОНЕЦ ДВЕНАДЦАТОЙ ЧАСТИ ---
+})(); 
+// --- КОНЕЦ ДВЕНАДЦАТОЙ ЧАСТИ ---    
 // --- НАЧАЛО ТРИНАДЦАТОЙ ЧАСТИ --- Система достижений.
 // ==============================================
 // 🏆 СИСТЕМА ДОСТИЖЕНИЙ (ФИКС КРИСТАЛЛОВ)
