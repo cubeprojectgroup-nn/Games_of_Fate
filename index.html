@@ -4,12 +4,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Игры Судьбы. v0.9.0.29</title>
+    <title>Игры Судьбы. v0.9.0.31</title>
     <!-- Эмодзи-иконка для вкладки браузера -->
     <link rel="icon" href='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">🔮</text></svg>'>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 	<style>
+
+
 
         /* === [ CSS: БАЗОВЫЕ СТИЛИ ] === */
         :root {
@@ -3215,7 +3217,7 @@ setInterval(() => {
         <div style="position: absolute; bottom: 15px; left: 15px; font-size: 10px; color: rgba(162, 155, 254, 0.6); font-weight: bold; letter-spacing: 1px; text-transform: uppercase; z-index: 500;">
             <a href="https://t.me/Antis_Corpus" style="color: inherit; text-decoration: none;">t.me/Antis_Corpus</a>
         </div>
-        <div class="version" style="position: absolute; bottom: 15px; right: 15px; pointer-events: none; z-index: 500;">v0.9.0.29</div>
+        <div class="version" style="position: absolute; bottom: 15px; right: 15px; pointer-events: none; z-index: 500;">v0.9.0.31</div>
     </div>
 
     <!-- ========================================== -->
@@ -13961,21 +13963,154 @@ const animStyle = document.createElement('style');
         } catch(e) {}
     }
 
+    // 🎛️ КОСМИЧЕСКИЙ СИНТЕЗАТОР v4.0 (Адаптировано для динамиков телефона)
+    window.absAudioCtx = window.absAudioCtx || new (window.AudioContext || window.webkitAudioContext)();
+
+    function playDistantSpaceExplosion() {
+        // Проверяем наличие контекста, если нет - создаем
+        if (!window.absAudioCtx) {
+            window.absAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        
+        const ctx = window.absAudioCtx;
+
+        // Критически важно для Chrome и мобилок: возобновляем поток
+        if (ctx.state === 'suspended') {
+            ctx.resume();
+        }
+
+        const duration = Math.random() * 0.6 + 0.6; 
+        const now = ctx.currentTime;
+
+        const osc = ctx.createOscillator();
+        const oscGain = ctx.createGain();
+        osc.connect(oscGain);
+        oscGain.connect(ctx.destination);
+
+        // Частоты, которые точно услышит и ноут, и телефон (130-180 Гц)
+        const startFreq = Math.random() * 50 + 130; 
+        const endFreq = Math.random() * 20 + 60;
+
+        osc.type = 'triangle'; 
+        osc.frequency.setValueAtTime(startFreq, now);
+        osc.frequency.exponentialRampToValueAtTime(endFreq, now + duration);
+
+        oscGain.gain.setValueAtTime(0, now);
+        oscGain.gain.linearRampToValueAtTime(0.8, now + 0.05); 
+        oscGain.gain.exponentialRampToValueAtTime(0.01, now + duration);
+
+        // Шум для текстуры взрыва
+        const bufferSize = ctx.sampleRate * duration;
+        const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let j = 0; j < bufferSize; j++) data[j] = Math.random() * 2 - 1;
+        
+        const noise = ctx.createBufferSource();
+        noise.buffer = buffer;
+        const noiseFilter = ctx.createBiquadFilter();
+        const noiseGain = ctx.createGain();
+        
+        noise.connect(noiseFilter);
+        noiseFilter.connect(noiseGain);
+        noiseGain.connect(ctx.destination);
+
+        noiseFilter.type = 'lowpass';
+        noiseFilter.frequency.value = 350; 
+
+        noiseGain.gain.setValueAtTime(0, now);
+        noiseGain.gain.linearRampToValueAtTime(0.5, now + 0.05);
+        noiseGain.gain.exponentialRampToValueAtTime(0.01, now + duration);
+
+        osc.start(now);
+        osc.stop(now + duration);
+        noise.start(now);
+        noise.stop(now + duration);
+    }
+    
     function updateActionBtn(html, disabled = false, gold = false) {
         let btn = document.getElementById('absoluteActionBtn');
-        const row = document.querySelector('#absoluteGameStage .action-row');
+        let row = document.querySelector('#absoluteGameStage .action-row');
         
+        // Восстанавливаем контейнер, если он пропал
+        if (!row) {
+            row = document.createElement('div');
+            row.className = 'action-row';
+            const stage = document.getElementById('absoluteGameStage');
+            if (stage) stage.appendChild(row);
+        }
+        
+        // Создаем кнопку, если её нет
         if (!btn && row) {
             row.innerHTML = `<button class="abs-btn-roll" id="absoluteActionBtn"></button>`;
             btn = document.getElementById('absoluteActionBtn');
-            if(btn) btn.onclick = AbsoluteGame.handleMainAction;
+            // Подвязываем клик к нашей бронированной функции
+            if(btn) btn.onclick = function() { 
+                if (typeof handleMainAction === 'function') handleMainAction(); 
+                else if (typeof AbsoluteGame !== 'undefined' && typeof AbsoluteGame.handleMainAction === 'function') AbsoluteGame.handleMainAction();
+            };
         }
         
         if (btn) {
             btn.innerHTML = html;
             btn.disabled = disabled;
             btn.className = `abs-btn-roll ${gold ? 'gold' : ''}`;
+            
+            // 🔥 ВОСКРЕШЕНИЕ: Жестко снимаем невидимость от выхода из игры!
+            btn.style.opacity = '1';
+            btn.style.pointerEvents = 'auto';
+            
+            // 🔥 ОЧИСТКА: Смываем инлайн-краски от эпичного финала (победы/поражения)
+            // Чтобы в новой игре кнопка снова стала обычной фиолетовой
+            if (!gold && gameState !== 'GAME_OVER') {
+                btn.style.background = '';
+                btn.style.borderColor = '';
+                btn.style.boxShadow = '';
+                btn.style.color = '';
+                btn.style.textShadow = '';
+            }
         }
+    }
+
+    function updateEnergyUI() {
+        const nColors = ['#4338ca', '#4f46e5', '#6366f1']; // Нейтральный Индиго
+        const pColors = myColor === 'green' ? gColors : (myColor === 'red' ? rColors : nColors);
+        const oColors = oracleColor === 'green' ? gColors : (oracleColor === 'red' ? rColors : nColors);
+        
+        for(let i=1; i<=3; i++) {
+            const pCell = document.getElementById(`p-cell-${i}`);
+            if(pCell) {
+                let isFilled = pSlots[i-1];
+                pCell.dataset.filled = isFilled ? 'true' : 'false';
+                pCell.style.transition = 'background 0.5s ease, box-shadow 0.5s ease, border-color 0.5s ease';
+                pCell.style.background = isFilled ? pColors[i-1] : 'transparent';
+                pCell.style.borderColor = myColor ? pColors[i-1] : '#6366f1'; 
+                pCell.style.boxShadow = isFilled ? `0 0 ${i*4}px ${pColors[i-1]}` : 'none';
+            }
+            
+            const oCell = document.getElementById(`o-cell-${i}`);
+            if(oCell) {
+                let isFilled = oSlots[i-1];
+                oCell.dataset.filled = isFilled ? 'true' : 'false';
+                oCell.style.transition = 'background 0.5s ease, box-shadow 0.5s ease, border-color 0.5s ease';
+                oCell.style.background = isFilled ? oColors[i-1] : 'transparent';
+                oCell.style.borderColor = oracleColor ? oColors[i-1] : '#6366f1';
+                oCell.style.boxShadow = isFilled ? `0 0 ${i*4}px ${oColors[i-1]}` : 'none';
+            }
+        }
+        
+        // 🔥 ФИКС ЦВЕТОВ: Надписи "ВЫ" и "ОРАКУЛ" теперь тоже нейтральные до старта
+        const pCol = myColor === 'green' ? '#22c55e' : (myColor === 'red' ? '#ef4444' : '#818cf8');
+        const pLock = document.getElementById('p-lock-icon'); if (pLock) pLock.style.color = pCol;
+        const pLabel = document.getElementById('p-label'); if (pLabel) pLabel.style.color = pCol;
+        const pLocksText = document.getElementById('p-locks'); if (pLocksText) pLocksText.style.color = pCol;
+
+        const oCol = oracleColor === 'green' ? '#22c55e' : (oracleColor === 'red' ? '#ef4444' : '#818cf8');
+        const oLock = document.getElementById('o-lock-icon'); if (oLock) oLock.style.color = oCol;
+        const oLabel = document.getElementById('o-label'); if (oLabel) oLabel.style.color = oCol;
+        const oLocksText = document.getElementById('o-locks'); if (oLocksText) oLocksText.style.color = oCol;
+        
+        if (typeof syncStaticUI === 'function') syncStaticUI();
+        if (typeof syncTurnHighlight === 'function') syncTurnHighlight();
     }
 
    // 🛡️ ГЛОБАЛЬНЫЕ СЛУШАТЕЛИ: Мгновенное сохранение при сворачивании Telegram
@@ -14531,45 +14666,6 @@ const animStyle = document.createElement('style');
         }
     }
 
-    function updateEnergyUI() {
-        const pColors = myColor === 'green' ? gColors : rColors;
-        const oColors = oracleColor === 'green' ? gColors : rColors;
-        
-        for(let i=1; i<=3; i++) {
-            const pCell = document.getElementById(`p-cell-${i}`);
-            if(pCell) {
-                let isFilled = pSlots[i-1];
-                pCell.dataset.filled = isFilled ? 'true' : 'false';
-                pCell.style.transition = 'background 0.5s ease, box-shadow 0.5s ease, border-color 0.5s ease';
-                pCell.style.background = isFilled ? pColors[i-1] : 'transparent';
-                pCell.style.borderColor = myColor ? pColors[i-1] : '#ccc';
-                pCell.style.boxShadow = isFilled ? `0 0 ${i*4}px ${pColors[i-1]}` : 'none';
-            }
-            
-            const oCell = document.getElementById(`o-cell-${i}`);
-            if(oCell) {
-                let isFilled = oSlots[i-1];
-                oCell.dataset.filled = isFilled ? 'true' : 'false';
-                oCell.style.transition = 'background 0.5s ease, box-shadow 0.5s ease, border-color 0.5s ease';
-                oCell.style.background = isFilled ? oColors[i-1] : 'transparent';
-                oCell.style.borderColor = oracleColor ? oColors[i-1] : '#ccc';
-                oCell.style.boxShadow = isFilled ? `0 0 ${i*4}px ${oColors[i-1]}` : 'none';
-            }
-        }
-        
-        if (myColor) {
-            const col = myColor === 'green' ? '#22c55e' : '#ef4444';
-            const pLock = document.getElementById('p-lock-icon'); if (pLock) pLock.style.color = col;
-            const pLabel = document.getElementById('p-label'); if (pLabel) pLabel.style.color = col;
-        }
-        if (oracleColor) {
-            const col = oracleColor === 'green' ? '#22c55e' : '#ef4444';
-            const oLock = document.getElementById('o-lock-icon'); if (oLock) oLock.style.color = col;
-            const oLabel = document.getElementById('o-label'); if (oLabel) oLabel.style.color = col;
-        }
-        syncStaticUI();
-        syncTurnHighlight();
-    }
 
     function updateScoreAndTension() {
         let pScore = 0; let oScore = 0;
@@ -14674,7 +14770,6 @@ const animStyle = document.createElement('style');
                     else pSph.style.background = `radial-gradient(circle at 30% 30%, #a5b4fc 0%, rgba(${pCurRGB}, 0.8) 40%, #000 100%)`; // Спящее состояние
                     
                     pSph.style.boxShadow = `0 0 40px ${myColor ? 5 + pScore*2 : 2}px rgba(${pTargetRArr}, ${myColor ? 0.5 * pRatio : 0.2}), inset -2px -2px 10px rgba(0,0,0,0.5)`;
-                    pSph.style.filter = 'blur(1.5px)';
                 }
                 
                 if (oSph) {
@@ -14687,7 +14782,6 @@ const animStyle = document.createElement('style');
                     else oSph.style.background = `radial-gradient(circle at 30% 30%, #a5b4fc 0%, rgba(${oCurRGB}, 0.8) 40%, #000 100%)`; // Спящее состояние
                     
                     oSph.style.boxShadow = `0 0 40px ${oracleColor ? 5 + oScore*2 : 2}px rgba(${oTargetRArr}, ${oracleColor ? 0.5 * oRatio : 0.2}), inset -2px -2px 10px rgba(0,0,0,0.8)`;
-                    oSph.style.filter = 'blur(1.5px)';
                 }
             }
         }
@@ -14701,11 +14795,16 @@ const animStyle = document.createElement('style');
         }
     }
 
-    // 🎬 ФИНАЛЬНАЯ БИТВА НА ОРБИТЕ (Единственная и неповторимая версия)
+   // 🎬 ФИНАЛЬНАЯ БИТВА НА ОРБИТЕ (С процедурными звуками и вибрацией)
+    // 🎬 ФИНАЛЬНАЯ БИТВА НА ОРБИТЕ (Полный Хаос: Звук + Тряска + Рандом)
     function playEpicEnding(win) {
         const t = LANG_DATA[GameState.lang];
         const winnerColor = win ? myColor : oracleColor;
         const loserColor = win ? oracleColor : myColor;
+
+        // 🔥 КРИТИЧЕСКИЙ МОМЕНТ: Будим аудио-контекст ПРЯМО ЗДЕСЬ
+        if (!window.absAudioCtx) window.absAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (window.absAudioCtx.state === 'suspended') window.absAudioCtx.resume();
 
         window.isAbsCinematicPlaying = true;
         
@@ -14725,10 +14824,7 @@ const animStyle = document.createElement('style');
             if (window.currentCinematicId !== myCinematicId) return; 
             if (!window.isAbsCinematicPlaying) return;
             rotY += 0.25; rotX += 0.05; 
-            
-            // Стягивание в центр растянуто на 18 секунд
             window.absSymbioteOffset *= 0.992; 
-            
             updateTransform();
             cinematicFrame = requestAnimationFrame(rotateCinematic);
         };
@@ -14740,25 +14836,13 @@ const animStyle = document.createElement('style');
         });
         targets.sort(() => Math.random() - 0.5);
 
-        // 🔥 ЭПИЧНЫЙ ХРОНОМЕТРАЖ: 14 СЕКУНД НА ЗАХВАТ
         const battleDuration = 14000;
         const step = targets.length > 0 ? battleDuration / targets.length : 100;
 
-        const updateCinematicScore = () => {
-            let pScore = 0; let oScore = 0;
-            facesData.forEach(f => {
-                if (f.layers === 3) {
-                    if (f.owner === myColor) pScore++;
-                    else if (f.owner === oracleColor) oScore++;
-                }
-            });
-            const pLocks = document.getElementById('p-locks');
-            const oLocks = document.getElementById('o-locks');
-            if (pLocks) pLocks.innerText = Math.min(16, pScore);
-            if (oLocks) oLocks.innerText = Math.min(16, oScore);
-        };
-
         targets.forEach((faceIdx, i) => {
+            // 🔥 ЛОМАЕМ РИТМ: Добавляем случайное смещение +/- 200мс
+            const jitter = (Math.random() - 0.5) * 400;
+
             safeTimeout(() => {
                 if (window.currentCinematicId !== myCinematicId) return;
 
@@ -14767,10 +14851,25 @@ const animStyle = document.createElement('style');
                 if (fd.owner) exactColor = getLayerColor(fd.owner, fd.layers);
 
                 const faceEl = document.getElementById(`abs-face-${faceIdx}`);
-                
                 if (faceEl) {
-                    // 🔥 РАЗДЕЛЯЕМ ТАЙМИНГИ: Трансформации плавные (0.4s), а цвета меняются быстрее
-                    faceEl.style.transition = 'transform 0.4s ease-in, filter 0.4s ease, background 0.2s, box-shadow 0.2s';
+                    faceEl.style.transition = 'transform 0.4s ease-in, background 0.2s, box-shadow 0.2s';
+                }
+
+                // 🔊 1. ЗВУК: Шанс 70%, чтобы не было каши, и рандомная задержка
+                if (Math.random() > 0.3) {
+                    setTimeout(() => playProceduralExplosion(), Math.random() * 100);
+                }
+
+                // 📳 2. ХАОТИЧНАЯ ТРЯСКА И ВИБРАЦИЯ
+                if (typeof triggerImpact === 'function') {
+                    // Рандомим силу сотрясения экрана: от легкой до тяжелой
+                    const impacts = ['light', 'medium', 'heavy'];
+                    triggerImpact(impacts[Math.floor(Math.random() * impacts.length)]);
+                }
+
+                if (typeof Telegram !== 'undefined' && Telegram.WebApp && Telegram.WebApp.HapticFeedback) {
+                    const haptics = ['light', 'medium', 'heavy', 'rigid'];
+                    Telegram.WebApp.HapticFeedback.impactOccurred(haptics[Math.floor(Math.random() * 4)]); 
                 }
 
                 animateFaceBurn(faceIdx); 
@@ -14778,20 +14877,13 @@ const animStyle = document.createElement('style');
                 
                 safeTimeout(() => {
                     if (window.currentCinematicId !== myCinematicId) return;
-                    fd.owner = winnerColor; 
-                    fd.layers = 3;
-                    
+                    fd.owner = winnerColor; fd.layers = 3;
                     if (faceEl) {
-                        // 🔥 ИДЕАЛЬНАЯ ПЛАВНОСТЬ: transform летит 0.6s с красивым изгибом, а цвета вбиваются за 0.1s!
-                        faceEl.style.transition = 'transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.1s, box-shadow 0.1s, border-color 0.1s, filter 0.4s ease';
+                        faceEl.style.transition = 'transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.1s, box-shadow 0.1s, border-color 0.1s';
                     }
-                    
-                    updateFaceVisual(faceIdx); 
-                    animateFaceClaim(faceIdx);
-                    updateCinematicScore();
+                    updateFaceVisual(faceIdx); animateFaceClaim(faceIdx);
                 }, 600);
-
-            }, 200 + (i * step));
+            }, 200 + (i * step) + jitter);
         });
 
         const winSph = win ? document.getElementById('pSphere') : document.getElementById('oSphere');
@@ -14801,7 +14893,6 @@ const animStyle = document.createElement('style');
         const winCenter = winnerColor === 'green' ? '#ffffff' : '#555555'; 
 
         if (winSph) {
-            // 🔥 РАСТЯГИВАЕМ РОСТ СИМБИОТА НА ВСЕ 18 СЕКУНД
             winSph.style.transition = 'width 18s cubic-bezier(0.4, 0, 0.2, 1), height 18s cubic-bezier(0.4, 0, 0.2, 1), margin 18s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 18s ease, filter 18s ease, background 18s ease';
             winSph.style.zIndex = '100';
             winSph.style.width = '230px'; 
@@ -14816,7 +14907,6 @@ const animStyle = document.createElement('style');
 
         if (loseSph) { loseSph.style.transition = 'opacity 4s ease'; loseSph.style.opacity = '0'; }
 
-        // 🔥 ФИНАЛ ЧЕРЕЗ 18 СЕКУНД (После захвата всех граней Абсолют еще 4 секунды величественно крутится)
         safeTimeout(() => {
             if (window.currentCinematicId !== myCinematicId) return;
 
@@ -14854,7 +14944,14 @@ const animStyle = document.createElement('style');
             if (obj) obj.style.pointerEvents = 'auto';
             
             autoRotate = true; 
-            if(typeof App !== 'undefined') App.playSoundEffect(win ? 'victory' : 'defeat');
+            
+            if(typeof App !== 'undefined' && typeof App.playSoundEffect === 'function') {
+                App.playSoundEffect(win ? 'victory' : 'defeat');
+            }
+            if (typeof Telegram !== 'undefined' && Telegram.WebApp && Telegram.WebApp.HapticFeedback) {
+                Telegram.WebApp.HapticFeedback.notificationOccurred(win ? 'success' : 'error');
+            }
+            
         }, 18000);
     }
 
@@ -15014,51 +15111,66 @@ const animStyle = document.createElement('style');
 
     function returnToActiveFace() {
         if (activeFaceIndex === -1) { pokeEngine(); return; }
+        
+        // 1. ЖЕСТКО ГЛУШИМ ЛЮБУЮ ИНЕРЦИЮ
         cancelAnimationFrame(inertiaFrame);
         autoRotate = false; clearTimeout(engineTimer);
+
+        const scene = document.getElementById('absoluteScene');
+        if (scene) scene.style.pointerEvents = 'none';
 
         let targetRotX = -facesData[activeFaceIndex].rotX;
         let targetRotY = -facesData[activeFaceIndex].rotY;
         let targetRotZ = 0;
 
-        let currX = rotX % 360; let currY = rotY % 360; let currZ = rotZ % 360;
-        if (currX < 0) currX += 360; if (currY < 0) currY += 360; if (currZ < 0) currZ += 360;
+        // Ищем кратчайший путь (Умная математика без сброса оборотов)
+        let diffX = (targetRotX - rotX) % 360;
+        if (diffX > 180) diffX -= 360; else if (diffX < -180) diffX += 360;
+        targetRotX = rotX + diffX;
 
-        let diffX = targetRotX - currX; if (diffX > 180) targetRotX -= 360; else if (diffX < -180) targetRotX += 360;
-        let diffY = targetRotY - currY; if (diffY > 180) targetRotY -= 360; else if (diffY < -180) targetRotY += 360;
-        let diffZ = targetRotZ - currZ; if (diffZ > 180) targetRotZ -= 360; else if (diffZ < -180) targetRotZ += 360;
+        let diffY = (targetRotY - rotY) % 360;
+        if (diffY > 180) diffY -= 360; else if (diffY < -180) diffY += 360;
+        targetRotY = rotY + diffY;
+
+        let diffZ = (targetRotZ - rotZ) % 360;
+        if (diffZ > 180) diffZ -= 360; else if (diffZ < -180) diffZ += 360;
+        targetRotZ = rotZ + diffZ;
 
         const obj = document.getElementById('absoluteObj');
         const pSph = document.getElementById('pSphere');
         const oSph = document.getElementById('oSphere');
-        
-        // 👇 БЕРЕМ НОВЫЕ СЛОИ СЭНДВИЧА ВМЕСТО СТАРОГО auraWrap 👇
         const wrapBack = document.getElementById('wrapperBack');
         const wrapFront = document.getElementById('wrapperFront');
 
         if (obj) {
+            // 🔥 2. ИСКУССТВЕННЫЙ СТОП-КАДР: Убиваем все транзиции и фиксируем текущее положение
             obj.style.transition = 'none';
-            obj.style.transform = `rotateX(${currX}deg) rotateY(${currY}deg) rotateZ(${currZ}deg)`;
+            obj.style.transform = `rotateX(${rotX}deg) rotateY(${rotY}deg) rotateZ(${rotZ}deg)`;
             
-            // Задаем стартовые позиции для анимации возврата
-            let invCurr = `rotateZ(${-currZ}deg) rotateY(${-currY}deg) rotateX(${-currX}deg)`;
+            let invCurr = `rotateZ(${-rotZ}deg) rotateY(${-rotY}deg) rotateX(${-rotX}deg)`;
             if(pSph) { pSph.style.transition = 'none'; pSph.style.transform = `translate3d(-20px, -10px, 20px) ${invCurr}`; }
             if(oSph) { oSph.style.transition = 'none'; oSph.style.transform = `translate3d(20px, 10px, -20px) ${invCurr}`; }
             if(wrapBack) { wrapBack.style.transition = 'none'; wrapBack.style.transform = `${invCurr} translateZ(-45px)`; }
             if(wrapFront) { wrapFront.style.transition = 'none'; wrapFront.style.transform = `${invCurr} translateZ(45px)`; }
-            
+
+            // 🔥 3. ГАРАНТИРОВАННЫЙ РЕФЛОУ (Магия CSS)
+            // Это заставит браузер отрисовать "стоп-кадр" ПЕРЕД тем, как мы дадим ему новую команду.
+            // Именно эта строчка убивает тот самый жесткий рывок!
             void obj.offsetWidth; 
 
-            // Запускаем плавный полет к нужной грани
-            obj.style.transition = 'transform 0.8s cubic-bezier(0.25, 0.1, 0.25, 1)';
+            // 4. МЯГКОЕ ВОЗВРАЩЕНИЕ 
+            // Используем очень плавную, "маслянистую" кривую (0.2, 0.8, 0.2, 1), 
+            // которая гасит скорость плавно, а не резко.
+            const smoothTrans = 'transform 0.8s cubic-bezier(0.2, 0.8, 0.2, 1)';
+            
+            obj.style.transition = smoothTrans;
             obj.style.transform = `rotateX(${targetRotX}deg) rotateY(${targetRotY}deg) rotateZ(${targetRotZ}deg)`;
             
-            // Симбиоты и туман летят синхронно со сферой
             let invTarget = `rotateZ(${-targetRotZ}deg) rotateY(${-targetRotY}deg) rotateX(${-targetRotX}deg)`;
-            if(pSph) { pSph.style.transition = 'transform 0.8s cubic-bezier(0.25, 0.1, 0.25, 1)'; pSph.style.transform = `translate3d(-20px, -10px, 20px) ${invTarget}`; }
-            if(oSph) { oSph.style.transition = 'transform 0.8s cubic-bezier(0.25, 0.1, 0.25, 1)'; oSph.style.transform = `translate3d(20px, 10px, -20px) ${invTarget}`; }
-            if(wrapBack) { wrapBack.style.transition = 'transform 0.8s cubic-bezier(0.25, 0.1, 0.25, 1)'; wrapBack.style.transform = `${invTarget} translateZ(-45px)`; }
-            if(wrapFront) { wrapFront.style.transition = 'transform 0.8s cubic-bezier(0.25, 0.1, 0.25, 1)'; wrapFront.style.transform = `${invTarget} translateZ(45px)`; }
+            if(pSph) { pSph.style.transition = smoothTrans; pSph.style.transform = `translate3d(-20px, -10px, 20px) ${invTarget}`; }
+            if(oSph) { oSph.style.transition = smoothTrans; oSph.style.transform = `translate3d(20px, 10px, -20px) ${invTarget}`; }
+            if(wrapBack) { wrapBack.style.transition = smoothTrans; wrapBack.style.transform = `${invTarget} translateZ(-45px)`; }
+            if(wrapFront) { wrapFront.style.transition = smoothTrans; wrapFront.style.transform = `${invTarget} translateZ(45px)`; }
 
             safeTimeout(() => { 
                 if(obj) obj.style.transition = 'none'; 
@@ -15066,7 +15178,10 @@ const animStyle = document.createElement('style');
                 if(oSph) oSph.style.transition = 'width 1s, height 1s, margin 1s, background 1s, box-shadow 1s';
                 if(wrapBack) wrapBack.style.transition = 'none'; 
                 if(wrapFront) wrapFront.style.transition = 'none'; 
+                
                 rotX = targetRotX; rotY = targetRotY; rotZ = targetRotZ; 
+                
+                if (scene) scene.style.pointerEvents = 'auto';
                 pokeEngine(); 
             }, 850);
         }
@@ -15138,33 +15253,37 @@ const animStyle = document.createElement('style');
     }
 
     function restoreVisualsFromState() {
-        // 🔥 ЖЕЛЕЗОБЕТОННОЕ ВОСКРЕШЕНИЕ: Снимаем невидимость от animateExit
+        // 🔥 ВОСКРЕШЕНИЕ ИНТЕРФЕЙСА (Сцена)
+        const allUI = document.querySelectorAll('#absoluteGameStage > *:not(#absoluteScene)');
+        allUI.forEach(el => {
+            if (el) {
+                el.style.transition = 'none';
+                el.style.opacity = '1';
+                el.style.pointerEvents = ''; 
+            }
+        });
+
         const els = [
             document.getElementById('pSphere'), document.getElementById('oSphere'),
             document.getElementById('coreAuraBack'), document.getElementById('coreAuraFront'),
             document.getElementById('wrapperBack'), document.getElementById('wrapperFront'),
-            document.getElementById('absoluteBottomTitle')
+            document.getElementById('absoluteBottomTitle') // 🔥 ВОСКРЕШАЕМ ЗАГОЛОВК АБСОЛЮТ
         ];
+        
         els.forEach(s => { 
             if(s) { 
-                s.style.display = 'block'; 
-                s.style.opacity = '1'; 
-                s.style.transform = 'none'; // Сброс scale(0) от прошлого выхода
-                s.style.transition = 'none'; // Мгновенное появление
+                s.style.display = 'block'; s.style.opacity = '1'; 
+                s.style.transform = 'none'; s.style.transition = 'none'; 
             } 
         });
 
         for (let i=0; i<TOTAL_FACES; i++) updateFaceVisual(i);
-        updateEnergyUI(); 
-        updateScoreAndTension(); 
-        updateTransform();
+        updateEnergyUI(); updateScoreAndTension(); updateTransform();
         
         if (gameState === 'COLOR_SELECT') {
             renderColorSelection();
         } else if (gameState === 'PLAYER_TURN') {
-            activeFaceIndex = -1; 
-            highlightFace(-1);
-            
+            activeFaceIndex = -1; highlightFace(-1);
             updateActionBtn(`БРОСИТЬ АБСОЛЮТ`, false);
             document.querySelectorAll('.absolute-face').forEach(f => f.style.opacity = '1');
             updateFaceInfoText(-1);
@@ -15173,10 +15292,31 @@ const animStyle = document.createElement('style');
             rotX = -facesData[activeFaceIndex].rotX; rotY = -facesData[activeFaceIndex].rotY; rotZ = 0;
             updateTransform(); highlightFace(activeFaceIndex);
         } else if (gameState === 'GAME_OVER') {
-            activeFaceIndex = -1;
-            highlightFace(-1);
-            updateScoreAndTension(); 
-            updateFaceInfoText(-1);
+            activeFaceIndex = -1; highlightFace(-1);
+            updateScoreAndTension(); updateFaceInfoText(-1);
+            
+            let pScore = 0; let oScore = 0;
+            facesData.forEach(f => {
+                if (f.layers === 3) { if (f.owner === myColor) pScore++; else if (f.owner === oracleColor) oScore++; }
+            });
+            const win = pScore >= 16;
+            const t = LANG_DATA[GameState.lang];
+            
+            if (typeof updateActionBtn === 'function') {
+                updateActionBtn(win ? (t.victory || "👑 ВЫ ПОБЕДИЛИ") : (t.defeat || "💀 ПОБЕДИЛ ОРАКУЛ"), false, win);
+                const finalBtn = document.getElementById('absoluteActionBtn');
+                if (finalBtn) {
+                    if (win) {
+                        finalBtn.style.background = '#065f46'; finalBtn.style.borderColor = '#10b981';
+                        finalBtn.style.boxShadow = '0 6px 0 #047857, 0 10px 15px rgba(0,0,0,0.6)';
+                        finalBtn.style.color = '#4ade80'; finalBtn.style.textShadow = '0 0 10px rgba(74, 222, 128, 0.8)';
+                    } else {
+                        finalBtn.style.background = '#1a0b0b'; finalBtn.style.borderColor = '#7f1d1d';
+                        finalBtn.style.boxShadow = '0 6px 0 #450a0a, 0 10px 15px rgba(0,0,0,0.8)';
+                        finalBtn.style.color = '#ef4444'; finalBtn.style.textShadow = '0 0 10px rgba(239, 68, 68, 0.8)';
+                    }
+                }
+            }
             
             document.body.style.pointerEvents = 'auto'; 
             const stage = document.getElementById('absoluteScene');
@@ -15226,36 +15366,7 @@ const animStyle = document.createElement('style');
         updateFaceInfoText(-1);
     }
 
-    function handleMainAction() {
-        if(typeof App !== 'undefined' && typeof App.playSoundEffect === 'function') App.playSoundEffect('click');
-
-        if (gameState === 'PLAYER_TURN' || gameState === 'FREE_REROLL') {
-            gameState = 'ROLL'; autoRotate = false; clearTimeout(engineTimer);
-            
-            lockNavigation(true); // 🔒 БЛОКИРУЕМ ВЫХОД ИЗ ИГРЫ ПРИ БРОСКЕ
-            
-            document.querySelectorAll('.absolute-face').forEach(face => {
-                const idx = parseInt(face.id.replace('abs-face-', ''));
-                face.style.transition = 'none'; 
-                face.style.opacity = '1'; 
-                face.style.zIndex = "auto";
-                face.style.transform = `rotateY(${facesData[idx].rotY}deg) rotateX(${facesData[idx].rotX}deg) translateZ(114px)`;
-                updateFaceVisual(idx);
-                
-                requestAnimationFrame(() => requestAnimationFrame(() => {
-                    face.style.transition = 'background 0.3s, border 0.3s, box-shadow 0.3s, opacity 0.4s, transform 0.4s ease';
-                }));
-            }); 
-            
-            updateFaceInfoText(-1);
-            updateActionBtn("ВРАЩАЕТСЯ...", true);
-            rollAbsolute();
-        } else if (gameState === 'ACTION_PENDING') {
-            triggerTurnTransfer('o');
-        } else if (gameState === 'GAME_OVER') {
-            resetGameState();
-        }
-    }
+    
 
     function finalizeRoll(faceIdx) {
         freeRemovalUsed = false;
@@ -15305,94 +15416,6 @@ const animStyle = document.createElement('style');
                 pokeEngine();
             }
         });
-    }
-
-    function rollAbsolute() {
-        const targetRIdx = Math.floor(Math.random() * TOTAL_FACES);
-        activeFaceIndex = targetRIdx;
-        
-        const rollDuration = 2000 + Math.floor(Math.random() * 2000); 
-        const wobbleDur = 600; const flightDur = rollDuration - wobbleDur;
-        
-        const targetRotX = -facesData[targetRIdx].rotX;
-        const targetRotY = -facesData[targetRIdx].rotY;
-        
-        const spinsX = 360 * (4 + Math.floor(Math.random() * 5)); 
-        const spinsY = 360 * (4 + Math.floor(Math.random() * 5)); 
-        
-        const baseRotX = Math.round(rotX / 360) * 360; 
-        const baseRotY = Math.round(rotY / 360) * 360; 
-        
-        rotX = baseRotX + spinsX + targetRotX; 
-        rotY = baseRotY + spinsY + targetRotY; rotZ = 0; 
-        
-        const overX = rotX + (Math.random() * 50 - 25);
-        const overY = rotY + (Math.random() * 50 - 25);
-        
-        const obj = document.getElementById('absoluteObj');
-        const pSph = document.getElementById('pSphere');
-        const oSph = document.getElementById('oSphere');
-        const scene = document.getElementById('absoluteScene');
-        
-        const wrapBack = document.getElementById('wrapperBack'); 
-        const wrapFront = document.getElementById('wrapperFront'); 
-        
-        document.querySelectorAll('.absolute-face').forEach(f => {
-            const faceIdx = parseInt(f.id.replace('abs-face-', ''));
-            const fd = facesData[faceIdx];
-            f.style.transition = 'none'; 
-            f.style.opacity = '1'; 
-            f.style.filter = 'none'; 
-            f.style.transform = `rotateY(${fd.rotY}deg) rotateX(${fd.rotX}deg) translateZ(126px) scale(1)`;
-        });
-        
-        if(scene) {
-            scene.style.transition = `transform ${flightDur * 0.4 / 1000}s cubic-bezier(0.2, 0.8, 0.2, 1)`;
-            scene.style.transform = "scale(1.5) translateY(-40px)"; 
-            safeTimeout(() => {
-                scene.style.transition = `transform ${flightDur * 0.6 / 1000}s cubic-bezier(0.6, 0, 0.9, 1)`;
-                scene.style.transform = "scale(1) translateY(0px)";
-            }, flightDur * 0.4);
-        }
-        
-        if(obj) {
-            obj.style.transition = `transform ${flightDur / 1000}s cubic-bezier(0.25, 0.1, 0.4, 1)`;
-            obj.style.transform = `rotateX(${overX}deg) rotateY(${overY}deg) rotateZ(0deg)`;
-            
-            const invRot = `rotateZ(0deg) rotateY(${-overY}deg) rotateX(${-overX}deg)`;
-            if(pSph) { pSph.style.transition = `transform ${flightDur / 1000}s cubic-bezier(0.25, 0.1, 0.4, 1)`; pSph.style.transform = `translate3d(-20px, -10px, 20px) ${invRot}`; }
-            if(oSph) { oSph.style.transition = `transform ${flightDur / 1000}s cubic-bezier(0.25, 0.1, 0.4, 1)`; oSph.style.transform = `translate3d(20px, 10px, -20px) ${invRot}`; }
-            if(wrapBack) { wrapBack.style.transition = `transform ${flightDur / 1000}s cubic-bezier(0.25, 0.1, 0.4, 1)`; wrapBack.style.transform = `${invRot} translateZ(-45px)`; }
-            if(wrapFront) { wrapFront.style.transition = `transform ${flightDur / 1000}s cubic-bezier(0.25, 0.1, 0.4, 1)`; wrapFront.style.transform = `${invRot} translateZ(45px)`; }
-        }
-
-        safeTimeout(() => { triggerImpact('heavy'); playHeavyThud(); }, flightDur);
-
-        safeTimeout(() => {
-            if(obj) {
-                obj.style.transition = `transform ${wobbleDur / 1000}s cubic-bezier(0.34, 1.56, 0.64, 1)`; 
-                obj.style.transform = `rotateX(${rotX}deg) rotateY(${rotY}deg) rotateZ(${rotZ}deg)`;
-                
-                const invRot2 = `rotateZ(${-rotZ}deg) rotateY(${-rotY}deg) rotateX(${-rotX}deg)`;
-                if(pSph) { pSph.style.transition = `transform ${wobbleDur / 1000}s cubic-bezier(0.34, 1.56, 0.64, 1)`; pSph.style.transform = `translate3d(-20px, -10px, 20px) ${invRot2}`; }
-                if(oSph) { oSph.style.transition = `transform ${wobbleDur / 1000}s cubic-bezier(0.34, 1.56, 0.64, 1)`; oSph.style.transform = `translate3d(20px, 10px, -20px) ${invRot2}`; }
-                if(wrapBack) { wrapBack.style.transition = `transform ${wobbleDur / 1000}s cubic-bezier(0.34, 1.56, 0.64, 1)`; wrapBack.style.transform = `${invRot2} translateZ(-45px)`; }
-                if(wrapFront) { wrapFront.style.transition = `transform ${wobbleDur / 1000}s cubic-bezier(0.34, 1.56, 0.64, 1)`; wrapFront.style.transform = `${invRot2} translateZ(45px)`; }
-            }
-        }, flightDur);
-        
-        safeTimeout(() => {
-            if(obj) { obj.style.transition = 'none'; }
-            if(pSph) pSph.style.transition = 'width 1s, height 1s, margin 1s, background 1s, box-shadow 1s';
-            if(oSph) oSph.style.transition = 'width 1s, height 1s, margin 1s, background 1s, box-shadow 1s';
-            if(wrapBack) wrapBack.style.transition = 'none';
-            if(wrapFront) wrapFront.style.transition = 'none';
-            
-            document.querySelectorAll('.absolute-face').forEach(f => {
-                f.style.transition = 'background 0.3s, border 0.3s, box-shadow 0.3s, opacity 0.4s, transform 0.4s ease, filter 0.4s ease';
-            });
-            finalizeRoll(targetRIdx);
-        }, rollDuration + 50);
     }
 
 
@@ -15451,34 +15474,31 @@ const animStyle = document.createElement('style');
     
   
 
-    // 5. ГЕНЕРАТОР ПАНЕЛИ (Компакт: цифры слева, эмодзи справа)
+   // 🛠️ ГЕНЕРАТОР ПАНЕЛИ (Компакт: цифры слева, эмодзи справа)
     function buildAbsDebugPanel() {
         let container = document.getElementById('abs-debug-container');
         if (!container) {
-            container = document.createElement('div');
-            container.id = 'abs-debug-container';
+            container = document.createElement('div'); container.id = 'abs-debug-container';
             document.body.appendChild(container);
         }
         
-        // Горизонтальный макет (flex-direction: row)
-        container.style.cssText = "display: none; position: fixed !important; bottom: 70px !important; left: 50% !important; transform: translateX(-50%) !important; z-index: 9999999 !important; width: 98%; max-width: 440px; background: rgba(5, 8, 15, 0.95); padding: 8px; border-radius: 12px; border: 2px solid #818cf8; box-shadow: 0 10px 30px rgba(0,0,0,0.9); backdrop-filter: blur(8px); flex-direction: row; gap: 6px; opacity: 1 !important; filter: none !important; pointer-events: auto !important;";
+        // 🔥 МЕНЯЕМ МАКЕТ: Теперь это flex-direction: row (горизонтальная компоновка)
+        container.style.cssText = "display: none; position: fixed !important; bottom: 70px !important; left: 50% !important; transform: translateX(-50%) !important; z-index: 9999999 !important; width: 98%; max-width: 440px; background: rgba(5, 8, 15, 0.95); padding: 8px; border-radius: 12px; border: 2px solid #818cf8; box-shadow: 0 10px 30px rgba(0,0,0,0.9); backdrop-filter: blur(8px); flex-direction: row; gap: 8px; opacity: 1 !important; filter: none !important; pointer-events: auto !important;";
         
-        let html = `
-            <div style="display: grid; grid-template-columns: repeat(14, 1fr); gap: 3px; flex-grow: 1;">
-        `;
-        
+        // Левый блок: Сетка на 11 колонок (занимает всё свободное место благодаря flex-grow)
+        let html = '<div style="display: grid; grid-template-columns: repeat(11, 1fr); gap: 4px; flex-grow: 1;">';
         for(let i=0; i<42; i++) {
-            html += `<button onclick="debugSuperTap(${i})" style="width: 100%; aspect-ratio: 1/1; font-size: 10px; font-weight: bold; background: #2d3436; color: #fff; border: 1px solid #636e72; border-radius: 4px; padding: 0; cursor: pointer; pointer-events: auto !important; transition: none !important;">${i+1}</button>`;
+            html += `<button onclick="debugSuperTap(${i})" style="width: 100%; aspect-ratio: 1/1; font-size: 10px; font-weight: bold; background: #2d3436; color: #fff; border: 1px solid #636e72; border-radius: 4px; padding: 0; cursor: pointer; pointer-events: auto !important;">${i+1}</button>`;
         }
+        html += `</div>`;
         
-        html += `
-            </div>
-            <div style="display: flex; flex-direction: column; gap: 4px; width: 45px; justify-content: space-between;">
-                <button onclick="debugSuperTap('win')" style="flex: 1; font-size: 18px; background: #f39c12; border: 1px solid #e67e22; border-radius: 6px; cursor: pointer; pointer-events: auto !important; transition: none !important;" title="Победа">👑</button>
-                <button onclick="debugSuperTap('lose')" style="flex: 1; font-size: 18px; background: #c0392b; border: 1px solid #e74c3c; border-radius: 6px; cursor: pointer; pointer-events: auto !important; transition: none !important;" title="Поражение">💀</button>
-                <button onclick="debugSuperTap('energy')" style="flex: 1; font-size: 18px; background: #27ae60; border: 1px solid #2ecc71; border-radius: 6px; cursor: pointer; pointer-events: auto !important; transition: none !important;" title="+1 Энергия">⚡</button>
-            </div>
-        `;
+        // Правый блок: 3 кнопки, которые сами растягиваются по высоте сетки (flex: 1)
+        html += `<div style="display: flex; flex-direction: column; gap: 4px; width: 44px; justify-content: space-between;">
+            <button onclick="debugSuperTap('win')" style="flex: 1; font-size: 20px; background: #f39c12; border: 1px solid #e67e22; border-radius: 6px; cursor: pointer; pointer-events: auto !important; display: flex; align-items: center; justify-content: center;" title="Победа">👑</button>
+            <button onclick="debugSuperTap('lose')" style="flex: 1; font-size: 20px; background: #c0392b; border: 1px solid #e74c3c; border-radius: 6px; cursor: pointer; pointer-events: auto !important; display: flex; align-items: center; justify-content: center;" title="Слив">💀</button>
+            <button onclick="debugSuperTap('energy')" style="flex: 1; font-size: 20px; background: #27ae60; border: 1px solid #2ecc71; border-radius: 6px; cursor: pointer; pointer-events: auto !important; display: flex; align-items: center; justify-content: center;" title="Энергия">⚡</button>
+        </div>`;
+        
         container.innerHTML = html;
     }
 
@@ -15517,67 +15537,42 @@ const animStyle = document.createElement('style');
     let lastActiveFace = -1; // 🚀 Память для "утопающей" грани
 
     function highlightFace(idx) {
-        if (idx !== -1) lastActiveFace = idx; 
-
-        document.querySelectorAll('.absolute-face').forEach(face => {
-            const faceIdx = parseInt(face.id.replace('abs-face-', ''));
+        document.querySelectorAll('.absolute-face').forEach(f => {
+            const faceIdx = parseInt(f.id.replace('abs-face-', ''));
             const fd = facesData[faceIdx];
-            if (!fd) return;
-
-            const rotation = `rotateY(${fd.rotY}deg) rotateX(${fd.rotX}deg)`;
-
-            if (faceIdx === idx) {
-                // 1. АКТИВНАЯ ГРАНЬ: Яркая, вылетает вперед
-                face.style.zIndex = "100";
-                face.style.opacity = "1";
-                face.style.filter = "none";
-                const glow = fd.owner === 'green' ? 'rgba(34,197,94,0.8)' : (fd.owner === 'red' ? 'rgba(239,68,68,0.8)' : 'rgba(129,140,248,0.6)');
-                face.style.boxShadow = `0 0 20px 5px ${glow}, inset 0 0 10px ${glow}`;
-                face.style.transform = `${rotation} translateZ(146px) scale(1.15)`;
-                
-            } else if (faceIdx === lastActiveFace && (gameState === 'SHIFTING' || gameState === 'ORACLE_TURN' || gameState === 'PLAYER_TURN' || gameState === 'IDLE')) {
-                // 🚀 2. "ОСТЫВАЮЩАЯ" ГРАНЬ: Тонет в сфере, покрывается блюром
-                face.style.zIndex = "auto";
-                face.style.opacity = "0.4";
-                face.style.filter = "blur(2px) brightness(0.6)"; 
-                face.style.boxShadow = "none";
-                face.style.transform = `${rotation} translateZ(105px) scale(0.9)`; 
-                updateFaceVisual(faceIdx);
-                
+            
+            // 🔥 ЕДИНАЯ ГЕОМЕТРИЯ ДЛЯ ВСЕХ: Грани всегда лежат вровень со сферой
+            const flatTransform = `rotateY(${fd.rotY}deg) rotateX(${fd.rotX}deg) translateZ(126px) scale(1)`;
+            f.style.transform = flatTransform; 
+            
+            if (idx === -1) {
+                f.style.opacity = '1';
+            } else if (faceIdx === idx) {
+                f.style.opacity = '1';
+                // Здесь можно добавить box-shadow, если захочешь пульсацию
             } else {
-                // 3. ОБЫЧНЫЕ ГРАНИ: Стоят ровно
-                face.style.zIndex = "auto";
-                face.style.opacity = (gameState === 'ACTION_PENDING' || gameState === 'ORACLE_TURN' || gameState === 'FREE_REROLL') ? "0.4" : "1";
-                face.style.filter = "none"; 
-                face.style.boxShadow = "";
-                face.style.transform = `${rotation} translateZ(126px) scale(1)`; 
-                updateFaceVisual(faceIdx);
+                f.style.opacity = '0.3'; // Жестко затеняем неактивные
             }
         });
     }
 
     function animateFaceClaim(idx) {
-        // 🔥 Оставляем только легкую вибрацию телефона, без тряски экрана
-        if (typeof tg !== 'undefined' && tg.HapticFeedback) {
-            tg.HapticFeedback.impactOccurred('light');
-        }
-
+        if (typeof tg !== 'undefined' && tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
         const face = document.getElementById(`abs-face-${idx}`);
         if(!face) return;
         const fd = facesData[idx];
-        const rotation = `rotateY(${fd.rotY}deg) rotateX(${fd.rotX}deg)`;
+        const flatTransform = `rotateY(${fd.rotY}deg) rotateX(${fd.rotX}deg) translateZ(126px) scale(1)`;
         
-        face.style.transform = `${rotation} translateZ(160px) scale(1.4)`;
-        face.style.filter = 'brightness(2)';
+        // Вспышка на месте
+        face.style.transform = flatTransform;
+        face.style.background = '#ffffff';
+        face.style.boxShadow = '0 0 40px 15px #ffffff';
         
         setTimeout(() => {
             if(!face) return;
-            face.style.filter = 'brightness(1)';
-            if (gameState === 'ACTION_PENDING' || gameState === 'ORACLE_TURN' || gameState === 'FREE_REROLL') {
-                face.style.transform = `${rotation} translateZ(150px) scale(1.2)`;
-            } else {
-                face.style.transform = `${rotation} translateZ(130px) scale(1)`;
-            }
+            updateFaceVisual(idx); 
+            // Возврат к нормальному цвету на том же месте
+            face.style.transform = flatTransform;
         }, 600);
     }
 
@@ -15585,21 +15580,18 @@ const animStyle = document.createElement('style');
         triggerImpact('heavy');
         const face = document.getElementById(`abs-face-${idx}`); if(!face) return;
         const fd = facesData[idx];
-        const rotation = `rotateY(${fd.rotY}deg) rotateX(${fd.rotX}deg)`;
+        const flatTransform = `rotateY(${fd.rotY}deg) rotateX(${fd.rotX}deg) translateZ(126px) scale(1)`;
         
-        // Вспышка и сжатие
-        face.style.transform = `${rotation} translateZ(126px) scale(0.7)`; 
-        face.style.filter = 'brightness(3) contrast(2)';
+        // Вспышка на месте
+        face.style.transform = flatTransform;
+        face.style.background = '#ffffff';
+        face.style.boxShadow = '0 0 30px 15px #ffffff';
         
         setTimeout(() => { 
             if(!face) return;
-            face.style.filter = 'none'; 
-            if (gameState === 'ACTION_PENDING' || gameState === 'ORACLE_TURN' || gameState === 'FREE_REROLL') {
-                // Мягко возвращаем в "активное" состояние (ближе к камере)
-                face.style.transform = `${rotation} translateZ(146px) scale(1.15)`; 
-            } else {
-                face.style.transform = `${rotation} translateZ(126px) scale(1)`; 
-            }
+            updateFaceVisual(idx); 
+            // Возврат к нормальному цвету на том же месте
+            face.style.transform = flatTransform; 
         }, 600);
     }
 
@@ -15722,27 +15714,40 @@ const animStyle = document.createElement('style');
         triggerTurnTransfer('p');
     }
 
-    function rollOracleAbsolute() {
+    // === 🔥 ЕДИНЫЙ JS-ДВИЖОК БРОСКА (ИДЕАЛЬНАЯ ПАРАБОЛА И ТЯЖЕЛЫЙ УДАР) 🔥 ===
+    let rollAnimFrame;
+    
+    // === 1. БРОСОК ИГРОКА ===
+    function rollAbsolute() {
         const targetRIdx = Math.floor(Math.random() * TOTAL_FACES);
         activeFaceIndex = targetRIdx;
         
-        const rollDuration = 2000 + Math.floor(Math.random() * 2000); 
+        // Тяжелый полет
+        const rollDuration = 2200 + Math.floor(Math.random() * 1000); 
         const wobbleDur = 600; const flightDur = rollDuration - wobbleDur;
-        const targetRotX = -facesData[targetRIdx].rotX; const targetRotY = -facesData[targetRIdx].rotY;
         
-        rotX = Math.round(rotX / 360) * 360 + 1080 + targetRotX;
-        rotY = Math.round(rotY / 360) * 360 + 1080 + targetRotY; rotZ = 0; 
+        const targetRotX = -facesData[targetRIdx].rotX;
+        const targetRotY = -facesData[targetRIdx].rotY;
         
-        const overX = rotX + (Math.random() * 50 - 25);
-        const overY = rotY + (Math.random() * 50 - 25);
+        // Тяжелое вращение (2-3 оборота)
+        const spinsX = 360 * (2 + Math.floor(Math.random() * 2)); 
+        const spinsY = 360 * (2 + Math.floor(Math.random() * 2)); 
+        
+        const baseRotX = Math.round(rotX / 360) * 360; 
+        const baseRotY = Math.round(rotY / 360) * 360; 
+        
+        rotX = baseRotX + spinsX + targetRotX; 
+        rotY = baseRotY + spinsY + targetRotY; rotZ = 0; 
+        
+        const overX = rotX + (Math.random() * 40 - 20);
+        const overY = rotY + (Math.random() * 40 - 20);
         
         const obj = document.getElementById('absoluteObj');
         const pSph = document.getElementById('pSphere');
         const oSph = document.getElementById('oSphere');
         const scene = document.getElementById('absoluteScene');
-        
-        const wrapBack = document.getElementById('wrapperBack'); 
-        const wrapFront = document.getElementById('wrapperFront'); 
+        const wrapBack = document.getElementById('wrapperBack');
+        const wrapFront = document.getElementById('wrapperFront');
         
         document.querySelectorAll('.absolute-face').forEach(f => {
             const faceIdx = parseInt(f.id.replace('abs-face-', ''));
@@ -15752,44 +15757,50 @@ const animStyle = document.createElement('style');
             f.style.filter = 'none'; 
             f.style.transform = `rotateY(${fd.rotY}deg) rotateX(${fd.rotX}deg) translateZ(126px) scale(1)`;
         });
-
+        
+        // Анимация высоты
         if(scene) {
             scene.style.transition = `transform ${flightDur * 0.4 / 1000}s cubic-bezier(0.2, 0.8, 0.2, 1)`;
             scene.style.transform = "scale(1.5) translateY(-40px)"; 
-            safeTimeout(() => { 
-                scene.style.transition = `transform ${flightDur * 0.6 / 1000}s cubic-bezier(0.6, 0, 0.9, 1)`; 
-                scene.style.transform = "scale(1) translateY(0px)"; 
+            safeTimeout(() => {
+                if(scene) {
+                    scene.style.transition = `transform ${flightDur * 0.6 / 1000}s cubic-bezier(0.6, 0, 0.9, 1)`;
+                    scene.style.transform = "scale(1) translateY(0px)";
+                }
             }, flightDur * 0.4);
         }
         
+        // Анимация вращения (GPU)
         if(obj) {
-            obj.style.transition = `transform ${flightDur / 1000}s cubic-bezier(0.25, 0.1, 0.4, 1)`;
+            const flightTrans = `transform ${flightDur / 1000}s cubic-bezier(0.25, 0.1, 0.4, 1)`;
+            obj.style.transition = flightTrans;
             obj.style.transform = `rotateX(${overX}deg) rotateY(${overY}deg) rotateZ(0deg)`;
             
             const invRot = `rotateZ(0deg) rotateY(${-overY}deg) rotateX(${-overX}deg)`;
-            if(pSph) { pSph.style.transition = `transform ${flightDur / 1000}s cubic-bezier(0.25, 0.1, 0.4, 1)`; pSph.style.transform = `translate3d(-20px, -10px, 20px) ${invRot}`; }
-            if(oSph) { oSph.style.transition = `transform ${flightDur / 1000}s cubic-bezier(0.25, 0.1, 0.4, 1)`; oSph.style.transform = `translate3d(20px, 10px, -20px) ${invRot}`; }
-            if(wrapBack) { wrapBack.style.transition = `transform ${flightDur / 1000}s cubic-bezier(0.25, 0.1, 0.4, 1)`; wrapBack.style.transform = `${invRot} translateZ(-45px)`; }
-            if(wrapFront) { wrapFront.style.transition = `transform ${flightDur / 1000}s cubic-bezier(0.25, 0.1, 0.4, 1)`; wrapFront.style.transform = `${invRot} translateZ(45px)`; }
+            if(pSph) { pSph.style.transition = flightTrans; pSph.style.transform = `translate3d(-20px, -10px, 20px) ${invRot}`; }
+            if(oSph) { oSph.style.transition = flightTrans; oSph.style.transform = `translate3d(20px, 10px, -20px) ${invRot}`; }
+            if(wrapBack) { wrapBack.style.transition = flightTrans; wrapBack.style.transform = `${invRot} translateZ(-45px)`; }
+            if(wrapFront) { wrapFront.style.transition = flightTrans; wrapFront.style.transform = `${invRot} translateZ(45px)`; }
         }
 
         safeTimeout(() => { triggerImpact('heavy'); playHeavyThud(); }, flightDur);
 
         safeTimeout(() => {
             if(obj) {
-                obj.style.transition = `transform ${wobbleDur / 1000}s cubic-bezier(0.34, 1.56, 0.64, 1)`; 
+                const wobbleTrans = `transform ${wobbleDur / 1000}s cubic-bezier(0.34, 1.56, 0.64, 1)`; 
+                obj.style.transition = wobbleTrans;
                 obj.style.transform = `rotateX(${rotX}deg) rotateY(${rotY}deg) rotateZ(${rotZ}deg)`;
                 
                 const invRot2 = `rotateZ(${-rotZ}deg) rotateY(${-rotY}deg) rotateX(${-rotX}deg)`;
-                if(pSph) { pSph.style.transition = `transform ${wobbleDur / 1000}s cubic-bezier(0.34, 1.56, 0.64, 1)`; pSph.style.transform = `translate3d(-20px, -10px, 20px) ${invRot2}`; }
-                if(oSph) { oSph.style.transition = `transform ${wobbleDur / 1000}s cubic-bezier(0.34, 1.56, 0.64, 1)`; oSph.style.transform = `translate3d(20px, 10px, -20px) ${invRot2}`; }
-                if(wrapBack) { wrapBack.style.transition = `transform ${wobbleDur / 1000}s cubic-bezier(0.34, 1.56, 0.64, 1)`; wrapBack.style.transform = `${invRot2} translateZ(-45px)`; }
-                if(wrapFront) { wrapFront.style.transition = `transform ${wobbleDur / 1000}s cubic-bezier(0.34, 1.56, 0.64, 1)`; wrapFront.style.transform = `${invRot2} translateZ(45px)`; }
+                if(pSph) { pSph.style.transition = wobbleTrans; pSph.style.transform = `translate3d(-20px, -10px, 20px) ${invRot2}`; }
+                if(oSph) { oSph.style.transition = wobbleTrans; oSph.style.transform = `translate3d(20px, 10px, -20px) ${invRot2}`; }
+                if(wrapBack) { wrapBack.style.transition = wobbleTrans; wrapBack.style.transform = `${invRot2} translateZ(-45px)`; }
+                if(wrapFront) { wrapFront.style.transition = wobbleTrans; wrapFront.style.transform = `${invRot2} translateZ(45px)`; }
             }
         }, flightDur);
         
         safeTimeout(() => {
-            if(obj) { obj.style.transition = 'none'; }
+            if(obj) obj.style.transition = 'none'; 
             if(pSph) pSph.style.transition = 'width 1s, height 1s, margin 1s, background 1s, box-shadow 1s';
             if(oSph) oSph.style.transition = 'width 1s, height 1s, margin 1s, background 1s, box-shadow 1s';
             if(wrapBack) wrapBack.style.transition = 'none';
@@ -15798,9 +15809,229 @@ const animStyle = document.createElement('style');
             document.querySelectorAll('.absolute-face').forEach(f => {
                 f.style.transition = 'background 0.3s, border 0.3s, box-shadow 0.3s, opacity 0.4s, transform 0.4s ease, filter 0.4s ease';
             });
+            finalizeRoll(targetRIdx);
+        }, rollDuration + 50);
+    }
 
-            freeRemovalUsed = false; highlightFace(activeFaceIndex); 
-            safeTimeout(executeOracleLogic, 1000); 
+
+    function handleMainAction() {
+        // 🔥 БРОНЯ УРОВНЯ "БОГ": Игнорируем клики, если Абсолют еще собирается или идет финал!
+        if (typeof isAssembling !== 'undefined' && isAssembling) return;
+        if (window.isAbsCinematicPlaying) return;
+
+        if(typeof App !== 'undefined' && typeof App.playSoundEffect === 'function') App.playSoundEffect('click');
+
+        if (gameState === 'PLAYER_TURN' || gameState === 'FREE_REROLL') {
+            gameState = 'ROLL'; 
+            autoRotate = false; 
+            clearTimeout(engineTimer);
+            
+            lockNavigation(true); // 🔒 БЛОКИРУЕМ ВЫХОД ИЗ ИГРЫ ПРИ БРОСКЕ
+            
+            updateFaceInfoText(-1);
+            updateActionBtn("ВРАЩАЕТСЯ...", true);
+            
+            rollAbsolute(); // Вызываем полноценную функцию броска игрока
+            
+        } else if (gameState === 'ACTION_PENDING') {
+            triggerTurnTransfer('o');
+        } else if (gameState === 'GAME_OVER') {
+            resetGameState();
+        }
+    }
+
+    // === 1. ПОЛНОЦЕННЫЙ БРОСОК ИГРОКА ===
+    function rollAbsolute() {
+        const targetRIdx = Math.floor(Math.random() * TOTAL_FACES);
+        activeFaceIndex = targetRIdx;
+        
+        // Тяжелый полет
+        const rollDuration = 2200 + Math.floor(Math.random() * 1000); 
+        const wobbleDur = 600; const flightDur = rollDuration - wobbleDur;
+        
+        const targetRotX = -facesData[targetRIdx].rotX;
+        const targetRotY = -facesData[targetRIdx].rotY;
+        
+        // Тяжелое вращение (2-3 оборота)
+        const spinsX = 360 * (2 + Math.floor(Math.random() * 2)); 
+        const spinsY = 360 * (2 + Math.floor(Math.random() * 2)); 
+        
+        const baseRotX = Math.round(rotX / 360) * 360; 
+        const baseRotY = Math.round(rotY / 360) * 360; 
+        
+        rotX = baseRotX + spinsX + targetRotX; 
+        rotY = baseRotY + spinsY + targetRotY; rotZ = 0; 
+        
+        const overX = rotX + (Math.random() * 40 - 20);
+        const overY = rotY + (Math.random() * 40 - 20);
+        
+        const obj = document.getElementById('absoluteObj');
+        const pSph = document.getElementById('pSphere');
+        const oSph = document.getElementById('oSphere');
+        const scene = document.getElementById('absoluteScene');
+        const wrapBack = document.getElementById('wrapperBack');
+        const wrapFront = document.getElementById('wrapperFront');
+        
+        document.querySelectorAll('.absolute-face').forEach(f => {
+            const faceIdx = parseInt(f.id.replace('abs-face-', ''));
+            const fd = facesData[faceIdx];
+            f.style.transition = 'none'; 
+            f.style.opacity = '1'; 
+            f.style.filter = 'none'; 
+            f.style.transform = `rotateY(${fd.rotY}deg) rotateX(${fd.rotX}deg) translateZ(126px) scale(1)`;
+        });
+        
+        // Анимация высоты
+        if(scene) {
+            scene.style.transition = `transform ${flightDur * 0.4 / 1000}s cubic-bezier(0.2, 0.8, 0.2, 1)`;
+            scene.style.transform = "scale(1.5) translateY(-40px)"; 
+            safeTimeout(() => {
+                if(scene) {
+                    scene.style.transition = `transform ${flightDur * 0.6 / 1000}s cubic-bezier(0.6, 0, 0.9, 1)`;
+                    scene.style.transform = "scale(1) translateY(0px)";
+                }
+            }, flightDur * 0.4);
+        }
+        
+        // Анимация вращения (GPU)
+        if(obj) {
+            const flightTrans = `transform ${flightDur / 1000}s cubic-bezier(0.25, 0.1, 0.4, 1)`;
+            obj.style.transition = flightTrans;
+            obj.style.transform = `rotateX(${overX}deg) rotateY(${overY}deg) rotateZ(0deg)`;
+            
+            const invRot = `rotateZ(0deg) rotateY(${-overY}deg) rotateX(${-overX}deg)`;
+            if(pSph) { pSph.style.transition = flightTrans; pSph.style.transform = `translate3d(-20px, -10px, 20px) ${invRot}`; }
+            if(oSph) { oSph.style.transition = flightTrans; oSph.style.transform = `translate3d(20px, 10px, -20px) ${invRot}`; }
+            if(wrapBack) { wrapBack.style.transition = flightTrans; wrapBack.style.transform = `${invRot} translateZ(-45px)`; }
+            if(wrapFront) { wrapFront.style.transition = flightTrans; wrapFront.style.transform = `${invRot} translateZ(45px)`; }
+        }
+
+        safeTimeout(() => { triggerImpact('heavy'); playHeavyThud(); }, flightDur);
+
+        safeTimeout(() => {
+            if(obj) {
+                const wobbleTrans = `transform ${wobbleDur / 1000}s cubic-bezier(0.34, 1.56, 0.64, 1)`; 
+                obj.style.transition = wobbleTrans;
+                obj.style.transform = `rotateX(${rotX}deg) rotateY(${rotY}deg) rotateZ(${rotZ}deg)`;
+                
+                const invRot2 = `rotateZ(${-rotZ}deg) rotateY(${-rotY}deg) rotateX(${-rotX}deg)`;
+                if(pSph) { pSph.style.transition = wobbleTrans; pSph.style.transform = `translate3d(-20px, -10px, 20px) ${invRot2}`; }
+                if(oSph) { oSph.style.transition = wobbleTrans; oSph.style.transform = `translate3d(20px, 10px, -20px) ${invRot2}`; }
+                if(wrapBack) { wrapBack.style.transition = wobbleTrans; wrapBack.style.transform = `${invRot2} translateZ(-45px)`; }
+                if(wrapFront) { wrapFront.style.transition = wobbleTrans; wrapFront.style.transform = `${invRot2} translateZ(45px)`; }
+            }
+        }, flightDur);
+        
+        safeTimeout(() => {
+            if(obj) obj.style.transition = 'none'; 
+            if(pSph) pSph.style.transition = 'width 1s, height 1s, margin 1s, background 1s, box-shadow 1s';
+            if(oSph) oSph.style.transition = 'width 1s, height 1s, margin 1s, background 1s, box-shadow 1s';
+            if(wrapBack) wrapBack.style.transition = 'none';
+            if(wrapFront) wrapFront.style.transition = 'none';
+            
+            document.querySelectorAll('.absolute-face').forEach(f => {
+                f.style.transition = 'background 0.3s, border 0.3s, box-shadow 0.3s, opacity 0.4s, transform 0.4s ease, filter 0.4s ease';
+            });
+            finalizeRoll(targetRIdx);
+        }, rollDuration + 50);
+    }
+
+// === 2. БРОСОК ОРАКУЛА (С ИИ И ПЛОСКОЙ ГЕОМЕТРИЕЙ) ===
+    function rollOracleAbsolute() {
+        const targetRIdx = Math.floor(Math.random() * TOTAL_FACES);
+        activeFaceIndex = targetRIdx;
+        
+        const rollDuration = 2200 + Math.floor(Math.random() * 1000); 
+        const wobbleDur = 600; const flightDur = rollDuration - wobbleDur;
+        
+        const targetRotX = -facesData[targetRIdx].rotX;
+        const targetRotY = -facesData[targetRIdx].rotY;
+        
+        // Оракул крутит сферу чуть злее (+ 720 градусов)
+        const spinsX = 360 * (2 + Math.floor(Math.random() * 2)) + 720; 
+        const spinsY = 360 * (2 + Math.floor(Math.random() * 2)) + 720; 
+        
+        const baseRotX = Math.round(rotX / 360) * 360; 
+        const baseRotY = Math.round(rotY / 360) * 360; 
+        
+        rotX = baseRotX + spinsX + targetRotX; 
+        rotY = baseRotY + spinsY + targetRotY; rotZ = 0; 
+        
+        const overX = rotX + (Math.random() * 40 - 20);
+        const overY = rotY + (Math.random() * 40 - 20);
+        
+        const obj = document.getElementById('absoluteObj');
+        const pSph = document.getElementById('pSphere');
+        const oSph = document.getElementById('oSphere');
+        const scene = document.getElementById('absoluteScene');
+        const wrapBack = document.getElementById('wrapperBack');
+        const wrapFront = document.getElementById('wrapperFront');
+        
+        document.querySelectorAll('.absolute-face').forEach(f => {
+            const faceIdx = parseInt(f.id.replace('abs-face-', ''));
+            const fd = facesData[faceIdx];
+            f.style.transition = 'none'; 
+            f.style.opacity = '1'; 
+            f.style.filter = 'none'; 
+            // 🔥 Плоская геометрия (грани не выпрыгивают)
+            f.style.transform = `rotateY(${fd.rotY}deg) rotateX(${fd.rotX}deg) translateZ(126px) scale(1)`;
+        });
+        
+        if(scene) {
+            scene.style.transition = `transform ${flightDur * 0.4 / 1000}s cubic-bezier(0.2, 0.8, 0.2, 1)`;
+            scene.style.transform = "scale(1.5) translateY(-40px)"; 
+            safeTimeout(() => {
+                if(scene) {
+                    scene.style.transition = `transform ${flightDur * 0.6 / 1000}s cubic-bezier(0.6, 0, 0.9, 1)`;
+                    scene.style.transform = "scale(1) translateY(0px)";
+                }
+            }, flightDur * 0.4);
+        }
+        
+        if(obj) {
+            const flightTrans = `transform ${flightDur / 1000}s cubic-bezier(0.25, 0.1, 0.4, 1)`;
+            obj.style.transition = flightTrans;
+            obj.style.transform = `rotateX(${overX}deg) rotateY(${overY}deg) rotateZ(0deg)`;
+            
+            const invRot = `rotateZ(0deg) rotateY(${-overY}deg) rotateX(${-overX}deg)`;
+            if(pSph) { pSph.style.transition = flightTrans; pSph.style.transform = `translate3d(-20px, -10px, 20px) ${invRot}`; }
+            if(oSph) { oSph.style.transition = flightTrans; oSph.style.transform = `translate3d(20px, 10px, -20px) ${invRot}`; }
+            if(wrapBack) { wrapBack.style.transition = flightTrans; wrapBack.style.transform = `${invRot} translateZ(-45px)`; }
+            if(wrapFront) { wrapFront.style.transition = flightTrans; wrapFront.style.transform = `${invRot} translateZ(45px)`; }
+        }
+
+        safeTimeout(() => { triggerImpact('heavy'); playHeavyThud(); }, flightDur);
+
+        safeTimeout(() => {
+            if(obj) {
+                const wobbleTrans = `transform ${wobbleDur / 1000}s cubic-bezier(0.34, 1.56, 0.64, 1)`; 
+                obj.style.transition = wobbleTrans;
+                obj.style.transform = `rotateX(${rotX}deg) rotateY(${rotY}deg) rotateZ(${rotZ}deg)`;
+                
+                const invRot2 = `rotateZ(${-rotZ}deg) rotateY(${-rotY}deg) rotateX(${-rotX}deg)`;
+                if(pSph) { pSph.style.transition = wobbleTrans; pSph.style.transform = `translate3d(-20px, -10px, 20px) ${invRot2}`; }
+                if(oSph) { oSph.style.transition = wobbleTrans; oSph.style.transform = `translate3d(20px, 10px, -20px) ${invRot2}`; }
+                if(wrapBack) { wrapBack.style.transition = wobbleTrans; wrapBack.style.transform = `${invRot2} translateZ(-45px)`; }
+                if(wrapFront) { wrapFront.style.transition = wobbleTrans; wrapFront.style.transform = `${invRot2} translateZ(45px)`; }
+            }
+        }, flightDur);
+        
+        safeTimeout(() => {
+            if(obj) obj.style.transition = 'none'; 
+            if(pSph) pSph.style.transition = 'width 1s, height 1s, margin 1s, background 1s, box-shadow 1s';
+            if(oSph) oSph.style.transition = 'width 1s, height 1s, margin 1s, background 1s, box-shadow 1s';
+            if(wrapBack) wrapBack.style.transition = 'none';
+            if(wrapFront) wrapFront.style.transition = 'none';
+            
+            document.querySelectorAll('.absolute-face').forEach(f => {
+                f.style.transition = 'background 0.3s, border 0.3s, box-shadow 0.3s, opacity 0.4s, transform 0.4s ease, filter 0.4s ease';
+            });
+            
+            // 🔥 ОРАКУЛ ВОЗВРАЩАЕТСЯ В ИГРУ (Запускаем логику ИИ)
+            freeRemovalUsed = false; 
+            highlightFace(targetRIdx); 
+            safeTimeout(executeOracleLogic, 800); 
+            
         }, rollDuration + 50);
     }
 
@@ -15968,25 +16199,6 @@ const animStyle = document.createElement('style');
         if (typeof updateTransform === 'function') updateTransform();
     };
 
-    // 🛠️ 2. ГЕНЕРАТОР ПАНЕЛИ
-    function buildAbsDebugPanel() {
-        let container = document.getElementById('abs-debug-container');
-        if (!container) {
-            container = document.createElement('div'); container.id = 'abs-debug-container';
-            document.body.appendChild(container);
-        }
-        container.style.cssText = "display: none; position: fixed !important; bottom: 70px !important; left: 50% !important; transform: translateX(-50%) !important; z-index: 9999999 !important; width: 98%; max-width: 440px; background: rgba(5, 8, 15, 0.95); padding: 8px; border-radius: 12px; border: 2px solid #818cf8; box-shadow: 0 10px 30px rgba(0,0,0,0.9); backdrop-filter: blur(8px); flex-direction: row; gap: 6px; opacity: 1 !important; filter: none !important; pointer-events: auto !important;";
-        let html = '<div style="display: grid; grid-template-columns: repeat(14, 1fr); gap: 3px; flex-grow: 1;">';
-        for(let i=0; i<42; i++) {
-            html += `<button onclick="debugSuperTap(${i})" style="width: 100%; aspect-ratio: 1/1; font-size: 10px; font-weight: bold; background: #2d3436; color: #fff; border: 1px solid #636e72; border-radius: 4px; padding: 0; cursor: pointer; pointer-events: auto !important;">${i+1}</button>`;
-        }
-        html += `</div><div style="display: flex; flex-direction: column; gap: 4px; width: 45px; justify-content: space-between;">
-            <button onclick="debugSuperTap('win')" style="flex: 1; font-size: 18px; background: #f39c12; border: 1px solid #e67e22; border-radius: 6px; cursor: pointer; pointer-events: auto !important;">👑</button>
-            <button onclick="debugSuperTap('lose')" style="flex: 1; font-size: 18px; background: #c0392b; border: 1px solid #e74c3c; border-radius: 6px; cursor: pointer; pointer-events: auto !important;">💀</button>
-            <button onclick="debugSuperTap('energy')" style="flex: 1; font-size: 18px; background: #27ae60; border: 1px solid #2ecc71; border-radius: 6px; cursor: pointer; pointer-events: auto !important;">⚡</button>
-        </div>`;
-        container.innerHTML = html;
-    }
 
     // 🔄 3. СВАЙПЫ (Фикс ReferenceError)
     function initDragEvents() {
@@ -16078,14 +16290,22 @@ const animStyle = document.createElement('style');
         const oSph = document.getElementById('oSphere');
         const nebulaBack = document.getElementById('coreAuraBack');
         const nebulaFront = document.getElementById('coreAuraFront');
-        
-        // 🔥 Берем заголовок, чтобы погасить его плавно
-        const bottomTitle = document.getElementById('absoluteBottomTitle');
 
         if (typeof lockNavigation === 'function') lockNavigation(true); 
         document.body.style.pointerEvents = 'none';
 
-        // Гасим заголовок "АБСОЛЮТ"
+        // 🔥 КОВРОВАЯ БОМБАРДИРОВКА (Убираем всё внутри сцены)
+        const allUI = document.querySelectorAll('#absoluteGameStage > *:not(#absoluteScene)');
+        allUI.forEach(el => {
+            if (el) {
+                el.style.transition = 'opacity 0.4s ease';
+                el.style.opacity = '0';
+                el.style.pointerEvents = 'none';
+            }
+        });
+
+        // 🔥 ТОЧЕЧНЫЙ УДАР: Убираем заголовок АБСОЛЮТ (он лежит снаружи контейнера)
+        const bottomTitle = document.getElementById('absoluteBottomTitle');
         if (bottomTitle) {
             bottomTitle.style.transition = 'opacity 0.4s ease';
             bottomTitle.style.opacity = '0';
@@ -16096,10 +16316,8 @@ const animStyle = document.createElement('style');
         if(pSph) { pSph.style.transition = 'all 0.6s ease-in'; pSph.style.opacity = '0'; pSph.style.transform += ' scale(0)'; }
         if(oSph) { oSph.style.transition = 'all 0.6s ease-in'; oSph.style.opacity = '0'; oSph.style.transform += ' scale(0)'; }
 
-        // Мягкий разлет граней без резких скачков цвета
         faces.forEach((f, i) => {
             f.style.animation = 'none';
-            // Оставляем родные цвета, гасим только opacity и меняем transform
             f.style.transition = `transform 0.8s cubic-bezier(0.4, 0, 1, 1) ${i * 10}ms, opacity 0.6s ease ${i * 10}ms`;
             f.style.opacity = '0'; 
             
@@ -16107,7 +16325,6 @@ const animStyle = document.createElement('style');
             const x = (Math.random() - 0.5) * 2000;
             const y = (Math.random() - 0.5) * 2000;
             
-            // Задаем чистую абсолютную трансформацию от центра, чтобы браузер не сходил с ума
             const faceIdx = parseInt(f.id.replace('abs-face-', ''));
             const fd = facesData[faceIdx];
             const baseRot = `rotateY(${fd.rotY}deg) rotateX(${fd.rotX}deg)`;
