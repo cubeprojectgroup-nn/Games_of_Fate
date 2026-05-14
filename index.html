@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Игры Судьбы. v0.9.0.31</title>
+    <title>Игры Судьбы. v0.9.0.32</title>
     <!-- Эмодзи-иконка для вкладки браузера -->
     <link rel="icon" href='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">🔮</text></svg>'>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
@@ -3217,7 +3217,7 @@ setInterval(() => {
         <div style="position: absolute; bottom: 15px; left: 15px; font-size: 10px; color: rgba(162, 155, 254, 0.6); font-weight: bold; letter-spacing: 1px; text-transform: uppercase; z-index: 500;">
             <a href="https://t.me/Antis_Corpus" style="color: inherit; text-decoration: none;">t.me/Antis_Corpus</a>
         </div>
-        <div class="version" style="position: absolute; bottom: 15px; right: 15px; pointer-events: none; z-index: 500;">v0.9.0.31</div>
+        <div class="version" style="position: absolute; bottom: 15px; right: 15px; pointer-events: none; z-index: 500;">v0.9.0.32</div>
     </div>
 
     <!-- ========================================== -->
@@ -13963,69 +13963,65 @@ const animStyle = document.createElement('style');
         } catch(e) {}
     }
 
-    // 🎛️ КОСМИЧЕСКИЙ СИНТЕЗАТОР v4.0 (Адаптировано для динамиков телефона)
+    // 🎛️ ПРОЦЕДУРНЫЙ СИНТЕЗАТОР ВЗРЫВОВ v7.0 (Случайные 4 пресета Камня и Бетона)
     window.absAudioCtx = window.absAudioCtx || new (window.AudioContext || window.webkitAudioContext)();
 
-    function playDistantSpaceExplosion() {
-        // Проверяем наличие контекста, если нет - создаем
-        if (!window.absAudioCtx) {
-            window.absAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        }
-        
-        const ctx = window.absAudioCtx;
+    window.playProceduralExplosion = function() {
+        try {
+            if (!window.absAudioCtx) {
+                window.absAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            const ctx = window.absAudioCtx;
+            if (ctx.state === 'suspended') ctx.resume();
 
-        // Критически важно для Chrome и мобилок: возобновляем поток
-        if (ctx.state === 'suspended') {
-            ctx.resume();
-        }
+            // Твои фавориты: 1. Сухой кирпич | 2. Пыльный булыжник | 3. Глубинный обвал | 6. Свинцовый блок
+            const presets = [
+                { f1: 90, f2: 20, fDrop: 0.05, dur: 0.3,  nFreq: 400, nGain: 2.0, nDrop: 0.2 },
+                { f1: 70, f2: 15, fDrop: 0.15, dur: 0.5,  nFreq: 300, nGain: 2.0, nDrop: 0.5 },
+                { f1: 60, f2: 10, fDrop: 0.3,  dur: 0.9,  nFreq: 150, nGain: 1.0, nDrop: 0.8 },
+                { f1: 50, f2: 10, fDrop: 0.05, dur: 0.4,  nFreq: 200, nGain: 1.2, nDrop: 0.3 }
+            ];
+            
+            // Выбираем случайный пресет
+            const p = presets[Math.floor(Math.random() * presets.length)];
+            const now = ctx.currentTime;
 
-        const duration = Math.random() * 0.6 + 0.6; 
-        const now = ctx.currentTime;
+            const osc = ctx.createOscillator();
+            const oscGain = ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(p.f1, now);
+            osc.frequency.exponentialRampToValueAtTime(Math.max(1, p.f2), now + p.fDrop);
 
-        const osc = ctx.createOscillator();
-        const oscGain = ctx.createGain();
-        osc.connect(oscGain);
-        oscGain.connect(ctx.destination);
+            oscGain.gain.setValueAtTime(0, now);
+            oscGain.gain.linearRampToValueAtTime(1.5, now + 0.02);
+            oscGain.gain.exponentialRampToValueAtTime(0.01, now + p.dur);
 
-        // Частоты, которые точно услышит и ноут, и телефон (130-180 Гц)
-        const startFreq = Math.random() * 50 + 130; 
-        const endFreq = Math.random() * 20 + 60;
+            const bufferSize = ctx.sampleRate * Math.max(p.dur, p.nDrop);
+            const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+            const data = buffer.getChannelData(0);
+            for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
 
-        osc.type = 'triangle'; 
-        osc.frequency.setValueAtTime(startFreq, now);
-        osc.frequency.exponentialRampToValueAtTime(endFreq, now + duration);
+            const noise = ctx.createBufferSource();
+            noise.buffer = buffer;
+            const noiseFilter = ctx.createBiquadFilter();
+            const noiseGain = ctx.createGain();
 
-        oscGain.gain.setValueAtTime(0, now);
-        oscGain.gain.linearRampToValueAtTime(0.8, now + 0.05); 
-        oscGain.gain.exponentialRampToValueAtTime(0.01, now + duration);
+            noiseFilter.type = 'lowpass';
+            noiseFilter.frequency.value = p.nFreq;
 
-        // Шум для текстуры взрыва
-        const bufferSize = ctx.sampleRate * duration;
-        const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
-        const data = buffer.getChannelData(0);
-        for (let j = 0; j < bufferSize; j++) data[j] = Math.random() * 2 - 1;
-        
-        const noise = ctx.createBufferSource();
-        noise.buffer = buffer;
-        const noiseFilter = ctx.createBiquadFilter();
-        const noiseGain = ctx.createGain();
-        
-        noise.connect(noiseFilter);
-        noiseFilter.connect(noiseGain);
-        noiseGain.connect(ctx.destination);
+            noiseGain.gain.setValueAtTime(0, now);
+            noiseGain.gain.linearRampToValueAtTime(p.nGain, now + 0.02);
+            noiseGain.gain.exponentialRampToValueAtTime(0.01, now + p.nDrop);
 
-        noiseFilter.type = 'lowpass';
-        noiseFilter.frequency.value = 350; 
+            osc.connect(oscGain); oscGain.connect(ctx.destination);
+            noise.connect(noiseFilter); noiseFilter.connect(noiseGain);
+            noiseGain.connect(ctx.destination);
 
-        noiseGain.gain.setValueAtTime(0, now);
-        noiseGain.gain.linearRampToValueAtTime(0.5, now + 0.05);
-        noiseGain.gain.exponentialRampToValueAtTime(0.01, now + duration);
+            osc.start(now); osc.stop(now + p.dur);
+            noise.start(now); noise.stop(now + Math.max(p.dur, p.nDrop));
+        } catch (e) {}
+    };
 
-        osc.start(now);
-        osc.stop(now + duration);
-        noise.start(now);
-        noise.stop(now + duration);
-    }
     
     function updateActionBtn(html, disabled = false, gold = false) {
         let btn = document.getElementById('absoluteActionBtn');
@@ -14795,14 +14791,12 @@ const animStyle = document.createElement('style');
         }
     }
 
-   // 🎬 ФИНАЛЬНАЯ БИТВА НА ОРБИТЕ (С процедурными звуками и вибрацией)
-    // 🎬 ФИНАЛЬНАЯ БИТВА НА ОРБИТЕ (Полный Хаос: Звук + Тряска + Рандом)
+   // 🎬 ФИНАЛЬНАЯ БИТВА НА ОРБИТЕ (Единая чистая версия с анти-лагами)
     function playEpicEnding(win) {
         const t = LANG_DATA[GameState.lang];
         const winnerColor = win ? myColor : oracleColor;
         const loserColor = win ? oracleColor : myColor;
 
-        // 🔥 КРИТИЧЕСКИЙ МОМЕНТ: Будим аудио-контекст ПРЯМО ЗДЕСЬ
         if (!window.absAudioCtx) window.absAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
         if (window.absAudioCtx.state === 'suspended') window.absAudioCtx.resume();
 
@@ -14840,7 +14834,6 @@ const animStyle = document.createElement('style');
         const step = targets.length > 0 ? battleDuration / targets.length : 100;
 
         targets.forEach((faceIdx, i) => {
-            // 🔥 ЛОМАЕМ РИТМ: Добавляем случайное смещение +/- 200мс
             const jitter = (Math.random() - 0.5) * 400;
 
             safeTimeout(() => {
@@ -14852,17 +14845,18 @@ const animStyle = document.createElement('style');
 
                 const faceEl = document.getElementById(`abs-face-${faceIdx}`);
                 if (faceEl) {
-                    faceEl.style.transition = 'transform 0.4s ease-in, background 0.2s, box-shadow 0.2s';
+                    // Оптимизировано: убрали transition для теней, чтобы GPU телефона не умер
+                    faceEl.style.transition = 'transform 0.4s ease-in, background 0.2s';
                 }
 
-                // 🔊 1. ЗВУК: Шанс 70%, чтобы не было каши, и рандомная задержка
+                // 🔊 Безопасный вызов звука с проверкой
                 if (Math.random() > 0.3) {
-                    setTimeout(() => playProceduralExplosion(), Math.random() * 100);
+                    setTimeout(() => {
+                        if (typeof playProceduralExplosion === 'function') playProceduralExplosion();
+                    }, Math.random() * 100);
                 }
 
-                // 📳 2. ХАОТИЧНАЯ ТРЯСКА И ВИБРАЦИЯ
                 if (typeof triggerImpact === 'function') {
-                    // Рандомим силу сотрясения экрана: от легкой до тяжелой
                     const impacts = ['light', 'medium', 'heavy'];
                     triggerImpact(impacts[Math.floor(Math.random() * impacts.length)]);
                 }
@@ -14879,7 +14873,7 @@ const animStyle = document.createElement('style');
                     if (window.currentCinematicId !== myCinematicId) return;
                     fd.owner = winnerColor; fd.layers = 3;
                     if (faceEl) {
-                        faceEl.style.transition = 'transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.1s, box-shadow 0.1s, border-color 0.1s';
+                        faceEl.style.transition = 'transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.1s';
                     }
                     updateFaceVisual(faceIdx); animateFaceClaim(faceIdx);
                 }, 600);
@@ -15474,7 +15468,7 @@ const animStyle = document.createElement('style');
     
   
 
-   // 🛠️ ГЕНЕРАТОР ПАНЕЛИ (Компакт: цифры слева, эмодзи справа)
+  // 🛠️ ГЕНЕРАТОР ПАНЕЛИ (Компакт: цифры слева, эмодзи справа + Снайпер)
     function buildAbsDebugPanel() {
         let container = document.getElementById('abs-debug-container');
         if (!container) {
@@ -15482,17 +15476,21 @@ const animStyle = document.createElement('style');
             document.body.appendChild(container);
         }
         
-        // 🔥 МЕНЯЕМ МАКЕТ: Теперь это flex-direction: row (горизонтальная компоновка)
         container.style.cssText = "display: none; position: fixed !important; bottom: 70px !important; left: 50% !important; transform: translateX(-50%) !important; z-index: 9999999 !important; width: 98%; max-width: 440px; background: rgba(5, 8, 15, 0.95); padding: 8px; border-radius: 12px; border: 2px solid #818cf8; box-shadow: 0 10px 30px rgba(0,0,0,0.9); backdrop-filter: blur(8px); flex-direction: row; gap: 8px; opacity: 1 !important; filter: none !important; pointer-events: auto !important;";
         
-        // Левый блок: Сетка на 11 колонок (занимает всё свободное место благодаря flex-grow)
         let html = '<div style="display: grid; grid-template-columns: repeat(11, 1fr); gap: 4px; flex-grow: 1;">';
         for(let i=0; i<42; i++) {
             html += `<button onclick="debugSuperTap(${i})" style="width: 100%; aspect-ratio: 1/1; font-size: 10px; font-weight: bold; background: #2d3436; color: #fff; border: 1px solid #636e72; border-radius: 4px; padding: 0; cursor: pointer; pointer-events: auto !important;">${i+1}</button>`;
         }
+        
+        // 🪄 Ячейка 43: Кнопка "Захватить до 2 уровня" (1 клетка)
+        html += `<button onclick="debugSuperTap('fillAll')" style="width: 100%; aspect-ratio: 1/1; font-size: 14px; background: #8e44ad; color: #fff; border: 1px solid #9b59b6; border-radius: 4px; padding: 0; cursor: pointer; pointer-events: auto !important; display: flex; align-items: center; justify-content: center;" title="Все грани на 2 уровень">🪄</button>`;
+        
+        // 🎯 Ячейка 44: Поле ввода для снайперского броска (Темно-синий фон, синяя рамка, фикс для мобилок)
+        html += `<input type="text" inputmode="numeric" id="abs-debug-forceroll" placeholder="🎯" onkeydown="if(event.key==='Enter') { debugForceRoll(this.value); this.blur(); }" style="width: 100%; aspect-ratio: 1/1; box-sizing: border-box; font-size: 14px; font-weight: bold; background: #172554; color: #93c5fd; border: 2px solid #3b82f6; border-radius: 4px; text-align: center; outline: none; pointer-events: auto !important; padding: 0; margin: 0; -webkit-appearance: none; appearance: none; box-shadow: inset 0 0 8px rgba(0,0,0,0.5);" title="Введи номер и нажми Enter">`;
         html += `</div>`;
         
-        // Правый блок: 3 кнопки, которые сами растягиваются по высоте сетки (flex: 1)
+        // Правый блок без изменений...
         html += `<div style="display: flex; flex-direction: column; gap: 4px; width: 44px; justify-content: space-between;">
             <button onclick="debugSuperTap('win')" style="flex: 1; font-size: 20px; background: #f39c12; border: 1px solid #e67e22; border-radius: 6px; cursor: pointer; pointer-events: auto !important; display: flex; align-items: center; justify-content: center;" title="Победа">👑</button>
             <button onclick="debugSuperTap('lose')" style="flex: 1; font-size: 20px; background: #c0392b; border: 1px solid #e74c3c; border-radius: 6px; cursor: pointer; pointer-events: auto !important; display: flex; align-items: center; justify-content: center;" title="Слив">💀</button>
@@ -15606,10 +15604,10 @@ const animStyle = document.createElement('style');
         const face = document.getElementById(`abs-face-${faceIdx}`);
         if(!face) return;
         
-        // 💥 Увеличили количество осколков (от 12 до 22 штук)
-        const particleCount = 12 + Math.floor(Math.random() * 10);
+        // 🔥 ОПТИМИЗАЦИЯ ДЛЯ МОБИЛОК: В финале спавним меньше частиц!
+        let maxParticles = window.isAbsCinematicPlaying ? 5 : 12;
+        const particleCount = maxParticles + Math.floor(Math.random() * 5);
 
-        // Набор форм для осколков (треугольники, ромбы, трапеции)
         const clipPaths = [
             'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)', 
             'polygon(0% 0%, 100% 20%, 80% 100%, 10% 80%)', 
@@ -15619,8 +15617,6 @@ const animStyle = document.createElement('style');
 
         for(let i=0; i<particleCount; i++) {
             const p = document.createElement('div');
-            
-            // 📏 Рандомный размер осколка (от 4px до 14px)
             const size = 4 + Math.random() * 10;
             
             p.style.position = 'absolute';
@@ -15629,33 +15625,32 @@ const animStyle = document.createElement('style');
             p.style.margin = `${-size/2}px 0 0 ${-size/2}px`; 
             p.style.left = '50%'; 
             p.style.top = '50%';
-            
-            // Делаем осколок острым
             p.style.borderRadius = '0px';
             p.style.clipPath = clipPaths[Math.floor(Math.random() * clipPaths.length)];
-            
-            // 🎨 ИСПОЛЬЗУЕМ ТОЧНЫЙ ЦВЕТ ГРАНИ
             p.style.background = exactColor; 
-            p.style.boxShadow = `0 0 ${size}px 1px ${exactColor}`; 
+            
+            // 🚫 ОТКЛЮЧИЛИ BOX-SHADOW ДЛЯ МОБИЛЬНОЙ ПРОИЗВОДИТЕЛЬНОСТИ 🚫
+            if (!window.isAbsCinematicPlaying) {
+                p.style.boxShadow = `0 0 ${size/2}px 1px ${exactColor}`; 
+            }
+            
             p.style.pointerEvents = 'none';
             p.style.zIndex = '300';
             
+            // Анти-мерцание на iOS/Android
+            p.style.backfaceVisibility = 'hidden';
+            p.style.webkitBackfaceVisibility = 'hidden';
+            
             face.appendChild(p);
 
-            // Физика разлета (дистанция от 40px до 110px)
             const ang = Math.random() * Math.PI * 2;
             const dist = 40 + Math.random() * 70; 
             const dx = Math.cos(ang) * dist;
             const dy = Math.sin(ang) * dist;
-
-            // ⏱️ РАНДОМНАЯ ЖИЗНЬ: База 600мс + (от 25% до 70%)
-            // 600 * 1.25 = 750мс (минимум)
-            // 600 * 1.70 = 1020мс (максимум)
             const lifeTime = 600 * (1.25 + Math.random() * 0.45);
 
             p.animate([
-                { transform: `translate3d(0px, 0px, 30px) scale(1) rotate(0deg)`, opacity: 1 },
-                // Осколки бешено крутятся в полете
+                { transform: `translate3d(0px, 0px, 10px) scale(1) rotate(0deg)`, opacity: 1 },
                 { transform: `translate3d(${dx}px, ${dy}px, 30px) scale(0) rotate(${Math.random() * 720}deg)`, opacity: 0 }
             ], {
                 duration: lifeTime,
@@ -15717,9 +15712,16 @@ const animStyle = document.createElement('style');
     // === 🔥 ЕДИНЫЙ JS-ДВИЖОК БРОСКА (ИДЕАЛЬНАЯ ПАРАБОЛА И ТЯЖЕЛЫЙ УДАР) 🔥 ===
     let rollAnimFrame;
     
-    // === 1. БРОСОК ИГРОКА ===
+   // === 1. ПОЛНОЦЕННЫЙ БРОСОК ИГРОКА (С поддержкой Снайпера) ===
     function rollAbsolute() {
-        const targetRIdx = Math.floor(Math.random() * TOTAL_FACES);
+        let targetRIdx = Math.floor(Math.random() * TOTAL_FACES);
+        
+        // 🔥 ЧИТ-КОД НА ТОЧНЫЙ БРОСОК (Снайпер) 🔥
+        if (typeof window.absForceRollTarget === 'number' && window.absForceRollTarget >= 0 && window.absForceRollTarget < TOTAL_FACES) {
+            targetRIdx = window.absForceRollTarget;
+            window.absForceRollTarget = null; // Сбрасываем прицел после выстрела!
+        }
+        
         activeFaceIndex = targetRIdx;
         
         // Тяжелый полет
@@ -15840,104 +15842,14 @@ const animStyle = document.createElement('style');
         }
     }
 
-    // === 1. ПОЛНОЦЕННЫЙ БРОСОК ИГРОКА ===
-    function rollAbsolute() {
-        const targetRIdx = Math.floor(Math.random() * TOTAL_FACES);
-        activeFaceIndex = targetRIdx;
-        
-        // Тяжелый полет
-        const rollDuration = 2200 + Math.floor(Math.random() * 1000); 
-        const wobbleDur = 600; const flightDur = rollDuration - wobbleDur;
-        
-        const targetRotX = -facesData[targetRIdx].rotX;
-        const targetRotY = -facesData[targetRIdx].rotY;
-        
-        // Тяжелое вращение (2-3 оборота)
-        const spinsX = 360 * (2 + Math.floor(Math.random() * 2)); 
-        const spinsY = 360 * (2 + Math.floor(Math.random() * 2)); 
-        
-        const baseRotX = Math.round(rotX / 360) * 360; 
-        const baseRotY = Math.round(rotY / 360) * 360; 
-        
-        rotX = baseRotX + spinsX + targetRotX; 
-        rotY = baseRotY + spinsY + targetRotY; rotZ = 0; 
-        
-        const overX = rotX + (Math.random() * 40 - 20);
-        const overY = rotY + (Math.random() * 40 - 20);
-        
-        const obj = document.getElementById('absoluteObj');
-        const pSph = document.getElementById('pSphere');
-        const oSph = document.getElementById('oSphere');
-        const scene = document.getElementById('absoluteScene');
-        const wrapBack = document.getElementById('wrapperBack');
-        const wrapFront = document.getElementById('wrapperFront');
-        
-        document.querySelectorAll('.absolute-face').forEach(f => {
-            const faceIdx = parseInt(f.id.replace('abs-face-', ''));
-            const fd = facesData[faceIdx];
-            f.style.transition = 'none'; 
-            f.style.opacity = '1'; 
-            f.style.filter = 'none'; 
-            f.style.transform = `rotateY(${fd.rotY}deg) rotateX(${fd.rotX}deg) translateZ(126px) scale(1)`;
-        });
-        
-        // Анимация высоты
-        if(scene) {
-            scene.style.transition = `transform ${flightDur * 0.4 / 1000}s cubic-bezier(0.2, 0.8, 0.2, 1)`;
-            scene.style.transform = "scale(1.5) translateY(-40px)"; 
-            safeTimeout(() => {
-                if(scene) {
-                    scene.style.transition = `transform ${flightDur * 0.6 / 1000}s cubic-bezier(0.6, 0, 0.9, 1)`;
-                    scene.style.transform = "scale(1) translateY(0px)";
-                }
-            }, flightDur * 0.4);
-        }
-        
-        // Анимация вращения (GPU)
-        if(obj) {
-            const flightTrans = `transform ${flightDur / 1000}s cubic-bezier(0.25, 0.1, 0.4, 1)`;
-            obj.style.transition = flightTrans;
-            obj.style.transform = `rotateX(${overX}deg) rotateY(${overY}deg) rotateZ(0deg)`;
-            
-            const invRot = `rotateZ(0deg) rotateY(${-overY}deg) rotateX(${-overX}deg)`;
-            if(pSph) { pSph.style.transition = flightTrans; pSph.style.transform = `translate3d(-20px, -10px, 20px) ${invRot}`; }
-            if(oSph) { oSph.style.transition = flightTrans; oSph.style.transform = `translate3d(20px, 10px, -20px) ${invRot}`; }
-            if(wrapBack) { wrapBack.style.transition = flightTrans; wrapBack.style.transform = `${invRot} translateZ(-45px)`; }
-            if(wrapFront) { wrapFront.style.transition = flightTrans; wrapFront.style.transform = `${invRot} translateZ(45px)`; }
-        }
-
-        safeTimeout(() => { triggerImpact('heavy'); playHeavyThud(); }, flightDur);
-
-        safeTimeout(() => {
-            if(obj) {
-                const wobbleTrans = `transform ${wobbleDur / 1000}s cubic-bezier(0.34, 1.56, 0.64, 1)`; 
-                obj.style.transition = wobbleTrans;
-                obj.style.transform = `rotateX(${rotX}deg) rotateY(${rotY}deg) rotateZ(${rotZ}deg)`;
-                
-                const invRot2 = `rotateZ(${-rotZ}deg) rotateY(${-rotY}deg) rotateX(${-rotX}deg)`;
-                if(pSph) { pSph.style.transition = wobbleTrans; pSph.style.transform = `translate3d(-20px, -10px, 20px) ${invRot2}`; }
-                if(oSph) { oSph.style.transition = wobbleTrans; oSph.style.transform = `translate3d(20px, 10px, -20px) ${invRot2}`; }
-                if(wrapBack) { wrapBack.style.transition = wobbleTrans; wrapBack.style.transform = `${invRot2} translateZ(-45px)`; }
-                if(wrapFront) { wrapFront.style.transition = wobbleTrans; wrapFront.style.transform = `${invRot2} translateZ(45px)`; }
-            }
-        }, flightDur);
-        
-        safeTimeout(() => {
-            if(obj) obj.style.transition = 'none'; 
-            if(pSph) pSph.style.transition = 'width 1s, height 1s, margin 1s, background 1s, box-shadow 1s';
-            if(oSph) oSph.style.transition = 'width 1s, height 1s, margin 1s, background 1s, box-shadow 1s';
-            if(wrapBack) wrapBack.style.transition = 'none';
-            if(wrapFront) wrapFront.style.transition = 'none';
-            
-            document.querySelectorAll('.absolute-face').forEach(f => {
-                f.style.transition = 'background 0.3s, border 0.3s, box-shadow 0.3s, opacity 0.4s, transform 0.4s ease, filter 0.4s ease';
-            });
-            finalizeRoll(targetRIdx);
-        }, rollDuration + 50);
-    }
-
-// === 2. БРОСОК ОРАКУЛА (С ИИ И ПЛОСКОЙ ГЕОМЕТРИЕЙ) ===
+    // === 2. БРОСОК ОРАКУЛА (С ИИ И ПЛОСКОЙ ГЕОМЕТРИЕЙ) ===
     function rollOracleAbsolute() {
+        // 🔥 ФИКС ДЕРГАННОГО БРОСКА И ПРОМАХОВ 🔥
+        // Жестко глушим фоновый движок, чтобы он не конфликтовал с CSS-анимацией!
+        autoRotate = false;
+        clearTimeout(engineTimer);
+        if (typeof inertiaFrame !== 'undefined') cancelAnimationFrame(inertiaFrame);
+
         const targetRIdx = Math.floor(Math.random() * TOTAL_FACES);
         activeFaceIndex = targetRIdx;
         
@@ -15973,7 +15885,7 @@ const animStyle = document.createElement('style');
             f.style.transition = 'none'; 
             f.style.opacity = '1'; 
             f.style.filter = 'none'; 
-            // 🔥 Плоская геометрия (грани не выпрыгивают)
+            // Плоская геометрия (грани не выпрыгивают)
             f.style.transform = `rotateY(${fd.rotY}deg) rotateX(${fd.rotX}deg) translateZ(126px) scale(1)`;
         });
         
@@ -16027,13 +15939,13 @@ const animStyle = document.createElement('style');
                 f.style.transition = 'background 0.3s, border 0.3s, box-shadow 0.3s, opacity 0.4s, transform 0.4s ease, filter 0.4s ease';
             });
             
-            // 🔥 ОРАКУЛ ВОЗВРАЩАЕТСЯ В ИГРУ (Запускаем логику ИИ)
             freeRemovalUsed = false; 
             highlightFace(targetRIdx); 
             safeTimeout(executeOracleLogic, 800); 
             
         }, rollDuration + 50);
     }
+
 
     function handleFaceClick(faceIndex) {
         // 👇 1. АБСОЛЮТНАЯ ЗАЩИТА ОТ ДВОЙНЫХ КЛИКОВ (ФИКС БАГА С ЭНЕРГИЕЙ) 👇
@@ -16100,6 +16012,9 @@ const animStyle = document.createElement('style');
             // Вызываем анимации с захваченным цветом
             animateFaceBurn(faceIndex);
             spawnBurnParticles(faceIndex, exactColor);
+
+            // 🔊 ВЗРЫВАЕМ ВРАЖЕСКУЮ ГРАНЬ С КАМЕННЫМ ЗВУКОМ
+            if (typeof window.playProceduralExplosion === 'function') window.playProceduralExplosion();
         }
         
         updateFaceInfoText(faceIndex);
@@ -16117,13 +16032,12 @@ const animStyle = document.createElement('style');
         }
 
         let acted = false; let cost = freeRemovalUsed ? 1 : 0;
-        let exactColor = null; // Контейнер для цвета
+        let exactColor = null; 
 
         if (fd.owner === myColor) { 
             if (getEnergyCount('o') >= cost) {
                 if (cost > 0) spendEnergy('o', cost);
                 
-                // 📸 ПИПЕТКА ОРАКУЛА: Запоминаем твой цвет перед уничтожением
                 const targetFaceEl = document.getElementById(`abs-face-${activeFaceIndex}`);
                 exactColor = window.getComputedStyle(targetFaceEl).backgroundColor;
                 if (exactColor === 'rgba(0, 0, 0, 0)' || exactColor === 'transparent') {
@@ -16150,6 +16064,9 @@ const animStyle = document.createElement('style');
                 // Если была атака - жжем и сыплем осколками твоего цвета
                 animateFaceBurn(activeFaceIndex);
                 spawnBurnParticles(activeFaceIndex, exactColor);
+                
+                // 🔊 ВОТ ОН, ЗВУК: Оракул крушит грань игрока
+                if (typeof window.playProceduralExplosion === 'function') window.playProceduralExplosion();
             } else {
                 highlightFace(activeFaceIndex);
             }
@@ -16163,7 +16080,7 @@ const animStyle = document.createElement('style');
         } else { safeTimeout(passTurnToPlayer, 800); }
     }
 
-// ⚡ 1. ЛОГИКА КНОПОК (Супер-Тап) — ИСПРАВЛЕННАЯ
+// ⚡ 1. ЛОГИКА КНОПОК (Супер-Тап)
     window.debugSuperTap = function(action) {
         if (!isGameActive) return;
         if ((gameState === 'COLOR_SELECT' || myColor === null) && action !== 'energy') {
@@ -16171,17 +16088,26 @@ const animStyle = document.createElement('style');
             return;
         }
 
-        // 🔥 ВМЕСТО МГНОВЕННОЙ СМЕРТИ — ЗАПУСКАЕМ ЭПИК 🔥
         if (action === 'win') { 
-        playEpicEnding(true); 
-        return; 
-    } else if (action === 'lose') { 
-        playEpicEnding(false); 
-        return; 
-    }
-        else if (action === 'energy') { 
+            playEpicEnding(true); 
+            return; 
+        } else if (action === 'lose') { 
+            playEpicEnding(false); 
+            return; 
+        } else if (action === 'energy') { 
             if (typeof gainEnergy === 'function') gainEnergy('p'); 
         } 
+        // 🔥 УМНЫЙ ЧИТ-КОД НА ЗАХВАТ (Закрашиваем до 2 уровня) 🔥
+        else if (action === 'fillAll') {
+            facesData.forEach((fd, i) => {
+                if (i !== 0) { // Пропускаем грань №1 (индекс 0)
+                    fd.owner = myColor;
+                    fd.layers = 2; // 👈 ТЕПЕРЬ СТАВИМ СТРОГО 2 СЛОЯ (Без замков)
+                    updateFaceVisual(i);
+                }
+            });
+            if(typeof App !== 'undefined' && typeof App.playSoundEffect === 'function') App.playSoundEffect('positive');
+        }
         else if (typeof action === 'number') {
             let idx = action; let fd = facesData[idx];
             if (fd.owner !== null && fd.owner !== myColor) {
@@ -16193,12 +16119,40 @@ const animStyle = document.createElement('style');
             if(typeof App !== 'undefined' && typeof App.playSoundEffect === 'function') App.playSoundEffect('tick');
         }
 
+        // 🔊 ВЗРЫВАЕМ ВРАЖЕСКУЮ ГРАНЬ С КАМЕННЫМ ЗВУКОМ
+            if (typeof window.playProceduralExplosion === 'function') window.playProceduralExplosion();
         facesData.forEach((_, i) => updateFaceVisual(i)); 
         updateScoreAndTension(); 
         saveState();
         if (typeof updateTransform === 'function') updateTransform();
     };
 
+    // 🎯 ГЛОБАЛЬНАЯ ФУНКЦИЯ ПРИЦЕЛЬНОГО БРОСКА (Вызывается по Enter)
+    window.debugForceRoll = function(val) {
+        if (!isGameActive) return;
+        let num = parseInt(val);
+        
+        if (isNaN(num) || num < 1 || num > 42) {
+            if(typeof App !== 'undefined' && typeof App.showError === 'function') App.showError("Введите число от 1 до 42!");
+            return;
+        }
+        
+        // Заряжаем глобальную переменную (Индекс = номер - 1)
+        window.absForceRollTarget = num - 1; 
+        
+        // Очищаем поле ввода для красоты
+        const input = document.getElementById('abs-debug-forceroll');
+        if (input) input.value = '';
+
+        // Дергаем бросок, если сейчас ход игрока
+        if (gameState === 'PLAYER_TURN' || gameState === 'FREE_REROLL') {
+            if (typeof handleMainAction === 'function') handleMainAction();
+            else if (typeof AbsoluteGame !== 'undefined' && typeof AbsoluteGame.handleMainAction === 'function') AbsoluteGame.handleMainAction();
+        } else {
+            if(typeof App !== 'undefined' && typeof App.showError === 'function') App.showError("Сейчас не ваш ход!");
+            window.absForceRollTarget = null; // Отмена заряда
+        }
+    };
 
     // 🔄 3. СВАЙПЫ (Фикс ReferenceError)
     function initDragEvents() {
