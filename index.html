@@ -15468,7 +15468,7 @@ const animStyle = document.createElement('style');
     
   
 
-  // 🛠️ ГЕНЕРАТОР ПАНЕЛИ (Компакт: цифры слева, эмодзи справа + Снайпер)
+  // 🛠️ ГЕНЕРАТОР ПАНЕЛИ (Компакт: Сплющенный и прижатый вниз)
     function buildAbsDebugPanel() {
         let container = document.getElementById('abs-debug-container');
         if (!container) {
@@ -15476,25 +15476,28 @@ const animStyle = document.createElement('style');
             document.body.appendChild(container);
         }
         
-        container.style.cssText = "display: none; position: fixed !important; bottom: 70px !important; left: 50% !important; transform: translateX(-50%) !important; z-index: 9999999 !important; width: 98%; max-width: 440px; background: rgba(5, 8, 15, 0.95); padding: 8px; border-radius: 12px; border: 2px solid #818cf8; box-shadow: 0 10px 30px rgba(0,0,0,0.9); backdrop-filter: blur(8px); flex-direction: row; gap: 8px; opacity: 1 !important; filter: none !important; pointer-events: auto !important;";
+        // 🔥 ФИКС: padding 4px (был 8px), bottom: 50px (был 70px), gap 4px
+        container.style.cssText = "display: none; position: fixed !important; bottom: 50px !important; left: 50% !important; transform: translateX(-50%) !important; z-index: 9999999 !important; width: 98%; max-width: 440px; background: rgba(5, 8, 15, 0.95); padding: 4px; border-radius: 10px; border: 2px solid #818cf8; box-shadow: 0 10px 30px rgba(0,0,0,0.9); backdrop-filter: blur(8px); flex-direction: row; gap: 4px; opacity: 1 !important; filter: none !important; pointer-events: auto !important;";
         
-        let html = '<div style="display: grid; grid-template-columns: repeat(11, 1fr); gap: 4px; flex-grow: 1;">';
+        // 🔥 ФИКС: gap 2px для сетки (было 4px)
+        let html = '<div style="display: grid; grid-template-columns: repeat(11, 1fr); gap: 2px; flex-grow: 1;">';
         for(let i=0; i<42; i++) {
-            html += `<button onclick="debugSuperTap(${i})" style="width: 100%; aspect-ratio: 1/1; font-size: 10px; font-weight: bold; background: #2d3436; color: #fff; border: 1px solid #636e72; border-radius: 4px; padding: 0; cursor: pointer; pointer-events: auto !important;">${i+1}</button>`;
+            // 🔥 ФИКС: height: 28px вместо aspect-ratio 1/1
+            html += `<button onclick="debugSuperTap(${i})" style="width: 100%; height: 28px; font-size: 10px; font-weight: bold; background: #2d3436; color: #fff; border: 1px solid #636e72; border-radius: 4px; padding: 0; cursor: pointer; pointer-events: auto !important;">${i+1}</button>`;
         }
         
-        // 🪄 Ячейка 43: Кнопка "Захватить до 2 уровня" (1 клетка)
-        html += `<button onclick="debugSuperTap('fillAll')" style="width: 100%; aspect-ratio: 1/1; font-size: 14px; background: #8e44ad; color: #fff; border: 1px solid #9b59b6; border-radius: 4px; padding: 0; cursor: pointer; pointer-events: auto !important; display: flex; align-items: center; justify-content: center;" title="Все грани на 2 уровень">🪄</button>`;
+        // 🪄 Ячейка 43: Волшебная палочка
+        html += `<button onclick="debugSuperTap('fillAll')" style="width: 100%; height: 28px; font-size: 14px; background: #8e44ad; color: #fff; border: 1px solid #9b59b6; border-radius: 4px; padding: 0; cursor: pointer; pointer-events: auto !important; display: flex; align-items: center; justify-content: center;" title="Все грани на 2 уровень">🪄</button>`;
         
-        // 🎯 Ячейка 44: Поле ввода для снайперского броска (Темно-синий фон, синяя рамка, фикс для мобилок)
-        html += `<input type="text" inputmode="numeric" id="abs-debug-forceroll" placeholder="🎯" onkeydown="if(event.key==='Enter') { debugForceRoll(this.value); this.blur(); }" style="width: 100%; aspect-ratio: 1/1; box-sizing: border-box; font-size: 14px; font-weight: bold; background: #172554; color: #93c5fd; border: 2px solid #3b82f6; border-radius: 4px; text-align: center; outline: none; pointer-events: auto !important; padding: 0; margin: 0; -webkit-appearance: none; appearance: none; box-shadow: inset 0 0 8px rgba(0,0,0,0.5);" title="Введи номер и нажми Enter">`;
+        // 🎯 Ячейка 44: Снайпер
+        html += `<input type="text" inputmode="numeric" id="abs-debug-forceroll" placeholder="🎯" onkeydown="if(event.key==='Enter') { debugForceRoll(this.value); this.blur(); }" style="width: 100%; height: 28px; box-sizing: border-box; font-size: 14px; font-weight: bold; background: #172554; color: #93c5fd; border: 2px solid #3b82f6; border-radius: 4px; text-align: center; outline: none; pointer-events: auto !important; padding: 0; margin: 0; -webkit-appearance: none; appearance: none; box-shadow: inset 0 0 8px rgba(0,0,0,0.5);" title="Введи номер и нажми Enter">`;
         html += `</div>`;
         
-        // Правый блок без изменений...
-        html += `<div style="display: flex; flex-direction: column; gap: 4px; width: 44px; justify-content: space-between;">
-            <button onclick="debugSuperTap('win')" style="flex: 1; font-size: 20px; background: #f39c12; border: 1px solid #e67e22; border-radius: 6px; cursor: pointer; pointer-events: auto !important; display: flex; align-items: center; justify-content: center;" title="Победа">👑</button>
-            <button onclick="debugSuperTap('lose')" style="flex: 1; font-size: 20px; background: #c0392b; border: 1px solid #e74c3c; border-radius: 6px; cursor: pointer; pointer-events: auto !important; display: flex; align-items: center; justify-content: center;" title="Слив">💀</button>
-            <button onclick="debugSuperTap('energy')" style="flex: 1; font-size: 20px; background: #27ae60; border: 1px solid #2ecc71; border-radius: 6px; cursor: pointer; pointer-events: auto !important; display: flex; align-items: center; justify-content: center;" title="Энергия">⚡</button>
+        // Правый блок эмодзи
+        html += `<div style="display: flex; flex-direction: column; gap: 2px; width: 40px; justify-content: space-between;">
+            <button onclick="debugSuperTap('win')" style="flex: 1; height: 28px; font-size: 16px; background: #f39c12; border: 1px solid #e67e22; border-radius: 4px; cursor: pointer; pointer-events: auto !important; display: flex; align-items: center; justify-content: center;" title="Победа">👑</button>
+            <button onclick="debugSuperTap('lose')" style="flex: 1; height: 28px; font-size: 16px; background: #c0392b; border: 1px solid #e74c3c; border-radius: 4px; cursor: pointer; pointer-events: auto !important; display: flex; align-items: center; justify-content: center;" title="Слив">💀</button>
+            <button onclick="debugSuperTap('energy')" style="flex: 1; height: 28px; font-size: 16px; background: #27ae60; border: 1px solid #2ecc71; border-radius: 4px; cursor: pointer; pointer-events: auto !important; display: flex; align-items: center; justify-content: center;" title="Энергия">⚡</button>
         </div>`;
         
         container.innerHTML = html;
@@ -15712,26 +15715,54 @@ const animStyle = document.createElement('style');
     // === 🔥 ЕДИНЫЙ JS-ДВИЖОК БРОСКА (ИДЕАЛЬНАЯ ПАРАБОЛА И ТЯЖЕЛЫЙ УДАР) 🔥 ===
     let rollAnimFrame;
     
-   // === 1. ПОЛНОЦЕННЫЙ БРОСОК ИГРОКА (С поддержкой Снайпера) ===
+       function handleMainAction() {
+        // 🔥 БРОНЯ УРОВНЯ "БОГ": Игнорируем клики, если Абсолют еще собирается или идет финал!
+        if (typeof isAssembling !== 'undefined' && isAssembling) return;
+        if (window.isAbsCinematicPlaying) return;
+
+        if(typeof App !== 'undefined' && typeof App.playSoundEffect === 'function') App.playSoundEffect('click');
+
+        if (gameState === 'PLAYER_TURN' || gameState === 'FREE_REROLL') {
+            gameState = 'ROLL'; 
+            autoRotate = false; 
+            clearTimeout(engineTimer);
+            
+            lockNavigation(true); // 🔒 БЛОКИРУЕМ ВЫХОД ИЗ ИГРЫ ПРИ БРОСКЕ
+            
+            updateFaceInfoText(-1);
+            updateActionBtn("ВРАЩАЕТСЯ...", true);
+            
+            rollAbsolute(); // Вызываем полноценную функцию броска игрока
+            
+        } else if (gameState === 'ACTION_PENDING') {
+            triggerTurnTransfer('o');
+        } else if (gameState === 'GAME_OVER') {
+            resetGameState();
+        }
+    }
+
+    // === 1. БРОСОК ИГРОКА (Без лагов и с поддержкой Снайпера) ===
     function rollAbsolute() {
+        // 🔥 АНТИ-ЛАГ №1: Убиваем все фоновые расчеты физики свайпов
+        autoRotate = false;
+        clearTimeout(engineTimer);
+        if (typeof inertiaFrame !== 'undefined') cancelAnimationFrame(inertiaFrame);
+
         let targetRIdx = Math.floor(Math.random() * TOTAL_FACES);
         
-        // 🔥 ЧИТ-КОД НА ТОЧНЫЙ БРОСОК (Снайпер) 🔥
         if (typeof window.absForceRollTarget === 'number' && window.absForceRollTarget >= 0 && window.absForceRollTarget < TOTAL_FACES) {
             targetRIdx = window.absForceRollTarget;
-            window.absForceRollTarget = null; // Сбрасываем прицел после выстрела!
+            window.absForceRollTarget = null;
         }
         
         activeFaceIndex = targetRIdx;
         
-        // Тяжелый полет
         const rollDuration = 2200 + Math.floor(Math.random() * 1000); 
         const wobbleDur = 600; const flightDur = rollDuration - wobbleDur;
         
         const targetRotX = -facesData[targetRIdx].rotX;
         const targetRotY = -facesData[targetRIdx].rotY;
         
-        // Тяжелое вращение (2-3 оборота)
         const spinsX = 360 * (2 + Math.floor(Math.random() * 2)); 
         const spinsY = 360 * (2 + Math.floor(Math.random() * 2)); 
         
@@ -15751,6 +15782,7 @@ const animStyle = document.createElement('style');
         const wrapBack = document.getElementById('wrapperBack');
         const wrapFront = document.getElementById('wrapperFront');
         
+        // 🔥 АНТИ-ЛАГ №2: Сбрасываем 42 грани
         document.querySelectorAll('.absolute-face').forEach(f => {
             const faceIdx = parseInt(f.id.replace('abs-face-', ''));
             const fd = facesData[faceIdx];
@@ -15759,8 +15791,12 @@ const animStyle = document.createElement('style');
             f.style.filter = 'none'; 
             f.style.transform = `rotateY(${fd.rotY}deg) rotateX(${fd.rotX}deg) translateZ(126px) scale(1)`;
         });
+
+        // 🔥 АНТИ-ЛАГ №3: МАГИЧЕСКИЙ REFLOW
+        // Эта строчка принудительно заставляет браузер применить новые стили граней СЕЙЧАС,
+        // чтобы он не пытался делать это во время старта CSS-анимации шара!
+        if (obj) void obj.offsetWidth;
         
-        // Анимация высоты
         if(scene) {
             scene.style.transition = `transform ${flightDur * 0.4 / 1000}s cubic-bezier(0.2, 0.8, 0.2, 1)`;
             scene.style.transform = "scale(1.5) translateY(-40px)"; 
@@ -15772,7 +15808,6 @@ const animStyle = document.createElement('style');
             }, flightDur * 0.4);
         }
         
-        // Анимация вращения (GPU)
         if(obj) {
             const flightTrans = `transform ${flightDur / 1000}s cubic-bezier(0.25, 0.1, 0.4, 1)`;
             obj.style.transition = flightTrans;
@@ -15815,37 +15850,9 @@ const animStyle = document.createElement('style');
         }, rollDuration + 50);
     }
 
-
-    function handleMainAction() {
-        // 🔥 БРОНЯ УРОВНЯ "БОГ": Игнорируем клики, если Абсолют еще собирается или идет финал!
-        if (typeof isAssembling !== 'undefined' && isAssembling) return;
-        if (window.isAbsCinematicPlaying) return;
-
-        if(typeof App !== 'undefined' && typeof App.playSoundEffect === 'function') App.playSoundEffect('click');
-
-        if (gameState === 'PLAYER_TURN' || gameState === 'FREE_REROLL') {
-            gameState = 'ROLL'; 
-            autoRotate = false; 
-            clearTimeout(engineTimer);
-            
-            lockNavigation(true); // 🔒 БЛОКИРУЕМ ВЫХОД ИЗ ИГРЫ ПРИ БРОСКЕ
-            
-            updateFaceInfoText(-1);
-            updateActionBtn("ВРАЩАЕТСЯ...", true);
-            
-            rollAbsolute(); // Вызываем полноценную функцию броска игрока
-            
-        } else if (gameState === 'ACTION_PENDING') {
-            triggerTurnTransfer('o');
-        } else if (gameState === 'GAME_OVER') {
-            resetGameState();
-        }
-    }
-
-    // === 2. БРОСОК ОРАКУЛА (С ИИ И ПЛОСКОЙ ГЕОМЕТРИЕЙ) ===
+    // === 2. БРОСОК ОРАКУЛА (Без лагов) ===
     function rollOracleAbsolute() {
-        // 🔥 ФИКС ДЕРГАННОГО БРОСКА И ПРОМАХОВ 🔥
-        // Жестко глушим фоновый движок, чтобы он не конфликтовал с CSS-анимацией!
+        // 🔥 АНТИ-ЛАГ №1
         autoRotate = false;
         clearTimeout(engineTimer);
         if (typeof inertiaFrame !== 'undefined') cancelAnimationFrame(inertiaFrame);
@@ -15859,7 +15866,6 @@ const animStyle = document.createElement('style');
         const targetRotX = -facesData[targetRIdx].rotX;
         const targetRotY = -facesData[targetRIdx].rotY;
         
-        // Оракул крутит сферу чуть злее (+ 720 градусов)
         const spinsX = 360 * (2 + Math.floor(Math.random() * 2)) + 720; 
         const spinsY = 360 * (2 + Math.floor(Math.random() * 2)) + 720; 
         
@@ -15879,15 +15885,18 @@ const animStyle = document.createElement('style');
         const wrapBack = document.getElementById('wrapperBack');
         const wrapFront = document.getElementById('wrapperFront');
         
+        // 🔥 АНТИ-ЛАГ №2
         document.querySelectorAll('.absolute-face').forEach(f => {
             const faceIdx = parseInt(f.id.replace('abs-face-', ''));
             const fd = facesData[faceIdx];
             f.style.transition = 'none'; 
             f.style.opacity = '1'; 
             f.style.filter = 'none'; 
-            // Плоская геометрия (грани не выпрыгивают)
             f.style.transform = `rotateY(${fd.rotY}deg) rotateX(${fd.rotX}deg) translateZ(126px) scale(1)`;
         });
+
+        // 🔥 АНТИ-ЛАГ №3: МАГИЧЕСКИЙ REFLOW
+        if (obj) void obj.offsetWidth;
         
         if(scene) {
             scene.style.transition = `transform ${flightDur * 0.4 / 1000}s cubic-bezier(0.2, 0.8, 0.2, 1)`;
