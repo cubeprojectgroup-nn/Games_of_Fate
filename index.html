@@ -13688,6 +13688,15 @@ const animStyle = document.createElement('style');
             z-index: 50 !important;
         }
 
+        /* 🚀 ТУРБО-РЕЖИМ БРОСКА: Разгружаем GPU мобилки */
+        #absoluteObj.abs-rolling-mode .absolute-face {
+            opacity: 1 !important;
+            filter: none !important;
+            transition: none !important;
+            /* Выключаем тени во время быстрого вращения - их всё равно не видно, а лагают они жутко */
+            box-shadow: none !important; 
+        }
+
         /* ⬇️ СДВИГАЕМ АБСОЛЮТ (СФЕРУ) ВНИЗ И ОПУСКАЕМ НА ДНО ПО Z */
         #absoluteScene {
             margin-top: 160px !important; 
@@ -15741,60 +15750,35 @@ const animStyle = document.createElement('style');
         }
     }
 
-    // === 1. БРОСОК ИГРОКА (Без лагов и с поддержкой Снайпера) ===
+    // === 1. БРОСОК ИГРОКА ===
     function rollAbsolute() {
-        // 🔥 АНТИ-ЛАГ №1: Убиваем все фоновые расчеты физики свайпов
-        autoRotate = false;
-        clearTimeout(engineTimer);
+        autoRotate = false; clearTimeout(engineTimer);
         if (typeof inertiaFrame !== 'undefined') cancelAnimationFrame(inertiaFrame);
 
         let targetRIdx = Math.floor(Math.random() * TOTAL_FACES);
-        
         if (typeof window.absForceRollTarget === 'number' && window.absForceRollTarget >= 0 && window.absForceRollTarget < TOTAL_FACES) {
             targetRIdx = window.absForceRollTarget;
             window.absForceRollTarget = null;
         }
         
         activeFaceIndex = targetRIdx;
-        
         const rollDuration = 2200 + Math.floor(Math.random() * 1000); 
         const wobbleDur = 600; const flightDur = rollDuration - wobbleDur;
+        const targetRotX = -facesData[targetRIdx].rotX; const targetRotY = -facesData[targetRIdx].rotY;
+        const spinsX = 360 * (2 + Math.floor(Math.random() * 2)); const spinsY = 360 * (2 + Math.floor(Math.random() * 2)); 
+        const baseRotX = Math.round(rotX / 360) * 360; const baseRotY = Math.round(rotY / 360) * 360; 
         
-        const targetRotX = -facesData[targetRIdx].rotX;
-        const targetRotY = -facesData[targetRIdx].rotY;
+        rotX = baseRotX + spinsX + targetRotX; rotY = baseRotY + spinsY + targetRotY; rotZ = 0; 
+        const overX = rotX + (Math.random() * 40 - 20); const overY = rotY + (Math.random() * 40 - 20);
         
-        const spinsX = 360 * (2 + Math.floor(Math.random() * 2)); 
-        const spinsY = 360 * (2 + Math.floor(Math.random() * 2)); 
+        const obj = document.getElementById('absoluteObj'); const pSph = document.getElementById('pSphere');
+        const oSph = document.getElementById('oSphere'); const scene = document.getElementById('absoluteScene');
+        const wrapBack = document.getElementById('wrapperBack'); const wrapFront = document.getElementById('wrapperFront');
         
-        const baseRotX = Math.round(rotX / 360) * 360; 
-        const baseRotY = Math.round(rotY / 360) * 360; 
-        
-        rotX = baseRotX + spinsX + targetRotX; 
-        rotY = baseRotY + spinsY + targetRotY; rotZ = 0; 
-        
-        const overX = rotX + (Math.random() * 40 - 20);
-        const overY = rotY + (Math.random() * 40 - 20);
-        
-        const obj = document.getElementById('absoluteObj');
-        const pSph = document.getElementById('pSphere');
-        const oSph = document.getElementById('oSphere');
-        const scene = document.getElementById('absoluteScene');
-        const wrapBack = document.getElementById('wrapperBack');
-        const wrapFront = document.getElementById('wrapperFront');
-        
-        // 🔥 АНТИ-ЛАГ №2: Сбрасываем 42 грани
-        document.querySelectorAll('.absolute-face').forEach(f => {
-            const faceIdx = parseInt(f.id.replace('abs-face-', ''));
-            const fd = facesData[faceIdx];
-            f.style.transition = 'none'; 
-            f.style.opacity = '1'; 
-            f.style.filter = 'none'; 
-            f.style.transform = `rotateY(${fd.rotY}deg) rotateX(${fd.rotX}deg) translateZ(126px) scale(1)`;
-        });
+        const heavyEls = [obj, scene, pSph, oSph, wrapBack, wrapFront];
+        heavyEls.forEach(el => { if(el) el.style.willChange = 'transform'; });
 
-        // 🔥 АНТИ-ЛАГ №3: МАГИЧЕСКИЙ REFLOW
-        // Эта строчка принудительно заставляет браузер применить новые стили граней СЕЙЧАС,
-        // чтобы он не пытался делать это во время старта CSS-анимации шара!
+        if (obj) obj.classList.add('abs-rolling-mode');
         if (obj) void obj.offsetWidth;
         
         if(scene) {
@@ -15820,9 +15804,15 @@ const animStyle = document.createElement('style');
             if(wrapFront) { wrapFront.style.transition = flightTrans; wrapFront.style.transform = `${invRot} translateZ(45px)`; }
         }
 
-        safeTimeout(() => { triggerImpact('heavy'); playHeavyThud(); }, flightDur);
+        // 🔥 МОМЕНТ УДАРА О ЗЕМЛЮ (ЗВУК + ВСПЫШКА)
+        safeTimeout(() => { 
+            triggerImpact('heavy'); 
+            playHeavyThud(); 
 
-        safeTimeout(() => {
+            // Снимаем анти-лаг щит, чтобы включить тени для красивой вспышки
+            if (obj) obj.classList.remove('abs-rolling-mode');
+
+            // Запускаем физику покачивания
             if(obj) {
                 const wobbleTrans = `transform ${wobbleDur / 1000}s cubic-bezier(0.34, 1.56, 0.64, 1)`; 
                 obj.style.transition = wobbleTrans;
@@ -15834,14 +15824,34 @@ const animStyle = document.createElement('style');
                 if(wrapBack) { wrapBack.style.transition = wobbleTrans; wrapBack.style.transform = `${invRot2} translateZ(-45px)`; }
                 if(wrapFront) { wrapFront.style.transition = wobbleTrans; wrapFront.style.transform = `${invRot2} translateZ(45px)`; }
             }
+
+            // Мгновенно гасим проигравшие грани и делаем белую вспышку на победителе
+            document.querySelectorAll('.absolute-face').forEach(f => {
+                const faceIdx = parseInt(f.id.replace('abs-face-', ''));
+                f.style.transition = 'opacity 0.2s ease, background 0.2s ease, box-shadow 0.2s ease';
+                
+                if (faceIdx === targetRIdx) {
+                    f.style.opacity = '1';
+                    f.style.background = '#ffffff';
+                    f.style.boxShadow = '0 0 30px 10px #ffffff';
+                    
+                    // Плавно возвращаем цвет через 150мс
+                    setTimeout(() => { updateFaceVisual(faceIdx); }, 150);
+                } else {
+                    f.style.opacity = '0.3';
+                }
+            });
         }, flightDur);
         
+        // ФИНАЛИЗАЦИЯ ПОСЛЕ ПОКАЧИВАНИЯ
         safeTimeout(() => {
             if(obj) obj.style.transition = 'none'; 
             if(pSph) pSph.style.transition = 'width 1s, height 1s, margin 1s, background 1s, box-shadow 1s';
             if(oSph) oSph.style.transition = 'width 1s, height 1s, margin 1s, background 1s, box-shadow 1s';
             if(wrapBack) wrapBack.style.transition = 'none';
             if(wrapFront) wrapFront.style.transition = 'none';
+            
+            heavyEls.forEach(el => { if(el) el.style.willChange = 'auto'; });
             
             document.querySelectorAll('.absolute-face').forEach(f => {
                 f.style.transition = 'background 0.3s, border 0.3s, box-shadow 0.3s, opacity 0.4s, transform 0.4s ease, filter 0.4s ease';
@@ -15850,52 +15860,30 @@ const animStyle = document.createElement('style');
         }, rollDuration + 50);
     }
 
-    // === 2. БРОСОК ОРАКУЛА (Без лагов) ===
+    // === 2. БРОСОК ОРАКУЛА ===
     function rollOracleAbsolute() {
-        // 🔥 АНТИ-ЛАГ №1
-        autoRotate = false;
-        clearTimeout(engineTimer);
+        autoRotate = false; clearTimeout(engineTimer);
         if (typeof inertiaFrame !== 'undefined') cancelAnimationFrame(inertiaFrame);
 
         const targetRIdx = Math.floor(Math.random() * TOTAL_FACES);
         activeFaceIndex = targetRIdx;
-        
         const rollDuration = 2200 + Math.floor(Math.random() * 1000); 
         const wobbleDur = 600; const flightDur = rollDuration - wobbleDur;
+        const targetRotX = -facesData[targetRIdx].rotX; const targetRotY = -facesData[targetRIdx].rotY;
+        const spinsX = 360 * (2 + Math.floor(Math.random() * 2)) + 720; const spinsY = 360 * (2 + Math.floor(Math.random() * 2)) + 720; 
+        const baseRotX = Math.round(rotX / 360) * 360; const baseRotY = Math.round(rotY / 360) * 360; 
         
-        const targetRotX = -facesData[targetRIdx].rotX;
-        const targetRotY = -facesData[targetRIdx].rotY;
+        rotX = baseRotX + spinsX + targetRotX; rotY = baseRotY + spinsY + targetRotY; rotZ = 0; 
+        const overX = rotX + (Math.random() * 40 - 20); const overY = rotY + (Math.random() * 40 - 20);
         
-        const spinsX = 360 * (2 + Math.floor(Math.random() * 2)) + 720; 
-        const spinsY = 360 * (2 + Math.floor(Math.random() * 2)) + 720; 
+        const obj = document.getElementById('absoluteObj'); const pSph = document.getElementById('pSphere');
+        const oSph = document.getElementById('oSphere'); const scene = document.getElementById('absoluteScene');
+        const wrapBack = document.getElementById('wrapperBack'); const wrapFront = document.getElementById('wrapperFront');
         
-        const baseRotX = Math.round(rotX / 360) * 360; 
-        const baseRotY = Math.round(rotY / 360) * 360; 
-        
-        rotX = baseRotX + spinsX + targetRotX; 
-        rotY = baseRotY + spinsY + targetRotY; rotZ = 0; 
-        
-        const overX = rotX + (Math.random() * 40 - 20);
-        const overY = rotY + (Math.random() * 40 - 20);
-        
-        const obj = document.getElementById('absoluteObj');
-        const pSph = document.getElementById('pSphere');
-        const oSph = document.getElementById('oSphere');
-        const scene = document.getElementById('absoluteScene');
-        const wrapBack = document.getElementById('wrapperBack');
-        const wrapFront = document.getElementById('wrapperFront');
-        
-        // 🔥 АНТИ-ЛАГ №2
-        document.querySelectorAll('.absolute-face').forEach(f => {
-            const faceIdx = parseInt(f.id.replace('abs-face-', ''));
-            const fd = facesData[faceIdx];
-            f.style.transition = 'none'; 
-            f.style.opacity = '1'; 
-            f.style.filter = 'none'; 
-            f.style.transform = `rotateY(${fd.rotY}deg) rotateX(${fd.rotX}deg) translateZ(126px) scale(1)`;
-        });
+        const heavyEls = [obj, scene, pSph, oSph, wrapBack, wrapFront];
+        heavyEls.forEach(el => { if(el) el.style.willChange = 'transform'; });
 
-        // 🔥 АНТИ-ЛАГ №3: МАГИЧЕСКИЙ REFLOW
+        if (obj) obj.classList.add('abs-rolling-mode');
         if (obj) void obj.offsetWidth;
         
         if(scene) {
@@ -15921,9 +15909,13 @@ const animStyle = document.createElement('style');
             if(wrapFront) { wrapFront.style.transition = flightTrans; wrapFront.style.transform = `${invRot} translateZ(45px)`; }
         }
 
-        safeTimeout(() => { triggerImpact('heavy'); playHeavyThud(); }, flightDur);
+        // 🔥 МОМЕНТ УДАРА О ЗЕМЛЮ ОРАКУЛА
+        safeTimeout(() => { 
+            triggerImpact('heavy'); 
+            playHeavyThud(); 
 
-        safeTimeout(() => {
+            if (obj) obj.classList.remove('abs-rolling-mode');
+
             if(obj) {
                 const wobbleTrans = `transform ${wobbleDur / 1000}s cubic-bezier(0.34, 1.56, 0.64, 1)`; 
                 obj.style.transition = wobbleTrans;
@@ -15935,6 +15927,19 @@ const animStyle = document.createElement('style');
                 if(wrapBack) { wrapBack.style.transition = wobbleTrans; wrapBack.style.transform = `${invRot2} translateZ(-45px)`; }
                 if(wrapFront) { wrapFront.style.transition = wobbleTrans; wrapFront.style.transform = `${invRot2} translateZ(45px)`; }
             }
+
+            document.querySelectorAll('.absolute-face').forEach(f => {
+                const faceIdx = parseInt(f.id.replace('abs-face-', ''));
+                f.style.transition = 'opacity 0.2s ease, background 0.2s ease, box-shadow 0.2s ease';
+                if (faceIdx === targetRIdx) {
+                    f.style.opacity = '1';
+                    f.style.background = '#ffffff';
+                    f.style.boxShadow = '0 0 30px 10px #ffffff';
+                    setTimeout(() => { updateFaceVisual(faceIdx); }, 150);
+                } else {
+                    f.style.opacity = '0.3';
+                }
+            });
         }, flightDur);
         
         safeTimeout(() => {
@@ -15943,6 +15948,8 @@ const animStyle = document.createElement('style');
             if(oSph) oSph.style.transition = 'width 1s, height 1s, margin 1s, background 1s, box-shadow 1s';
             if(wrapBack) wrapBack.style.transition = 'none';
             if(wrapFront) wrapFront.style.transition = 'none';
+            
+            heavyEls.forEach(el => { if(el) el.style.willChange = 'auto'; });
             
             document.querySelectorAll('.absolute-face').forEach(f => {
                 f.style.transition = 'background 0.3s, border 0.3s, box-shadow 0.3s, opacity 0.4s, transform 0.4s ease, filter 0.4s ease';
@@ -15954,7 +15961,6 @@ const animStyle = document.createElement('style');
             
         }, rollDuration + 50);
     }
-
 
     function handleFaceClick(faceIndex) {
         // 👇 1. АБСОЛЮТНАЯ ЗАЩИТА ОТ ДВОЙНЫХ КЛИКОВ (ФИКС БАГА С ЭНЕРГИЕЙ) 👇
