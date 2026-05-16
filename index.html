@@ -15050,8 +15050,11 @@ const animStyle = document.createElement('style');
         }, 3000);
     }
 
+   // === 1. ОБРАБОТКА КАСАНИЯ (Учим игру отличать тап от торможения) ===
+    let wasInertiaActive = false; // Глобальный флажок
+
     function onDown(e) {
-        // 👻 АНТИ-ПОЛТЕРГЕЙСТ (Защита от фантомных кликов, убивающих плавность)
+        // 👻 АНТИ-ПОЛТЕРГЕЙСТ
         if (e.type === 'mousedown' && window.absTouchActive) return;
         if (e.type === 'touchstart') {
             window.absTouchActive = true;
@@ -15062,8 +15065,13 @@ const animStyle = document.createElement('style');
         if (typeof isAssembling !== 'undefined' && isAssembling) return;
         if(gameState === 'ROLL' || gameState === 'ORACLE_TURN' || gameState === 'GAME_OVER' || gameState === 'SHIFTING') return; 
         
+        // 🔥 ЗАПОМИНАЕМ, КРУТИЛСЯ ЛИ ШАР ПО ИНЕРЦИИ В МОМЕНТ КАСАНИЯ
+        wasInertiaActive = !!window.inertiaFrame; 
+        
         isDragging = true; autoRotate = false; dragDistance = 0;
-        clearTimeout(engineTimer); cancelAnimationFrame(inertiaFrame);
+        clearTimeout(engineTimer); 
+        cancelAnimationFrame(window.inertiaFrame);
+        window.inertiaFrame = null; // Обнуляем!
         
         const obj = document.getElementById('absoluteObj');
         if(obj) { obj.style.transition = 'none'; void obj.offsetWidth; }
@@ -15073,32 +15081,35 @@ const animStyle = document.createElement('style');
         startX = clientX; startY = clientY; lastX = clientX; lastY = clientY; velX = 0; velY = 0;
     }
 
-    function onMove(e) {
-        if (e.type === 'mousemove' && window.absTouchActive) return; // 👻 Игнорим мышь после тача
-        if (!isDragging) return; 
-        e.preventDefault(); 
-        
-        const clientX = e.touches ? e.touches[0].clientX : e.clientX; 
-        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-        const deltaX = clientX - lastX; const deltaY = clientY - lastY;
-        dragDistance += Math.abs(deltaX) + Math.abs(deltaY);
-        
-        const sensitivity = e.touches ? 0.2 : 0.4;
+    // === 2. ФИЗИКА ИНЕРЦИИ ===
+    function applyInertia() {
+        if (Math.abs(velX) < 0.05 && Math.abs(velY) < 0.05) { 
+            window.inertiaFrame = null; 
+            pokeEngine(); 
+            return; 
+        }
         let radX = rotX * Math.PI / 180;
-        rotY += deltaX * Math.cos(radX) * sensitivity; 
-        rotZ -= deltaX * Math.sin(radX) * sensitivity; 
-        rotX -= deltaY * sensitivity;
-        
+        rotY += velX * Math.cos(radX) * 0.5; 
+        rotZ -= velX * Math.sin(radX) * 0.5; 
+        rotX -= velY * 0.5;
         updateTransform();
-        velX = deltaX; velY = deltaY; lastX = clientX; lastY = clientY;
+        velX *= 0.95; velY *= 0.95; 
+        window.inertiaFrame = requestAnimationFrame(applyInertia);
     }
 
+    // === 3. ОБРАБОТКА ОТПУСКАНИЯ ПАЛЬЦА ===
     function onUp(e) {
-        if (e.type === 'mouseup' && window.absTouchActive) return; // 👻 Игнорим мышь после тача
+        if (e.type === 'mouseup' && window.absTouchActive) return; 
         if (!isDragging) return; 
         isDragging = false;
         
         if (dragDistance < 10) {
+            // 🔥 АНТИ-АВТОЦЕНТР: Если мы тапнули просто чтобы остановить бешеный шар — стоим на месте!
+            if (wasInertiaActive) {
+                pokeEngine();
+                return;
+            }
+
             let target = e.target;
             let faceEl = target.closest('.absolute-face');
 
@@ -15106,29 +15117,19 @@ const animStyle = document.createElement('style');
                 if (faceEl) {
                     let faceIdx = parseInt(faceEl.id.replace('abs-face-', ''));
                     if (faceIdx === activeFaceIndex && gameState === 'ACTION_PENDING') {
-                        // Основной клик обрабатывается отдельно, тут ничего не делаем
+                        // Клик по грани обрабатывается в её собственном слушателе
                     } else { returnToActiveFace(); }
                 } else { returnToActiveFace(); }
             } else { pokeEngine(); }
         } else { applyInertia(); }
     }
 
-    function applyInertia() {
-        if (Math.abs(velX) < 0.05 && Math.abs(velY) < 0.05) { pokeEngine(); return; }
-        let radX = rotX * Math.PI / 180;
-        rotY += velX * Math.cos(radX) * 0.5; 
-        rotZ -= velX * Math.sin(radX) * 0.5; 
-        rotX -= velY * 0.5;
-        updateTransform();
-        velX *= 0.95; velY *= 0.95; 
-        inertiaFrame = requestAnimationFrame(applyInertia);
-    }
-
-    // === БРОНЕБОЙНОЕ ВОЗВРАЩЕНИЕ В ЦЕНТР (Без прыжков на мобилках) ===
+    // === 4. ЦЕНТРОВКА ГРАНИ (Бронебойный метод без прыжков) ===
     function returnToActiveFace() {
         if (activeFaceIndex === -1) { pokeEngine(); return; }
         
-        cancelAnimationFrame(inertiaFrame);
+        cancelAnimationFrame(window.inertiaFrame);
+        window.inertiaFrame = null;
         autoRotate = false; clearTimeout(engineTimer);
 
         const scene = document.getElementById('absoluteScene');
@@ -15158,24 +15159,23 @@ const animStyle = document.createElement('style');
 
         const els = [obj, pSph, oSph, wrapBack, wrapFront].filter(Boolean);
 
-        // 1. ЖЕСТКАЯ ФИКСАЦИЯ НА МЕСТЕ (Убиваем все транзиции)
+        // 1. ОТКЛЮЧАЕМ ТРАНЗИЦИИ И ЖЕСТКО ФИКСИРУЕМ ПОЛОЖЕНИЕ
         els.forEach(el => el.style.transition = 'none');
         
-        if (obj) {
-            obj.style.transform = `rotateX(${rotX}deg) rotateY(${rotY}deg) rotateZ(${rotZ}deg)`;
-        }
-        
+        if (obj) obj.style.transform = `rotateX(${rotX}deg) rotateY(${rotY}deg) rotateZ(${rotZ}deg)`;
         let invCurr = `rotateZ(${-rotZ}deg) rotateY(${-rotY}deg) rotateX(${-rotX}deg)`;
         if(pSph) pSph.style.transform = `translate3d(-20px, -10px, 20px) ${invCurr}`;
         if(oSph) oSph.style.transform = `translate3d(20px, 10px, -20px) ${invCurr}`;
         if(wrapBack) wrapBack.style.transform = `${invCurr} translateZ(-45px)`;
         if(wrapFront) wrapFront.style.transform = `${invCurr} translateZ(45px)`;
 
-        // 2. ПРИНУДИТЕЛЬНЫЙ REFLOW (Магия для мобилок)
-        // Эта строчка силой заставляет телефон отрисовать стоп-кадр ДО старта анимации
-        if (obj) void obj.offsetWidth;
+        // 2. ФОРСИРУЕМ ПЕРЕРИСОВКУ (Мобильный браузер не сможет это проигнорировать)
+        if (obj) {
+            void obj.getBoundingClientRect();
+            void window.getComputedStyle(obj).transform;
+        }
 
-        // 3. ОТКЛАДЫВАЕМ АНИМАЦИЮ (Надежнее, чем requestAnimationFrame)
+        // 3. ОТКЛАДЫВАЕМ АНИМАЦИЮ (Надежные 50мс паузы)
         setTimeout(() => {
             const smoothTrans = 'transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)';
             els.forEach(el => el.style.transition = smoothTrans);
@@ -15186,17 +15186,39 @@ const animStyle = document.createElement('style');
             if(oSph) oSph.style.transform = `translate3d(20px, 10px, -20px) ${invTarget}`;
             if(wrapBack) wrapBack.style.transform = `${invTarget} translateZ(-45px)`;
             if(wrapFront) wrapFront.style.transform = `${invTarget} translateZ(45px)`;
-        }, 20); // 20 миллисекунд - идеальное окно для мобильного браузера
+        }, 50);
 
-        // 4. РАЗБЛОКИРОВКА
+        // 4. ОЧИСТКА
         safeTimeout(() => { 
             els.forEach(el => el.style.transition = 'none');
             rotX = targetRotX; rotY = targetRotY; rotZ = targetRotZ; 
             
             if (scene) scene.style.pointerEvents = 'auto';
             pokeEngine(); 
-        }, 650);
+        }, 680);
+    } 
+
+    function onMove(e) {
+        if (e.type === 'mousemove' && window.absTouchActive) return; // 👻 Игнорим мышь после тача
+        if (!isDragging) return; 
+        e.preventDefault(); 
+        
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX; 
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+        const deltaX = clientX - lastX; const deltaY = clientY - lastY;
+        dragDistance += Math.abs(deltaX) + Math.abs(deltaY);
+        
+        const sensitivity = e.touches ? 0.2 : 0.4;
+        let radX = rotX * Math.PI / 180;
+        rotY += deltaX * Math.cos(radX) * sensitivity; 
+        rotZ -= deltaX * Math.sin(radX) * sensitivity; 
+        rotX -= deltaY * sensitivity;
+        
+        updateTransform();
+        velX = deltaX; velY = deltaY; lastX = clientX; lastY = clientY;
     }
+
+    
 
    function startEngine() {
         if (window.absoluteEngineRunning) return;
