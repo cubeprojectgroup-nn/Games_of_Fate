@@ -15088,28 +15088,30 @@ const animStyle = document.createElement('style');
         if (typeof isAssembling !== 'undefined' && isAssembling) return;
         if(gameState === 'ROLL' || gameState === 'ORACLE_TURN' || gameState === 'GAME_OVER' || gameState === 'SHIFTING') return; 
         
-        // 🔥 ЗАПОМИНАЕМ, КРУТИЛСЯ ЛИ ШАР ПО ИНЕРЦИИ В МОМЕНТ КАСАНИЯ
-        wasInertiaActive = !!window.inertiaFrame; 
-        
-        isDragging = true; autoRotate = false; dragDistance = 0;
+        // 🔥 ЖЕСТКИЙ ПЕРЕХВАТ: Убиваем центровку и инерцию
+        isDragging = true; 
+        autoRotate = false; 
+        dragDistance = 0;
+        window.isReturningToFace = false; // Убиваем JS-анимацию
         clearTimeout(engineTimer); 
-        cancelAnimationFrame(window.inertiaFrame);
-        window.inertiaFrame = null; // Обнуляем!
+        if (typeof inertiaFrame !== 'undefined') cancelAnimationFrame(inertiaFrame);
         
         const obj = document.getElementById('absoluteObj');
         if(obj) { obj.style.transition = 'none'; void obj.offsetWidth; }
         
-        const clientX = e.touches ? e.touches[0].clientX : e.clientX; 
-        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-        startX = clientX; startY = clientY; lastX = clientX; lastY = clientY; velX = 0; velY = 0;
+        // Надежное чтение координат пальца
+        const clientX = e.type.includes('touch') ? e.touches[0].clientX : e.clientX;
+        const clientY = e.type.includes('touch') ? e.touches[0].clientY : e.clientY;
+        
+        startX = clientX; startY = clientY; lastX = clientX; lastY = clientY; 
+        velX = 0; velY = 0;
     }
 
     // === 2. ФИЗИКА ИНЕРЦИИ ===
     function applyInertia() {
+        if (isDragging) return; // 🔥 СТОП: Если палец на экране - отменяем инерцию!
+
         if (Math.abs(velX) < 0.05 && Math.abs(velY) < 0.05) { 
-            window.inertiaFrame = null; 
-            
-            // 🔥 Как только Абсолют докрутился — плавно возвращаем его к активной грани
             if (gameState === 'ACTION_PENDING' || gameState === 'FREE_REROLL') {
                 returnToActiveFace();
             } else {
@@ -15121,9 +15123,12 @@ const animStyle = document.createElement('style');
         rotY += velX * Math.cos(radX) * 0.5; 
         rotZ -= velX * Math.sin(radX) * 0.5; 
         rotX -= velY * 0.5;
+        
         updateTransform();
         velX *= 0.95; velY *= 0.95; 
-        window.inertiaFrame = requestAnimationFrame(applyInertia);
+        
+        // Используем оригинальную переменную inertiaFrame (без window.)
+        inertiaFrame = requestAnimationFrame(applyInertia);
     }
 
     // === 3. ОБРАБОТКА ОТПУСКАНИЯ ПАЛЬЦА ===
@@ -15133,16 +15138,6 @@ const animStyle = document.createElement('style');
         isDragging = false;
         
         if (dragDistance < 10) {
-            // Если тапнули, чтобы остановить бешеный шар — останавливаем и центрируем
-            if (wasInertiaActive) {
-                if (gameState === 'ACTION_PENDING' || gameState === 'FREE_REROLL') {
-                    returnToActiveFace();
-                } else {
-                    pokeEngine();
-                }
-                return;
-            }
-
             let target = e.target;
             let faceEl = target.closest('.absolute-face');
 
@@ -15150,7 +15145,7 @@ const animStyle = document.createElement('style');
                 if (faceEl) {
                     let faceIdx = parseInt(faceEl.id.replace('abs-face-', ''));
                     if (faceIdx === activeFaceIndex && gameState === 'ACTION_PENDING') {
-                        // Обычный клик (работает логика грани)
+                        // Обычный клик по активной грани
                     } else { returnToActiveFace(); }
                 } else { returnToActiveFace(); }
             } else { pokeEngine(); }
@@ -15161,14 +15156,13 @@ const animStyle = document.createElement('style');
     function returnToActiveFace() {
         if (activeFaceIndex === -1) { pokeEngine(); return; }
         
-        cancelAnimationFrame(window.inertiaFrame);
-        window.inertiaFrame = null;
+        if (typeof inertiaFrame !== 'undefined') cancelAnimationFrame(inertiaFrame);
+        window.isReturningToFace = true; // 🔥 Включаем флаг анимации
         autoRotate = false; clearTimeout(engineTimer);
 
         const scene = document.getElementById('absoluteScene');
         if (scene) scene.style.pointerEvents = 'none';
 
-        // 1. Ищем кратчайший путь до нужной грани
         let targetX = -facesData[activeFaceIndex].rotX;
         let targetY = -facesData[activeFaceIndex].rotY;
         let targetZ = 0;
@@ -15185,62 +15179,62 @@ const animStyle = document.createElement('style');
         if (diffZ > 180) diffZ -= 360; else if (diffZ < -180) diffZ += 360;
         targetZ = rotZ + diffZ;
 
-        // 2. Отключаем глючные CSS-переходы (теперь всем рулит JavaScript)
-        const obj = document.getElementById('absoluteObj');
-        const pSph = document.getElementById('pSphere');
-        const oSph = document.getElementById('oSphere');
-        const wrapBack = document.getElementById('wrapperBack');
-        const wrapFront = document.getElementById('wrapperFront');
-        const els = [obj, pSph, oSph, wrapBack, wrapFront].filter(Boolean);
+        const els = [
+            document.getElementById('absoluteObj'),
+            document.getElementById('pSphere'),
+            document.getElementById('oSphere'),
+            document.getElementById('wrapperBack'),
+            document.getElementById('wrapperFront')
+        ].filter(Boolean);
+
         els.forEach(el => el.style.transition = 'none');
 
-        // 3. Запускаем JS-движок анимации
-        const startX = rotX;
-        const startY = rotY;
-        const startZ = rotZ;
+        const startX = rotX; const startY = rotY; const startZ = rotZ;
         const startTime = performance.now();
-        const duration = 600; // 0.6 секунды полета
+        const duration = 600; 
 
         function animateReturn(time) {
+            // 🔥 ГЛАВНАЯ ЗАЩИТА: Если коснулись пальцем - мгновенно умираем!
+            if (!window.isReturningToFace || isDragging) return;
+
             let t = (time - startTime) / duration;
             if (t >= 1) t = 1;
 
-            // Плавное замедление в конце (ease-in-out)
             const ease = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
 
             rotX = startX + (targetX - startX) * ease;
             rotY = startY + (targetY - startY) * ease;
             rotZ = startZ + (targetZ - startZ) * ease;
 
-            updateTransform(); // Отрисовываем каждый кадр через JS!
+            updateTransform();
 
             if (t < 1) {
-                // Если полет не закончен — запрашиваем следующий кадр
-                window.inertiaFrame = requestAnimationFrame(animateReturn);
+                inertiaFrame = requestAnimationFrame(animateReturn);
             } else {
-                // Конец полета
                 rotX = targetX; rotY = targetY; rotZ = targetZ;
                 updateTransform();
+                window.isReturningToFace = false;
                 if (scene) scene.style.pointerEvents = 'auto';
                 pokeEngine(); 
             }
         }
 
-        // Старт анимации
-        window.inertiaFrame = requestAnimationFrame(animateReturn);
+        inertiaFrame = requestAnimationFrame(animateReturn);
     }
 
     function onMove(e) {
-        if (e.type === 'mousemove' && window.absTouchActive) return; // 👻 Игнорим мышь после тача
+        if (e.type === 'mousemove' && window.absTouchActive) return; 
         if (!isDragging) return; 
         e.preventDefault(); 
         
-        const clientX = e.touches ? e.touches[0].clientX : e.clientX; 
-        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-        const deltaX = clientX - lastX; const deltaY = clientY - lastY;
+        const clientX = e.type.includes('touch') ? e.touches[0].clientX : e.clientX;
+        const clientY = e.type.includes('touch') ? e.touches[0].clientY : e.clientY;
+        
+        const deltaX = clientX - lastX; 
+        const deltaY = clientY - lastY;
         dragDistance += Math.abs(deltaX) + Math.abs(deltaY);
         
-        const sensitivity = e.touches ? 0.2 : 0.4;
+        const sensitivity = e.type.includes('touch') ? 0.2 : 0.4;
         let radX = rotX * Math.PI / 180;
         rotY += deltaX * Math.cos(radX) * sensitivity; 
         rotZ -= deltaX * Math.sin(radX) * sensitivity; 
@@ -15251,7 +15245,6 @@ const animStyle = document.createElement('style');
     }
 
     
-
    function startEngine() {
         if (window.absoluteEngineRunning) return;
         window.absoluteEngineRunning = true;
