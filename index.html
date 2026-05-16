@@ -15124,7 +15124,7 @@ const animStyle = document.createElement('style');
         inertiaFrame = requestAnimationFrame(applyInertia);
     }
 
-    // === БРОНЕБОЙНОЕ ВОЗВРАЩЕНИЕ В ЦЕНТР (Без прыжков и лагов) ===
+    // === БРОНЕБОЙНОЕ ВОЗВРАЩЕНИЕ В ЦЕНТР (Без прыжков на мобилках) ===
     function returnToActiveFace() {
         if (activeFaceIndex === -1) { pokeEngine(); return; }
         
@@ -15138,7 +15138,6 @@ const animStyle = document.createElement('style');
         let targetRotY = -facesData[activeFaceIndex].rotY;
         let targetRotZ = 0;
 
-        // Умный просчет кратчайшего пути
         let diffX = (targetRotX - rotX) % 360;
         if (diffX > 180) diffX -= 360; else if (diffX < -180) diffX += 360;
         targetRotX = rotX + diffX;
@@ -15162,37 +15161,41 @@ const animStyle = document.createElement('style');
         // 1. ЖЕСТКАЯ ФИКСАЦИЯ НА МЕСТЕ (Убиваем все транзиции)
         els.forEach(el => el.style.transition = 'none');
         
-        obj.style.transform = `rotateX(${rotX}deg) rotateY(${rotY}deg) rotateZ(${rotZ}deg)`;
+        if (obj) {
+            obj.style.transform = `rotateX(${rotX}deg) rotateY(${rotY}deg) rotateZ(${rotZ}deg)`;
+        }
+        
         let invCurr = `rotateZ(${-rotZ}deg) rotateY(${-rotY}deg) rotateX(${-rotX}deg)`;
         if(pSph) pSph.style.transform = `translate3d(-20px, -10px, 20px) ${invCurr}`;
         if(oSph) oSph.style.transform = `translate3d(20px, 10px, -20px) ${invCurr}`;
         if(wrapBack) wrapBack.style.transform = `${invCurr} translateZ(-45px)`;
         if(wrapFront) wrapFront.style.transform = `${invCurr} translateZ(45px)`;
 
-        // 2. ДВОЙНОЙ КАДР: Заставляем мобильный GPU всё это проглотить,
-        // и только на следующий кадр даем команду плавно лететь.
-        requestAnimationFrame(() => {
-            requestAnimationFrame(() => {
-                const smoothTrans = 'transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)';
-                els.forEach(el => el.style.transition = smoothTrans);
-                
-                obj.style.transform = `rotateX(${targetRotX}deg) rotateY(${targetRotY}deg) rotateZ(${targetRotZ}deg)`;
-                let invTarget = `rotateZ(${-targetRotZ}deg) rotateY(${-targetRotY}deg) rotateX(${-targetRotX}deg)`;
-                if(pSph) pSph.style.transform = `translate3d(-20px, -10px, 20px) ${invTarget}`;
-                if(oSph) oSph.style.transform = `translate3d(20px, 10px, -20px) ${invTarget}`;
-                if(wrapBack) wrapBack.style.transform = `${invTarget} translateZ(-45px)`;
-                if(wrapFront) wrapFront.style.transform = `${invTarget} translateZ(45px)`;
-            });
-        });
+        // 2. ПРИНУДИТЕЛЬНЫЙ REFLOW (Магия для мобилок)
+        // Эта строчка силой заставляет телефон отрисовать стоп-кадр ДО старта анимации
+        if (obj) void obj.offsetWidth;
 
-        // 3. ОТВИСАНИЕ (Снизили до 620мс, чтобы не было чувства залипания экрана)
+        // 3. ОТКЛАДЫВАЕМ АНИМАЦИЮ (Надежнее, чем requestAnimationFrame)
+        setTimeout(() => {
+            const smoothTrans = 'transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)';
+            els.forEach(el => el.style.transition = smoothTrans);
+            
+            if (obj) obj.style.transform = `rotateX(${targetRotX}deg) rotateY(${targetRotY}deg) rotateZ(${targetRotZ}deg)`;
+            let invTarget = `rotateZ(${-targetRotZ}deg) rotateY(${-targetRotY}deg) rotateX(${-targetRotX}deg)`;
+            if(pSph) pSph.style.transform = `translate3d(-20px, -10px, 20px) ${invTarget}`;
+            if(oSph) oSph.style.transform = `translate3d(20px, 10px, -20px) ${invTarget}`;
+            if(wrapBack) wrapBack.style.transform = `${invTarget} translateZ(-45px)`;
+            if(wrapFront) wrapFront.style.transform = `${invTarget} translateZ(45px)`;
+        }, 20); // 20 миллисекунд - идеальное окно для мобильного браузера
+
+        // 4. РАЗБЛОКИРОВКА
         safeTimeout(() => { 
             els.forEach(el => el.style.transition = 'none');
             rotX = targetRotX; rotY = targetRotY; rotZ = targetRotZ; 
             
             if (scene) scene.style.pointerEvents = 'auto';
             pokeEngine(); 
-        }, 620);
+        }, 650);
     }
 
    function startEngine() {
