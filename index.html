@@ -15051,7 +15051,11 @@ const animStyle = document.createElement('style');
     }
 
     function onDown(e) {
+        // 🔥 БЛОКИРУЕМ ЛЮБЫЕ ВРАЩЕНИЯ ВО ВРЕМЯ СБОРКИ АБСОЛЮТА
+        if (typeof isAssembling !== 'undefined' && isAssembling) return;
+        
         if(gameState === 'ROLL' || gameState === 'ORACLE_TURN' || gameState === 'GAME_OVER' || gameState === 'SHIFTING') return; 
+        
         isDragging = true; autoRotate = false; dragDistance = 0;
         clearTimeout(engineTimer); cancelAnimationFrame(inertiaFrame);
         
@@ -15453,7 +15457,7 @@ const animStyle = document.createElement('style');
         });
     }
 
-    // 1. ВОЗВРАЩАЕМ СВАЙПЫ (С ЗАЩИТОЙ ОТ "ПРИЗРАЧНЫХ КЛИКОВ" НА МОБИЛКАХ)
+    // 1. ВОЗВРАЩАЕМ СВАЙПЫ (С ЖЕСТКОЙ ЗАЩИТОЙ ОТ ПРИЗРАЧНЫХ КЛИКОВ)
     function initDragEvents() {
         const stage = document.getElementById('absoluteScene');
         if(!stage || stage.dataset.dragInit) return;
@@ -15470,15 +15474,24 @@ const animStyle = document.createElement('style');
         const gameContainer = document.getElementById('absoluteGameStage');
         if (gameContainer) {
             const checkDoubleTap = (e) => {
-                // Игнорируем двойные клики по кнопкам, интерфейсу и панели дебага
+                // Игнорируем клики по интерфейсу и кнопкам
                 if (e.target.closest('.action-row') || e.target.closest('#abs-debug-container') || e.target.tagName === 'BUTTON') return;
                 
+                // 👻 АНТИ-ПОЛТЕРГЕЙСТ: Отсекаем фантомные клики мобильных браузеров
+                if (e.type === 'touchstart') {
+                    window.absTouchActive = true;
+                    if (window.absTouchTimer) clearTimeout(window.absTouchTimer);
+                    // Игнорируем события мыши следующие 500мс после тача
+                    window.absTouchTimer = setTimeout(() => { window.absTouchActive = false; }, 500);
+                } else if (e.type === 'mousedown' && window.absTouchActive) {
+                    return; // Убиваем призрачный клик!
+                }
+
                 const now = Date.now();
                 const diff = now - (window.lastGlobalDblTap || 0);
 
-                // 🔥 АНТИ-БАГ: diff > 50 отсекает "призрачные" mousedown после touchstart
-                // Настоящий двойной тап пальцем занимает от 100 до 350 мс
-                if (diff > 50 && diff < 350) {
+                // 🔥 СТРОГИЙ ДВОЙНОЙ ТАП (Расстояние меньше 250 мс)
+                if (diff > 10 && diff < 250) {
                     window.lastGlobalDblTap = 0; // Сбрасываем таймер
                     
                     let faceEl = e.target.closest('.absolute-face');
