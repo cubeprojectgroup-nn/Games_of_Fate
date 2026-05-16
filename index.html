@@ -15154,73 +15154,84 @@ const animStyle = document.createElement('style');
 
     // === 4. ЦЕНТРОВКА ГРАНИ (100% ЗАЩИТА ОТ МОБИЛЬНЫХ ЛАГОВ - Покадровая JS-анимация) ===
     function returnToActiveFace() {
-        if (activeFaceIndex === -1) { pokeEngine(); return; }
-        
-        if (typeof inertiaFrame !== 'undefined') cancelAnimationFrame(inertiaFrame);
-        window.isReturningToFace = true; // 🔥 Включаем флаг анимации
-        autoRotate = false; clearTimeout(engineTimer);
-
-        const scene = document.getElementById('absoluteScene');
-        if (scene) scene.style.pointerEvents = 'none';
-
-        let targetX = -facesData[activeFaceIndex].rotX;
-        let targetY = -facesData[activeFaceIndex].rotY;
-        let targetZ = 0;
-
-        let diffX = (targetX - rotX) % 360;
-        if (diffX > 180) diffX -= 360; else if (diffX < -180) diffX += 360;
-        targetX = rotX + diffX;
-
-        let diffY = (targetY - rotY) % 360;
-        if (diffY > 180) diffY -= 360; else if (diffY < -180) diffY += 360;
-        targetY = rotY + diffY;
-
-        let diffZ = (targetZ - rotZ) % 360;
-        if (diffZ > 180) diffZ -= 360; else if (diffZ < -180) diffZ += 360;
-        targetZ = rotZ + diffZ;
-
-        const els = [
-            document.getElementById('absoluteObj'),
-            document.getElementById('pSphere'),
-            document.getElementById('oSphere'),
-            document.getElementById('wrapperBack'),
-            document.getElementById('wrapperFront')
-        ].filter(Boolean);
-
-        els.forEach(el => el.style.transition = 'none');
-
-        const startX = rotX; const startY = rotY; const startZ = rotZ;
-        const startTime = performance.now();
-        const duration = 600; 
-
-        function animateReturn(time) {
-            // 🔥 ГЛАВНАЯ ЗАЩИТА: Если коснулись пальцем - мгновенно умираем!
-            if (!window.isReturningToFace || isDragging) return;
-
-            let t = (time - startTime) / duration;
-            if (t >= 1) t = 1;
-
-            const ease = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
-
-            rotX = startX + (targetX - startX) * ease;
-            rotY = startY + (targetY - startY) * ease;
-            rotZ = startZ + (targetZ - startZ) * ease;
-
-            updateTransform();
-
-            if (t < 1) {
-                inertiaFrame = requestAnimationFrame(animateReturn);
-            } else {
-                rotX = targetX; rotY = targetY; rotZ = targetZ;
-                updateTransform();
-                window.isReturningToFace = false;
-                if (scene) scene.style.pointerEvents = 'auto';
-                pokeEngine(); 
-            }
-        }
-
-        inertiaFrame = requestAnimationFrame(animateReturn);
+    if (activeFaceIndex === -1) {
+        pokeEngine();
+        return;
     }
+    if (typeof inertiaFrame !== 'undefined') cancelAnimationFrame(inertiaFrame);
+    
+    // 1. Убираем этот флаг, чтобы он не блокировал касания в onDown
+    // window.isReturningToFace = true; 
+    
+    autoRotate = false;
+    clearTimeout(engineTimer);
+
+    const scene = document.getElementById('absoluteScene');
+    // 2. Отключаем жесткую блокировку событий указателя
+    // if (scene) scene.style.pointerEvents = 'none';
+
+    let targetX = -facesData[activeFaceIndex].rotX;
+    let targetY = -facesData[activeFaceIndex].rotY;
+    let targetZ = 0;
+
+    let diffX = (targetX - rotX) % 360;
+    if (diffX > 180) diffX -= 360;
+    else if (diffX < -180) diffX += 360;
+    targetX = rotX + diffX;
+
+    let diffY = (targetY - rotY) % 360;
+    if (diffY > 180) diffY -= 360;
+    else if (diffY < -180) diffY += 360;
+    targetY = rotY + diffY;
+
+    let diffZ = (targetZ - rotZ) % 360;
+    if (diffZ > 180) diffZ -= 360;
+    else if (diffZ < -180) diffZ += 360;
+    targetZ = rotZ + diffZ;
+
+    const els = [
+        document.getElementById('absoluteObj'),
+        document.getElementById('pSphere'),
+        document.getElementById('oSphere'),
+        document.getElementById('wrapperBack'),
+        document.getElementById('wrapperFront')
+    ].filter(Boolean);
+    els.forEach(el => el.style.transition = 'none');
+
+    const startX = rotX;
+    const startY = rotY;
+    const startZ = rotZ;
+    const startTime = performance.now();
+    const duration = 600;
+
+    function animateReturn(time) {
+        // 3. Оставляем только защиту от одновременного свайпа
+        if (isDragging) return; 
+
+        let t = (time - startTime) / duration;
+        if (t >= 1) t = 1;
+        const ease = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+
+        rotX = startX + (targetX - startX) * ease;
+        rotY = startY + (targetY - startY) * ease;
+        rotZ = startZ + (targetZ - startZ) * ease;
+        updateTransform();
+
+        if (t < 1) {
+            inertiaFrame = requestAnimationFrame(animateReturn);
+        } else {
+            rotX = targetX; rotY = targetY; rotZ = targetZ;
+            updateTransform();
+            
+            // 4. Комментируем снятие флагов, так как мы их не ставили
+            // window.isReturningToFace = false;
+            // if (scene) scene.style.pointerEvents = 'auto';
+            
+            pokeEngine();
+        }
+    }
+    inertiaFrame = requestAnimationFrame(animateReturn);
+}
 
     function onMove(e) {
         if (e.type === 'mousemove' && window.absTouchActive) return; 
@@ -15454,39 +15465,39 @@ const animStyle = document.createElement('style');
     }
 
     function triggerTurnTransfer(toOwner) {
-        gameState = 'SHIFTING'; updateFaceInfoText(-1);
-        updateActionBtn("СМЕЩЕНИЕ...", true);
-        
-        lockNavigation(true); // 🔒 БЛОКИРУЕМ ИГРУ ВО ВРЕМЯ ХОДА ОРАКУЛА
+    gameState = 'SHIFTING';
+    updateFaceInfoText(-1);
+    updateActionBtn("СМЕЩЕНИЕ...", true);
 
-        const currentOwner = toOwner === 'o' ? 'p' : 'o';
-        highlightFace(-1);
+    lockNavigation(true);
+    const currentOwner = toOwner === 'o' ? 'p' : 'o';
+    highlightFace(-1);
 
-        shiftEnergy(currentOwner, () => {
-            if (toOwner === 'o') {
-                gameState = 'ORACLE_TURN';
-                updateActionBtn("ХОД ОРАКУЛА...", true);
-                safeTimeout(() => {
-                    gainEnergy('o'); saveState();
-                    safeTimeout(rollOracleAbsolute, 800);
-                }, 200);
-            } else {
-                gameState = 'PLAYER_TURN';
-                activeFaceIndex = -1;
-                highlightFace(-1);
-                
-                updateActionBtn("БРОСИТЬ АБСОЛЮТ", false);
-                updateFaceInfoText(-1); 
-                
-                safeTimeout(() => {
-                    gainEnergy('p'); saveState();
-                    if(typeof App !== 'undefined') App.playSoundEffect('positive');
-                    lockNavigation(false); // 🔓 РАЗБЛОКИРУЕМ, КОГДА ХОД ВЕРНУЛСЯ НАМ
-                }, 200);
-                pokeEngine();
-            }
-        });
-    }
+    shiftEnergy(currentOwner, () => {
+        if (toOwner === 'o') {
+            gameState = 'ORACLE_TURN';
+            updateActionBtn("ХОД ОРАКУЛА...", true);
+            safeTimeout(() => {
+                gainEnergy('o');
+                saveState();
+                safeTimeout(rollOracleAbsolute, 50); // Ускорено с 800 до 50
+            }, 50); // Ускорено с 200 до 50
+        } else {
+            gameState = 'PLAYER_TURN';
+            activeFaceIndex = -1;
+            highlightFace(-1);
+            updateActionBtn("БРОСИТЬ АБСОЛЮТ", false);
+            updateFaceInfoText(-1);
+            safeTimeout(() => {
+                gainEnergy('p');
+                saveState();
+                if(typeof App !== 'undefined') App.playSoundEffect('positive');
+                lockNavigation(false); 
+            }, 50); // Ускорено с 200 до 50
+            pokeEngine();
+        }
+    });
+}
 
     // 1. ВОЗВРАЩАЕМ СВАЙПЫ (С ЖЕСТКОЙ ЗАЩИТОЙ ОТ ПРИЗРАЧНЫХ КЛИКОВ)
     function initDragEvents() {
