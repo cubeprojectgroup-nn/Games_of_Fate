@@ -15453,7 +15453,7 @@ const animStyle = document.createElement('style');
         });
     }
 
-    // 1. ВОЗВРАЩАЕМ СВАЙПЫ (И ДОБАВЛЯЕМ НЕПРОБИВАЕМЫЙ ДВОЙНОЙ ТАП)
+    // 1. ВОЗВРАЩАЕМ СВАЙПЫ (С ЗАЩИТОЙ ОТ "ПРИЗРАЧНЫХ КЛИКОВ" НА МОБИЛКАХ)
     function initDragEvents() {
         const stage = document.getElementById('absoluteScene');
         if(!stage || stage.dataset.dragInit) return;
@@ -15467,9 +15467,6 @@ const animStyle = document.createElement('style');
         document.addEventListener('touchend', onUp);
 
         // 🔥 ГЛОБАЛЬНЫЙ ПЕРЕХВАТЧИК ДВОЙНОГО ТАПА 🔥
-        // Вешаем слушатель на внешний контейнер игры.
-        // Теперь даже если Сцена заблокировалась (pointer-events: none) после первого тапа, 
-        // второй тап пройдет сквозь неё и поймается здесь!
         const gameContainer = document.getElementById('absoluteGameStage');
         if (gameContainer) {
             const checkDoubleTap = (e) => {
@@ -15477,7 +15474,11 @@ const animStyle = document.createElement('style');
                 if (e.target.closest('.action-row') || e.target.closest('#abs-debug-container') || e.target.tagName === 'BUTTON') return;
                 
                 const now = Date.now();
-                if (window.lastGlobalDblTap && (now - window.lastGlobalDblTap < 350)) {
+                const diff = now - (window.lastGlobalDblTap || 0);
+
+                // 🔥 АНТИ-БАГ: diff > 50 отсекает "призрачные" mousedown после touchstart
+                // Настоящий двойной тап пальцем занимает от 100 до 350 мс
+                if (diff > 50 && diff < 350) {
                     window.lastGlobalDblTap = 0; // Сбрасываем таймер
                     
                     let faceEl = e.target.closest('.absolute-face');
@@ -15487,7 +15488,7 @@ const animStyle = document.createElement('style');
                     if (!isCurrentFace && ['PLAYER_TURN', 'FREE_REROLL', 'ACTION_PENDING'].includes(gameState)) {
                         if (e.cancelable) e.preventDefault();
                         
-                        // Вызываем то же самое, что делает центральная кнопка (Бросок или Завершение хода)
+                        // Вызываем бросок или завершение хода
                         if (typeof handleMainAction === 'function') handleMainAction();
                         else if (typeof AbsoluteGame !== 'undefined' && typeof AbsoluteGame.handleMainAction === 'function') AbsoluteGame.handleMainAction();
                     }
