@@ -3935,6 +3935,34 @@ window.findItemById = function(id) {
 // ⚙️ МОДУЛЬ ЯДРА (CORE APP)
 // ==============================================
 const App = (function() {
+// 🛡️ ЗАЩИТА ОТ ЧУЖИХ СОХРАНЕНИЙ ПРИ СМЕНЕ АККАУНТА TELEGRAM
+function validatePlayerSession() {
+    let currentUserId = 'unknown';
+    
+    // Пытаемся достать ID игрока из Telegram
+    if (typeof Telegram !== 'undefined' && Telegram.WebApp && Telegram.WebApp.initDataUnsafe && Telegram.WebApp.initDataUnsafe.user) {
+        currentUserId = Telegram.WebApp.initDataUnsafe.user.id.toString();
+    }
+
+    let savedUserId = localStorage.getItem('absolute_last_player_id');
+
+    if (savedUserId && savedUserId !== currentUserId) {
+        console.log('🕵️‍♂️ Обнаружен новый аккаунт! Сбрасываем весь прогресс...');
+        
+        // Удаляем все профили и активный индекс
+        localStorage.removeItem('gof_profiles');
+        localStorage.removeItem('gof_active_profile');
+        
+        // Вычищаем все железобетонные бэкапы Абсолюта
+        for (let i = 0; i < 20; i++) {
+            localStorage.removeItem('AbsoluteSave_Profile_' + i);
+        }
+    }
+
+    localStorage.setItem('absolute_last_player_id', currentUserId);
+}
+
+validatePlayerSession();
     let globalPlayMode = 'arcade';
 	
 	// Функция-предохранитель на 500мс
@@ -4817,61 +4845,55 @@ function updateHistoryModalTitle() {
     if (typeof updateMenuBankUI === 'function') updateMenuBankUI();
 }
 
-    // === 3. СОЗДАНИЕ ИГРОКА БЕЗ УТЕЧЕК ===
+    // === 3. СОЗДАНИЕ ИГРОКА (Без призраков Абсолюта) ===
     function createNewProfile(e) {
         if (e) e.stopPropagation();
         
-        // 🚀 ГЛАВНЫЙ ФИКС СОХРАНЕНИЯ: Обязательно сохраняем текущего игрока ПЕРЕД очисткой!
+        // Сохраняем текущего игрока ПЕРЕД очисткой!
         if (typeof requestProfileSave === 'function' && GameState.activeProfileIdx !== -1) {
             requestProfileSave();
         }
+        isSwitchingProfile = true;
 
-        isSwitchingProfile = true; 
-        
         const lists = ['historyListDice', 'historyListRoulette', 'historyListBank', 'historyListSurvival', 'historyListCoin', 'historyListFlower', 'historyListRPS', 'historyListShop', 'historyListSticks'];
-        lists.forEach(id => { const el = document.getElementById(id); if (el) el.innerHTML = ''; });
+        lists.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.innerHTML = '';
+        });
 
         const newIdx = GameState.profiles.length;
-        
-        // 📦 Шаблон чистого хранилища
+
+        // 🔥 ФИКС: Убиваем призрачный бэкап Абсолюта для этого слота!
+        localStorage.removeItem('AbsoluteSave_Profile_' + newIdx);
+
         const emptyBucket = {
-    bank: 50.00, pool: 0.00, crystals: 0, lastMode: 'dice',
-    equipped: {}, unlocked: {}, order: [], rStats: {},
-    historyDice: '', historyRoulette: '', historySurvival: '',
-    historyBank: '', historyCoin: '', historyFlower: '',
-    historyRPS: '', historyShop: '', historySticks: '',
-    historyAbsolute: ''
-    };
+            bank: 50.00, pool: 0.00, crystals: 0, lastMode: 'dice', equipped: {}, unlocked: {}, order: [], rStats: {},
+            historyDice: '', historyRoulette: '', historySurvival: '', historyBank: '', historyCoin: '', historyFlower: '',
+            historyRPS: '', historyShop: '', historySticks: '', historyAbsolute: ''
+        };
 
         const newPlayer = {
             name: (GameState.lang === 'ru' ? 'Игрок ' : 'Player ') + (newIdx + 1),
             settings: {
-                lang: GameState.lang || 'ru', 
-                sound: GameState.sound !== false, 
-                isClassic: GameState.isClassic || false,
-                bgTheme: 'bg1', 
-                sparkles: true,
+                lang: GameState.lang || 'ru', sound: GameState.sound !== false, isClassic: GameState.isClassic || false,
+                bgTheme: 'bg1', sparkles: true,
                 subModes: { dice: 'standard', roulette: 'standard', coin: 'standard', flower: 'standard', rps: 'standard', shop: 'standard', sticks: 'standard' }
             },
-            // 🧬 ДВА ПУТИ: Создаем изолированные реальности
             arcade_data: JSON.parse(JSON.stringify(emptyBucket)),
             history_data: JSON.parse(JSON.stringify(emptyBucket))
         };
-        
-        // Временно распаковываем пустые данные в корень, чтобы загрузка не споткнулась
-        Object.assign(newPlayer, emptyBucket);
 
+        Object.assign(newPlayer, emptyBucket);
         GameState.profiles.push(newPlayer);
         GameState.activeProfileIdx = newIdx;
         localStorage.setItem('gof_active_profile', GameState.activeProfileIdx);
         
         GameState.subModes = JSON.parse(JSON.stringify(newPlayer.settings.subModes));
-
+        
         loadProfileData(newIdx);
         renderProfiles();
         showRenameModal({stopPropagation:()=>{}}, newIdx);
         updateMenuBankUI();
-        
         if (typeof updateSubModeHighlights === 'function') updateSubModeHighlights();
         if (typeof ShopGame !== 'undefined' && ShopGame.applyAllEquippedVisuals) ShopGame.applyAllEquippedVisuals();
     }
@@ -5056,33 +5078,34 @@ function updateHistoryModalTitle() {
         setTimeout(() => { if(input) input.focus(); }, 50); 
     }
 
-            function confirmDeleteProfile(confirm) {
+        function confirmDeleteProfile(confirm) {
         const popup = document.getElementById('deleteProfileConfirm');
         if(popup) popup.style.display = 'none';
+
         if (confirm && GameState.profileToDelete !== -1) {
             GameState.profiles.splice(GameState.profileToDelete, 1);
             
-            GameState.profiles.forEach((p, i) => {
-                if(p.name.startsWith('Игрок ') || p.name.startsWith('Player ')) {
-                    p.name = (GameState.lang === 'ru' ? 'Игрок ' : 'Player ') + (i + 1);
-                }
-            });
-            localStorage.setItem('gof_profiles', JSON.stringify(GameState.profiles));
-
-            // 🚀 АВТОВЫБОР ИГРОКА ПРИ УДАЛЕНИИ (Или сброс, если удалили последнего)
-            if (GameState.profiles.length > 0) {
-                // Если мы удалили нулевого, нулевым станет следующий. Иначе берем предыдущего.
-                GameState.activeProfileIdx = Math.max(0, GameState.profileToDelete - 1); 
-            } else {
-                GameState.activeProfileIdx = -1; // Пусто
+            // 🔥 ФИКС: Убиваем все кэши Абсолюта, потому что индексы сдвинулись!
+            // Они автоматически восстановятся из профилей при следующем запуске.
+            for (let i = 0; i < 20; i++) {
+                localStorage.removeItem('AbsoluteSave_Profile_' + i);
             }
+
+            GameState.activeProfileIdx = GameState.profiles.length > 0 ? 0 : -1;
+            localStorage.setItem('gof_profiles', JSON.stringify(GameState.profiles));
             localStorage.setItem('gof_active_profile', GameState.activeProfileIdx);
             
-            loadProfileData(GameState.activeProfileIdx);
+            if (GameState.activeProfileIdx !== -1) {
+                loadProfileData(GameState.activeProfileIdx);
+                if (typeof ShopGame !== 'undefined' && ShopGame.applyAllEquippedVisuals) ShopGame.applyAllEquippedVisuals();
+            } else {
+                const hBlock = document.getElementById('historyBlock');
+                if(hBlock) Array.from(hBlock.children).forEach(el => el.innerHTML='');
+            }
             renderProfiles();
-            updateMenuBankUI();
-            playSoundEffect('error_pyn');
-            if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('warning');
+            if (typeof updateMenuBankUI === 'function') updateMenuBankUI();
+            if(typeof App !== 'undefined') App.playSoundEffect('tick');
+            if (typeof tg !== 'undefined' && tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
         }
         GameState.profileToDelete = -1;
     }
@@ -15085,7 +15108,13 @@ const animStyle = document.createElement('style');
     function applyInertia() {
         if (Math.abs(velX) < 0.05 && Math.abs(velY) < 0.05) { 
             window.inertiaFrame = null; 
-            pokeEngine(); 
+            
+            // 🔥 Как только Абсолют докрутился — плавно возвращаем его к активной грани
+            if (gameState === 'ACTION_PENDING' || gameState === 'FREE_REROLL') {
+                returnToActiveFace();
+            } else {
+                pokeEngine(); 
+            }
             return; 
         }
         let radX = rotX * Math.PI / 180;
@@ -15104,9 +15133,13 @@ const animStyle = document.createElement('style');
         isDragging = false;
         
         if (dragDistance < 10) {
-            // 🔥 АНТИ-АВТОЦЕНТР: Если мы тапнули просто чтобы остановить бешеный шар — стоим на месте!
+            // Если тапнули, чтобы остановить бешеный шар — останавливаем и центрируем
             if (wasInertiaActive) {
-                pokeEngine();
+                if (gameState === 'ACTION_PENDING' || gameState === 'FREE_REROLL') {
+                    returnToActiveFace();
+                } else {
+                    pokeEngine();
+                }
                 return;
             }
 
@@ -15117,14 +15150,14 @@ const animStyle = document.createElement('style');
                 if (faceEl) {
                     let faceIdx = parseInt(faceEl.id.replace('abs-face-', ''));
                     if (faceIdx === activeFaceIndex && gameState === 'ACTION_PENDING') {
-                        // Клик по грани обрабатывается в её собственном слушателе
+                        // Обычный клик (работает логика грани)
                     } else { returnToActiveFace(); }
                 } else { returnToActiveFace(); }
             } else { pokeEngine(); }
         } else { applyInertia(); }
     }
 
-    // === 4. ЦЕНТРОВКА ГРАНИ (Бронебойный метод без прыжков) ===
+    // === 4. ЦЕНТРОВКА ГРАНИ (100% ЗАЩИТА ОТ МОБИЛЬНЫХ ЛАГОВ - Покадровая JS-анимация) ===
     function returnToActiveFace() {
         if (activeFaceIndex === -1) { pokeEngine(); return; }
         
@@ -15135,68 +15168,67 @@ const animStyle = document.createElement('style');
         const scene = document.getElementById('absoluteScene');
         if (scene) scene.style.pointerEvents = 'none';
 
-        let targetRotX = -facesData[activeFaceIndex].rotX;
-        let targetRotY = -facesData[activeFaceIndex].rotY;
-        let targetRotZ = 0;
+        // 1. Ищем кратчайший путь до нужной грани
+        let targetX = -facesData[activeFaceIndex].rotX;
+        let targetY = -facesData[activeFaceIndex].rotY;
+        let targetZ = 0;
 
-        let diffX = (targetRotX - rotX) % 360;
+        let diffX = (targetX - rotX) % 360;
         if (diffX > 180) diffX -= 360; else if (diffX < -180) diffX += 360;
-        targetRotX = rotX + diffX;
+        targetX = rotX + diffX;
 
-        let diffY = (targetRotY - rotY) % 360;
+        let diffY = (targetY - rotY) % 360;
         if (diffY > 180) diffY -= 360; else if (diffY < -180) diffY += 360;
-        targetRotY = rotY + diffY;
+        targetY = rotY + diffY;
 
-        let diffZ = (targetRotZ - rotZ) % 360;
+        let diffZ = (targetZ - rotZ) % 360;
         if (diffZ > 180) diffZ -= 360; else if (diffZ < -180) diffZ += 360;
-        targetRotZ = rotZ + diffZ;
+        targetZ = rotZ + diffZ;
 
+        // 2. Отключаем глючные CSS-переходы (теперь всем рулит JavaScript)
         const obj = document.getElementById('absoluteObj');
         const pSph = document.getElementById('pSphere');
         const oSph = document.getElementById('oSphere');
         const wrapBack = document.getElementById('wrapperBack');
         const wrapFront = document.getElementById('wrapperFront');
-
         const els = [obj, pSph, oSph, wrapBack, wrapFront].filter(Boolean);
-
-        // 1. ОТКЛЮЧАЕМ ТРАНЗИЦИИ И ЖЕСТКО ФИКСИРУЕМ ПОЛОЖЕНИЕ
         els.forEach(el => el.style.transition = 'none');
-        
-        if (obj) obj.style.transform = `rotateX(${rotX}deg) rotateY(${rotY}deg) rotateZ(${rotZ}deg)`;
-        let invCurr = `rotateZ(${-rotZ}deg) rotateY(${-rotY}deg) rotateX(${-rotX}deg)`;
-        if(pSph) pSph.style.transform = `translate3d(-20px, -10px, 20px) ${invCurr}`;
-        if(oSph) oSph.style.transform = `translate3d(20px, 10px, -20px) ${invCurr}`;
-        if(wrapBack) wrapBack.style.transform = `${invCurr} translateZ(-45px)`;
-        if(wrapFront) wrapFront.style.transform = `${invCurr} translateZ(45px)`;
 
-        // 2. ФОРСИРУЕМ ПЕРЕРИСОВКУ (Мобильный браузер не сможет это проигнорировать)
-        if (obj) {
-            void obj.getBoundingClientRect();
-            void window.getComputedStyle(obj).transform;
+        // 3. Запускаем JS-движок анимации
+        const startX = rotX;
+        const startY = rotY;
+        const startZ = rotZ;
+        const startTime = performance.now();
+        const duration = 600; // 0.6 секунды полета
+
+        function animateReturn(time) {
+            let t = (time - startTime) / duration;
+            if (t >= 1) t = 1;
+
+            // Плавное замедление в конце (ease-in-out)
+            const ease = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+
+            rotX = startX + (targetX - startX) * ease;
+            rotY = startY + (targetY - startY) * ease;
+            rotZ = startZ + (targetZ - startZ) * ease;
+
+            updateTransform(); // Отрисовываем каждый кадр через JS!
+
+            if (t < 1) {
+                // Если полет не закончен — запрашиваем следующий кадр
+                window.inertiaFrame = requestAnimationFrame(animateReturn);
+            } else {
+                // Конец полета
+                rotX = targetX; rotY = targetY; rotZ = targetZ;
+                updateTransform();
+                if (scene) scene.style.pointerEvents = 'auto';
+                pokeEngine(); 
+            }
         }
 
-        // 3. ОТКЛАДЫВАЕМ АНИМАЦИЮ (Надежные 50мс паузы)
-        setTimeout(() => {
-            const smoothTrans = 'transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)';
-            els.forEach(el => el.style.transition = smoothTrans);
-            
-            if (obj) obj.style.transform = `rotateX(${targetRotX}deg) rotateY(${targetRotY}deg) rotateZ(${targetRotZ}deg)`;
-            let invTarget = `rotateZ(${-targetRotZ}deg) rotateY(${-targetRotY}deg) rotateX(${-targetRotX}deg)`;
-            if(pSph) pSph.style.transform = `translate3d(-20px, -10px, 20px) ${invTarget}`;
-            if(oSph) oSph.style.transform = `translate3d(20px, 10px, -20px) ${invTarget}`;
-            if(wrapBack) wrapBack.style.transform = `${invTarget} translateZ(-45px)`;
-            if(wrapFront) wrapFront.style.transform = `${invTarget} translateZ(45px)`;
-        }, 50);
-
-        // 4. ОЧИСТКА
-        safeTimeout(() => { 
-            els.forEach(el => el.style.transition = 'none');
-            rotX = targetRotX; rotY = targetRotY; rotZ = targetRotZ; 
-            
-            if (scene) scene.style.pointerEvents = 'auto';
-            pokeEngine(); 
-        }, 680);
-    } 
+        // Старт анимации
+        window.inertiaFrame = requestAnimationFrame(animateReturn);
+    }
 
     function onMove(e) {
         if (e.type === 'mousemove' && window.absTouchActive) return; // 👻 Игнорим мышь после тача
