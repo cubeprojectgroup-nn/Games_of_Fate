@@ -15124,10 +15124,10 @@ const animStyle = document.createElement('style');
         inertiaFrame = requestAnimationFrame(applyInertia);
     }
 
+    // === БРОНЕБОЙНОЕ ВОЗВРАЩЕНИЕ В ЦЕНТР (Без прыжков и лагов) ===
     function returnToActiveFace() {
         if (activeFaceIndex === -1) { pokeEngine(); return; }
         
-        // 1. ЖЕСТКО ГЛУШИМ ЛЮБУЮ ИНЕРЦИЮ
         cancelAnimationFrame(inertiaFrame);
         autoRotate = false; clearTimeout(engineTimer);
 
@@ -15138,7 +15138,7 @@ const animStyle = document.createElement('style');
         let targetRotY = -facesData[activeFaceIndex].rotY;
         let targetRotZ = 0;
 
-        // Ищем кратчайший путь (Умная математика без сброса оборотов)
+        // Умный просчет кратчайшего пути
         let diffX = (targetRotX - rotX) % 360;
         if (diffX > 180) diffX -= 360; else if (diffX < -180) diffX += 360;
         targetRotX = rotX + diffX;
@@ -15157,49 +15157,42 @@ const animStyle = document.createElement('style');
         const wrapBack = document.getElementById('wrapperBack');
         const wrapFront = document.getElementById('wrapperFront');
 
-        if (obj) {
-            // 🔥 2. ИСКУССТВЕННЫЙ СТОП-КАДР: Убиваем все транзиции и фиксируем текущее положение
-            obj.style.transition = 'none';
-            obj.style.transform = `rotateX(${rotX}deg) rotateY(${rotY}deg) rotateZ(${rotZ}deg)`;
-            
-            let invCurr = `rotateZ(${-rotZ}deg) rotateY(${-rotY}deg) rotateX(${-rotX}deg)`;
-            if(pSph) { pSph.style.transition = 'none'; pSph.style.transform = `translate3d(-20px, -10px, 20px) ${invCurr}`; }
-            if(oSph) { oSph.style.transition = 'none'; oSph.style.transform = `translate3d(20px, 10px, -20px) ${invCurr}`; }
-            if(wrapBack) { wrapBack.style.transition = 'none'; wrapBack.style.transform = `${invCurr} translateZ(-45px)`; }
-            if(wrapFront) { wrapFront.style.transition = 'none'; wrapFront.style.transform = `${invCurr} translateZ(45px)`; }
+        const els = [obj, pSph, oSph, wrapBack, wrapFront].filter(Boolean);
 
-            // 🔥 3. ГАРАНТИРОВАННЫЙ РЕФЛОУ (Магия CSS)
-            // Это заставит браузер отрисовать "стоп-кадр" ПЕРЕД тем, как мы дадим ему новую команду.
-            // Именно эта строчка убивает тот самый жесткий рывок!
-            void obj.offsetWidth; 
+        // 1. ЖЕСТКАЯ ФИКСАЦИЯ НА МЕСТЕ (Убиваем все транзиции)
+        els.forEach(el => el.style.transition = 'none');
+        
+        obj.style.transform = `rotateX(${rotX}deg) rotateY(${rotY}deg) rotateZ(${rotZ}deg)`;
+        let invCurr = `rotateZ(${-rotZ}deg) rotateY(${-rotY}deg) rotateX(${-rotX}deg)`;
+        if(pSph) pSph.style.transform = `translate3d(-20px, -10px, 20px) ${invCurr}`;
+        if(oSph) oSph.style.transform = `translate3d(20px, 10px, -20px) ${invCurr}`;
+        if(wrapBack) wrapBack.style.transform = `${invCurr} translateZ(-45px)`;
+        if(wrapFront) wrapFront.style.transform = `${invCurr} translateZ(45px)`;
 
-            // 4. МЯГКОЕ ВОЗВРАЩЕНИЕ 
-            // Используем очень плавную, "маслянистую" кривую (0.2, 0.8, 0.2, 1), 
-            // которая гасит скорость плавно, а не резко.
-            const smoothTrans = 'transform 0.8s cubic-bezier(0.2, 0.8, 0.2, 1)';
-            
-            obj.style.transition = smoothTrans;
-            obj.style.transform = `rotateX(${targetRotX}deg) rotateY(${targetRotY}deg) rotateZ(${targetRotZ}deg)`;
-            
-            let invTarget = `rotateZ(${-targetRotZ}deg) rotateY(${-targetRotY}deg) rotateX(${-targetRotX}deg)`;
-            if(pSph) { pSph.style.transition = smoothTrans; pSph.style.transform = `translate3d(-20px, -10px, 20px) ${invTarget}`; }
-            if(oSph) { oSph.style.transition = smoothTrans; oSph.style.transform = `translate3d(20px, 10px, -20px) ${invTarget}`; }
-            if(wrapBack) { wrapBack.style.transition = smoothTrans; wrapBack.style.transform = `${invTarget} translateZ(-45px)`; }
-            if(wrapFront) { wrapFront.style.transition = smoothTrans; wrapFront.style.transform = `${invTarget} translateZ(45px)`; }
-
-            safeTimeout(() => { 
-                if(obj) obj.style.transition = 'none'; 
-                if(pSph) pSph.style.transition = 'width 1s, height 1s, margin 1s, background 1s, box-shadow 1s';
-                if(oSph) oSph.style.transition = 'width 1s, height 1s, margin 1s, background 1s, box-shadow 1s';
-                if(wrapBack) wrapBack.style.transition = 'none'; 
-                if(wrapFront) wrapFront.style.transition = 'none'; 
+        // 2. ДВОЙНОЙ КАДР: Заставляем мобильный GPU всё это проглотить,
+        // и только на следующий кадр даем команду плавно лететь.
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                const smoothTrans = 'transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)';
+                els.forEach(el => el.style.transition = smoothTrans);
                 
-                rotX = targetRotX; rotY = targetRotY; rotZ = targetRotZ; 
-                
-                if (scene) scene.style.pointerEvents = 'auto';
-                pokeEngine(); 
-            }, 850);
-        }
+                obj.style.transform = `rotateX(${targetRotX}deg) rotateY(${targetRotY}deg) rotateZ(${targetRotZ}deg)`;
+                let invTarget = `rotateZ(${-targetRotZ}deg) rotateY(${-targetRotY}deg) rotateX(${-targetRotX}deg)`;
+                if(pSph) pSph.style.transform = `translate3d(-20px, -10px, 20px) ${invTarget}`;
+                if(oSph) oSph.style.transform = `translate3d(20px, 10px, -20px) ${invTarget}`;
+                if(wrapBack) wrapBack.style.transform = `${invTarget} translateZ(-45px)`;
+                if(wrapFront) wrapFront.style.transform = `${invTarget} translateZ(45px)`;
+            });
+        });
+
+        // 3. ОТВИСАНИЕ (Снизили до 620мс, чтобы не было чувства залипания экрана)
+        safeTimeout(() => { 
+            els.forEach(el => el.style.transition = 'none');
+            rotX = targetRotX; rotY = targetRotY; rotZ = targetRotZ; 
+            
+            if (scene) scene.style.pointerEvents = 'auto';
+            pokeEngine(); 
+        }, 620);
     }
 
    function startEngine() {
