@@ -15051,9 +15051,15 @@ const animStyle = document.createElement('style');
     }
 
     function onDown(e) {
-        // 🔥 БЛОКИРУЕМ ЛЮБЫЕ ВРАЩЕНИЯ ВО ВРЕМЯ СБОРКИ АБСОЛЮТА
+        // 👻 АНТИ-ПОЛТЕРГЕЙСТ (Защита от фантомных кликов, убивающих плавность)
+        if (e.type === 'mousedown' && window.absTouchActive) return;
+        if (e.type === 'touchstart') {
+            window.absTouchActive = true;
+            if (window.absTouchTimer) clearTimeout(window.absTouchTimer);
+            window.absTouchTimer = setTimeout(() => window.absTouchActive = false, 500);
+        }
+
         if (typeof isAssembling !== 'undefined' && isAssembling) return;
-        
         if(gameState === 'ROLL' || gameState === 'ORACLE_TURN' || gameState === 'GAME_OVER' || gameState === 'SHIFTING') return; 
         
         isDragging = true; autoRotate = false; dragDistance = 0;
@@ -15068,14 +15074,15 @@ const animStyle = document.createElement('style');
     }
 
     function onMove(e) {
+        if (e.type === 'mousemove' && window.absTouchActive) return; // 👻 Игнорим мышь после тача
         if (!isDragging) return; 
         e.preventDefault(); 
+        
         const clientX = e.touches ? e.touches[0].clientX : e.clientX; 
         const clientY = e.touches ? e.touches[0].clientY : e.clientY;
         const deltaX = clientX - lastX; const deltaY = clientY - lastY;
         dragDistance += Math.abs(deltaX) + Math.abs(deltaY);
         
-        // 🛠 Плавность: снижаем чувствительность для тачскринов (0.2 вместо 0.5)
         const sensitivity = e.touches ? 0.2 : 0.4;
         let radX = rotX * Math.PI / 180;
         rotY += deltaX * Math.cos(radX) * sensitivity; 
@@ -15087,38 +15094,19 @@ const animStyle = document.createElement('style');
     }
 
     function onUp(e) {
+        if (e.type === 'mouseup' && window.absTouchActive) return; // 👻 Игнорим мышь после тача
         if (!isDragging) return; 
         isDragging = false;
         
         if (dragDistance < 10) {
             let target = e.target;
-            let isInsideAbsolute = target.closest('#absoluteScene') !== null;
             let faceEl = target.closest('.absolute-face');
-            
-            // 🔥 ДВОЙНОЙ ТАП ДЛЯ БРОСКА 🔥
-            const now = Date.now();
-            if (window.lastAbsSceneTapTime && (now - window.lastAbsSceneTapTime < 300)) {
-                let isCurrentFace = faceEl && parseInt(faceEl.id.replace('abs-face-', '')) === activeFaceIndex;
-                
-                // Если тапнули 2 раза внутри Абсолюта, но НЕ по выбранной текущей грани, и сейчас наш ход
-                if (isInsideAbsolute && !isCurrentFace && (gameState === 'PLAYER_TURN' || gameState === 'FREE_REROLL')) {
-                    window.lastAbsSceneTapTime = 0; // Сбрасываем таймер
-                    
-                    // БРОСАЕМ ШАР!
-                    if (typeof handleMainAction === 'function') handleMainAction();
-                    else if (typeof AbsoluteGame !== 'undefined' && typeof AbsoluteGame.handleMainAction === 'function') AbsoluteGame.handleMainAction();
-                    
-                    return; // Прерываем обычный клик
-                }
-            }
-            window.lastAbsSceneTapTime = now;
 
-            // Обычная логика клика по грани
             if (gameState === 'ACTION_PENDING' || gameState === 'FREE_REROLL') {
                 if (faceEl) {
                     let faceIdx = parseInt(faceEl.id.replace('abs-face-', ''));
                     if (faceIdx === activeFaceIndex && gameState === 'ACTION_PENDING') {
-                        // Тут клик обрабатывается внутри слушателя самой грани, всё ок
+                        // Основной клик обрабатывается отдельно, тут ничего не делаем
                     } else { returnToActiveFace(); }
                 } else { returnToActiveFace(); }
             } else { pokeEngine(); }
