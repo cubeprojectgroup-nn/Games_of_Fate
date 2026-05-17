@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Игры Судьбы. v0.9.0.33</title>
+    <title>Игры Судьбы. v0.9.0.35</title>
     <!-- Эмодзи-иконка для вкладки браузера -->
     <link rel="icon" href='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">🔮</text></svg>'>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
@@ -3217,7 +3217,7 @@ setInterval(() => {
         <div style="position: absolute; bottom: 15px; left: 15px; font-size: 10px; color: rgba(162, 155, 254, 0.6); font-weight: bold; letter-spacing: 1px; text-transform: uppercase; z-index: 500;">
             <a href="https://t.me/Antis_Corpus" style="color: inherit; text-decoration: none;">t.me/Antis_Corpus</a>
         </div>
-        <div class="version" style="position: absolute; bottom: 15px; right: 15px; pointer-events: none; z-index: 500;">v0.9.0.33</div>
+        <div class="version" style="position: absolute; bottom: 15px; right: 15px; pointer-events: none; z-index: 500;">v0.9.0.35</div>
     </div>
 
     <!-- ========================================== -->
@@ -3227,7 +3227,7 @@ setInterval(() => {
         <button id="btnBackToWelcome" class="back-to-welcome-btn" onclick="if(typeof App !== 'undefined' && App.playSoundEffect) App.playSoundEffect('click'); window.returnToWelcomeScreen();"><i class="fas fa-chevron-left"></i></button>
         
         <!-- Заголовок с нативной защитой -->
-        <h1 id="mainMenuTitle" class="menu-title-main" style="position: relative !important; top: auto !important; margin-top: 15px; margin-bottom: 20px;" onclick="if(window.showStatInfo) window.showStatInfo(event, '👁️ <b>ОРАКУЛ СУДЬБЫ</b><br><br>Когда-то Оракул даровал смертным 6 игр, чтобы они могли бросить вызов самой вероятности.<br><br>Каждая игра — это шаг в неизвестность, где риск вознаграждается, а ошибки учат смирению. Испытайте свою удачу!', '👁️ <b>THE ORACLE OF FATE</b><br><br>Once, the Oracle bestowed 6 games upon mortals so they could challenge probability itself.<br><br>Each game is a step into the unknown, where risk is rewarded and mistakes teach humility. Test your luck!')">ИГРЫ СУДЬБЫ</h1>
+        <h1 id="mainMenuTitle" class="menu-title-main" style="position: relative !important; top: auto !important; margin-top: 15px; margin-bottom: 20px;" onclick="if(window.showStatInfo) window.showStatInfo(event, '👁️ <b>ИГРЫ СУДЬБЫ</b><br><br>Когда-то Оракул даровал смертным 6 игр, чтобы они могли бросить вызов самой вероятности.<br><br>Каждая игра — это шаг в неизвестность, где риск вознаграждается, а ошибки учат смирению. Испытайте свою удачу!', '👁️ <b>THE ORACLE OF FATE</b><br><br>Once, the Oracle bestowed 6 games upon mortals so they could challenge probability itself.<br><br>Each game is a step into the unknown, where risk is rewarded and mistakes teach humility. Test your luck!')">ИГРЫ СУДЬБЫ</h1>
         
         <div class="global-bottom-nav">
             <div class="nav-btn" onclick="if(typeof App !== 'undefined' && App.playSoundEffect) App.playSoundEffect('click'); if(typeof ShopGame !== 'undefined') ShopGame.toggleInventory(true);">
@@ -6365,7 +6365,7 @@ const ShopGame = (function() {
         return currentEq === item.id;
     }
 
-    // 🎒 3. БРОНЕБОЙНАЯ ЭКИПИРОВКА (v0.9.5)
+    // 🎒 3. БРОНЕБОЙНАЯ ЭКИПИРОВКА (С умной сортировкой перков)
     function equipItem(fallbackCat, id, silent = false) {
         const p = GameState.activeProfileIdx !== -1 ? GameState.profiles[GameState.activeProfileIdx] : null;
         if (!p) return;
@@ -6410,7 +6410,7 @@ const ShopGame = (function() {
 
                 delete p.equipped[id];
             } else if (isPerk) {
-                delete p.equipped[id];
+                delete p.equipped[id]; // Обычное снятие перка
             } else {
                 delete p.equipped[cat];
             }
@@ -6418,9 +6418,22 @@ const ShopGame = (function() {
         // --- ЛОГИКА НАДЕВАНИЯ (Клик по НЕАКТИВНОЙ карточке) ---
         else {
             if (isPerk) {
+                // 🔥 ФИКС: Убиваем конфликты взаимоисключающих перков!
+                if (id.startsWith('perk_gyro_stars')) {
+                    // Если надеваем звезды - принудительно снимаем все другие вариации звезд
+                    Object.keys(p.equipped).forEach(eqId => {
+                        if (eqId.startsWith('perk_gyro_stars')) delete p.equipped[eqId];
+                    });
+                } else if (id.startsWith('perk_crt_')) {
+                    // Если надеваем фильтр - сносим все остальные CRT и Майами фильтры
+                    Object.keys(p.equipped).forEach(eqId => {
+                        if (eqId.startsWith('perk_crt_')) delete p.equipped[eqId];
+                    });
+                }
+                
                 p.equipped[id] = true;
             } else if (isGameStyle) {
-                // ВЫЖИГАЕМ ДУБЛИКАТЫ: Удаляем все старые скины в этой группе перед тем как надеть новый
+                // ВЫЖИГАЕМ ДУБЛИКАТЫ: Удаляем все старые скины в этой группе
                 Object.keys(p.equipped).forEach(eqId => {
                     if (eqId.startsWith(group)) delete p.equipped[eqId];
                 });
@@ -6436,7 +6449,7 @@ const ShopGame = (function() {
         
         if (typeof renderInventoryList === 'function') renderInventoryList(true);
         
-        // 🛑 ФИКС: Возвращаем отложенное обновление вместо моментального!
+        // Отложенное обновление визуалов
         window.pendingVisualUpdates = true;
         
         if (!silent) {
@@ -13437,12 +13450,11 @@ const SticksGame = (function() {
 // --- КОНЕЦ ДЕСЯТОЙ ЧАСТИ ---
 // --- НАЧАЛО ОДИННАДЦАТОЙ ЧАСТИ --- Плагин 7 (Чертоги оракула).
 // =========================================================================
-// 🏛️ ПЛАГИН 7: ЧЕРТОГИ ОРАКУЛА (ФИКС: ПЛАВНЫЙ ВЫХОД БЕЗ РЫВКОВ)
+// 🏛️ ПЛАГИН 7: ЧЕРТОГИ ОРАКУЛА (ВЕРСИЯ v14.0 — КИНЕМАТОГРАФИЧНЫЙ ОВЕРЛЕЙ)
 // =========================================================================
 const OracleHallsGame = (function() {
     let isGameActive = false;
 
-    // 🚫 ЖЕСТКАЯ БЛОКИРОВКА ВСЕХ ИГР ДЛЯ ЧЕРТОГОВ 🚫
     const ohStyles = document.createElement('style');
     ohStyles.innerHTML = `
         body.is-oracle-halls-active #mainStage,
@@ -13458,10 +13470,313 @@ const OracleHallsGame = (function() {
             visibility: hidden !important;
             z-index: -9999 !important;
         }
+        
+        .halls-locks-container {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            width: 90%;
+            max-width: 340px;
+            margin: 15px auto 20px auto;
+            z-index: 110;
+            box-sizing: border-box;
+        }
+        
+        .hall-lock-card {
+            background: rgba(5, 8, 15, 0.75);
+            border: 1px solid var(--angry-red);
+            box-shadow: 0 0 8px rgba(255, 102, 102, 0.15);
+            border-radius: 10px;
+            padding: 10px 4px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+            position: relative;
+            box-sizing: border-box;
+        }
+        
+        .hall-lock-card.unlocked {
+            border-color: var(--friendly-green);
+            box-shadow: 0 0 15px rgba(204, 255, 204, 0.25);
+            background: rgba(10, 25, 15, 0.4);
+            transform: scale(1.02);
+        }
+        
+        .hall-lock-card .lock-icon-main {
+            font-size: 20px;
+            margin-bottom: 2px;
+            transition: transform 0.3s;
+        }
+        
+        .hall-lock-card .lock-status-badge {
+            font-size: 9px;
+            font-weight: 900;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            color: var(--angry-red);
+            margin-top: 3px;
+            transition: color 0.3s;
+        }
+        .hall-lock-card.unlocked .lock-status-badge {
+            color: var(--friendly-green);
+        }
+
+        .halls-debug-panel {
+            background: rgba(10, 15, 25, 0.98);
+            border: 1px solid var(--sun-gold);
+            box-shadow: 0 0 15px rgba(255, 249, 174, 0.2);
+            padding: 10px;
+            border-radius: 12px;
+            margin: 15px auto 0 auto;
+            width: 90%;
+            max-width: 340px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            z-index: 120;
+            box-sizing: border-box;
+        }
+        .halls-debug-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 4px;
+        }
+        .halls-debug-btn {
+            background: rgba(255, 249, 174, 0.08);
+            border: 1px solid rgba(255, 249, 174, 0.3);
+            color: #fff;
+            font-size: 9px;
+            font-weight: bold;
+            padding: 6px 2px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: 0.2s;
+            text-transform: uppercase;
+        }
+        .halls-debug-btn.active-unlocked {
+            border-color: var(--friendly-green);
+            color: var(--friendly-green);
+            background: rgba(204, 255, 204, 0.05);
+        }
     `;
     document.head.appendChild(ohStyles);
-    // Хук больше не нужен! Ядро (App.openMainMenu) само вызовет unmount,
-    // когда экран полностью потемнеет (через 400мс).
+
+    const lockDefs = [
+        { id: 0, icon: '🔮', nameRu: 'Печать Изначального', nameEn: 'Primordial Seal', descRu: '👁️ <b>ПЕЧАТЬ ИЗНАЧАЛЬНОГО</b><br><br>Оракул заблокировал ядро Абсолюта. Чтобы ослабить оковы, требуется принести в жертву <b>50 Кристаллов Судьбы</b> через меню обмена.', descEn: '👁️ <b>PRIMORDIAL SEAL</b><br><br>Requires sacrificing 50 Crystals of Fate.' },
+        { id: 1, icon: '🎲', nameRu: 'Печать Истины', nameEn: 'Seal of Truth', descRu: '🎲 <b>ПЕЧАТЬ ИСТИНЫ</b><br><br>Сфера требует подтверждения вашей силы. Одержите не менее <b>10 побед в Кости Истины</b>, чтобы сокрушить этот барьер.', descEn: '🎲 <b>SEAL OF TRUTH</b><br><br>Requires 10 victories in Dice of Truth.' },
+        { id: 2, icon: '🔫', nameRu: 'Печать Стали', nameEn: 'Seal of Steel', descRu: '🔫 <b>ПЕЧАТЬ СТАЛИ</b><br><br>Испытание на хладнокровие. Выживите в режиме <b>Роковая Пуля 5 раз подряд</b>, заставив Оракула забрать пулю себе.', descEn: '🔫 <b>SEAL OF STEEL</b><br><br>Requires surviving 5 consecutive rounds in Fatal Bullet.' },
+        { id: 3, icon: '🌼', nameRu: 'Печать Оракула', nameEn: 'Seal of the Oracle', descRu: '🌼 <b>ПЕЧАТЬ ОРАКУЛА</b><br><br>Сущность требует идеального баланса. Пройдите turn-транзит в игре <b>Цветок Оракула</b>, полностью заблокировав лепестки врага.', descEn: '🌼 <b>SEAL OF THE ORACLE</b><br><br>Requires achieving a perfect state in The Oracle Flower.' },
+        { id: 4, icon: '🎭', nameRu: 'Печать Иллюзий', nameEn: 'Seal of Illusions', descRu: '🎭 <b>ПЕЧАТЬ ИЛЛЮЗИЙ</b><br><br>Абсолют должен преображаться. Приобретите и наденьте в магазине любой кастомный скин интерфейса или глобальный фон.', descEn: '🎭 <b>SEAL OF ILLUSIONS</b><br><br>Requires equipping any custom skin or global background from the shop.' },
+        { id: 5, icon: '🏦', nameRu: 'Печать Золота', nameEn: 'Seal of Wealth', descRu: '🏦 <b>ПЕЧАТЬ ЗОЛОТА</b><br><br>Материальный якорь реальности. Накопите на балансе своего Банка более <b>500.00 монет</b> чистой прибыли.', descEn: '🏦 <b>SEAL OF WEALTH</b><br><br>Requires having over 500.00 coins in your Bank balance.' }
+    ];
+
+    function getHallsLocksState() {
+        const p = GameState.activeProfileIdx !== -1 ? GameState.profiles[GameState.activeProfileIdx] : null;
+        if (!p) return [false, false, false, false, false, false];
+        if (!p.oracleHallsLocks) p.oracleHallsLocks = [false, false, false, false, false, false];
+        return p.oracleHallsLocks;
+    }
+
+    function saveHallsLocksState(state) {
+        const p = GameState.activeProfileIdx !== -1 ? GameState.profiles[GameState.activeProfileIdx] : null;
+        if (p) {
+            p.oracleHallsLocks = state;
+            if (typeof App !== 'undefined' && App.requestProfileSave) App.requestProfileSave();
+        }
+    }
+
+    // 🎇 КОСМИЧЕСКИЙ ВЗРЫВ ЧАСТИЦ ДЛЯ ЗАМКА 🎇
+    function spawnLockExplosion(element, color) {
+        let pContainer = document.getElementById('abs-particles-overlay');
+        if (!pContainer) {
+            pContainer = document.createElement('div');
+            pContainer.id = 'abs-particles-overlay';
+            pContainer.style.cssText = 'position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 999999; overflow: hidden;';
+            document.body.appendChild(pContainer);
+        }
+
+        const rect = element.getBoundingClientRect();
+        const centerX = rect.left + rect.width / 2;
+        const centerY = rect.top + rect.height / 2;
+
+        const particleCount = 25; 
+        for (let i = 0; i < particleCount; i++) {
+            const p = document.createElement('div');
+            const size = 6 + Math.random() * 8; 
+            const isCircle = Math.random() > 0.5;
+            
+            p.style.cssText = `
+                position: absolute; left: ${centerX - size/2}px; top: ${centerY - size/2}px;
+                width: ${size}px; height: ${size}px; background: ${color};
+                border-radius: ${isCircle ? '50%' : '2px'};
+                box-shadow: 0 0 ${size + 4}px ${color}; opacity: 1; pointer-events: none; z-index: 999999;
+            `;
+            pContainer.appendChild(p);
+
+            const angle = Math.random() * Math.PI * 2;
+            const velocity = 20 + Math.random() * 60; 
+            const tx = Math.cos(angle) * velocity;
+            const ty = Math.sin(angle) * velocity;
+            const rot = Math.random() * 360 - 180;
+            const duration = 1200 + Math.random() * 800; 
+
+            p.animate([
+                { transform: `translate(0px, 0px) rotate(0deg) scale(1)`, opacity: 1 },
+                { transform: `translate(${tx * 0.6}px, ${ty * 0.6}px) rotate(${rot/2}deg) scale(0.9)`, opacity: 1, offset: 0.4 }, 
+                { transform: `translate(${tx}px, ${ty}px) rotate(${rot}deg) scale(0)`, opacity: 0 }
+            ], { duration: duration, easing: 'ease-out', fill: 'forwards' });
+
+            setTimeout(() => { if (p.parentNode) p.parentNode.removeChild(p); }, duration + 50);
+        }
+    }
+
+    // ⚔️ СИНХРОНИЗАЦИЯ И КИНЕМАТОГРАФИЧНАЯ ПРОВЕРКА
+    function syncLocksAndArena() {
+        const stage = document.getElementById('oracleHallsStage');
+        if (!stage) return;
+
+        const lang = GameState.lang || 'ru';
+        const lockState = getHallsLocksState();
+        window.hallsAnimatingLocks = window.hallsAnimatingLocks || {};
+
+        const profileOH = GameState.activeProfileIdx !== -1 ? GameState.profiles[GameState.activeProfileIdx] : null;
+        
+        // Перехват пассивных условий (вместо мгновенного открытия — планируем анимацию)
+        if (profileOH) {
+            // 1. Проверка Печати Золота (5)
+            let coins = profileOH.bank !== undefined ? profileOH.bank : (profileOH.rStats && profileOH.rStats.bank !== undefined ? profileOH.rStats.bank : 0);
+            if (coins >= 500 && !lockState[5] && !window.hallsAnimatingLocks[5]) {
+                window.hallsAnimatingLocks[5] = true;
+                setTimeout(() => {
+                    const card = document.querySelector('.hall-lock-card[data-lock-id="5"]');
+                    if (card) {
+                        spawnLockExplosion(card, 'var(--friendly-green)');
+                        if (typeof App !== 'undefined' && App.playSoundEffect) App.playSoundEffect('win');
+                    }
+                    const cState = getHallsLocksState(); cState[5] = true; saveHallsLocksState(cState);
+                    delete window.hallsAnimatingLocks[5];
+                    syncLocksAndArena();
+                }, 500); // 🚀 НАДЁЖНАЯ ЗАДЕРЖКА 0.5 СЕКУНДЫ
+            }
+
+            // 2. Проверка Печати Иллюзий (4)
+            if (profileOH.equipped && !lockState[4] && !window.hallsAnimatingLocks[4]) {
+                const hasCustomSkin = Object.keys(profileOH.equipped).some(k => {
+                    const val = profileOH.equipped[k];
+                    if (k.startsWith('exchange_')) return false;
+                    if (val === true && !k.includes('orig') && !k.includes('original') && k !== 'roulette_drum_indigo') return true;
+                    if (typeof val === 'string' && !val.includes('orig') && !val.includes('original') && val !== 'roulette_drum_indigo') return true;
+                    return false;
+                });
+                if (hasCustomSkin) {
+                    window.hallsAnimatingLocks[4] = true;
+                    setTimeout(() => {
+                        const card = document.querySelector('.hall-lock-card[data-lock-id="4"]');
+                        if (card) {
+                            spawnLockExplosion(card, 'var(--friendly-green)');
+                            if (typeof App !== 'undefined' && App.playSoundEffect) App.playSoundEffect('win');
+                        }
+                        const cState = getHallsLocksState(); cState[4] = true; saveHallsLocksState(cState);
+                        delete window.hallsAnimatingLocks[4];
+                        syncLocksAndArena();
+                    }, 500); // 🚀 НАДЁЖНАЯ ЗАДЕРЖКА 0.5 СЕКУНДЫ
+                }
+            }
+        }
+
+        const allUnlocked = lockState.every(status => status === true);
+
+        let absBtn = stage.querySelector('#absoluteActionBtn') || 
+                     stage.querySelector('button[onclick*="AbsoluteGame"]') || 
+                     Array.from(stage.querySelectorAll('button')).find(b => b.textContent.includes('АБСОЛЮТ') || b.textContent.includes('ЦВЕТ'));
+
+        if (!absBtn) return;
+
+        if (!absBtn.dataset.originalOnclick && absBtn.getAttribute('onclick')) {
+            absBtn.dataset.originalOnclick = absBtn.getAttribute('onclick');
+        }
+
+        if (allUnlocked) {
+            absBtn.setAttribute('onclick', absBtn.dataset.originalOnclick || "AbsoluteGame.handleMainAction()");
+            absBtn.style.opacity = '1'; absBtn.style.filter = 'none'; absBtn.style.cursor = 'pointer';
+        } else {
+            absBtn.setAttribute('onclick', "if(window.showStatInfo) window.showStatInfo(event, '🌌 <b>Арена Заблокирована</b><br><br>Вы не можете призвать Абсолют, пока все 6 космических печатей Оракула остаются целыми! Кликайте по замкам выше, чтобы узнать условия разрушения.', '🌌 <b>Arena Locked</b><br><br>Destroy all 6 seals first!')");
+            absBtn.style.opacity = '0.3'; absBtn.style.cursor = 'help';
+        }
+
+        let locksWrapper = document.getElementById('hallsLocksWrapper');
+        if (!locksWrapper) {
+            locksWrapper = document.createElement('div');
+            locksWrapper.id = 'hallsLocksWrapper';
+            locksWrapper.className = 'halls-locks-container';
+            absBtn.parentElement.insertBefore(locksWrapper, absBtn);
+        }
+
+        locksWrapper.innerHTML = '';
+        lockDefs.forEach(def => {
+            const isUnlocked = lockState[def.id];
+            const card = document.createElement('div');
+            card.className = `hall-lock-card ${isUnlocked ? 'unlocked' : 'locked'}`;
+            card.setAttribute('data-lock-id', def.id); // Атрибут для поиска элемента датчиком
+
+            const lockIcon = isUnlocked ? '🔓' : '🔒';
+            const statusLabel = isUnlocked ? (lang === 'ru' ? 'Снят' : 'Broken') : (lang === 'ru' ? 'Печать' : 'Seal');
+
+            card.innerHTML = `
+                <div class="lock-icon-main">${def.icon}</div>
+                <div style="font-size: 9px; font-weight: bold; color: #fff; text-align:center; max-width:85px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${lang === 'ru' ? def.nameRu : def.nameEn}</div>
+                <div class="lock-status-badge">${lockIcon} ${statusLabel}</div>
+            `;
+
+            card.onclick = (e) => {
+                if (window.showStatInfo) window.showStatInfo(e, def.descRu, def.descEn);
+            };
+
+            locksWrapper.appendChild(card);
+        });
+
+        // Отладочная панель (Debug)
+        let dbgPanel = document.getElementById('hallsDebugWrapper');
+        const isDebugEnabled = typeof GameState !== 'undefined' && GameState.debugEnabled;
+
+        if (isDebugEnabled) {
+            if (!dbgPanel) {
+                dbgPanel = document.createElement('div');
+                dbgPanel.id = 'hallsDebugWrapper';
+                dbgPanel.className = 'halls-debug-panel';
+                stage.appendChild(dbgPanel);
+            }
+            
+            dbgPanel.innerHTML = `
+                <div style="font-size: 10px; color: var(--sun-gold); font-weight: 900; text-align: center; letter-spacing: 1px; margin-bottom: 4px;">🛠️ ВЗЛОМ ЧЕРТОГОВ (DEBUG)</div>
+                <div class="halls-debug-grid"></div>
+            `;
+            const dbgGrid = dbgPanel.querySelector('.halls-debug-grid');
+
+            lockDefs.forEach(def => {
+                const isUnlocked = lockState[def.id];
+                const btn = document.createElement('button');
+                btn.className = `halls-debug-btn ${isUnlocked ? 'active-unlocked' : ''}`;
+                btn.innerText = `${isUnlocked ? '🔒' : '💥'} №${def.id + 1}`;
+                
+                btn.onclick = (e) => {
+                    e.stopPropagation();
+                    const currentState = getHallsLocksState();
+                    currentState[def.id] = !currentState[def.id];
+                    saveHallsLocksState(currentState);
+                    if (typeof App !== 'undefined' && App.playSoundEffect) App.playSoundEffect('tick');
+                    syncLocksAndArena();
+                };
+                dbgGrid.appendChild(btn);
+            });
+        } else if (dbgPanel) {
+            dbgPanel.remove();
+        }
+    }
+
     function init() {} 
 
     function mount() {
@@ -13481,13 +13796,11 @@ const OracleHallsGame = (function() {
             gui.style.pointerEvents = 'auto';
         }
 
-        // 🧹 Прячем всё от других игр + 'debugPanel'
         ['mainStage', 'rouletteStage', 'shopStage', 'flowerStage', 'rpsStage', 'sticksStage', 'answer-box', 'inputWrapper', 'bulletStash', 'rollBtn', 'toggleQuestionBtn', 'activeGameTabsBar', 'res-status', 'rouletteStatusBtn', 'randomLoadBtn', 'debugPanel'].forEach(id => {
             const el = document.getElementById(id);
             if (el) el.style.display = 'none';
         });
 
-        // Показываем Чертоги
         let hallsStage = document.getElementById('oracleHallsStage');
         if (hallsStage) hallsStage.style.display = 'flex';
 
@@ -13496,6 +13809,8 @@ const OracleHallsGame = (function() {
         
         const disp = document.getElementById('current-mode-display');
         if (disp) disp.style.display = 'none'; 
+
+        syncLocksAndArena();
     }
 
     function unmount() {
@@ -13503,7 +13818,6 @@ const OracleHallsGame = (function() {
         document.body.classList.remove('is-oracle-halls-active');
         isGameActive = false;
         
-        // 🛑 ФИКС: Выключаем арену Абсолюта при выходе из Чертогов
         if (typeof AbsoluteGame !== 'undefined' && typeof AbsoluteGame.stop === 'function') {
             AbsoluteGame.stop();
         }
@@ -13511,13 +13825,14 @@ const OracleHallsGame = (function() {
         const hallsStage = document.getElementById('oracleHallsStage');
         if (hallsStage) hallsStage.style.display = 'none';
 
-        // 🧹 Снимаем блокировку со стандартных UI-элементов при выходе
+        const lw = document.getElementById('hallsLocksWrapper'); if (lw) lw.remove();
+        const dw = document.getElementById('hallsDebugWrapper'); if (dw) dw.remove();
+
         ['answer-box', 'inputWrapper', 'bulletStash', 'rollBtn', 'toggleQuestionBtn', 'activeGameTabsBar', 'res-status', 'rouletteStatusBtn', 'randomLoadBtn'].forEach(id => {
             const el = document.getElementById(id);
-            if (el) el.style.display = ''; // Сброс до CSS-дефолта
+            if (el) el.style.display = ''; 
         });
         
-        // 🛠 Умное восстановление дебаг-панели (если читы включены — показываем, если нет — прячем)
         const dp = document.getElementById('debugPanel');
         if (dp) {
             dp.style.display = (typeof GameState !== 'undefined' && GameState.debugEnabled) ? 'flex' : 'none';
@@ -13527,7 +13842,7 @@ const OracleHallsGame = (function() {
         if (disp) disp.style.display = 'inline'; 
     }
 
-    return { init, mount, unmount, isGameActive: () => isGameActive };
+    return { init, mount, unmount, isGameActive: () => isGameActive, syncLocksAndArena };
 })();
 // --- КОНЕЦ ОДИННАДЦАТОЙ ЧАСТИ
 // --- НАЧАЛО ДВЕНАДЦАТОЙ ЧАСТИ --- Плагин 8 (Абсолют)
@@ -15365,7 +15680,7 @@ const animStyle = document.createElement('style');
             renderColorSelection();
         } else if (gameState === 'PLAYER_TURN') {
             activeFaceIndex = -1; highlightFace(-1);
-            updateActionBtn(`БРОСИТЬ АБСОЛЮТ`, false);
+            updateActionBtn(`ПРИЗВАТЬ АБСОЛЮТ`, false);
             document.querySelectorAll('.absolute-face').forEach(f => f.style.opacity = '1');
             updateFaceInfoText(-1);
         } else if (gameState === 'ACTION_PENDING' || gameState === 'FREE_REROLL') {
@@ -15411,8 +15726,8 @@ const animStyle = document.createElement('style');
         if (row) {
             row.innerHTML = `
                 <div style="display: flex; gap: 15px; width: 100%; justify-content: center;">
-                    <button class="abs-btn-roll" style="flex: 1; background: #22c55e; color: #000; box-shadow: 0 6px 0 #16a34a;" onclick="AbsoluteGame.setColors('green')">🟢 ЗЕЛЕНЫЙ</button>
-                    <button class="abs-btn-roll" style="flex: 1; background: #ef4444; color: #000; box-shadow: 0 6px 0 #dc2626;" onclick="AbsoluteGame.setColors('red')">🔴 КРАСНЫЙ</button>
+                    <button class="abs-btn-roll" style="flex: 1; background: #22c55e; color: #000; box-shadow: 0 6px 0 #16a34a;" onclick="AbsoluteGame.setColors('green')">СВЕТ ИСТИНЫ</button>
+                    <button class="abs-btn-roll" style="flex: 1; background: #ef4444; color: #000; box-shadow: 0 6px 0 #dc2626;" onclick="AbsoluteGame.setColors('red')">ТЬМА ПУСТОТЫ</button>
                 </div>
             `;
         }
@@ -15443,7 +15758,7 @@ const animStyle = document.createElement('style');
             saveState(); 
         }, 150);
 
-        updateActionBtn(`БРОСИТЬ АБСОЛЮТ`, false);
+        updateActionBtn(`ПРИЗВАТЬ АБСОЛЮТ`, false);
         updateFaceInfoText(-1);
     }
 
@@ -15476,7 +15791,7 @@ const animStyle = document.createElement('style');
     shiftEnergy(currentOwner, () => {
         if (toOwner === 'o') {
             gameState = 'ORACLE_TURN';
-            updateActionBtn("ХОД ОРАКУЛА...", true);
+            updateActionBtn("ВЗГЛЯД ОРАКУЛА...", true);
             safeTimeout(() => {
                 gainEnergy('o');
                 saveState();
@@ -15486,7 +15801,7 @@ const animStyle = document.createElement('style');
             gameState = 'PLAYER_TURN';
             activeFaceIndex = -1;
             highlightFace(-1);
-            updateActionBtn("БРОСИТЬ АБСОЛЮТ", false);
+            updateActionBtn("ПРИЗВАТЬ АБСОЛЮТ", false);
             updateFaceInfoText(-1);
             safeTimeout(() => {
                 gainEnergy('p');
@@ -15733,67 +16048,77 @@ const animStyle = document.createElement('style');
         return '#ffffff';
     }
 
-    function spawnBurnParticles(faceIdx, exactColor) {
-        const face = document.getElementById(`abs-face-${faceIdx}`);
-        if(!face) return;
-        
-        // 🔥 ОПТИМИЗАЦИЯ ДЛЯ МОБИЛОК: В финале спавним меньше частиц!
-        let maxParticles = window.isAbsCinematicPlaying ? 5 : 12;
-        const particleCount = maxParticles + Math.floor(Math.random() * 5);
+    // === ЭПИЧНЫЕ ЧАСТИЦЫ РАЗРУШЕНИЯ (Космическая невесомость) ===
+    function spawnBurnParticles(faceIndex, color) {
+        const faceEl = document.getElementById(`abs-face-${faceIndex}`);
+        if (!faceEl) return;
 
-        const clipPaths = [
-            'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)', 
-            'polygon(0% 0%, 100% 20%, 80% 100%, 10% 80%)', 
-            'polygon(20% 0%, 100% 0%, 80% 100%, 0% 100%)', 
-            'polygon(50% 0%, 100% 100%, 0% 100%)'          
-        ];
+        let pContainer = document.getElementById('abs-particles-overlay');
+        if (!pContainer) {
+            pContainer = document.createElement('div');
+            pContainer.id = 'abs-particles-overlay';
+            pContainer.style.cssText = 'position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 999999; overflow: hidden;';
+            document.body.appendChild(pContainer);
+        }
 
-        for(let i=0; i<particleCount; i++) {
+        const rect = faceEl.getBoundingClientRect();
+        const centerX = rect.left + rect.width / 2;
+        const centerY = rect.top + rect.height / 2;
+
+        const particleCount = 30 + Math.floor(Math.random() * 15); 
+
+        for (let i = 0; i < particleCount; i++) {
             const p = document.createElement('div');
-            const size = 4 + Math.random() * 10;
             
-            p.style.position = 'absolute';
-            p.style.width = `${size}px`; 
-            p.style.height = `${size}px`;
-            p.style.margin = `${-size/2}px 0 0 ${-size/2}px`; 
-            p.style.left = '50%'; 
-            p.style.top = '50%';
-            p.style.borderRadius = '0px';
-            p.style.clipPath = clipPaths[Math.floor(Math.random() * clipPaths.length)];
-            p.style.background = exactColor; 
+            const size = 8 + Math.random() * 8; 
+            const isCircle = Math.random() > 0.5;
             
-            // 🚫 ОТКЛЮЧИЛИ BOX-SHADOW ДЛЯ МОБИЛЬНОЙ ПРОИЗВОДИТЕЛЬНОСТИ 🚫
-            if (!window.isAbsCinematicPlaying) {
-                p.style.boxShadow = `0 0 ${size/2}px 1px ${exactColor}`; 
-            }
+            p.style.cssText = `
+                position: absolute;
+                left: ${centerX - size/2}px;
+                top: ${centerY - size/2}px;
+                width: ${size}px;
+                height: ${size}px;
+                background: ${color};
+                border-radius: ${isCircle ? '50%' : '3px'};
+                box-shadow: 0 0 ${size + 4}px ${color}; /* Усиленное свечение */
+                opacity: 1;
+                pointer-events: none;
+                z-index: 999999;
+            `;
             
-            p.style.pointerEvents = 'none';
-            p.style.zIndex = '300';
-            
-            // Анти-мерцание на iOS/Android
-            p.style.backfaceVisibility = 'hidden';
-            p.style.webkitBackfaceVisibility = 'hidden';
-            
-            face.appendChild(p);
+            pContainer.appendChild(p);
 
-            const ang = Math.random() * Math.PI * 2;
-            const dist = 40 + Math.random() * 70; 
-            const dx = Math.cos(ang) * dist;
-            const dy = Math.sin(ang) * dist;
-            const lifeTime = 600 * (1.25 + Math.random() * 0.45);
+            // Космическая физика (плавный, медленный разлет)
+            const angle = Math.random() * Math.PI * 2;
+            
+            // Дистанция разлета теперь меньше, чтобы они не "улетали из кадра" за секунду
+            const velocity = 30 + Math.random() * 70; 
+            const tx = Math.cos(angle) * velocity;
+            const ty = Math.sin(angle) * velocity;
+            const rot = Math.random() * 360 - 180; // Мягкое вращение в невесомости
 
+            // Время жизни от 1.5 до 2.5 секунд!
+            const duration = 1000 + Math.random() * 500; 
+
+            // Добавили offset (ключевые кадры), чтобы осколки не гасли сразу, а висели яркими
             p.animate([
-                { transform: `translate3d(0px, 0px, 10px) scale(1) rotate(0deg)`, opacity: 1 },
-                { transform: `translate3d(${dx}px, ${dy}px, 30px) scale(0) rotate(${Math.random() * 720}deg)`, opacity: 0 }
+                { transform: `translate(0px, 0px) rotate(0deg) scale(1)`, opacity: 1, offset: 0 },
+                // На середине пути они всё еще яркие и почти того же размера
+                { transform: `translate(${tx * 0.7}px, ${ty * 0.7}px) rotate(${rot/2}deg) scale(0.8)`, opacity: 1, offset: 0.5 }, 
+                // И только в самом конце плавно растворяются
+                { transform: `translate(${tx}px, ${ty}px) rotate(${rot}deg) scale(0)`, opacity: 0, offset: 1 }
             ], {
-                duration: lifeTime,
-                easing: 'cubic-bezier(0.1, 0.8, 0.3, 1)',
+                duration: duration,
+                easing: 'ease-out', // Мягкое, линейное замедление вместо взрывного
                 fill: 'forwards'
             });
 
-            setTimeout(() => p.remove(), lifeTime + 50);
+            // Убираем мусор только когда частица полностью растает
+            setTimeout(() => { if (p.parentNode) p.parentNode.removeChild(p); }, duration + 50);
         }
     }
+
 
     // 💥 ЭПИЧНЫЙ ВЗРЫВ ПОБЕЖДЕННОГО СИМБИОТА
     function spawnEpicExplosion(colorStr) {
@@ -16769,13 +17094,12 @@ window.showStatInfo = function(e, textRu, textEn) {
     if (!tooltip) {
         tooltip = document.createElement('div');
         tooltip.id = 'global-stat-tooltip';
-        // Убрали все CSS-костыли, оставили только чистое JS-управление
         tooltip.style.cssText = `
             position: fixed; 
             z-index: 9999999; 
             width: auto; 
             min-width: 100px;
-            max-width: 240px; 
+            max-width: 240px; /* Базовый лимит для коротких подсказок */
             background: rgba(10, 15, 25, 0.98); 
             backdrop-filter: blur(20px); 
             -webkit-backdrop-filter: blur(20px);
@@ -16785,11 +17109,11 @@ window.showStatInfo = function(e, textRu, textEn) {
             color: #fff; 
             font-size: 13px; 
             display: none; 
-            text-align: center;
+            text-align: center; /* Базовая центровка */
             box-shadow: 0 15px 40px rgba(0,0,0,0.9), 0 0 25px rgba(162,155,254,0.2); 
             line-height: 1.4; 
             opacity: 0; 
-            transition: opacity 0.2s ease, transform 0.2s ease;
+            transition: opacity 0.2s ease, transform 0.2s ease, max-width 0.2s ease;
             box-sizing: border-box;
             word-wrap: break-word;
         `;
@@ -16801,10 +17125,7 @@ window.showStatInfo = function(e, textRu, textEn) {
             ev.stopPropagation(); 
             tooltip.style.opacity = '0';
             tooltip.style.transform = 'translate(-50%, 10px) scale(0.9)';
-            
-            // 🚀 ИДЕАЛЬНОЕ ЗАКРЫТИЕ: Мгновенно выключаем "щит"
             tooltip.style.pointerEvents = 'none';
-            
             setTimeout(() => { tooltip.style.display = 'none'; }, 200);
         });
     }
@@ -16814,13 +17135,12 @@ window.showStatInfo = function(e, textRu, textEn) {
 
     // Если окно уже открыто
     if (tooltip.style.display === 'block') {
-        if (now - lastOpen < 300) return; // Игнор двойного тапа
+        if (now - lastOpen < 300) return; 
         
-        // Клик по тому же элементу -> закрываем
         if (tooltip.dataset.lastTarget === (e && e.target ? e.target.id : '')) {
             tooltip.style.opacity = '0';
             tooltip.style.transform = 'translate(-50%, 10px) scale(0.9)';
-            tooltip.style.pointerEvents = 'none'; // 🚀 Выключаем "щит"
+            tooltip.style.pointerEvents = 'none'; 
             setTimeout(() => { tooltip.style.display = 'none'; }, 200);
             return;
         }
@@ -16828,6 +17148,19 @@ window.showStatInfo = function(e, textRu, textEn) {
 
     const lang = (typeof GameState !== 'undefined' && GameState.lang) ? GameState.lang : 'ru';
     tooltip.innerHTML = (lang === 'en' && textEn) ? textEn : textRu;
+    
+    // 🔥 УМНОЕ РАСШИРЕНИЕ: Проверяем, большой ли это текст (есть ли <br>)
+    if (tooltip.innerHTML.includes('<br>')) {
+        tooltip.style.width = "calc(100% - 32px)";
+        tooltip.style.maxWidth = "400px";  // Раздвигаем локти!
+        tooltip.style.textAlign = "left";  // Выравниваем лор по левому краю
+    } else {
+        // Возвращаем в компактный режим для обычных подсказок
+        tooltip.style.width = "auto";
+        tooltip.style.maxWidth = "240px";
+        tooltip.style.textAlign = "center";
+    }
+
     tooltip.dataset.lastTarget = e && e.target ? e.target.id : '';
     tooltip.dataset.openTimestamp = now;
     
@@ -16835,8 +17168,6 @@ window.showStatInfo = function(e, textRu, textEn) {
     tooltip.style.display = 'block';
     tooltip.style.opacity = '0';
     tooltip.style.transform = 'translate(-50%, 10px) scale(0.9)';
-    
-    // 🚀 АКТИВАЦИЯ: Делаем подсказку осязаемой
     tooltip.style.pointerEvents = 'auto';
 
     // Центровка
@@ -16861,21 +17192,16 @@ window.showStatInfo = function(e, textRu, textEn) {
         tooltip.style.opacity = '1';
     });
 
-    // Очистка старого слушателя на "клик мимо"
     if (window.activeTooltipCloseHandler) {
         document.removeEventListener('click', window.activeTooltipCloseHandler);
     }
 
-    // Создаем новый слушатель
     window.activeTooltipCloseHandler = (ev) => {
         if (Date.now() - parseInt(tooltip.dataset.openTimestamp) < 300) return; 
         if (ev.target === tooltip || tooltip.contains(ev.target)) return; 
         
-        // Закрываем, если кликнули мимо
         tooltip.style.opacity = '0';
         tooltip.style.transform = 'translate(-50%, 10px) scale(0.9)';
-        
-        // 🚀 ИДЕАЛЬНОЕ ЗАКРЫТИЕ: Мгновенно выключаем "щит"
         tooltip.style.pointerEvents = 'none';
         
         setTimeout(() => { tooltip.style.display = 'none'; }, 200);
