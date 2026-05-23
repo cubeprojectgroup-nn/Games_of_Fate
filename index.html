@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Игры Судьбы. v0.9.0.40</title>
+    <title>Игры Судьбы. v0.9.0.41</title>
     <!-- Эмодзи-иконка для вкладки браузера -->
     <link rel="icon" href='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">🔮</text></svg>'>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
@@ -73,19 +73,61 @@
         height: 100vh !important;
         width: 100vw !important;
     }
-    #oracleHallsStage {
-        position: fixed !important;
-        top: 0 !important;
-        left: 0 !important;
-        width: 100vw !important;
-        height: 100vh !important;
-        overflow: hidden !important;
-        display: flex !important;
-        flex-direction: column !important;
-        align-items: center !important;
-        padding-top: 10px !important;
-        background: #05080f;
-    }
+    
+        /* 🛑 УБИВАЕМ СКРОЛЛ И ФИКСИРУЕМ ЭКРАН */
+        body.is-oracle-halls-active {
+            overflow: hidden !important;
+            touch-action: none !important;
+        }
+        
+
+        /* Обертка для контента: разрешаем скролл и делаем её ПРОЗРАЧНОЙ */
+        body.is-oracle-halls-active .halls-scroll-wrapper {
+            display: flex !important;
+            flex-direction: column !important;
+            align-items: center !important;
+            flex: 1 1 auto !important; 
+            overflow-y: auto !important; 
+            width: 100% !important;
+            padding-top: 8px !important; 
+            padding-bottom: 75px !important; 
+            box-sizing: border-box !important;
+            background: transparent !important; /* 🔥 Обязательная прозрачность */
+            z-index: 10 !important;
+        }
+
+        /* 🔥 ПРИНУДИТЕЛЬНЫЙ ФОН ЧЕРТОГОВ (накладываем на самый низ, на body) */
+        body.is-oracle-halls-active {
+            background-color: #050000 !important;
+            background-image: radial-gradient(circle at center, #150202 0%, #000000 100%) !important;
+        }
+
+        /* 🔥 ПЕРЕКРАШИВАЕМ СИСТЕМНЫЕ "ЖИВЫЕ" ЗВЕЗДЫ В КРОВАВО-КРАСНЫЙ */
+        body.is-oracle-halls-active .stars-layer {
+            background-image: 
+                radial-gradient(1px 1px at 20px 30px, #ff4d4d, rgba(0,0,0,0)), 
+                radial-gradient(1.5px 1.5px at 40px 70px, #ff1a1a, rgba(0,0,0,0)), 
+                radial-gradient(2px 2px at 50px 160px, #ff9999, rgba(0,0,0,0)), 
+                radial-gradient(2.5px 2.5px at 90px 40px, #ff0000, rgba(0,0,0,0)) !important;
+            opacity: 0.8 !important; /* Делаем их чуть ярче для мрачного эффекта */
+            filter: drop-shadow(0 0 2px #ff0000) !important; /* Легкое свечение */
+        }
+        
+        @keyframes ohStarsDrift {
+            from { background-position: 0 0; }
+            to { background-position: -1000px 1000px; }
+        }
+        .halls-scroll-wrapper::-webkit-scrollbar { display: none; }
+        
+        /* 🌟 КРАСИВАЯ АНИМАЦИЯ ВСПЫШКИ ПЕЧАТИ */
+        @keyframes seal-flash {
+            0% { transform: scale(1); filter: brightness(1); }
+            50% { transform: scale(1.05); filter: brightness(1.5) drop-shadow(0 0 15px var(--magic-color)); }
+            100% { transform: scale(1); filter: brightness(1); }
+        }
+        .seal-anim-flash {
+            animation: seal-flash 0.5s ease-out forwards;
+        }
 
 
 		/* ЭФФЕКТ ПЛАВНОЙ СМЕНЫ ПРИ ЗАКРЫТИИ ИНВЕНТАРЯ */
@@ -2799,6 +2841,16 @@ setInterval(() => {
     }
 }, 300);
 
+function safePlaySound(soundName) {
+    try {
+        if (typeof App !== 'undefined' && App.playSoundEffect) {
+            App.playSoundEffect(soundName);
+        }
+    } catch (e) {
+        console.warn("Sound failed, but game continues:", e);
+    }
+}
+
 // === АВТОМАТИЧЕСКИЙ ПЕРЕВОД КНОПОК МАГАЗИНА ===
 setInterval(() => {
     if (typeof GameState === 'undefined') return;
@@ -3245,7 +3297,7 @@ setInterval(() => {
         <div style="position: absolute; bottom: 15px; left: 15px; font-size: 10px; color: rgba(162, 155, 254, 0.6); font-weight: bold; letter-spacing: 1px; text-transform: uppercase; z-index: 500;">
             <a href="https://t.me/Antis_Corpus" style="color: inherit; text-decoration: none;">t.me/Antis_Corpus</a>
         </div>
-        <div class="version" style="position: absolute; bottom: 15px; right: 15px; pointer-events: none; z-index: 500;">v0.9.0.40</div>
+        <div class="version" style="position: absolute; bottom: 15px; right: 15px; pointer-events: none; z-index: 500;">v0.9.0.41</div>
     </div>
 
     <!-- ========================================== -->
@@ -13511,10 +13563,61 @@ const OracleHallsGame = (function() {
     let isGameActive = false;
     let currentAltarType = null;
 
+    // Tooltip toggle state — tracks which element's tooltip is currently open
+    let _tooltipOwner = null;
+
     // --- Каноничные SVG иконки ---
     const svgRoulette = `<svg viewBox="0 0 200 200" fill="currentColor" style="height: 1.2em; width: auto;"><path fill-rule="evenodd" d="M 100,4 A 96,96 0 1,1 100,196 A 96,96 0 1,1 100,4 Z M 100,86 A 14,14 0 1,0 100,114 A 14,14 0 1,0 100,86 Z M 100,6 A 22,22 0 1,0 100,50 A 22,22 0 1,0 100,6 Z M 162.35,42 A 22,22 0 1,0 162.35,86 A 22,22 0 1,0 162.35,42 Z M 162.35,114 A 22,22 0 1,0 162.35,158 A 22,22 0 1,0 162.35,114 Z M 100,150 A 22,22 0 1,0 100,194 A 22,22 0 1,0 100,150 Z M 37.65,114 A 22,22 0 1,0 37.65,158 A 22,22 0 1,0 37.65,114 Z M 37.65,42 A 22,22 0 1,0 37.65,86 A 22,22 0 1,0 37.65,42 Z"></path></svg>`;
     const svgCoin = `<svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" style="height: 1.2em; width: auto;"><ellipse cx="50" cy="35" rx="40" ry="20"/><path d="M10 35 v 20 a 40 20 0 0 0 80 0 v -20"/><path d="M30 52 v 20"/><path d="M50 55 v 20"/><path d="M70 52 v 20"/><path d="M 25 32 Q 40 18 55 22"/><path d="M 45 48 Q 65 52 75 38"/></svg>`;
     const svgLots = `<svg viewBox="0 0 24 24" fill="currentColor" style="height: 1.2em; width: auto;"><path d="M8 3h2v18H8zm6 0h2v18h-2z"/></svg>`;
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // FIX: Безопасный звуковой модуль на чистом Web Audio API.
+    // Никогда не выбрасывает исключений — заменяет ненадёжные вызовы App.playSoundEffect().
+    // При наличии движкового App.playSoundEffect он вызывается ДОПОЛНИТЕЛЬНО через _safeCall.
+    // ─────────────────────────────────────────────────────────────────────────
+    const SafeSound = (() => {
+        let _ctx = null;
+        function _getCtx() {
+            if (!_ctx) _ctx = new (window.AudioContext || window.webkitAudioContext)();
+            return _ctx;
+        }
+        function _tone(freq, type, dur, gainPeak) {
+            try {
+                const c   = _getCtx();
+                const osc = c.createOscillator();
+                const g   = c.createGain();
+                osc.type = type || 'sine';
+                osc.frequency.setValueAtTime(freq, c.currentTime);
+                g.gain.setValueAtTime(0, c.currentTime);
+                g.gain.linearRampToValueAtTime(gainPeak || 0.4, c.currentTime + 0.03);
+                g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + dur);
+                osc.connect(g);
+                g.connect(c.destination);
+                osc.start();
+                osc.stop(c.currentTime + dur + 0.05);
+            } catch(e) { /* silently ignore */ }
+        }
+        return {
+            // Звон монет при пожертвовании
+            coins:   function() { _tone(880,'sine',0.12,0.3); setTimeout(function(){ _tone(1100,'sine',0.12,0.3); }, 80); },
+            // Магический перезвон при снятии печати
+            seal:    function() { _tone(330,'sawtooth',0.06,0.2); setTimeout(function(){ _tone(495,'triangle',0.1,0.25); }, 70); setTimeout(function(){ _tone(660,'sine',0.22,0.4); }, 160); },
+            // Победный аккорд при заполнении алтаря
+            victory: function() { [440,554,659,880].forEach(function(f,i){ setTimeout(function(){ _tone(f,'sine',0.18,0.35); }, i*90); }); },
+            // Звук ошибки ввода
+            error:   function() { _tone(220,'sawtooth',0.12,0.3); }
+        };
+    })();
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // FIX: Обёртка для вызовов движкового API.
+    // Если App/GameState/Telegram недоступны — молча игнорирует ошибку,
+    // не роняя текущую анимацию или логику.
+    // ─────────────────────────────────────────────────────────────────────────
+    function _safeCall(fn) {
+        try { fn(); } catch(e) { /* silently ignore missing engine APIs */ }
+    }
 
     const ohStyles = document.createElement('style');
     ohStyles.innerHTML = `
@@ -13536,45 +13639,59 @@ const OracleHallsGame = (function() {
         body.is-oracle-halls-active #gameSubTabsContainer,
         body.is-oracle-halls-active #oracleHallsStage h3,
         body.is-oracle-halls-active #oracleHallsStage h2,
-        body.is-oracle-halls-active #oracleHallsStage .history-title {
+        body.is-oracle-halls-active #oracleHallsStage .history-title,
+        body.is-oracle-halls-active #oracleHallsStage #absoluteActionBtn,
+        body.is-oracle-halls-active #oracleHallsStage > button {
             display: none !important; 
             opacity: 0 !important; 
             pointer-events: none !important; 
             visibility: hidden !important; 
             z-index: -9999 !important;
-
         }
 
-        
-        /* 🛑 ЧИСТАЯ АДАПТИВНАЯ ГЕОМЕТРИЯ (БЕЗ СКРОЛЛА) */
+        /* 🛑 ЧИСТАЯ АДАПТИВНАЯ ГЕОМЕТРИЯ — stage как flex-колонка */
         body.is-oracle-halls-active #oracleHallsStage {
             display: flex !important;
             flex-direction: column !important;
-            justify-content: flex-start !important; 
+            justify-content: flex-start !important;
             align-items: center !important;
-            padding-top: 5px !important; /* Убрали пустоту сверху */
-            padding-bottom: 0px !important; 
-            overflow: hidden !important; /* УБИВАЕМ СКРОЛЛ */
+            padding: 0 !important;
+            overflow: hidden !important;
             width: 100% !important;
-            height: 100% !important; /* Жесткая привязка вместо 100vh */
-            position: fixed !important; 
+            height: 100% !important;
+            position: fixed !important;
             top: 0 !important;
             left: 0 !important;
             box-sizing: border-box !important;
             touch-action: manipulation !important;
             pointer-events: auto !important;
             z-index: 100 !important;
+            /* Фон теперь прозрачный, чтобы видеть системные звезды на body */
+            background: transparent !important; 
+        }
+
+        /* Обертка для контента: разрешаем скролл и делаем отступ снизу для заголовка */
+        body.is-oracle-halls-active .halls-scroll-wrapper {
+            display: flex !important;
+            flex-direction: column !important;
+            align-items: center !important;
+            flex: 1 1 auto !important; 
+            overflow-y: auto !important; 
+            width: 100% !important;
+            padding-top: 8px !important; 
+            padding-bottom: 75px !important; /* Отступ, чтобы контент не уходил под фиксированный заголовок */
+            box-sizing: border-box !important;
         }
 
         /* 🌟 НАШИ ИЗОЛИРОВАННЫЕ НЕУЯЗВИМЫЕ ЗАГОЛОВКИ */
         .oh-custom-top-title {
             color: var(--magic-color) !important; 
-            font-size: 22px !important; 
+            font-size: clamp(16px, 5vw, 22px) !important;
             font-weight: 900 !important; 
             text-align: center !important;
             text-transform: uppercase !important; 
             letter-spacing: 3px !important; 
-            margin: 5px auto 12px auto !important; 
+            margin: 0 auto 12px auto !important; 
             cursor: pointer !important;
             text-shadow: 0 0 15px rgba(162, 155, 254, 0.6) !important; 
             transition: all 0.2s ease-in-out; 
@@ -13586,38 +13703,74 @@ const OracleHallsGame = (function() {
             text-shadow: 0 0 25px rgba(162, 155, 254, 1); 
             color: #fff; 
         }
-        
-        /* 🌟 НЕОНОВАЯ КНОПКА АБСОЛЮТА В ЧЕРТОГАХ 🌟 */
+
+        /* FIX: Жесткая фиксация ровно между кнопками навигации */
+        #ohBottomTitle {
+            position: fixed !important;
+            bottom: 55px !important; /* 🔥 Подняли до уровня центров кнопок */
+            left: 50% !important;
+            transform: translateX(-50%) !important;
+            width: max-content !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            font-size: clamp(14px, 4vw, 18px) !important;
+            font-weight: 900 !important;
+            text-transform: uppercase !important;
+            color: var(--magic-color) !important;
+            text-shadow: 0 0 10px rgba(162, 155, 254, 0.6) !important;
+            text-align: center !important;
+            cursor: pointer !important;
+            pointer-events: auto !important;
+            z-index: 200000 !important; 
+        }
+
+        /* ─────────────────────────────────────────────────────────────
+           КНОПКА АБСОЛЮТ: переработанный дизайн — крупная, светящаяся,
+           с жирной рамкой и буквенным интервалом как у паразитной.
+           Условная логика (locked/ready) сохранена полностью.
+        ───────────────────────────────────────────────────────────── */
         #ohLaunchAbsBtn {
             background: transparent !important;
             border: 2px solid !important;
-            color: #fff !important;
-            font-weight: bold !important;
+            font-size: clamp(26px, 4.5vw, 18px) !important;
+            font-weight: 900 !important;
+            letter-spacing: 4px !important;
             text-transform: uppercase !important;
-            padding: 12px 20px !important;
-            border-radius: 50px !important;
+            padding: 15px 24px !important;
+            border-radius: 10px !important;
             width: 92% !important;
-            max-width: 360px !important;
-            margin: 5px auto 10px auto !important;
+            max-width: 220px !important;
+            margin: 8px auto 12px auto !important;
             transition: all 0.5s ease !important;
             display: block !important;
+            cursor: pointer !important;
+            font-family: inherit !important;
+            position: relative !important;
+            overflow: hidden !important;
         }
         #ohLaunchAbsBtn.locked {
-            border-color: rgba(255, 255, 255, 0.2) !important;
-            color: rgba(255, 255, 255, 0.2) !important;
+            border-color: rgba(255, 255, 255, 0.18) !important;
+            color: rgba(255, 255, 255, 0.18) !important;
             cursor: help !important;
+            box-shadow: none !important;
         }
         #ohLaunchAbsBtn.ready {
             border-color: var(--magic-color) !important;
             color: var(--magic-color) !important;
-            text-shadow: 0 0 10px var(--magic-color) !important;
-            box-shadow: 0 0 15px rgba(162, 155, 254, 0.4) !important;
+            text-shadow: 0 0 12px var(--magic-color), 0 0 30px var(--magic-color) !important;
+            box-shadow: 0 0 18px rgba(162, 155, 254, 0.5), inset 0 0 18px rgba(162, 155, 254, 0.12) !important;
             animation: ohAbsNeonPulse 2s infinite ease-in-out !important;
             cursor: pointer !important;
         }
         @keyframes ohAbsNeonPulse {
-            0%, 100% { box-shadow: 0 0 5px rgba(162, 155, 254, 0.2), inset 0 0 5px rgba(162, 155, 254, 0.1); }
-            50% { box-shadow: 0 0 20px rgba(162, 155, 254, 0.8), inset 0 0 15px rgba(162, 155, 254, 0.4); text-shadow: 0 0 15px var(--magic-color); }
+            0%, 100% {
+                box-shadow: 0 0 8px rgba(162, 155, 254, 0.25), inset 0 0 8px rgba(162, 155, 254, 0.08);
+                text-shadow: 0 0 8px var(--magic-color);
+            }
+            50% {
+                box-shadow: 0 0 28px rgba(162, 155, 254, 0.9), inset 0 0 20px rgba(162, 155, 254, 0.35);
+                text-shadow: 0 0 20px var(--magic-color), 0 0 40px var(--magic-color);
+            }
         }
 
         /* Сетка печатей */
@@ -13633,8 +13786,7 @@ const OracleHallsGame = (function() {
         }
         .hall-lock-card { 
             background: rgba(5, 8, 15, 0.75); 
-            border: 1px solid var(--angry-red); 
-            box-shadow: 0 0 8px rgba(255, 102, 102, 0.15); 
+            border: 1px solid rgba(162, 155, 254, 0.3);
             border-radius: 10px; 
             padding: 8px 2px; 
             display: flex; 
@@ -13672,12 +13824,21 @@ const OracleHallsGame = (function() {
             font-weight: 900; 
             letter-spacing: 0.5px; 
             text-transform: uppercase; 
-            color: var(--angry-red); 
+            color: rgba(162, 155, 254, 0.6);
             margin-top: 3px; 
             transition: color 0.3s; 
         }
         .hall-lock-card.unlocked .lock-status-badge { 
             color: var(--friendly-green); 
+        }
+
+        @keyframes sealFlash {
+            0%   { box-shadow: 0 0 0 transparent; }
+            30%  { box-shadow: 0 0 30px var(--friendly-green), inset 0 0 15px rgba(204,255,204,0.4); transform: scale(1.07); }
+            100% { box-shadow: 0 0 8px rgba(204,255,204,0.15); transform: scale(1.02); }
+        }
+        .seal-anim-flash {
+            animation: sealFlash 0.9s cubic-bezier(0.25, 1, 0.5, 1) forwards !important;
         }
 
         /* Алтари */
@@ -13785,17 +13946,33 @@ const OracleHallsGame = (function() {
         .altar-input { width: 100%; height: 55px; display: block; background: rgba(0,0,0,0.6); border: 2px solid rgba(255,255,255,0.3); color: #fff; text-align: center; font-size: 24px; font-weight: bold; border-radius: 12px; box-sizing: border-box; outline: none; transition: 0.3s; -moz-appearance: textfield; }
         .altar-input:focus { border-color: var(--sun-gold); box-shadow: 0 0 15px rgba(255, 249, 174, 0.3); }
 
-        /* 🛑 ЮВЕЛИРНАЯ ДЕБАГ-ПАНЕЛЬ (Кнопки 5 в ряд, намертво под АБСОЛЮТ) */
+        /* 🛑 АБСОЛЮТНОЕ УНИЧТОЖЕНИЕ СКРОЛЛА */
+        html, body {
+            overflow: hidden !important;
+            height: 100% !important;
+            width: 100% !important;
+            position: fixed !important;
+        }
+        * {
+            scrollbar-width: none !important;
+        }
+        *::-webkit-scrollbar {
+            display: none !important;
+            width: 0 !important;
+            height: 0 !important;
+        }
+
+        /* 🛑 ЮВЕЛИРНАЯ ДЕБАГ-ПАНЕЛЬ */
         .halls-debug-panel { 
             background: rgba(10, 15, 25, 0.98); 
             border: 1px solid var(--sun-gold); 
             box-shadow: 0 0 15px rgba(255, 249, 174, 0.2); 
             padding: 8px; 
             border-radius: 12px; 
-            margin: 4px auto 0 auto !important; /* Убран зазор, прижата намертво */
-            width: 100%; 
+            margin: 4px auto 0 auto !important;
+            width: 92%;
             max-width: 360px; 
-            display: flex; 
+            display: flex !important; /* 🔥 УБРАЛИ display: none, возвращаем flex */
             flex-direction: column; 
             gap: 6px; 
             z-index: 120; 
@@ -13842,9 +14019,7 @@ const OracleHallsGame = (function() {
         }
         if (p) {
             p.oracleHallsLocks = state;
-            if (typeof App !== 'undefined' && App.requestProfileSave) {
-                App.requestProfileSave();
-            }
+            _safeCall(function() { App.requestProfileSave(); });
         }
     }
 
@@ -13880,9 +14055,7 @@ const OracleHallsGame = (function() {
                 }, 300); 
             }
         } catch(e) { 
-            if (typeof App !== 'undefined' && App.playSoundEffect) {
-                App.playSoundEffect('win');
-            }
+            _safeCall(function() { App.playSoundEffect('win'); });
         }
     };
 
@@ -13908,7 +14081,7 @@ const OracleHallsGame = (function() {
             let v = 20 + Math.random() * 60;
             let tx = Math.cos(a) * v;
             let ty = Math.sin(a) * v;
-            let dur = 1200 + Math.random() * 800;
+            let dur = 1200 + Math.random() * 850;
             
             p.animate([
                 { transform: 'scale(1)', opacity: 1 }, 
@@ -13960,68 +14133,73 @@ const OracleHallsGame = (function() {
         }, 1500);
     }
 
+    // ─────────────────────────────────────────────────────────────────────────
+    // FIX: Полностью переписана логика анимации заполнения алтаря.
+    // ─────────────────────────────────────────────────────────────────────────
     function animateAltarFill(type, startValue, endValue, amountAdded) {
         const btn = document.getElementById(type === 'coins' ? 'altarCoinsBtn' : 'altarCrystalsBtn');
         if (!btn) return;
 
-        const durationMs = 1000 + (amountAdded / 500) * 4500; 
-        const startTime = Date.now();
-        const color = type === 'coins' ? 'var(--sun-gold)' : 'var(--magic-color)';
-        const baseBg = type === 'coins' ? 'rgba(255, 249, 174, 0.2)' : 'rgba(162, 155, 254, 0.2)';
+        const maxVal     = 500;
+        const color      = type === 'coins' ? 'var(--sun-gold)' : 'var(--magic-color)';
+        const baseBg     = type === 'coins' ? 'rgba(255, 249, 174, 0.2)' : 'rgba(162, 155, 254, 0.2)';
+        const durationMs = Math.max(600, Math.min(5000, 800 + (amountAdded / maxVal) * 4200));
+        const startTime  = performance.now();
 
-        let lastParticleTime = 0;
-        let soundPlayed = false; // <-- ФЛАГ ЗВУКА
+        let soundFired    = false;
+        let animDone      = false;
+        let lastParticle  = 0;
 
-        function frame() {
-            const now = Date.now();
-            let progress = (now - startTime) / durationMs;
-            if (progress >= 1) progress = 1;
+        function frame(now) {
+            if (animDone) return;
 
+            let progress = Math.min(1, (now - startTime) / durationMs);
             const current = startValue + (endValue - startValue) * progress;
-            const pct = Math.min(100, (current / 500) * 100);
+            const pct     = Math.min(100, (current / maxVal) * 100);
 
-            btn.style.background = `linear-gradient(to right, ${baseBg} ${pct}%, rgba(5, 8, 15, 0.8) ${pct}%)`;
             const textEl = btn.querySelector('.hall-altar-progress');
-            if (textEl) {
-                textEl.innerText = `${Math.floor(current)}/500`;
+            if (textEl) textEl.textContent = `${Math.floor(current)}/${maxVal}`;
+
+            if (pct < 100) {
+                btn.style.background = `linear-gradient(to right, ${baseBg} ${pct}%, rgba(5, 8, 15, 0.8) ${pct}%)`;
             }
 
-            // 🔥 ПРАВКА 2: Удар звука и вибрации в ту же миллисекунду, когда достигаем 100%
-            if (pct >= 100 && !soundPlayed) {
-                soundPlayed = true;
-                try {
-                    if (typeof App !== 'undefined' && App.playSoundEffect) {
-                        App.playSoundEffect('win'); 
-                        setTimeout(function() { App.playSoundEffect('crystal'); }, 400); 
-                    }
-                    if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.HapticFeedback) {
-                        window.Telegram.WebApp.HapticFeedback.notificationOccurred('success');
-                    }
-                } catch(e) {}
+            if (!soundFired && endValue >= maxVal && current >= maxVal) {
+                soundFired = true;
+                SafeSound.victory();
+                _safeCall(function() { App.playSoundEffect('victory'); });
+                _safeCall(function() { window.Telegram.WebApp.HapticFeedback.notificationOccurred('success'); });
             }
 
-            const spawnRate = Math.max(10, 40 - (amountAdded/500)*30);
-            if (now - lastParticleTime > spawnRate) { 
+            const spawnRate = Math.max(10, 40 - (amountAdded / maxVal) * 30);
+            if (pct < 100 && now - lastParticle > spawnRate) {
                 spawnAltarFillingParticle(btn, color, pct);
-                lastParticleTime = now;
+                lastParticle = now;
             }
 
             if (progress < 1) {
                 requestAnimationFrame(frame);
-            } else {
-                if (endValue >= 500 && startValue < 500 && amountAdded > 0) {
-                    btn.classList.remove('altar-completed'); 
-                    btn.classList.add('altar-just-completed');
+                return;
+            }
+
+            animDone = true;
+            if (endValue >= maxVal && startValue < maxVal) {
+                btn.style.background = '';
+                btn.classList.remove('altar-completed');
+                btn.classList.add('altar-just-completed');
+                if (textEl) textEl.textContent = `${maxVal}/${maxVal}`;
+                setTimeout(function() {
+                    btn.classList.remove('altar-just-completed');
+                    btn.classList.add('altar-completed');
                     btn.style.background = '';
-                    if (textEl) textEl.innerText = `500/500`;
-                    
-                    setTimeout(function() { syncLocksAndArena(); }, 1500); 
-                } else {
-                    renderAltarStatic(type, endValue);
-                    setTimeout(function() { syncLocksAndArena(); }, 800);
-                }
+                    syncLocksAndArena();
+                }, 1300);
+            } else {
+                renderAltarStatic(type, endValue);
+                syncLocksAndArena();
             }
         }
+
         requestAnimationFrame(frame);
     }
 
@@ -14042,7 +14220,7 @@ const OracleHallsGame = (function() {
         
         const textEl = btn.querySelector('.hall-altar-progress');
         if (textEl) {
-            textEl.innerText = `${value}/500`;
+            textEl.textContent = `${Math.min(value, 500)}/500`;
         }
     }
 
@@ -14082,29 +14260,33 @@ const OracleHallsGame = (function() {
                     closeAltar(); 
                 }
             });
-            document.getElementById('altarModalInput').addEventListener('keydown', function(ev) {
-                if (ev.key === 'Enter') {
-                    submitAltar();
-                }
+        }
+
+        const oldInput = document.getElementById('altarModalInput');
+        if (oldInput) {
+            const newInput = oldInput.cloneNode(true);
+            oldInput.parentNode.replaceChild(newInput, oldInput);
+            newInput.addEventListener('keydown', function(ev) {
+                if (ev.key === 'Enter') { submitAltar(); }
             });
         }
 
         const titleEl = document.getElementById('altarModalTitle');
-        const descEl = document.getElementById('altarModalDesc');
+        const descEl  = document.getElementById('altarModalDesc');
         const inputEl = document.getElementById('altarModalInput');
         const errorEl = document.getElementById('altarModalError');
 
         if (inputEl) inputEl.value = '';
-        if (errorEl) errorEl.innerText = ''; 
+        if (errorEl) errorEl.textContent = '';
 
         if (type === 'coins') {
-            titleEl.innerText = lang === 'ru' ? 'Алтарь Богатства' : 'Altar of Wealth';
+            titleEl.textContent = lang === 'ru' ? 'Алтарь Богатства' : 'Altar of Wealth';
             let curBank = p.bank !== undefined ? p.bank : (p.rStats && p.rStats.bank !== undefined ? p.rStats.bank : 0);
             descEl.innerHTML = lang === 'ru' 
-                ? `Требуется пожертвовать: <b>500</b><br>Уже внесено: <b>${(p.oh_altar_coins || 0)}</b><br><span style="color:var(--friendly-green); margin-top:5px; display:inline-block;">Доступно: $${curBank.toFixed(2)}</span>`
-                : `Required: <b>500</b>. Contributed: <b>${(p.oh_altar_coins || 0)}</b><br><span style="color:var(--friendly-green); margin-top:5px; display:inline-block;">Available: $${curBank.toFixed(2)}</span>`;
+                ? `Требуется пожертвовать: <b>500</b><br>Уже внесено: <b>${(p.oh_altar_coins || 0)}</b><br><span style="color:var(--friendly-green); margin-top:5px; display:inline-block;">Доступно: $${(+curBank).toFixed(2)}</span>`
+                : `Required: <b>500</b>. Contributed: <b>${(p.oh_altar_coins || 0)}</b><br><span style="color:var(--friendly-green); margin-top:5px; display:inline-block;">Available: $${(+curBank).toFixed(2)}</span>`;
         } else {
-            titleEl.innerText = lang === 'ru' ? 'Алтарь Сущности' : 'Altar of Essence';
+            titleEl.textContent = lang === 'ru' ? 'Алтарь Сущности' : 'Altar of Essence';
             let curGems = p.crystals || 0;
             descEl.innerHTML = lang === 'ru' 
                 ? `Требуется пожертвовать: <b>500</b><br>Уже внесено: <b>${(p.oh_altar_crystals || 0)}</b><br><span style="color:var(--magic-color); margin-top:5px; display:inline-block;">Доступно: ${curGems} 💎</span>`
@@ -14113,13 +14295,19 @@ const OracleHallsGame = (function() {
 
         overlay.classList.add('active');
         setTimeout(function() { 
-            if (inputEl) inputEl.focus(); 
+            const inp = document.getElementById('altarModalInput');
+            if (inp) inp.focus();
         }, 100);
     }
 
     function closeAltar() {
-        const overlay = document.getElementById('hallsAltarModal');
-        if (overlay) overlay.classList.remove('active');
+        let input = document.getElementById('altarModalInput');
+        if (input) input.blur();
+
+        let overlay = document.getElementById('hallsAltarModal');
+        if (overlay) {
+            overlay.classList.remove('active');
+        }
     }
 
     function submitAltar() {
@@ -14132,15 +14320,12 @@ const OracleHallsGame = (function() {
         const inputEl = document.getElementById('altarModalInput');
         const errorEl = document.getElementById('altarModalError');
         const lang = GameState.lang || 'ru';
-        let amount = parseInt(inputEl.value);
+        let amount = parseInt(inputEl ? inputEl.value : '0', 10);
         
         if (isNaN(amount) || amount <= 0) {
-            if (errorEl) {
-                errorEl.innerText = lang === 'ru' ? 'Введите корректную сумму!' : 'Enter a valid amount!';
-            }
-            if (typeof App !== 'undefined' && App.triggerButtonError) {
-                App.triggerButtonError();
-            }
+            if (errorEl) errorEl.textContent = lang === 'ru' ? 'Введите корректную сумму!' : 'Enter a valid amount!';
+            SafeSound.error();
+            _safeCall(function() { App.triggerButtonError(); });
             return;
         }
 
@@ -14150,50 +14335,31 @@ const OracleHallsGame = (function() {
         if (currentAltarType === 'coins') {
             oldVal = (p.oh_altar_coins || 0);
             let maxAllowed = 500 - oldVal;
-            if (amount > maxAllowed) {
-                amount = maxAllowed;
-            }
-            if (amount <= 0) { 
-                closeAltar(); 
-                return; 
-            }
+            if (amount > maxAllowed) amount = maxAllowed;
+            if (amount <= 0) { closeAltar(); return; }
 
             let curBank = p.bank !== undefined ? p.bank : (p.rStats && p.rStats.bank !== undefined ? p.rStats.bank : 0);
             if (curBank < amount) {
-                if (errorEl) {
-                    errorEl.innerText = lang === 'ru' ? 'Недостаточно монет в Банке!' : 'Not enough coins!';
-                }
-                if (typeof App !== 'undefined' && App.triggerButtonError) {
-                    App.triggerButtonError();
-                }
+                if (errorEl) errorEl.textContent = lang === 'ru' ? 'Недостаточно монет в Банке!' : 'Not enough coins!';
+                SafeSound.error();
+                _safeCall(function() { App.triggerButtonError(); });
                 return;
             }
-            if (p.bank !== undefined) {
-                p.bank -= amount;
-            } else {
-                p.rStats.bank -= amount;
-            }
+            if (p.bank !== undefined) p.bank -= amount;
+            else p.rStats.bank -= amount;
             p.oh_altar_coins = oldVal + amount;
             amountToAdd = amount;
         } else {
             oldVal = (p.oh_altar_crystals || 0);
             let maxAllowed = 500 - oldVal;
-            if (amount > maxAllowed) {
-                amount = maxAllowed;
-            }
-            if (amount <= 0) { 
-                closeAltar(); 
-                return; 
-            }
+            if (amount > maxAllowed) amount = maxAllowed;
+            if (amount <= 0) { closeAltar(); return; }
 
             let curGems = p.crystals || 0;
             if (curGems < amount) {
-                if (errorEl) {
-                    errorEl.innerText = lang === 'ru' ? 'Недостаточно кристаллов!' : 'Not enough crystals!';
-                }
-                if (typeof App !== 'undefined' && App.triggerButtonError) {
-                    App.triggerButtonError();
-                }
+                if (errorEl) errorEl.textContent = lang === 'ru' ? 'Недостаточно кристаллов!' : 'Not enough crystals!';
+                SafeSound.error();
+                _safeCall(function() { App.triggerButtonError(); });
                 return;
             }
             p.crystals -= amount;
@@ -14202,12 +14368,9 @@ const OracleHallsGame = (function() {
         }
 
         closeAltar();
-        if (typeof App !== 'undefined' && App.playSoundEffect) {
-            App.playSoundEffect('coins');
-        }
-        if (typeof App !== 'undefined' && App.requestProfileSave) {
-            App.requestProfileSave();
-        }
+        SafeSound.coins();
+        _safeCall(function() { App.playSoundEffect('coins'); });
+        _safeCall(function() { App.requestProfileSave(); });
         
         animateAltarFill(currentAltarType, oldVal, oldVal + amountToAdd, amountToAdd);
     }
@@ -14223,105 +14386,146 @@ const OracleHallsGame = (function() {
         const inputEl = document.getElementById(inputId);
         if (!inputEl) return;
         
-        let val = parseInt(inputEl.value);
+        let val = parseInt(inputEl.value, 10);
         if (isNaN(val) || val <= 0) return;
         
-        if (type === 'coins') {
-            p.oh_altar_coins = Math.max(0, (p.oh_altar_coins || 0) - val);
-        } else {
-            p.oh_altar_crystals = Math.max(0, (p.oh_altar_crystals || 0) - val);
-        }
+        if (type === 'coins') p.oh_altar_coins    = Math.max(0, (p.oh_altar_coins    || 0) - val);
+        else                  p.oh_altar_crystals = Math.max(0, (p.oh_altar_crystals || 0) - val);
         
-        if (typeof App !== 'undefined' && App.requestProfileSave) {
-            App.requestProfileSave();
-        }
+        _safeCall(function() { App.requestProfileSave(); });
         syncLocksAndArena();
     }
 
-    function syncLocksAndArena() {
+    function _hideTooltip() {
+        const tip = document.getElementById('oh-smart-tooltip');
+        if (!tip) return;
+        tip.style.opacity = '0';
+        tip.style.transform = 'translateY(10px)';
+        setTimeout(function() { tip.style.display = 'none'; }, 200);
+        _tooltipOwner = null;
+    }
+
+    function syncLocksAndArena(flashedSealIndex = -1) {
         const stage = document.getElementById('oracleHallsStage');
         if (!stage) return;
-
-        // Безопасная очистка
-        while (stage.firstChild) {
-            stage.removeChild(stage.firstChild);
-        }
+        
+        stage.querySelectorAll(
+         '.halls-scroll-wrapper, #ohBottomTitle'
+        ).forEach(el => el.remove());
 
         const lang = GameState.lang || 'ru';
         const lockState = getHallsLocksState();
         const profileOH = GameState.activeProfileIdx !== -1 ? GameState.profiles[GameState.activeProfileIdx] : null;
 
-        const coinsReady = (profileOH?.oh_altar_coins || 0) >= 500;
+        const coinsReady    = (profileOH?.oh_altar_coins    || 0) >= 500;
         const crystalsReady = (profileOH?.oh_altar_crystals || 0) >= 500;
 
-        // --- 1. ВСПЛЫВАЮЩАЯ ПОДСКАЗКА (POP-UP) ---
-        let ohTooltip = document.getElementById('oh-global-tooltip');
+        let ohTooltip = document.getElementById('oh-smart-tooltip');
         if (!ohTooltip) {
             ohTooltip = document.createElement('div');
-            ohTooltip.id = 'oh-global-tooltip';
-            ohTooltip.style.cssText = 'position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); display: none; background: rgba(5,8,15,0.98); border: 2px solid var(--friendly-green); padding: 18px; border-radius: 12px; color: white; font-size: 13px; z-index: 100000; width: 85%; max-width: 300px; text-align: center; box-shadow: 0 0 30px rgba(204,255,204,0.3); pointer-events: none; transition: opacity 0.2s ease; opacity: 0;';
+            ohTooltip.id = 'oh-smart-tooltip';
+            ohTooltip.style.cssText = 'position: fixed; display: none; opacity: 0; background: rgba(5,8,15,0.95); border: 1px solid var(--magic-color); padding: 12px; border-radius: 8px; color: white; font-size: 11px; z-index: 100000; width: 180px; box-shadow: 0 0 15px rgba(162,155,254,0.4); pointer-events: none; transition: opacity 0.2s ease, transform 0.2s ease; transform: translateY(10px);';
             document.body.appendChild(ohTooltip);
             
-            document.addEventListener('click', () => {
-                if (ohTooltip.style.opacity === '1') {
-                    ohTooltip.style.opacity = '0';
-                    setTimeout(() => ohTooltip.style.display = 'none', 200);
+            document.addEventListener('click', function(ev) {
+                if (!ev.target.closest || !ev.target.closest('[data-oh-tip]')) {
+                    _hideTooltip();
                 }
             });
         }
 
-        // --- 2. ВЕРХНИЙ ЗАГОЛОВОК (ПЕЧАТИ ОРАКУЛА) ---
+        const showSmartTooltip = function(e, titleText, descText, colorStr, ownerKey) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            const tip = document.getElementById('oh-smart-tooltip');
+            if (!tip) return;
+
+            if (_tooltipOwner === ownerKey && tip.style.opacity === '1') {
+                _hideTooltip();
+                return;
+            }
+            _tooltipOwner = ownerKey;
+
+            tip.innerHTML = `<span style="color: ${colorStr}; font-size: 13px; font-weight: bold; text-transform: uppercase;">${titleText}</span><br><br><span style="color: #ccc;">${descText}</span>`;
+            tip.style.borderColor = colorStr;
+            tip.style.boxShadow   = `0 0 15px ${colorStr}66`;
+            tip.style.display     = 'block';
+            tip.style.opacity     = '0';
+
+            requestAnimationFrame(function() {
+                const targetEl = e.currentTarget || e.target;
+                const rect = targetEl.getBoundingClientRect();
+                const tw = tip.offsetWidth || 180;
+                const th = tip.offsetHeight || 80;
+                
+                let left = rect.left + (rect.width / 2) - (tw / 2);
+                if (left < 10) left = 10;
+                if (left + tw > window.innerWidth - 10) left = window.innerWidth - tw - 10;
+
+                let top = rect.top - th - 15; 
+                
+                if (top < 10) {
+                    top = rect.bottom + 15;
+                }
+
+                tip.style.top  = top + 'px';
+                tip.style.left = left + 'px';
+                tip.style.opacity   = '1';
+                tip.style.transform = 'translateY(0)';
+            });
+        };
+
+        let scrollWrap = document.createElement('div');
+        scrollWrap.className = 'halls-scroll-wrapper';
+        stage.appendChild(scrollWrap);
+
         let title = document.createElement('div');
         title.id = 'ohCustomTopTitle';
         title.className = 'oh-custom-top-title';
-        title.innerText = lang === 'ru' ? 'ПЕЧАТИ ОРАКУЛА' : 'ORACLE SEALS';
-        
-        // Цвет как на скрине, убрали отступ сверху, вернули кликабельность
-        title.style.cssText = 'color: var(--magic-color); text-shadow: 0 0 10px rgba(162, 155, 254, 0.5); font-size: 24px; margin: 0 auto 10px auto; font-weight: 900; text-transform: uppercase; cursor: pointer; pointer-events: auto;';
-        
-        // Вызов подсказки для самого заголовка
-        title.onclick = (e) => {
-            e.stopPropagation();
-            ohTooltip.innerHTML = `<span style="color: var(--magic-color); font-size: 15px; font-weight: bold; text-transform: uppercase;">${lang==='ru'?'Печати Оракула':'Oracle Seals'}</span><br><br><span style="color: #fff;">${lang==='ru'?'Снимите все 9 печатей и заполните алтари, чтобы бросить вызов Абсолюту.':'Unlock all 9 seals to challenge the Absolute.'}</span>`;
-            ohTooltip.style.display = 'block';
-            requestAnimationFrame(() => { ohTooltip.style.opacity = '1'; });
+        title.dataset.ohTip = 'top-title';
+        title.textContent = lang === 'ru' ? 'ПЕЧАТИ ОРАКУЛА' : 'ORACLE SEALS';
+        title.onclick = function(e) {
+            showSmartTooltip(e,
+                lang === 'ru' ? 'Печати Оракула' : 'Oracle Seals',
+                lang === 'ru' ? 'Снимите все 9 печатей и заполните алтари, чтобы бросить вызов Абсолюту.' : 'Unlock all 9 seals to challenge the Absolute.',
+                'var(--magic-color)', 'top-title');
         };
-        stage.appendChild(title);
+        scrollWrap.appendChild(title);
 
-        // --- 3. ПЕЧАТИ (СЕТКА) ---
         let locksWrap = document.createElement('div');
         locksWrap.id = 'hallsLocksWrapper';
         locksWrap.className = 'halls-locks-container';
-        lockDefs.forEach((def, i) => {
+        lockDefs.forEach(function(def, i) {
             let isUnlocked = lockState[i];
             let card = document.createElement('div');
             card.className = `hall-lock-card ${isUnlocked ? 'unlocked' : ''}`;
-            
-            if (!isUnlocked) {
-                card.style.borderColor = 'var(--friendly-green)';
-                card.style.boxShadow = '0 0 8px rgba(204, 255, 204, 0.15)';
+            card.dataset.ohTip = `seal-${i}`;
+
+            let sealColor = isUnlocked ? 'var(--friendly-green)' : 'rgba(162, 155, 254, 0.6)';
+
+            if (flashedSealIndex === i && isUnlocked) {
+                card.classList.add('seal-anim-flash');
             }
 
             card.innerHTML = `
-                <div class="lock-icon-main" style="color: var(--friendly-green);">${def.icon}</div>
-                <div class="lock-status-badge" style="color: var(--friendly-green);">${isUnlocked ? (lang==='ru'?'Снята':'Unlocked') : (lang==='ru'?'Запечатано':'Locked')}</div>
+                <div class="lock-icon-main" style="color: ${sealColor};">${def.icon}</div>
+                <div class="lock-status-badge" style="color: ${sealColor};">${isUnlocked ? (lang==='ru'?'Снята':'Unlocked') : (lang==='ru'?'Запечатано':'Locked')}</div>
             `;
-            
-            // 🔥 ЖЕСТКО ВСТАВЛЯЕМ КЛИКАБЕЛЬНОСТЬ 🔥
+
             card.style.pointerEvents = 'auto';
             card.style.cursor = 'pointer';
-            card.onclick = (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                ohTooltip.innerHTML = `<span style="color: var(--friendly-green); font-size: 15px; font-weight: bold; text-transform: uppercase;">${lang==='ru'?def.nameRu:def.nameEn}</span><br><br><span style="color: #fff;">${lang==='ru'?def.descRu:def.descEn}</span>`;
-                ohTooltip.style.display = 'block';
-                setTimeout(() => { ohTooltip.style.opacity = '1'; }, 10);
+            card.onclick = function(e) {
+                showSmartTooltip(e,
+                    lang === 'ru' ? def.nameRu : def.nameEn,
+                    lang === 'ru' ? def.descRu : def.descEn,
+                    isUnlocked ? 'var(--friendly-green)' : 'var(--magic-color)',
+                    `seal-${i}`);
             };
             locksWrap.appendChild(card);
         });
-        stage.appendChild(locksWrap);
+        scrollWrap.appendChild(locksWrap);
 
-        // --- 4. АЛТАРИ ---
         let altarsWrap = document.createElement('div');
         altarsWrap.id = 'hallsAltarsWrapper';
         altarsWrap.className = 'halls-altars-container';
@@ -14332,14 +14536,8 @@ const OracleHallsGame = (function() {
         cBtn.id = 'altarCoinsBtn';
         cBtn.className = `hall-altar-btn ${coinsReady ? 'altar-completed' : ''}`;
         if (!coinsReady) cBtn.style.background = `linear-gradient(to right, rgba(255, 249, 174, 0.2) ${cPct}%, rgba(5, 8, 15, 0.8) ${cPct}%)`;
-        cBtn.innerHTML = `
-            <i class="fas fa-coins" style="font-size:20px; color:var(--sun-gold);"></i>
-            <div class="hall-altar-label">
-                <span class="hall-altar-title">${lang==='ru'?'Богатство':'Wealth'}</span>
-                <span class="hall-altar-progress">${Math.floor(cVal)}/500</span>
-            </div>
-        `;
-        cBtn.onclick = () => openAltar('coins');
+        cBtn.innerHTML = `<i class="fas fa-coins" style="font-size:20px; color:var(--sun-gold); z-index:5;"></i><div class="hall-altar-label"><span class="hall-altar-title">${lang==='ru'?'Богатство':'Wealth'}</span><span class="hall-altar-progress">${Math.floor(cVal)}/500</span></div>`;
+        cBtn.onclick = function() { openAltar('coins'); };
         altarsWrap.appendChild(cBtn);
 
         let gVal = Math.min(500, profileOH?.oh_altar_crystals || 0);
@@ -14348,103 +14546,134 @@ const OracleHallsGame = (function() {
         gBtn.id = 'altarCrystalsBtn';
         gBtn.className = `hall-altar-btn ${crystalsReady ? 'altar-completed' : ''}`;
         if (!crystalsReady) gBtn.style.background = `linear-gradient(to right, rgba(162, 155, 254, 0.2) ${gPct}%, rgba(5, 8, 15, 0.8) ${gPct}%)`;
-        gBtn.innerHTML = `
-            <i class="fas fa-gem" style="font-size:20px; color:var(--magic-color);"></i>
-            <div class="hall-altar-label">
-                <span class="hall-altar-title">${lang==='ru'?'Сущность':'Essence'}</span>
-                <span class="hall-altar-progress">${Math.floor(gVal)}/500</span>
-            </div>
-        `;
-        gBtn.onclick = () => openAltar('crystals');
+        gBtn.innerHTML = `<i class="fas fa-gem" style="font-size:20px; color:var(--magic-color); z-index:5;"></i><div class="hall-altar-label"><span class="hall-altar-title">${lang==='ru'?'Сущность':'Essence'}</span><span class="hall-altar-progress">${Math.floor(gVal)}/500</span></div>`;
+        gBtn.onclick = function() { openAltar('crystals'); };
         altarsWrap.appendChild(gBtn);
 
-        stage.appendChild(altarsWrap);
+        scrollWrap.appendChild(altarsWrap);
 
-        // --- 5. КНОПКА АБСОЛЮТ ---
-        let absBtn = document.getElementById('ohLaunchAbsBtn');
-        if (!absBtn) {
-            absBtn = document.createElement('button');
-            absBtn.id = 'ohLaunchAbsBtn';
-            absBtn.innerText = 'АБСОЛЮТ';
-        }
-        const allLocksReady = lockState.every(s => s === true);
+        document.querySelectorAll('#ohLaunchAbsBtn').forEach(btn => btn.remove());
+        
+        let absBtn = document.createElement('button');
+        absBtn.id = 'ohLaunchAbsBtn';
+        absBtn.dataset.ohTip = 'abs-btn';
+        absBtn.textContent = lang === 'ru' ? 'АБСОЛЮТ' : 'ABSOLUTE';
+        const allLocksReady = lockState.every(function(s) { return s === true; });
         const canLaunch = allLocksReady && coinsReady && crystalsReady;
         absBtn.className = canLaunch ? 'ready' : 'locked';
+        
+        absBtn.style.setProperty('order', '9999', 'important'); 
+        
         absBtn.onclick = function(e) {
-            e.stopPropagation();
             if (canLaunch) {
                 OracleHallsGame.launchAbsolute();
             } else {
-                ohTooltip.innerHTML = `<span style="color: var(--angry-red); font-size: 15px; font-weight: bold; text-transform: uppercase;">Абсолют Заблокирован</span><br><br><span style="color: #fff;">Сначала откройте все 9 печатей и заполните 2 алтаря!</span>`;
-                ohTooltip.style.display = 'block';
-                setTimeout(() => { ohTooltip.style.opacity = '1'; }, 10);
+                showSmartTooltip(e,
+                    lang === 'ru' ? 'Абсолют Заблокирован' : 'Absolute Locked',
+                    lang === 'ru' ? 'Сначала откройте все 9 печатей и заполните 2 алтаря!' : 'Unlock all 9 seals and fill both altars first!',
+                    'var(--angry-red)', 'abs-btn');
             }
         };
-        stage.appendChild(absBtn);
+        scrollWrap.appendChild(absBtn);
 
-        // --- 6. ДЕБАГ ПАНЕЛЬ ---
-        let dbgWrap = document.createElement('div');
-        dbgWrap.id = 'hallsDebugWrapper';
-        dbgWrap.className = 'halls-debug-panel';
-        dbgWrap.innerHTML = `
-            <div style="text-align:center; font-size:10px; color:var(--sun-gold); margin-bottom:4px;">DEV BYPASS</div>
-            <div class="halls-debug-grid" id="hallsDbgGrid"></div>
-            <div style="display:flex; justify-content:center; gap:5px; margin-top:5px;">
-                <input type="number" id="dbgCoinSub" class="dbg-input" placeholder="$">
-                <button class="halls-debug-btn" style="width:auto; padding:0 5px;" onclick="OracleHallsGame.dbgSubAltar('coins')">- $</button>
-                <input type="number" id="dbgCrystSub" class="dbg-input" placeholder="💎">
-                <button class="halls-debug-btn" style="width:auto; padding:0 5px;" onclick="OracleHallsGame.dbgSubAltar('crystals')">- 💎</button>
-            </div>
-        `;
-        stage.appendChild(dbgWrap);
+        let dbgPanel = document.getElementById('hallsDebugWrapper');
+        
+        if (typeof GameState !== 'undefined' && GameState.debugEnabled) {
+            if (!dbgPanel) { 
+                dbgPanel = document.createElement('div'); 
+                dbgPanel.id = 'hallsDebugWrapper'; 
+                dbgPanel.className = 'halls-debug-panel'; 
+            }
+            
+            let scrollWrap = document.querySelector('.halls-scroll-wrapper');
+            if (scrollWrap) {
+                scrollWrap.appendChild(dbgPanel);
+            } else {
+                stage.appendChild(dbgPanel);
+            }
+            
+            dbgPanel.innerHTML = `
+                <div style="text-align:center; font-size:10px; color:var(--sun-gold); margin-bottom:4px;">DEV BYPASS</div>
+                <div class="halls-debug-grid"></div>
+                <div style="display:flex; gap:6px; margin-top:8px; justify-content:center; align-items:center;">
+                    <span style="font-size:9px; color:#fff; font-weight:bold;">ОТКАТ:</span>
+                    <input type="number" id="dbgCoinSub" placeholder="Мон." class="dbg-input">
+                    <button id="dbgCoinBtnSubmit" onclick="OracleHallsGame.dbgSubAltar('coins')" class="halls-debug-btn" style="width:24px; height:auto; padding:4px 0; font-size:12px;">-</button>
+                    <input type="number" id="dbgCrystSub" placeholder="Крис." class="dbg-input">
+                    <button id="dbgCrystBtnSubmit" onclick="OracleHallsGame.dbgSubAltar('crystals')" class="halls-debug-btn" style="width:24px; height:auto; padding:4px 0; font-size:12px;">-</button>
+                </div>
+            `;
 
-        // --- 7. ИДЕАЛЬНЫЙ НИЖНИЙ ЗАГОЛОВОК ---
+            let coinInput = document.getElementById('dbgCoinSub'); 
+            if (coinInput) { coinInput.addEventListener('keydown', function(e) { if (e.key === 'Enter') { e.preventDefault(); OracleHallsGame.dbgSubAltar('coins'); } }); }
+            
+            let crystInput = document.getElementById('dbgCrystSub'); 
+            if (crystInput) { crystInput.addEventListener('keydown', function(e) { if (e.key === 'Enter') { e.preventDefault(); OracleHallsGame.dbgSubAltar('crystals'); } }); }
+            
+            let dbgGrid = dbgPanel.querySelector('.halls-debug-grid');
+            if (dbgGrid) {
+                for (let i = 0; i < lockDefs.length; i++) {
+                    let def = lockDefs[i]; let isUnlocked = lockState[def.id];
+                    let btn = document.createElement('button'); 
+                    btn.className = `halls-debug-btn ${isUnlocked ? 'active-unlocked' : ''}`; 
+                    btn.innerText = `№${def.id + 1}`;
+                    btn.onclick = function(e) { 
+                        e.stopPropagation(); 
+                        const cState = getHallsLocksState(); 
+                        const willUnlock = !cState[def.id]; 
+                        if (willUnlock) { 
+                            const cards = document.querySelectorAll('.hall-lock-card'); 
+                            if (cards[def.id]) { 
+                                spawnLockExplosion(cards[def.id], 'var(--friendly-green)'); 
+                            }
+                            if (typeof SafeSound !== 'undefined') SafeSound.seal();
+                            _safeCall(function() { App.playSoundEffect('magic'); });
+                            _safeCall(function() { window.Telegram.WebApp.HapticFeedback.impactOccurred('medium'); });
+                        }
+                        cState[def.id] = willUnlock; 
+                        saveHallsLocksState(cState); 
+                        syncLocksAndArena(); 
+                    };
+                    dbgGrid.appendChild(btn);
+                }
+            }
+        } else if (dbgPanel) { 
+            dbgPanel.remove(); 
+        }
+
         let bottomTitle = document.createElement('div');
         bottomTitle.id = 'ohBottomTitle';
-        // Убираем absolute, используем flex-свойства
-        bottomTitle.style.cssText = "margin-top: auto; padding: 20px 0 10px 0; font-size: 22px; font-weight: 900; text-transform: uppercase; color: var(--magic-color); text-shadow: 0 0 10px rgba(162, 155, 254, 0.6); letter-spacing: 2px; text-align: center; width: 100%; pointer-events: none;";
-        bottomTitle.innerText = lang === 'ru' ? 'ЧЕРТОГИ ОРАКУЛА' : 'ORACLE HALLS';
-        stage.appendChild(bottomTitle);
-
-        let dGrid = dbgWrap.querySelector('#hallsDbgGrid');
-        lockDefs.forEach((def, i) => {
-            let dBtn = document.createElement('button');
-            dBtn.className = `halls-debug-btn ${lockState[i] ? 'active-unlocked' : ''}`;
-            dBtn.innerText = i + 1;
-            dBtn.onclick = () => {
-                let st = getHallsLocksState();
-                st[i] = !st[i];
-                saveHallsLocksState(st);
-                syncLocksAndArena();
-            };
-            dGrid.appendChild(dBtn);
-        });
+        bottomTitle.dataset.ohTip = 'bottom-title';
+        bottomTitle.textContent = lang === 'ru' ? 'ЧЕРТОГИ ОРАКУЛА' : 'ORACLE HALLS';
+        bottomTitle.onclick = function(e) {
+            showSmartTooltip(e,
+                lang === 'ru' ? 'Чертоги Оракула' : 'Oracle Halls',
+                lang === 'ru' ? 'Священное место, где собраны Печати и Алтари Судьбы.' : 'The sacred place where the Seals and Altars of Fate reside.',
+                'var(--magic-color)', 'bottom-title');
+        };
+        stage.appendChild(bottomTitle); 
     }
 
     function init() {
-        // Перехват долгого выхода, если мы в Чертогах
         if (typeof AbsoluteGame !== 'undefined' && !AbsoluteGame._ohPatchedExit) {
             const origExit = AbsoluteGame.animateExit;
             AbsoluteGame.animateExit = function(callback) {
                 if (OracleHallsGame.isGameActive()) {
-                    if (callback) callback(); // Мгновенный выход
+                    if (callback) callback();
                 } else {
-                    origExit(callback); // Обычный красивый разлет Абсолюта
+                    origExit(callback);
                 }
             };
             AbsoluteGame._ohPatchedExit = true;
         }
     }
-  
 
     function launchAbsolute() {
-        // 🔥 ПРАВКА 1: Полностью сворачиваем Чертоги, чтобы Абсолют сам построил свой UI
         OracleHallsGame.unmount(); 
         
-        // Запускаем Абсолют на чистом поле
         if (typeof AbsoluteGame !== 'undefined') {
-            if (typeof AbsoluteGame.init === 'function') AbsoluteGame.init();
-            if (typeof AbsoluteGame.mount === 'function') AbsoluteGame.mount();
+            _safeCall(function() { AbsoluteGame.init(); });
+            _safeCall(function() { AbsoluteGame.mount(); });
             console.log("Абсолют запущен");
         } else {
             console.error("AbsoluteGame не найдена!");
@@ -14452,14 +14681,13 @@ const OracleHallsGame = (function() {
     }
 
     function mount() {
-        // 🔥 Блокируем долгую анимацию Абсолюта при нажатии "Домой" из Чертогов
         if (!window._ohExitPatched && typeof AbsoluteGame !== 'undefined' && AbsoluteGame.animateExit) {
             const origExit = AbsoluteGame.animateExit;
             AbsoluteGame.animateExit = function(cb) {
                 if (OracleHallsGame.isGameActive()) {
-                    if (cb) cb(); // Мгновенный выход в меню
+                    if (cb) cb();
                 } else {
-                    origExit(cb); // Играем красивую анимацию, если мы внутри самого Абсолюта
+                    origExit(cb);
                 }
             };
             window._ohExitPatched = true;
@@ -14473,30 +14701,17 @@ const OracleHallsGame = (function() {
         let gui = document.getElementById('gameUI'); 
         if (gui) { gui.classList.add('game-ui-visible'); gui.style.opacity = '1'; gui.style.pointerEvents = 'auto'; }
         
-        // 🔥 ФИКС: Добавили 'absoluteGameStage' в список скрытия, чтобы игры не накладывались при возврате!
-        let elementsToHide = ['mainStage', 'rouletteStage', 'shopStage', 'flowerStage', 'rpsStage', 'sticksStage', 'answer-box', 'inputWrapper', 'bulletStash', 'rollBtn', 'toggleQuestionBtn', 'activeGameTabsBar', 'res-status', 'rouletteStatusBtn', 'randomLoadBtn', 'debugPanel', 'absoluteGameStage'];
+        let elementsToHide = ['mainStage', 'rouletteStage', 'shopStage', 'flowerStage', 'rpsStage', 'sticksStage', 'answer-box', 'inputWrapper', 'bulletStash', 'rollBtn', 'toggleQuestionBtn', 'activeGameTabsBar', 'res-status', 'rouletteStatusBtn', 'randomLoadBtn', 'debugPanel', 'absoluteGameStage', 'absoluteActionBtn'];
         for (let i = 0; i < elementsToHide.length; i++) {
             let el = document.getElementById(elementsToHide[i]);
             if (el) el.style.display = 'none';
         }
 
         let mainH1 = document.getElementById('ui-title');
-        if (mainH1) mainH1.style.display = 'none'; // Прячем глобальный заголовок
+        if (mainH1) {
+            mainH1.style.display = 'none';
+        }
             
-            // 🔥 ПРИВЯЗЫВАЕМ ВНИЗУ, ДЕЛАЕМ АКТИВНЫМ И КРАСИМ В ЦВЕТ ПЕЧАТЕЙ 🔥
-            mainH1.style.color = 'var(--friendly-green)';
-            mainH1.style.textShadow = '0 0 10px rgba(204, 255, 204, 0.4), 0 0 20px rgba(204, 255, 204, 0.2)';
-            
-            mainH1.style.position = 'fixed';
-            mainH1.style.bottom = '18px'; 
-            mainH1.style.left = '50%';
-            mainH1.style.transform = 'translateX(-50%)';
-            mainH1.style.zIndex = '5000';
-            mainH1.style.fontSize = '22px';
-            mainH1.style.pointerEvents = 'auto'; // Разрешаем клики и ховеры
-            mainH1.style.cursor = 'pointer';
-        
-        
         let disp = document.getElementById('current-mode-display');
         if (disp) disp.style.display = 'none';
 
@@ -14511,7 +14726,16 @@ const OracleHallsGame = (function() {
         let hallsStage = document.getElementById('oracleHallsStage'); 
         if (hallsStage) hallsStage.style.display = 'none';
         
-        // 🔥 ФИКС: Удаляем нашу сгенерированную кнопку при выходе в меню
+        const toRemove = [
+            'ohCustomTopTitle', 'hallsLocksWrapper', 'hallsAltarsWrapper', 
+            'hallsDebugWrapper', 'hallsAltarModal', 'ohNeonPulseStyle', 
+            'ohLaunchAbsBtn'
+        ];
+        toRemove.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.remove();
+        });
+
         let customElements = ['ohCustomTopTitle', 'hallsLocksWrapper', 'hallsAltarsWrapper', 'hallsDebugWrapper', 'hallsAltarModal', 'ohNeonPulseStyle', 'halls-launch-abs-btn'];
         for (let i = 0; i < customElements.length; i++) {
             let el = document.getElementById(customElements[i]);
@@ -14520,31 +14744,43 @@ const OracleHallsGame = (function() {
         
         let mainH1 = document.getElementById('ui-title');
         if (mainH1) {
-            mainH1.style.display = ''; // Возвращаем для других игр
+            mainH1.style.display = '';
         }
         
         let disp = document.getElementById('current-mode-display');
         if (disp) disp.style.display = '';
 
-        let elementsToRestore = ['answer-box', 'inputWrapper', 'bulletStash', 'rollBtn', 'toggleQuestionBtn', 'activeGameTabsBar', 'res-status', 'rouletteStatusBtn', 'randomLoadBtn'];
+        let elementsToRestore = ['answer-box', 'inputWrapper', 'bulletStash', 'rollBtn', 'toggleQuestionBtn', 'activeGameTabsBar', 'res-status', 'rouletteStatusBtn', 'randomLoadBtn', 'absoluteActionBtn', 'mainStage'];
         for (let i = 0; i < elementsToRestore.length; i++) {
             let el = document.getElementById(elementsToRestore[i]);
             if (el) el.style.display = ''; 
         }
     }
     
+    function toggleDebugPanel() {
+        const panel = document.querySelector('.halls-debug-panel');
+        if (panel) {
+            const isHidden = window.getComputedStyle(panel).display === 'none';
+            if (isHidden) {
+                panel.style.setProperty('display', 'flex', 'important');
+            } else {
+                panel.style.setProperty('display', 'none', 'important');
+            }
+        }
+    }
 
     return { 
         init: init, 
         mount: mount, 
         unmount: unmount, 
-        launchAbsolute: launchAbsolute, // 🔥 ЭТОГО НЕ ХВАТАЛО!
+        launchAbsolute: launchAbsolute,
         isGameActive: function() { return isGameActive; }, 
         syncLocksAndArena: syncLocksAndArena, 
         openAltar: openAltar, 
         closeAltar: closeAltar, 
         submitAltar: submitAltar, 
-        dbgSubAltar: dbgSubAltar 
+        dbgSubAltar: dbgSubAltar, 
+        toggleDebugPanel: toggleDebugPanel
     };
 
 })();
@@ -14758,10 +14994,12 @@ const animStyle = document.createElement('style');
             position: relative !important; 
             z-index: 100 !important; /* Выше сферы */
         }
-        #absoluteGameStage .action-row {
-            margin-top: 16px !important; 
+        #abs-action-row {
+            margin: 16px auto 0 auto !important; 
             position: relative !important; 
-            z-index: 100 !important; /* Выше сферы */
+            z-index: 1000 !important; /* Выше сферы */
+            width: 90% !important;
+            max-width: 350px !important;
         }
 
         /* 🚫 ИЗНИЧТОЖАЕМ ЗАРАЗУ: ЖЕСТКАЯ БЛОКИРОВКА ОСТАЛЬНЫХ ИГР 🚫 */
@@ -14993,6 +15231,33 @@ const animStyle = document.createElement('style');
             0% { transform: translate(-50%, -50%) scale(1); opacity: 1; filter: blur(2px); }
             100% { transform: translate(-50%, -50%) scale(0) rotate(-360deg); opacity: 0; filter: blur(20px); }
         }
+
+        /* 🛑 ЯДЕРНЫЙ ВАРИАНТ ПРОТИВ СКРОЛЛБАРОВ (Выжигает их везде) */
+        body.is-abs-game-active, 
+        body.is-abs-game-active * {
+            scrollbar-width: none !important;
+            -ms-overflow-style: none !important;
+        }
+        body.is-abs-game-active::-webkit-scrollbar, 
+        body.is-abs-game-active *::-webkit-scrollbar {
+            display: none !important;
+            width: 0 !important;
+            height: 0 !important;
+        }
+
+        /* 🔥 ЖЕЛЕЗОБЕТОННАЯ ПОЗИЦИЯ КНОПОК ДЕЙСТВИЙ (Больше не упадут за экран) */
+        #abs-action-row {
+            position: fixed !important;
+            bottom: 130px !important; /* Висит ровно над дебаг-панелью и нижним заголовком */
+            left: 50% !important;
+            transform: translateX(-50%) !important;
+            width: 90% !important;
+            max-width: 350px !important;
+            z-index: 999999 !important; /* Выше всего остального */
+            display: flex !important;
+            justify-content: center !important;
+            align-items: center !important;
+        }
     `;
     document.head.appendChild(animStyle);
 
@@ -15093,14 +15358,22 @@ const animStyle = document.createElement('style');
     
     function updateActionBtn(html, disabled = false, gold = false) {
         let btn = document.getElementById('absoluteActionBtn');
-        let row = document.querySelector('#absoluteGameStage .action-row');
+        // 🔥 ФИКС: Используем уникальный ID для строки, чтобы избежать конфликтов со скелетом!
+        let row = document.getElementById('abs-action-row');
         
         if (!row) {
             row = document.createElement('div');
+            row.id = 'abs-action-row';
             row.className = 'action-row';
             const stage = document.getElementById('absoluteGameStage');
             if (stage) stage.appendChild(row);
         }
+
+        // Жестко задаем стили строки
+        row.style.setProperty('display', 'flex', 'important');
+        row.style.setProperty('opacity', '1', 'important');
+        row.style.setProperty('visibility', 'visible', 'important');
+        row.style.setProperty('pointer-events', 'auto', 'important');
         
         if (!btn) {
             btn = document.createElement('button');
@@ -15114,12 +15387,12 @@ const animStyle = document.createElement('style');
         btn.innerHTML = html;
         btn.disabled = disabled;
         
-        // 🔥 ФИКС: Сохраняем наши неоновые классы, добавляя их к базовым
         const stateClass = disabled ? 'abs-btn-locked' : 'abs-btn-ready';
         btn.className = `abs-btn-roll ${gold ? 'gold' : ''} ${stateClass}`;
         
-        btn.style.opacity = '1';
-        btn.style.pointerEvents = 'auto';
+        btn.style.setProperty('display', 'flex', 'important');
+        btn.style.setProperty('opacity', '1', 'important');
+        btn.style.setProperty('pointer-events', 'auto', 'important');
         
         if (!gold) {
             btn.style.background = '';
@@ -15127,6 +15400,83 @@ const animStyle = document.createElement('style');
             btn.style.boxShadow = '';
             btn.style.color = '';
         }
+    }
+
+    function renderColorSelection() {
+        let row = document.getElementById('abs-action-row');
+        
+        if (!row) {
+            row = document.createElement('div');
+            row.id = 'abs-action-row';
+            row.className = 'action-row';
+            const stage = document.getElementById('absoluteGameStage');
+            if (stage) stage.appendChild(row); 
+        }
+
+        // Жестко задаем стили строки
+        row.style.setProperty('display', 'flex', 'important');
+        row.style.setProperty('opacity', '1', 'important');
+        row.style.setProperty('visibility', 'visible', 'important');
+        row.style.setProperty('pointer-events', 'auto', 'important');
+
+        let colorContainer = document.getElementById('colorSelectContainer');
+        if (!colorContainer) {
+            colorContainer = document.createElement('div');
+            colorContainer.id = 'colorSelectContainer';
+            row.prepend(colorContainer); // Вставляем цвета ВНУТРИ action-row перед основной кнопкой
+        }
+        
+        // Жестко задаем стили контейнера
+        colorContainer.style.setProperty('display', 'flex', 'important');
+        colorContainer.style.setProperty('gap', '15px', 'important');
+        colorContainer.style.setProperty('width', '100%', 'important');
+        colorContainer.style.setProperty('justify-content', 'center', 'important');
+        colorContainer.style.setProperty('margin-bottom', '10px', 'important');
+        colorContainer.style.setProperty('opacity', '1', 'important');
+        colorContainer.style.setProperty('visibility', 'visible', 'important');
+        colorContainer.style.setProperty('pointer-events', 'auto', 'important');
+        
+        colorContainer.innerHTML = `
+            <button class="abs-btn-roll" style="flex: 1; background: #22c55e; color: #000; box-shadow: 0 6px 0 #16a34a;" onclick="AbsoluteGame.setColors('green')">СВЕТ ИСТИНЫ</button>
+            <button class="abs-btn-roll" style="flex: 1; background: #ef4444; color: #000; box-shadow: 0 6px 0 #dc2626;" onclick="AbsoluteGame.setColors('red')">ТЬМА ПУСТОТЫ</button>
+        `;
+        
+        const mainBtn = document.getElementById('absoluteActionBtn');
+        if (mainBtn) mainBtn.style.setProperty('display', 'none', 'important');
+
+        updateFaceInfoText(-1);
+    }
+
+    function setColors(playerChoice) {
+        myColor = playerChoice; oracleColor = (playerChoice === 'green') ? 'red' : 'green';
+        
+        if(typeof App !== 'undefined' && typeof App.playSoundEffect === 'function') {
+            App.playSoundEffect('positive');
+        }
+        
+        // Удаляем контейнер с выбором цвета
+        const container = document.getElementById('colorSelectContainer');
+        if (container) container.remove(); 
+        
+        gameState = 'PLAYER_TURN'; 
+        
+        activeFaceIndex = -1;
+        lastActiveFace = -1; 
+        highlightFace(-1);
+
+        saveState(); updateScoreAndTension();
+        
+        safeTimeout(() => {
+            gainEnergy('p');
+            saveState(); 
+        }, 150);
+
+        // 🔥 ВОЗВРАЩАЕМ ОСНОВНУЮ КНОПКУ
+        const mainBtn = document.getElementById('absoluteActionBtn');
+        if (mainBtn) mainBtn.style.setProperty('display', 'flex', 'important');
+        
+        updateActionBtn(`ПРИЗВАТЬ АБСОЛЮТ`, false);
+        updateFaceInfoText(-1);
     }
 
     function updateEnergyUI() {
@@ -16013,6 +16363,12 @@ const animStyle = document.createElement('style');
 
     function start(mode) {
         if (isGameActive) return; 
+        
+        // 🔥 УНИЧТОЖАЕМ ЛЮБОЙ ДУБЛИКАТ КНОПКИ ПЕРЕД ЗАПУСКОМ
+        const ghostBtn = document.getElementById('ohLaunchAbsBtn');
+        if (ghostBtn) ghostBtn.remove();
+        const ghostBtn2 = document.getElementById('absoluteActionBtn');
+        if (ghostBtn2) ghostBtn2.remove();
         currentMode = mode; 
         isGameActive = true; 
         document.body.classList.add('is-abs-game-active');
@@ -16434,64 +16790,7 @@ const animStyle = document.createElement('style');
             if (stage) stage.style.pointerEvents = 'auto';
             pokeEngine();
         }
-    }
-
-    function renderColorSelection() {
-        const row = document.querySelector('#absoluteGameStage .action-row');
-        if (!row) return;
-
-        // Создаем контейнер для цветов
-        let colorContainer = document.getElementById('colorSelectContainer');
-        if (!colorContainer) {
-            colorContainer = document.createElement('div');
-            colorContainer.id = 'colorSelectContainer';
-            colorContainer.style.cssText = "display: flex; gap: 15px; width: 100%; justify-content: center; margin-bottom: 10px;";
-            row.prepend(colorContainer);
-        }
-        
-        colorContainer.innerHTML = `
-            <button class="abs-btn-roll" style="flex: 1; background: #22c55e; color: #000; box-shadow: 0 6px 0 #16a34a;" onclick="AbsoluteGame.setColors('green')">СВЕТ ИСТИНЫ</button>
-            <button class="abs-btn-roll" style="flex: 1; background: #ef4444; color: #000; box-shadow: 0 6px 0 #dc2626;" onclick="AbsoluteGame.setColors('red')">ТЬМА ПУСТОТЫ</button>
-        `;
-        updateFaceInfoText(-1);
-
-        // 🔥 ПРЯЧЕМ ОСНОВНУЮ КНОПКУ, ПОКА ЦВЕТ НЕ ВЫБРАН
-        const mainBtn = document.getElementById('absoluteActionBtn');
-        if (mainBtn) mainBtn.style.display = 'none';
-    }
-
-    function setColors(playerChoice) {
-        myColor = playerChoice; oracleColor = (playerChoice === 'green') ? 'red' : 'green';
-        
-        if(typeof App !== 'undefined' && typeof App.playSoundEffect === 'function') {
-            App.playSoundEffect('positive');
-        }
-        
-        // Удаляем контейнер с выбором цвета
-        const container = document.getElementById('colorSelectContainer');
-        if (container) container.remove(); 
-        
-        gameState = 'PLAYER_TURN'; 
-        
-        activeFaceIndex = -1;
-        lastActiveFace = -1; 
-        highlightFace(-1);
-
-        saveState(); updateScoreAndTension();
-        
-        safeTimeout(() => {
-            gainEnergy('p');
-            saveState(); 
-        }, 150);
-
-        // 🔥 ВОЗВРАЩАЕМ ОСНОВНУЮ КНОПКУ
-        const mainBtn = document.getElementById('absoluteActionBtn');
-        if (mainBtn) mainBtn.style.display = 'flex';
-        
-        updateActionBtn(`ПРИЗВАТЬ АБСОЛЮТ`, false);
-        updateFaceInfoText(-1);
-    }
-    
+    } 
 
     function finalizeRoll(faceIdx) {
         freeRemovalUsed = false;
