@@ -14959,6 +14959,57 @@ const animStyle = document.createElement('style');
     document.head.appendChild(pulseStyle);
 
     animStyle.innerHTML = `
+        
+    /* === ИНТЕРАКТИВНАЯ ЛЕГЕНДА (ЧИСТЫЙ ТЕКСТ) === */
+/* 1. Вставляем текст "📜 ДОГМАТ" */
+.abs-legend-block::before {
+    content: "📜 ДОГМАТ";
+    font-weight: 900;
+    font-size: 13px;
+    color: #818cf8; 
+    letter-spacing: 1px;
+    margin-right: 8px;
+    text-shadow: 0 0 8px rgba(129, 140, 248, 0.6);
+    display: flex;
+    align-items: center;
+}
+
+/* 2. Оформляем блок (убираем фон и рамки) */
+.abs-legend-block {
+    pointer-events: auto !important;
+    cursor: pointer !important;
+    padding: 8px 16px !important; 
+    
+    /* 🔥 Убиваем полосы и фон */
+    background: transparent !important;
+    border: none !important;
+    backdrop-filter: none !important; 
+    
+    transform: translateX(-50%) !important; 
+    z-index: 1000 !important;
+    
+    /* Дыхание теперь работает через drop-shadow */
+    animation: legend-idle-pulse 3s infinite ease-in-out !important;
+    transition: filter 0.3s ease, transform 0.3s ease !important;
+}
+
+/* 3. Анимация дыхания (светится сам текст и элементы) */
+@keyframes legend-idle-pulse {
+    0% { filter: drop-shadow(0 0 0px rgba(129, 140, 248, 0)); transform: translateX(-50%) scale(1); }
+    50% { filter: drop-shadow(0 0 6px rgba(129, 140, 248, 0.4)); transform: translateX(-50%) scale(1.02); }
+    100% { filter: drop-shadow(0 0 0px rgba(129, 140, 248, 0)); transform: translateX(-50%) scale(1); }
+}
+
+/* 4. Обновленный Hover/Active */
+.abs-legend-block:hover {
+    filter: brightness(1.3) drop-shadow(0 0 10px rgba(129, 140, 248, 0.6)) !important;
+    transform: translateX(-50%) translateY(-2px) scale(1.05) !important;
+}
+
+.abs-legend-block:active {
+    transform: translateX(-50%) translateY(0px) scale(0.98) !important;
+}
+
         /* === 3D ФИКС И СЦЕНА === */
         #absoluteGameStage { 
             perspective: 1600px !important; 
@@ -15374,6 +15425,105 @@ const animStyle = document.createElement('style');
             height: 0 !important;
         }
 
+        /* === ИНТЕРАКТИВНАЯ ЛЕГЕНДА === */
+        .abs-legend-block {
+            pointer-events: auto !important; 
+            cursor: pointer !important;
+            transition: filter 0.3s ease, transform 0.3s ease !important;
+            padding: 6px 12px !important;
+            border-radius: 8px !important;
+            background: transparent !important; 
+            /* 🔥 ФИКС ХИТБОКСА: Вытаскиваем из 3D, чтобы зона клика не улетала вверх */
+            transform: translateX(-50%) !important;
+            z-index: 1000 !important;
+        }
+        .abs-legend-block:hover {
+            filter: brightness(1.3) drop-shadow(0 0 10px rgba(129, 140, 248, 0.4)) !important;
+            /* 🔥 Делаем увеличение в 2D без смещения */
+            transform: translateX(-50%) translateY(-2px) scale(1.05) !important;
+            background: transparent !important; 
+        }
+        .abs-legend-block:active {
+            transform: translateX(-50%) translateY(0px) scale(0.98) !important;
+        }
+
+        /* === МОДАЛЬНОЕ ОКНО ПРАВИЛ === */
+        #abs-rules-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(5, 8, 15, 0.85);
+            backdrop-filter: blur(10px);
+            z-index: 99999999 !important; 
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.4s ease;
+        }
+        #abs-rules-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        #abs-rules-modal {
+            background: linear-gradient(180deg, #111827 0%, #0f172a 100%);
+            border: 2px solid #374151;
+            box-shadow: 0 0 40px rgba(99, 102, 241, 0.2), inset 0 0 20px rgba(0,0,0,0.8);
+            border-radius: 16px;
+            width: 90%;
+            max-width: 400px;
+            padding: 24px;
+            color: #cbd5e1;
+            font-size: 14px;
+            line-height: 1.6;
+            transform: scale(0.9) translateY(20px);
+            transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+            position: relative;
+        }
+        #abs-rules-overlay.active #abs-rules-modal {
+            transform: scale(1) translateY(0);
+        }
+        #abs-rules-modal h2 {
+            color: #fff;
+            text-align: center;
+            margin: 0 0 16px 0;
+            font-size: 20px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            text-shadow: 0 0 10px rgba(99, 102, 241, 0.8);
+        }
+        #abs-rules-modal strong { color: #f8fafc; }
+        #abs-rules-modal .rules-accent { color: #818cf8; font-weight: bold; }
+        
+        .abs-rules-close {
+            position: absolute;
+            top: 12px; right: 16px;
+            font-size: 24px;
+            color: #64748b;
+            cursor: pointer;
+            transition: color 0.3s;
+        }
+        .abs-rules-close:hover { color: #ef4444; text-shadow: 0 0 8px rgba(239, 68, 68, 0.6); }
+
+        /* 🔥 КРАСИВЫЙ ТОНКИЙ СКРОЛЛБАР (Бронебойный фикс против глобального скрытия) 🔥 */
+        body.is-abs-game-active div#abs-rules-modal {
+            scrollbar-width: thin !important;
+            scrollbar-color: #6366f1 transparent !important;
+        }
+        body.is-abs-game-active div#abs-rules-modal::-webkit-scrollbar {
+            display: block !important;
+            width: 4px !important;
+            -webkit-appearance: none !important;
+        }
+        body.is-abs-game-active div#abs-rules-modal::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.8) !important;
+            border-radius: 10px !important;
+        }
+        body.is-abs-game-active div#abs-rules-modal::-webkit-scrollbar-thumb {
+            background: #4f46e5 !important;
+            border-radius: 10px !important;
+            box-shadow: inset 0 0 6px rgba(0,0,0,0.5) !important;
+        }
             
     `;
     document.head.appendChild(animStyle);
@@ -16188,6 +16338,90 @@ const animStyle = document.createElement('style');
                 }
             }
         }
+
+
+    // === ГЕНЕРАТОР МОДАЛЬНОГО ОКНА ПРАВИЛ ===
+    function showAbsoluteRules() {
+        let overlay = document.getElementById('abs-rules-overlay');
+        
+        if (!overlay) {
+            overlay = document.createElement('div');
+            overlay.id = 'abs-rules-overlay';
+            
+            // 🔥 ФИКС: Теперь закрываем окно по клику В ЛЮБОЕ МЕСТО
+            overlay.onclick = () => {
+                hideAbsoluteRules();
+            };
+
+            const modal = document.createElement('div');
+            modal.id = 'abs-rules-modal';
+            
+            modal.innerHTML = `
+                <div class="abs-rules-close" onclick="hideAbsoluteRules()">×</div>
+                <h2>📜 ДОГМАТ АБСОЛЮТА</h2>
+                <div style="margin-bottom: 14px; color: #94a3b8; line-height: 1.5;">Вы вступаете в схватку с Оракулом за контроль над самими нитями вероятностей этой вселенной. Единственный объект, обладающий достаточным могуществом для подобной битвы - первородная структура, имя которой АБСОЛЮТ. Ни одно живое существо не в силах противостоять мощи АБСОЛЮТА, поэтому были призваны симбиоты. Они являются воплощением ваших с Оракулом сущностей. Ваша исходная воля наделяет Ваш симбиот должной энергией. Если Вы выбрали СВЕТ ИСТИНЫ, то Ваш симбиот явится в облике яркого белого света, но если Ваш выбор пал на ТЬМУ ПУСТОТЫ, то симбиот наполнится черной аурой забвения.</div>
+                
+                <div style="margin-bottom: 14px;">👑 <span class="rules-accent">ЦЕЛЬ:</span><br> Утвердите свою власть над мирозданием, возведя <strong>16 нерушимых Замков</strong> на гранях Абсолюта раньше, чем это сделает Оракул.</div>
+                
+                <div style="margin-bottom: 14px;">⚡ <span class="rules-accent">ЭНЕРГИЯ И СВЯЗЬ:</span><br>
+                Каждый ваш ход рождает  <strong>1 искру ⚡</strong>, но ни одна сущность во вселенной не в силах хранить более трёх искр одновременно! Призывая Абсолют, вы определяете ту грань судьбы, где суждено случиться разлому реальностей. Потратив <strong>1 искру ⚡</strong>, вы можете подчинить нейтральную грань пустоты себе или укрепить контроль над своей гранью.
+                <ul style="margin: 6px 0; padding-left: 20px;">
+                    <li style="margin-bottom: 4px;"><strong>1 слой:</strong> Связь — грань откликается на Вашу волю.</li>
+                    <li style="margin-bottom: 4px;"><strong>2 слоя:</strong> Резонанс — грань обращается к Вам, насыщаясь Вашей энергией.</li>
+                    <li><strong>3 слоя:</strong> Замок 🔒 — грань нитей вероятностей принимает Вашу реальность, обретая нерушимую ауру. Обычные атаки врага ей больше не страшны.</li>
+                </ul>
+                </div>
+
+                <div style="margin-bottom: 14px;">⚔️ <span class="rules-accent">ПЕРЕЛОМ ВОЛИ:</span><br>
+                Нити судьбы можно переплетать. Вы вправе стирать влияние Оракула с граней Абсолюта, пока он не успел возвести на них Замок своей воли.
+                <ul style="margin: 6px 0; padding-left: 20px;">
+                    <li style="margin-bottom: 4px;"><strong>Первое подавление</strong> вражеского слоя на Вашем ходу дается <strong>бесплатно</strong> — это чистая сила Вашего намерения.</li>
+                    <li style="margin-bottom: 4px;"><strong>Каждое последующее разрушение</strong> слоев на текущем ходу потребует <strong>1 ⚡</strong>.</li>
+                </ul>
+                <div style="color: #f87171; margin-top: 8px; font-size: 13px; text-shadow: 0 0 5px rgba(248, 113, 113, 0.2);">Но запомните: Оракул — древняя сущность, он подчиняется тем же законам бытия, обладает аналогичными способностями и безжалостно будет стирать ваши уязвимые связи.</div>
+                </div>
+
+                <div>🔮 <span class="rules-accent">ИЗЛОМ СУДЬБЫ:</span><br>
+                <ul style="margin: 6px 0; padding-left: 20px;">
+                    <li style="margin-bottom: 6px;"><strong>Слом Замка (Трата: 3 ⚡):</strong> Накопив абсолютную мощь, вы способны сокрушить нерушимое. Чужая печать будет безжалостно расколота, а Замок врага падёт, сбросив его влияние до 2 слоев (Резонанса), открывая брешь в его обороне.</li>
+                    <li style="margin-bottom: 6px;"><strong>Искажение Вероятности (Трата: 1 ⚡):</strong> Вердикт структуры не благосклонен к вам? Пожертвуйте своей энергией, чтобы отринуть результат и заставьте Абсолют вновь прийти в движение.</li>
+                    <li style="color: #4ade80;"><strong>Милость Истины:</strong> Если Абсолют останавливается на грани, запечатанной вашим собственным Замком, вы получаете дар бесплатного призыва. Истина защищает тех, кто надежно хранит свои владения.</li>
+                </ul>
+                </div>
+            `;
+            
+            // Задаем максимальную высоту, чтобы на маленьких экранах текст можно было аккуратно скроллить
+            modal.style.maxHeight = '85vh';
+            modal.style.overflowY = 'auto';
+            
+            // Чтобы скроллбар внутри модалки выглядел красиво, а не стандартным системным ползунком
+            modal.style.scrollbarWidth = 'thin';
+            modal.style.scrollbarColor = '#4f46e5 transparent';
+            
+            overlay.appendChild(modal);
+            document.body.appendChild(overlay);
+        }
+
+        if(typeof App !== 'undefined' && App.playSoundEffect) App.playSoundEffect('click');
+        overlay.style.display = 'flex';
+        setTimeout(() => overlay.classList.add('active'), 10); 
+    }
+
+    window.hideAbsoluteRules = function() {
+        const overlay = document.getElementById('abs-rules-overlay');
+        if(overlay) {
+            if(typeof App !== 'undefined' && App.playSoundEffect) App.playSoundEffect('tick');
+            overlay.classList.remove('active');
+            setTimeout(() => overlay.style.display = 'none', 400); // Ждем конец анимации
+        }
+    };
+
+    // Слушатель клика по легенде
+    document.addEventListener('click', (e) => {
+        if (e.target.closest('.abs-legend-block')) {
+            showAbsoluteRules();
+        }
+    });
 
         // 2. Красим квадратики легенды под цвет игрока
         if (myColor) {
