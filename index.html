@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Игры Судьбы. v0.9.0.42</title>
+    <title>Игры Судьбы. v0.9.0.43</title>
     <!-- Эмодзи-иконка для вкладки браузера -->
     <link rel="icon" href='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">🔮</text></svg>'>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
@@ -3297,7 +3297,7 @@ setInterval(() => {
         <div style="position: absolute; bottom: 15px; left: 15px; font-size: 10px; color: rgba(162, 155, 254, 0.6); font-weight: bold; letter-spacing: 1px; text-transform: uppercase; z-index: 500;">
             <a href="https://t.me/Antis_Corpus" style="color: inherit; text-decoration: none;">t.me/Antis_Corpus</a>
         </div>
-        <div class="version" style="position: absolute; bottom: 15px; right: 15px; pointer-events: none; z-index: 500;">v0.9.0.42</div>
+        <div class="version" style="position: absolute; bottom: 15px; right: 15px; pointer-events: none; z-index: 500;">v0.9.0.43</div>
     </div>
 
     <!-- ========================================== -->
@@ -14882,7 +14882,7 @@ const AbsoluteGame = (function() {
             face.style.boxShadow = '0 0 10px 2px rgba(129, 140, 248, 0.2), inset 0 0 8px rgba(0,0,0,0.8), 0 5px 15px rgba(0,0,0,0.6)';
             face.innerHTML = `<span>${idx + 1}</span>`;
             
-            // 🌀 ПУЛЬСАЦИЯ: Ускорена в 2 раза (цикл от 3 до 5 секунд)
+            // 🌀 ПУЛЬСАЦИЯ
             if (typeof isAssembling !== 'undefined' && !isAssembling) {
                 setTimeout(() => {
                     if (facesData[idx].owner === null) {
@@ -14891,25 +14891,41 @@ const AbsoluteGame = (function() {
                 }, 50);
             }
         } else {
-            let hex, bgColors, rgb;
-            if (fd.owner === 'green') { hex = '#22c55e'; bgColors = gColors; rgb = '34, 197, 94'; } 
-            else { hex = '#ef4444'; bgColors = rColors; rgb = '239, 68, 68'; }
+            let hex, bgColors, rgb, dotColor;
+            if (fd.owner === 'green') { 
+                hex = '#22c55e'; bgColors = gColors; rgb = '34, 197, 94';
+                dotColor = '#86efac'; // Нежно-зеленый для точек
+            } 
+            else { 
+                hex = '#ef4444'; bgColors = rColors; rgb = '239, 68, 68'; 
+                dotColor = '#fca5a5'; // Нежно-красный для точек
+            }
             
             face.style.background = bgColors[fd.layers - 1];
+            
+            // 🔥 ИЗМЕНЕНИЕ: Генерируем ненавязчивые точки снизу грани
+            let dotsHtml = `<div style="position: absolute; bottom: 4px; left: 0; width: 100%; display: flex; justify-content: center; gap: 3px; pointer-events: none;">`;
+            for(let i = 0; i < fd.layers; i++) {
+                dotsHtml += `<div style="width: 4px; height: 4px; border-radius: 50%; background: ${dotColor}; opacity: 0.65; box-shadow: 0 1px 2px rgba(0,0,0,0.4);"></div>`;
+            }
+            dotsHtml += `</div>`;
+
+            // Цифра или замок в зависимости от слоев
+            let contentHtml = fd.layers === 3 ? `<span>🔒</span>` : `<span>${idx + 1}</span>`;
 
             if (fd.layers === 1) {
                 face.style.border = `2px solid rgba(${rgb}, 0.4)`;
                 face.style.boxShadow = `0 0 6px 2px rgba(${rgb}, 0.35), inset 0 0 10px rgba(0,0,0,0.7), 0 5px 15px rgba(0,0,0,0.6)`;
-                face.innerHTML = `<span>${idx + 1}</span>`;
             } else if (fd.layers === 2) {
                 face.style.border = `2px solid rgba(${rgb}, 0.8)`;
                 face.style.boxShadow = `0 0 12px 4px rgba(${rgb}, 0.65), inset 0 0 10px rgba(${rgb}, 0.4), 0 5px 15px rgba(0,0,0,0.6)`;
-                face.innerHTML = `<span>${idx + 1}</span>`;
             } else if (fd.layers === 3) {
                 face.style.border = `2px solid ${hex}`;
                 face.style.boxShadow = `0 0 20px 8px rgba(${rgb}, 0.95), inset 0 0 15px rgba(${rgb}, 0.7), 0 5px 15px rgba(0,0,0,0.6)`;
-                face.innerHTML = `<span>🔒</span>`;
             }
+            
+            // Собираем грань: контент + точки
+            face.innerHTML = contentHtml + dotsHtml;
         }
     }
 
@@ -14980,38 +14996,47 @@ const animStyle = document.createElement('style');
             box-shadow: none !important; 
         }
 
-        /* ⬇️ СДВИГАЕМ АБСОЛЮТ */
+        /* ========================================= */
+        /* 1. РЕГУЛИРОВКА СФЕРЫ (АБСОЛЮТА)           */
+        /* ========================================= */
         #absoluteScene {
-            margin-top: 20px !important; /* Чуть балансируем высоту сферы */
+            /* 🕹️ РЫЧАГ СФЕРЫ: Чем БОЛЬШЕ цифра, тем НИЖЕ сфера (попробуй 6vh или 8vh) */
+            margin-top: 8vh !important; 
             position: relative;
             z-index: 9999999 !important;
         }
 
-        /* 👇 ИДЕАЛЬНАЯ СТОПКА ИНТЕРФЕЙСА: ВЫТЯГИВАЕМ ИЗ-ПОД ПАНЕЛИ ВВЕРХ 👇 */
+        /* 👇 ИДЕАЛЬНАЯ СТОПКА ИНТЕРФЕЙСА 👇 */
         #abs-face-info, #abs-action-hint, .abs-legend-block, #absoluteGameStage .action-row, #abs-action-row {
-            position: fixed !important; 
-            top: 100% !important; 
+            position: fixed !important;
+            top: 100vh !important;  
+            top: 100dvh !important; 
             bottom: auto !important; 
             left: 50% !important;
-            /* 🔥 Оставляем сдвиг назад в 3D, чтобы Абсолют скользил ПОВЕРХ и не резал кнопки */
-            transform: translate3d(-50%, 0, -150px) scale(1.1) !important;
+            transform: translate3d(-50%, 0, -150px) scale(1.1) !important; 
             z-index: 100 !important;
         }
 
-        /* 4. Кнопка действий (Тянем ВВЕРХ на 160px из-под панели в "желтую зону") */
+        /* ========================================= */
+        /* 2. РЕГУЛИРОВКА КНОПКИ И ТЕКСТОВ           */
+        /* ========================================= */
+        
+        /* 4. Кнопка действий */
         #absoluteGameStage .action-row, #abs-action-row {
-            margin-top: -160px !important; /* 🔥 ОТРИЦАТЕЛЬНЫЙ ОТСТУП - ТЯНЕТ ВВЕРХ! */
+            /* 🕹️ РЫЧАГ БЛОКА: Чтобы опустить весь блок ниже, уменьшай минус (например, сделай -375px) */
+            margin-top: -375px !important; 
             width: 90% !important;
             max-width: 350px !important;
             display: flex !important;
             justify-content: center !important;
             align-items: center !important;
-            pointer-events: auto !important; /* Кнопки кликабельны */
+            pointer-events: auto !important;
         }
 
         /* 3. Инфо о грани */
         #abs-face-info {
-            margin-top: -100px !important; /* Вытягиваем в "зеленую зону" */
+            /* 🕹️ Изменяй на столько же пикселей, на сколько изменил кнопку (например, -310px) */
+            margin-top: -310px !important; 
             width: 100% !important;
             text-align: center !important;
             pointer-events: none !important;
@@ -15019,22 +15044,24 @@ const animStyle = document.createElement('style');
 
         /* 2. Подсказка действий */
         #abs-action-hint {
-            margin-top: -75px !important; 
+            /* 🕹️ Изменяй на столько же пикселей (например, -285px) */
+            margin-top: -285px !important; 
             width: 100% !important;
             text-align: center !important;
             pointer-events: none !important;
         }
 
-        /* 1. Легенда (Самая нижняя, висит чуть выше дебаг-панели) */
+        /* 1. Легенда (Нижний элемент) */
         .abs-legend-block {
-            margin-top: -50px !important; 
+            /* 🕹️ Изменяй на столько же пикселей (например, -260px) */
+            margin-top: -260px !important; 
             width: 100% !important;
             display: flex !important;
             justify-content: center !important;
             align-items: center !important;
             gap: 15px !important;
             pointer-events: none !important;
-        }     
+        }
 
         /* 🚫 ИЗНИЧТОЖАЕМ ЗАРАЗУ: ЖЕСТКАЯ БЛОКИРОВКА ОСТАЛЬНЫХ ИГР 🚫 */
         body.is-abs-game-active #mainStage,
@@ -15199,6 +15226,74 @@ const animStyle = document.createElement('style');
             z-index: -9999 !important;
         }
 
+        /* === БОКОВЫЕ КНОПКИ (СКИЛЛЫ) === */
+        .abs-side-btn {
+            position: absolute;
+            bottom: 75px; /* 🔥 ИЗМЕНЕНИЕ: Подняли на 5 пикселей выше */
+            width: 54px;
+            height: 54px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 26px;
+            cursor: pointer;
+            z-index: 105;
+            transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.4s ease, filter 0.4s ease;
+            opacity: 0;
+            transform: scale(0) translateY(20px);
+            pointer-events: none;
+        }
+        
+        .abs-side-btn.visible {
+            opacity: 1;
+            transform: scale(1) translateY(0);
+            pointer-events: auto;
+        }
+
+        /* Платный переброс */
+        .abs-side-btn-left { 
+            left: 5px; 
+            background: #1e3a8a; border: 2px solid #3b82f6; 
+            box-shadow: 0 6px 0 #1e40af, 0 10px 15px rgba(0,0,0,0.4); color: #fff; 
+        }
+        .abs-side-btn-left:active { transform: translateY(6px) !important; box-shadow: 0 0 0 #1e40af, 0 2px 4px rgba(0,0,0,0.4); }
+
+        /* Слом замка */
+        .abs-side-btn-right { 
+            right: 5px; 
+            background: #7f1d1d; border: 2px solid #ef4444; 
+            box-shadow: 0 6px 0 #991b1b, 0 10px 15px rgba(0,0,0,0.4); color: #fff; 
+        }
+        .abs-side-btn-right:active { transform: translateY(6px) !important; box-shadow: 0 0 0 #991b1b, 0 2px 4px rgba(0,0,0,0.4); }
+
+        /* Ценник энергии */
+        .abs-side-cost {
+            position: absolute;
+            bottom: -8px;
+            font-size: 11px;
+            font-weight: 800;
+            background: #1e40af;
+            color: #fff;
+            padding: 2px 8px;
+            border-radius: 12px;
+            border: 1px solid #60a5fa;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+            text-shadow: none;
+            letter-spacing: 0.5px;
+        }
+
+        @keyframes btn-burn-out {
+            0% { transform: scale(1); filter: brightness(1) saturate(1); opacity: 1; border-radius: 14px; }
+            30% { transform: scale(0.75) rotate(-5deg); filter: brightness(2) saturate(2); box-shadow: inset 0 0 20px #fff, 0 0 20px currentColor; border-radius: 25px; }
+            60% { transform: scale(1.15) rotate(3deg) translateY(-10px); filter: brightness(3) saturate(3); box-shadow: 0 0 40px currentColor; opacity: 0.9; border-radius: 10px; }
+            100% { transform: scale(0.5) translateY(-30px); filter: brightness(5) blur(10px); opacity: 0; }
+        }
+        .btn-burning {
+            animation: btn-burn-out 0.6s cubic-bezier(0.25, 1, 0.5, 1) forwards !important;
+            pointer-events: none !important;
+        }
+
         /* === ДЕБАГ КНОПКИ АБСОЛЮТА (УЛЬТРА-КОМПАКТ) === */
         #abs-debug-container {
             display: none; 
@@ -15211,7 +15306,7 @@ const animStyle = document.createElement('style');
             max-width: 420px; /* Ужали панель */
             background: rgba(5, 8, 15, 0.95);
             padding: 6px; /* Меньше отступы */
-            border-radius: 10px;
+            border-radius: 8px;
             border: 2px solid var(--magic-color);
             box-shadow: 0 10px 30px rgba(0,0,0,0.9);
             backdrop-filter: blur(8px);
@@ -15709,6 +15804,117 @@ const animStyle = document.createElement('style');
         });
     }
 
+    // === ЛОГИКА БОКОВЫХ КНОПОК ===
+    function syncSideButtons(idx) {
+        let row = document.getElementById('abs-action-row');
+        if (!row) return;
+        row.style.position = 'relative'; // Гарантируем правильную привязку
+
+        let leftBtn = document.getElementById('abs-btn-left');
+        let rightBtn = document.getElementById('abs-btn-right');
+
+        // Создаем, если их еще нет
+        if (!leftBtn) {
+            leftBtn = document.createElement('button'); leftBtn.id = 'abs-btn-left';
+            leftBtn.className = 'abs-side-btn abs-side-btn-left';
+            leftBtn.onclick = () => handleSideAction('reroll');
+            row.appendChild(leftBtn);
+        }
+        if (!rightBtn) {
+            rightBtn = document.createElement('button'); rightBtn.id = 'abs-btn-right';
+            rightBtn.className = 'abs-side-btn abs-side-btn-right';
+            rightBtn.onclick = () => handleSideAction('break');
+            row.appendChild(rightBtn);
+        }
+
+        // Если не время действовать или вращение — прячем
+        if (gameState !== 'ACTION_PENDING' || idx === -1) {
+            leftBtn.classList.remove('visible'); rightBtn.classList.remove('visible');
+            return;
+        }
+
+        const fd = facesData[idx];
+        const pEnergy = getEnergyCount('p');
+
+        // 🎲 Левая: Платный переброс (1⚡) — Появляется, если есть мана и это НЕ бесплатный переброс
+        const isFreeReroll = (fd.layers === 3 && fd.owner === myColor);
+        if (pEnergy >= 1 && !isFreeReroll) {
+            leftBtn.innerHTML = '🎲<div class="abs-side-cost">1⚡</div>';
+            leftBtn.classList.add('visible');
+        } else leftBtn.classList.remove('visible');
+
+        // 💥 Правая: Слом замка (3⚡) — Появляется, если макс мана и стоим на чужом замке
+        const isEnemyLock = (fd.layers === 3 && fd.owner === oracleColor);
+        if (pEnergy === 3 && isEnemyLock) {
+            rightBtn.innerHTML = '💥<div class="abs-side-cost" style="background:#991b1b; border-color:#f87171;">3⚡</div>';
+            rightBtn.classList.add('visible');
+        } else rightBtn.classList.remove('visible');
+    }
+
+    // === ЭКШЕН И АНИМАЦИЯ СГОРАНИЯ КНОПОК ===
+    function handleSideAction(type) {
+        if (window.isAbsCinematicPlaying || (typeof isAssembling !== 'undefined' && isAssembling)) return;
+        
+        let btn = type === 'reroll' ? document.getElementById('abs-btn-left') : document.getElementById('abs-btn-right');
+        if (!btn) return;
+
+        // Блокируем кнопку и запускаем эффект сгорания
+        btn.classList.remove('visible');
+        btn.classList.add('btn-burning');
+        
+        let otherBtn = type === 'reroll' ? document.getElementById('abs-btn-right') : document.getElementById('abs-btn-left');
+        if (otherBtn) otherBtn.classList.remove('visible');
+
+        // Гасим тексты, чтобы акцент был на сгорании
+        const infoEl = document.getElementById('abs-face-info');
+        const hintEl = document.getElementById('abs-action-hint');
+        if (infoEl) { infoEl.style.opacity = '0'; infoEl.style.filter = 'blur(8px)'; }
+        if (hintEl) { hintEl.style.opacity = '0'; hintEl.style.filter = 'blur(8px)'; }
+
+        if (typeof App !== 'undefined' && typeof App.playSoundEffect === 'function') App.playSoundEffect('click');
+
+        // Ждем 600мс, пока кнопка эпично сгорит, затем применяем эффект
+        setTimeout(() => {
+            btn.classList.remove('btn-burning');
+
+            if (type === 'reroll') {
+                // ⚡ СПИСЫВАЕМ 1 ЭНЕРГИЮ ЗА ПЕРЕБРОС
+                spendEnergy('p', 1);
+                gameState = 'PLAYER_TURN'; 
+                
+                // Запускаем бросок напрямую, МИНУЯ функцию начала хода. 
+                // Бесплатная энергия за ход НЕ начислится! Эксплойт исключен.
+                if (typeof handleMainAction === 'function') handleMainAction();
+                else if (typeof AbsoluteGame !== 'undefined') AbsoluteGame.handleMainAction();
+                
+            } else if (type === 'break') {
+                // 💥 СПИСЫВАЕМ 3 ЭНЕРГИИ ЗА ВЗЛОМ ЗАМКА
+                spendEnergy('p', 3);
+                
+                let fd = facesData[activeFaceIndex];
+                fd.layers = 2; // Снимаем замок, но грань остается за врагом
+                
+                const targetFaceEl = document.getElementById(`abs-face-${activeFaceIndex}`);
+                let exactColor = window.getComputedStyle(targetFaceEl).backgroundColor;
+                if (exactColor === 'rgba(0, 0, 0, 0)' || exactColor === 'transparent') exactColor = window.getComputedStyle(targetFaceEl).borderColor;
+
+                animateFaceBurn(activeFaceIndex);
+                if (typeof spawnBurnParticles === 'function') spawnBurnParticles(activeFaceIndex, exactColor);
+                if (typeof window.playProceduralExplosion === 'function') window.playProceduralExplosion();
+                if (typeof triggerImpact === 'function') triggerImpact('heavy');
+                
+                updateFaceVisual(activeFaceIndex);
+                updateScoreAndTension(); 
+                saveState();
+                
+                // Даем игроку насладиться взрывом и просто возвращаем текст и кнопку "Завершить ход"
+                setTimeout(() => { 
+                    if (typeof updateFaceInfoText === 'function') updateFaceInfoText(activeFaceIndex); 
+                }, 600);
+            }
+        }, 600);
+    } 
+
     function updateFaceInfoText(idx) {
         const infoEl = document.getElementById('abs-face-info');
         const hintEl = document.getElementById('abs-action-hint');
@@ -15724,6 +15930,7 @@ const animStyle = document.createElement('style');
             infoEl.style.filter = 'blur(8px)';
             hintEl.style.opacity = '0';
             hintEl.style.filter = 'blur(8px)';
+            if (typeof syncSideButtons === 'function') syncSideButtons(-1); // Прячем кнопки
         };
 
         // Функция для проявления из тумана
@@ -15732,18 +15939,18 @@ const animStyle = document.createElement('style');
             infoEl.style.filter = 'blur(0px)';
             hintEl.style.opacity = '1';
             hintEl.style.filter = 'blur(0px)';
+            if (typeof syncSideButtons === 'function') syncSideButtons(idx); // Проявляем кнопки
         };
 
-        // 👇 Если мы просто ждем броска — растворяем текст, оставляя чистый космос
+        // Если мы просто ждем броска — растворяем текст
         if (gameState === 'PLAYER_TURN' && idx === -1) {
             hideText();
             return;
         }
 
+        // 🔥 ИЗМЕНЕНИЕ: Прячем текст "Анализ Судьбы...", оставляя чистый визуал во время броска
         if (gameState === 'ROLL' || gameState === 'ORACLE_TURN' || gameState === 'SHIFTING') {
-            infoEl.innerText = "Анализ Судьбы...";
-            hintEl.innerText = "";
-            showText();
+            hideText();
             return;
         }
 
@@ -16963,7 +17170,7 @@ const animStyle = document.createElement('style');
     
   
 
-  // 🛠️ ГЕНЕРАТОР ПАНЕЛИ (Компакт: Сплющенный и прижатый вниз)
+    // 🛠️ ГЕНЕРАТОР ПАНЕЛИ (С переключателем ролей)
     function buildAbsDebugPanel() {
         let container = document.getElementById('abs-debug-container');
         if (!container) {
@@ -16971,32 +17178,78 @@ const animStyle = document.createElement('style');
             document.body.appendChild(container);
         }
         
-        // 🔥 ФИКС: padding 4px (был 8px), bottom: 50px (был 70px), gap 4px
+        window.absDebugEnemyMode = false; // По умолчанию играем за себя
+
         container.style.cssText = "display: none; position: fixed !important; bottom: 50px !important; left: 50% !important; transform: translateX(-50%) !important; z-index: 9999999 !important; width: 98%; max-width: 440px; background: rgba(5, 8, 15, 0.95); padding: 4px; border-radius: 10px; border: 2px solid #818cf8; box-shadow: 0 10px 30px rgba(0,0,0,0.9); backdrop-filter: blur(8px); flex-direction: row; gap: 4px; opacity: 1 !important; filter: none !important; pointer-events: auto !important;";
-        
-        // 🔥 ФИКС: gap 2px для сетки (было 4px)
+
         let html = '<div style="display: grid; grid-template-columns: repeat(11, 1fr); gap: 2px; flex-grow: 1;">';
         for(let i=0; i<42; i++) {
-            // 🔥 ФИКС: height: 28px вместо aspect-ratio 1/1
-            html += `<button onclick="debugSuperTap(${i})" style="width: 100%; height: 28px; font-size: 10px; font-weight: bold; background: #2d3436; color: #fff; border: 1px solid #636e72; border-radius: 4px; padding: 0; cursor: pointer; pointer-events: auto !important;">${i+1}</button>`;
+            // 🔥 ФИКС: Добавили класс abs-debug-face-btn для массовой перекраски
+            html += `<button class="abs-debug-face-btn" onclick="debugSuperTap(${i})" style="width: 100%; height: 28px; font-size: 10px; font-weight: bold; background: #2d3436; color: #fff; border: 1px solid #636e72; border-radius: 4px; padding: 0; cursor: pointer; pointer-events: auto !important; transition: background 0.3s, border-color 0.3s;">${i+1}</button>`;
         }
         
-        // 🪄 Ячейка 43: Волшебная палочка
         html += `<button onclick="debugSuperTap('fillAll')" style="width: 100%; height: 28px; font-size: 14px; background: #8e44ad; color: #fff; border: 1px solid #9b59b6; border-radius: 4px; padding: 0; cursor: pointer; pointer-events: auto !important; display: flex; align-items: center; justify-content: center;" title="Все грани на 2 уровень">🪄</button>`;
         
-        // 🎯 Ячейка 44: Снайпер
         html += `<input type="text" inputmode="numeric" id="abs-debug-forceroll" placeholder="🎯" onkeydown="if(event.key==='Enter') { debugForceRoll(this.value); this.blur(); }" style="width: 100%; height: 28px; box-sizing: border-box; font-size: 14px; font-weight: bold; background: #172554; color: #93c5fd; border: 2px solid #3b82f6; border-radius: 4px; text-align: center; outline: none; pointer-events: auto !important; padding: 0; margin: 0; -webkit-appearance: none; appearance: none; box-shadow: inset 0 0 8px rgba(0,0,0,0.5);" title="Введи номер и нажми Enter">`;
         html += `</div>`;
         
-        // Правый блок эмодзи
+        // 🔥 ФИКС: Теперь 4 кнопки, они сами делят высоту за счет flex: 1
         html += `<div style="display: flex; flex-direction: column; gap: 2px; width: 40px; justify-content: space-between;">
-            <button onclick="debugSuperTap('win')" style="flex: 1; height: 28px; font-size: 16px; background: #f39c12; border: 1px solid #e67e22; border-radius: 4px; cursor: pointer; pointer-events: auto !important; display: flex; align-items: center; justify-content: center;" title="Победа">👑</button>
-            <button onclick="debugSuperTap('lose')" style="flex: 1; height: 28px; font-size: 16px; background: #c0392b; border: 1px solid #e74c3c; border-radius: 4px; cursor: pointer; pointer-events: auto !important; display: flex; align-items: center; justify-content: center;" title="Слив">💀</button>
-            <button onclick="debugSuperTap('energy')" style="flex: 1; height: 28px; font-size: 16px; background: #27ae60; border: 1px solid #2ecc71; border-radius: 4px; cursor: pointer; pointer-events: auto !important; display: flex; align-items: center; justify-content: center;" title="Энергия">⚡</button>
+            <button onclick="debugSuperTap('win')" style="flex: 1; min-height: 20px; font-size: 14px; background: #f39c12; border: 1px solid #e67e22; border-radius: 4px; cursor: pointer; pointer-events: auto !important; display: flex; align-items: center; justify-content: center;" title="Победа">👑</button>
+            <button onclick="debugSuperTap('lose')" style="flex: 1; min-height: 20px; font-size: 14px; background: #c0392b; border: 1px solid #e74c3c; border-radius: 4px; cursor: pointer; pointer-events: auto !important; display: flex; align-items: center; justify-content: center;" title="Слив">💀</button>
+            <button onclick="debugSuperTap('energy')" style="flex: 1; min-height: 20px; font-size: 14px; background: #27ae60; border: 1px solid #2ecc71; border-radius: 4px; cursor: pointer; pointer-events: auto !important; display: flex; align-items: center; justify-content: center;" title="Энергия">⚡</button>
+            <button id="abs-debug-role-toggle" onclick="toggleDebugRole()" style="flex: 1; min-height: 20px; font-size: 14px; background: #34495e; border: 1px solid #2c3e50; border-radius: 4px; cursor: pointer; pointer-events: auto !important; display: flex; align-items: center; justify-content: center; transition: all 0.3s;" title="Режим: Враг/Игрок">👤</button>
         </div>`;
         
         container.innerHTML = html;
     }
+    
+    // === ЛОГИКА СМЕНЫ РОЛЕЙ В ДЕБАГЕ ===
+    window.toggleDebugRole = function() {
+        if (!isGameActive || myColor === null) {
+            if(typeof App !== 'undefined' && typeof App.showError === 'function') App.showError("Сначала выбери цвет!");
+            return;
+        }
+        window.absDebugEnemyMode = !window.absDebugEnemyMode; // Меняем флаг
+        window.updateDebugPanelColors();
+        if(typeof App !== 'undefined' && typeof App.playSoundEffect === 'function') App.playSoundEffect('click');
+    };
+
+    window.updateDebugPanelColors = function() {
+        if (!isGameActive || myColor === null) return;
+        
+        const toggleBtn = document.getElementById('abs-debug-role-toggle');
+        if (toggleBtn) {
+            if (window.absDebugEnemyMode) {
+                toggleBtn.innerHTML = '🤖'; // Иконка врага
+                toggleBtn.style.background = '#8b0000'; // Яркий красный индикатор
+                toggleBtn.style.borderColor = '#ff0000';
+            } else {
+                toggleBtn.innerHTML = '👤'; // Иконка игрока
+                toggleBtn.style.background = '#34495e'; 
+                toggleBtn.style.borderColor = '#2c3e50';
+            }
+        }
+
+        const faceBtns = document.querySelectorAll('.abs-debug-face-btn');
+        let activeColorStr = window.absDebugEnemyMode ? oracleColor : myColor;
+
+        let bgDark = '#2d3436'; 
+        let borderDark = '#636e72';
+
+        if (activeColorStr === 'green') {
+            bgDark = '#064e3b'; // Тёмно-изумрудный для своих граней
+            borderDark = '#047857';
+        } else if (activeColorStr === 'red') {
+            bgDark = '#450a0a'; // Тёмно-кровавый для вражеских
+            borderDark = '#7f1d1d';
+        }
+
+        faceBtns.forEach(btn => {
+            btn.style.background = bgDark;
+            btn.style.borderColor = borderDark;
+        });
+    };
 
     // 6. СИНХРОНИЗАЦИЯ UI
     function syncDebugUI() {
@@ -17007,7 +17260,6 @@ const animStyle = document.createElement('style');
         }
         const dp = document.getElementById('debugPanel');
         let isGlobalOn = false;
-        
         if (typeof GameState !== 'undefined' && GameState.debugEnabled) { isGlobalOn = true; } 
         else if (dp && window.getComputedStyle(dp).display !== 'none') { isGlobalOn = true; }
 
@@ -17028,6 +17280,9 @@ const animStyle = document.createElement('style');
                 if (typeof highlightFace === 'function') highlightFace(-1);
             }
         }
+
+        // 🔥 ФИКС: Всегда поддерживаем актуальные цвета кнопок в панели!
+        if (typeof window.updateDebugPanelColors === 'function') window.updateDebugPanelColors();
     }
 
     let lastActiveFace = -1; // 🚀 Память для "утопающей" грани
@@ -17239,7 +17494,7 @@ const animStyle = document.createElement('style');
             if (typeof lockNavigation === 'function') lockNavigation(true); 
             
             updateFaceInfoText(-1);
-            updateActionBtn("ВРАЩАЕТСЯ...", true);
+            updateActionBtn("ВОЛЯ АБСОЛЮТА...", true);
             
             rollAbsolute(); // Запускаем физику вращения!
             
@@ -17544,60 +17799,105 @@ const animStyle = document.createElement('style');
     function executeOracleLogic() {
         if (gameState !== 'ORACLE_TURN') return;
         let fd = facesData[activeFaceIndex];
+        const oEnergy = getEnergyCount('o');
+        let acted = false;
+        let exactColor = null;
+
+        const rnd = Math.random(); // Фактор каприза Оракула
 
         if (fd.layers === 3) {
-            if (fd.owner === oracleColor) safeTimeout(rollOracleAbsolute, 800); 
-            else safeTimeout(passTurnToPlayer, 800); 
-            return;
-        }
-
-        let acted = false; let cost = freeRemovalUsed ? 1 : 0;
-        let exactColor = null; 
-
-        if (fd.owner === myColor) { 
-            if (getEnergyCount('o') >= cost) {
-                if (cost > 0) spendEnergy('o', cost);
-                
-                const targetFaceEl = document.getElementById(`abs-face-${activeFaceIndex}`);
-                exactColor = window.getComputedStyle(targetFaceEl).backgroundColor;
-                if (exactColor === 'rgba(0, 0, 0, 0)' || exactColor === 'transparent') {
-                    exactColor = window.getComputedStyle(targetFaceEl).borderColor;
+            if (fd.owner === myColor) {
+                // 💥 1. Оракул наступил на ТВОЙ ЗАМОК
+                if (oEnergy === 3) {
+                    if (rnd < 0.8) { 
+                        // 80% шанс, что он эпично сломает твой замок!
+                        spendEnergy('o', 3);
+                        fd.layers = 2; // Понижает до 2 уровня
+                        acted = true;
+                        
+                        const targetFaceEl = document.getElementById(`abs-face-${activeFaceIndex}`);
+                        exactColor = window.getComputedStyle(targetFaceEl).backgroundColor;
+                        if (exactColor === 'rgba(0, 0, 0, 0)' || exactColor === 'transparent') exactColor = window.getComputedStyle(targetFaceEl).borderColor;
+                    }
+                    // В остальных 20% он просто надменно передаст ход, сохранив энергию
                 }
-                
-                freeRemovalUsed = true; fd.layers--;
-                if (fd.layers === 0) fd.owner = null;
-                acted = true;
+            } else if (fd.owner === oracleColor) {
+                // 2. Свой замок — бесплатный переброс
+                safeTimeout(rollOracleAbsolute, 800);
+                return;
             }
-        } else { 
-            if (getEnergyCount('o') > 0 && fd.layers < 3) {
-                spendEnergy('o', 1);
-                fd.owner = oracleColor; fd.layers++;
-                animateFaceClaim(activeFaceIndex);
-                acted = true;
+        } 
+        else {
+            // 3. Нейтральная или обычная грань
+            let cost = (fd.owner === myColor) ? (freeRemovalUsed ? 1 : 0) : 1;
+            
+            if (oEnergy >= cost) {
+                let willAct = true;
+
+                // --- 🔥 ИЗМЕНЕНИЕ: УМНОЕ НАКОПЛЕНИЕ ---
+                // Если Оракул УЖЕ начал захватывать эту грань (он владелец и слоев 1 или 2),
+                // он НЕ жадничает и бездумно бьет в неё, пока не сделает замок!
+                if (fd.owner === oracleColor && fd.layers > 0) {
+                    willAct = true;
+                } else {
+                    // Иначе (если грань чужая или пустая) решает: стоит ли тратить ману
+                    if (oEnergy === 3) {
+                        willAct = rnd < 0.85;  // Почти всегда бьет
+                    } else if (oEnergy === 2) {
+                        willAct = rnd < 0.35; // Жадничает и скипает ход, копит до 3
+                    } else if (oEnergy === 1) {
+                        willAct = rnd < 0.85; // Иногда тупит
+                    }
+                }
+
+                if (cost === 0) willAct = true; // От бесплатного снятия никогда не откажется
+
+                if (willAct) {
+                    if (cost > 0) spendEnergy('o', cost);
+
+                    if (fd.owner === myColor) {
+                        const targetFaceEl = document.getElementById(`abs-face-${activeFaceIndex}`);
+                        exactColor = window.getComputedStyle(targetFaceEl).backgroundColor;
+                        if (exactColor === 'rgba(0, 0, 0, 0)' || exactColor === 'transparent') exactColor = window.getComputedStyle(targetFaceEl).borderColor;
+                        
+                        freeRemovalUsed = true;
+                        fd.layers--;
+                        if (fd.layers === 0) fd.owner = null;
+                        acted = true;
+                    } else {
+                        fd.owner = oracleColor;
+                        fd.layers++;
+                        acted = true;
+                    }
+                }
             }
         }
 
+        // --- ВЫПОЛНЕНИЕ ДЕЙСТВИЯ ---
         if (acted) {
-            updateFaceVisual(activeFaceIndex); 
-            
+            updateFaceVisual(activeFaceIndex);
             if (exactColor) {
-                // Если была атака - жжем и сыплем осколками твоего цвета
                 animateFaceBurn(activeFaceIndex);
                 spawnBurnParticles(activeFaceIndex, exactColor);
-                
-                // 🔊 ВОТ ОН, ЗВУК: Оракул крушит грань игрока
                 if (typeof window.playProceduralExplosion === 'function') window.playProceduralExplosion();
             } else {
+                animateFaceClaim(activeFaceIndex); 
                 highlightFace(activeFaceIndex);
             }
 
             updateScoreAndTension(); saveState(); updateTransform();
-            
             if(typeof App !== 'undefined' && typeof App.playSoundEffect === 'function') App.playSoundEffect('tick');
 
-            if (getEnergyCount('o') > 0 && fd.layers < 3) { safeTimeout(executeOracleLogic, 800);
-            } else { safeTimeout(passTurnToPlayer, 1200); }
-        } else { safeTimeout(passTurnToPlayer, 800); }
+            // Если осталась мана и грань не замок — может походить еще раз
+            if (getEnergyCount('o') > 0 && fd.layers < 3) { 
+                safeTimeout(executeOracleLogic, 800);
+            } else { 
+                safeTimeout(passTurnToPlayer, 1200);
+            }
+        } else { 
+            // Если Оракул решил "капризничать" и пропустить ход
+            safeTimeout(passTurnToPlayer, 800);
+        }
     }
 
 // ⚡ 1. ЛОГИКА КНОПОК (Супер-Тап)
@@ -17608,33 +17908,43 @@ const animStyle = document.createElement('style');
             return;
         }
 
+        // 🔥 Определяем, за кого мы сейчас кликаем!
+        let clickColor = window.absDebugEnemyMode ? oracleColor : myColor;
+
         if (action === 'win') { 
-            playEpicEnding(true); 
+            playEpicEnding(true);
             return; 
         } else if (action === 'lose') { 
-            playEpicEnding(false); 
+            playEpicEnding(false);
             return; 
         } else if (action === 'energy') { 
-            if (typeof gainEnergy === 'function') gainEnergy('p'); 
+            if (typeof gainEnergy === 'function') gainEnergy('p');
         } 
-        // 🔥 УМНЫЙ ЧИТ-КОД НА ЗАХВАТ (Закрашиваем до 2 уровня) 🔥
+        // 🔥 УМНЫЙ ЧИТ-КОД НА ЗАХВАТ (Закрашивает цветом АКТИВНОЙ РОЛИ) 🔥
         else if (action === 'fillAll') {
             facesData.forEach((fd, i) => {
-                if (i !== 0) { // Пропускаем грань №1 (индекс 0)
-                    fd.owner = myColor;
-                    fd.layers = 2; // 👈 ТЕПЕРЬ СТАВИМ СТРОГО 2 СЛОЯ (Без замков)
+                if (i !== 0) { 
+                    fd.owner = clickColor;
+                    fd.layers = 2; // Без замков
                     updateFaceVisual(i);
                 }
             });
             if(typeof App !== 'undefined' && typeof App.playSoundEffect === 'function') App.playSoundEffect('positive');
         }
         else if (typeof action === 'number') {
-            let idx = action; let fd = facesData[idx];
-            if (fd.owner !== null && fd.owner !== myColor) {
-                let removedColor = getLayerColor(fd.owner, fd.layers); fd.layers--; if (fd.layers === 0) fd.owner = null;
+            let idx = action;
+            let fd = facesData[idx];
+
+            // Проверяем: Если грань занята и она НЕ цвета нашей активной роли -> Ломаем её!
+            if (fd.owner !== null && fd.owner !== clickColor) {
+                let removedColor = getLayerColor(fd.owner, fd.layers);
+                fd.layers--; if (fd.layers === 0) fd.owner = null;
                 updateFaceVisual(idx); animateFaceBurn(idx); spawnBurnParticles(idx, removedColor);
-            } else if (fd.layers < 3) {
-                fd.owner = myColor; fd.layers++; animateFaceClaim(idx); updateFaceVisual(idx);
+            } 
+            // Иначе, если слоев меньше 3 -> Захватываем/Усиливаем для нашей активной роли!
+            else if (fd.layers < 3) {
+                fd.owner = clickColor;
+                fd.layers++; animateFaceClaim(idx); updateFaceVisual(idx);
             }
             if(typeof App !== 'undefined' && typeof App.playSoundEffect === 'function') App.playSoundEffect('tick');
         }
