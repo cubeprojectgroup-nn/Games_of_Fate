@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Игры Судьбы. v0.9.0.43</title>
+    <title>Игры Судьбы. v0.9.0.44</title>
     <!-- Эмодзи-иконка для вкладки браузера -->
     <link rel="icon" href='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">🔮</text></svg>'>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
@@ -3297,7 +3297,7 @@ setInterval(() => {
         <div style="position: absolute; bottom: 15px; left: 15px; font-size: 10px; color: rgba(162, 155, 254, 0.6); font-weight: bold; letter-spacing: 1px; text-transform: uppercase; z-index: 500;">
             <a href="https://t.me/Antis_Corpus" style="color: inherit; text-decoration: none;">t.me/Antis_Corpus</a>
         </div>
-        <div class="version" style="position: absolute; bottom: 15px; right: 15px; pointer-events: none; z-index: 500;">v0.9.0.43</div>
+        <div class="version" style="position: absolute; bottom: 15px; right: 15px; pointer-events: none; z-index: 500;">v0.9.0.44</div>
     </div>
 
     <!-- ========================================== -->
@@ -3520,9 +3520,129 @@ setInterval(() => {
     </div>
 
     <h2 id="absoluteBottomTitle" style="position: fixed; bottom: 15px; left: 50%; transform: translateX(-50%); color: var(--magic-color); text-shadow: 0 0 15px var(--magic-color); font-size: 18px; letter-spacing: 3px; cursor: pointer; text-transform: uppercase; z-index: 410; margin: 0; pointer-events: auto;" 
-        onclick="if(window.showStatInfo) window.showStatInfo(event, '👁️ <b>АБСОЛЮТ</b><br><br>Абсолют — это первородная структура в мире Игр Судьбы, заключенная в идеальный ромботриаконтаэдр. Каждая из его 30 граней — это фрагмент самой реальности.<br><br>В этой финальной битве Оракул не просто бросает вызов — он пытается захватить контроль над тканью мироздания. Тот, кто подчинит себе большинство граней Абсолюта, получит право переписать саму Судьбу.<br><br>Выбор цвета перед началом — это выбор того, какой энергией будет наполнена новая реальность.', '👁️ <b>THE ABSOLUTE</b><br><br>The Absolute is a primordial structure in the world of the Games of Fate...')">
-        АБСОЛЮТ
-    </h2>
+    onclick="if(window.showStatInfo) window.showStatInfo(event, 
+    `<style>
+        /* Находим модальное окно и разрешаем ему расти вверх */
+        div:has(> .abs-lore-box),
+        div:has(> div > .abs-lore-box) {
+            width: 340px !important;
+            max-width: 90vw !important;
+            max-height: 85vh !important;
+        }
+
+        .abs-lore-box {
+            display: block !important;
+            width: 100% !important;
+            max-height: 75vh !important;
+            overflow-y: auto !important;
+            overflow-x: hidden !important;
+            box-sizing: border-box !important;
+            text-align: left !important;
+            font-size: 14px !important; 
+            line-height: 1.5 !important;
+            padding-right: 12px !important;
+            padding-bottom: 10px !important; /* Отступ снизу для красоты */
+            word-break: break-word !important;
+            
+            /* Пробиваем блокировку для Firefox */
+            scrollbar-width: thin !important;
+            scrollbar-color: #818cf8 transparent !important;
+        }
+        
+        /* 🔥 ПРОБИВАЕМ ЯДЕРНЫЙ АНТИ-СКРОЛЛ ИГРЫ 🔥 */
+        .abs-lore-box::-webkit-scrollbar { 
+            display: block !important; /* Оживляем скролл */
+            width: 4px !important; 
+            -webkit-appearance: none !important;
+        }
+        .abs-lore-box::-webkit-scrollbar-track { 
+            display: block !important;
+            background: rgba(15, 23, 42, 0.4) !important; 
+            border-radius: 4px !important; 
+        }
+        .abs-lore-box::-webkit-scrollbar-thumb { 
+            display: block !important;
+            background: linear-gradient(180deg, #4f46e5, #818cf8) !important; 
+            border-radius: 4px !important; 
+            box-shadow: 0 0 6px rgba(99, 102, 241, 0.5) !important;
+        }
+    </style>
+    
+    <div class='abs-lore-box'>
+        
+        <p style='margin: 0 0 10px 0;'><b style='color: #818cf8; text-shadow: 0 0 8px rgba(129,140,248,0.5);'>АБСОЛЮТ</b> — это первородная структура в мире Игр Судьбы, заключенная в идеальный <b style='color: #cbd5e1;'>42-гранный</b> тетракаидекатриаконтаэдр. Каждая из его граней — это фрагмент самой реальности.</p>
+        
+        <p style='margin: 0 0 10px 0;'>В этой финальной битве <b style='color: #ef4444; text-shadow: 0 0 8px rgba(239,68,68,0.5);'>Оракул</b> не просто бросает вызов — он пытается захватить контроль над тканью мироздания.</p>
+        
+        <p style='margin: 0 0 10px 0;'>Первородная структура нестабильна и немыслимо сложна, а потому невозможно сломить её волю обычной логикой полного завоевания.</p>
+        
+        <div style='background: rgba(99, 102, 241, 0.1); border-left: 3px solid #6366f1; padding: 12px; margin: 16px 0; border-radius: 0 8px 8px 0; box-shadow: inset 0 0 10px rgba(0,0,0,0.5);'>
+            Древними был найден метод подчинения воли Абсолюта: тот, кто первым подчинит себе <b style='color: #10b981; font-size: 16px; text-shadow: 0 0 8px rgba(16,185,129,0.5);'>16 граней</b>, получит право <b style='color: #ffffff; letter-spacing: 0.5px;'>переписать саму Судьбу</b>.
+        </div>
+        
+        <p style='margin: 0; font-style: italic; color: #94a3b8; text-align: center; font-size: 13px;'>Выбор цвета перед началом битвы — это выбор того, какой энергией будет наполнена новая реальность.</p>
+    </div>`, 
+
+    `<style>
+        div:has(> .abs-lore-box),
+        div:has(> div > .abs-lore-box) {
+            width: 340px !important;
+            max-width: 90vw !important;
+            max-height: 85vh !important;
+        }
+
+        .abs-lore-box {
+            display: block !important;
+            width: 100% !important;
+            max-height: 75vh !important;
+            overflow-y: auto !important;
+            overflow-x: hidden !important;
+            box-sizing: border-box !important;
+            text-align: left !important;
+            font-size: 14px !important;
+            line-height: 1.5 !important;
+            padding-right: 12px !important;
+            padding-bottom: 10px !important;
+            word-break: break-word !important;
+            scrollbar-width: thin !important;
+            scrollbar-color: #818cf8 transparent !important;
+        }
+        
+        .abs-lore-box::-webkit-scrollbar { 
+            display: block !important;
+            width: 4px !important; 
+            -webkit-appearance: none !important;
+        }
+        .abs-lore-box::-webkit-scrollbar-track { 
+            display: block !important;
+            background: rgba(15, 23, 42, 0.4) !important; 
+            border-radius: 4px !important; 
+        }
+        .abs-lore-box::-webkit-scrollbar-thumb { 
+            display: block !important;
+            background: linear-gradient(180deg, #4f46e5, #818cf8) !important; 
+            border-radius: 4px !important; 
+            box-shadow: 0 0 6px rgba(99, 102, 241, 0.5) !important;
+        }
+    </style>
+    
+    <div class='abs-lore-box'>
+        <h2 style='text-align: center; margin-top: 0; font-size: 20px;'>👁️ THE ABSOLUTE</h2>
+        <p style='margin: 0 0 10px 0;'><b style='color: #818cf8; text-shadow: 0 0 8px rgba(129,140,248,0.5);'>THE ABSOLUTE</b> is a primordial structure in the world of the Games of Fate, enclosed in a perfect <b style='color: #cbd5e1;'>42-sided</b> tetrakaiadecathriacontahedron. Each of its faces is a fragment of reality itself.</p>
+        
+        <p style='margin: 0 0 10px 0;'>In this final battle, the <b style='color: #ef4444; text-shadow: 0 0 8px rgba(239,68,68,0.5);'>Oracle</b> is not merely issuing a challenge — he seeks to seize control over the very fabric of the universe.</p>
+        
+        <p style='margin: 0 0 10px 0;'>This primordial structure is unstable and inconceivably complex, so its will cannot be broken by the ordinary logic of total conquest.</p>
+        
+        <div style='background: rgba(99, 102, 241, 0.1); border-left: 3px solid #6366f1; padding: 12px; margin: 16px 0; border-radius: 0 8px 8px 0; box-shadow: inset 0 0 10px rgba(0,0,0,0.5);'>
+            The Ancients found a method to subjugate the Absolute's will: whoever is first to capture <b style='color: #10b981; font-size: 16px; text-shadow: 0 0 8px rgba(16,185,129,0.5);'>16 faces</b> earns the right to <b style='color: #ffffff; letter-spacing: 0.5px;'>rewrite Fate itself</b>.
+        </div>
+        
+        <p style='margin: 0; font-style: italic; color: #94a3b8; text-align: center; font-size: 13px;'>The choice of color before the battle is the choice of the energy that will fill the new reality.</p>
+    </div>`
+    )">
+    АБСОЛЮТ
+</h2>
 </div>
 <div id="shopStage" class="stage" style="display:none; flex-direction:column; align-items:center; width:100%; max-width:380px; margin-top:10px;">
     <div class="shop-grid" id="shopGrid" style="display:grid; grid-template-columns:1fr 1fr; gap:12px; width:95%;"></div>
@@ -15788,6 +15908,274 @@ const animStyle = document.createElement('style');
         if (typeof syncTurnHighlight === 'function') syncTurnHighlight();
     }
 
+    // === ОБНОВЛЕНИЕ СТАТИЧНОГО ИНТЕРФЕЙСА (ЛЕГЕНДА И ПОДСКАЗКИ) ===
+    function syncStaticUI() {
+        const stage = document.getElementById('absoluteGameStage');
+        if (!stage) return;
+
+        // 1. АБСОЛЮТНОЕ УНИЧТОЖЕНИЕ ТЕКСТА (Через TreeWalker)
+        const walker = document.createTreeWalker(stage, NodeFilter.SHOW_TEXT, null, false);
+        let node;
+        while ((node = walker.nextNode())) {
+            if (node.nodeValue.toUpperCase().includes('ПЕРЕТАЩИТЕ ДЛЯ ПОВОРОТА')) {
+                if (node.parentElement) {
+                    node.parentElement.style.setProperty('display', 'none', 'important');
+                    node.parentElement.style.setProperty('opacity', '0', 'important');
+                }
+            }
+        }
+
+        // 🔥 МАГИЯ: ИНТЕРАКТИВНЫЕ БЛОКИ ИГРОКА И ОРАКУЛА 🔥
+        const pLabel = document.getElementById('p-label');
+        const oLabel = document.getElementById('o-label');
+
+        if (pLabel && oLabel) {
+            let pBlock = pLabel.parentElement;
+            let oBlock = oLabel.parentElement;
+
+            if (!pBlock.querySelector('#p-cell-1') && pBlock.parentElement) {
+                if (pBlock.parentElement.querySelector('#p-cell-1')) pBlock = pBlock.parentElement;
+            }
+            if (!oBlock.querySelector('#o-cell-1') && oBlock.parentElement) {
+                if (oBlock.parentElement.querySelector('#o-cell-1')) oBlock = oBlock.parentElement;
+            }
+
+            [pBlock, oBlock].forEach(block => {
+                block.style.cursor = 'pointer';
+                block.style.pointerEvents = 'auto';
+                block.style.background = 'rgba(0,0,0,0.01)';
+                block.style.borderRadius = '12px';
+                block.style.padding = '4px'; 
+                
+                if (!block.dataset.interactiveInit) {
+                    block.dataset.interactiveInit = 'true';
+                    block.addEventListener('mouseenter', () => block.style.transform = 'scale(1.05)');
+                    block.addEventListener('mouseleave', () => block.style.transform = 'scale(1)');
+                    block.style.transition = 'transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), filter 0.5s ease'; 
+                }
+            });
+
+            // 📜 ТУЛТИП ДЛЯ ИГРОКА
+            pBlock.onclick = (e) => {
+                if(window.showStatInfo) {
+                    window.showStatInfo(e, 
+                        `<style>
+                            div:has(> .abs-power-box), div:has(> div > .abs-power-box) { width: 320px !important; max-width: 90vw !important; }
+                            .abs-power-box { box-sizing: border-box; text-align: left; font-size: 14px; line-height: 1.4; word-break: break-word; overflow-wrap: break-word; width: 100%; }
+                        </style>
+                        <div class='abs-power-box'>
+                            <h3 style='margin: 0 0 10px 0; color: #818cf8; text-align: center; text-shadow: 0 0 8px rgba(129,140,248,0.5); font-size: 18px;'>👤 ВАША МОЩЬ</h3>
+                            <p style='margin: 0 0 8px 0;'><b style='color:#fbbf24'>⚡ Искры (Энергия):</b> Накапливаются каждый ход. Максимум 3. Нужны для захвата граней и применения способностей.</p>
+                            <p style='margin: 0 0 12px 0;'><b style='color:#f87171'>🔒 Замки (Контроль):</b> Количество граней, которые вы полностью подчинили.</p>
+                            <div style='background: rgba(34, 197, 94, 0.1); border-left: 3px solid #22c55e; padding: 10px; border-radius: 0 8px 8px 0; text-align: center; color: #4ade80; box-shadow: inset 0 0 10px rgba(0,0,0,0.3);'>
+                                Соберите <b style='font-size: 16px;'>16 Замков</b>, чтобы переписать Судьбу!
+                            </div>
+                        </div>`,
+                        `<style>
+                            div:has(> .abs-power-box), div:has(> div > .abs-power-box) { width: 320px !important; max-width: 90vw !important; }
+                            .abs-power-box { box-sizing: border-box; text-align: left; font-size: 14px; line-height: 1.4; word-break: break-word; overflow-wrap: break-word; width: 100%; }
+                        </style>
+                        <div class='abs-power-box'>
+                            <h3 style='margin: 0 0 10px 0; color: #818cf8; text-align: center; text-shadow: 0 0 8px rgba(129,140,248,0.5); font-size: 18px;'>👤 YOUR POWER</h3>
+                            <p style='margin: 0 0 8px 0;'><b style='color:#fbbf24'>⚡ Sparks (Energy):</b> Generated each turn. Max 3. Used to capture faces and use abilities.</p>
+                            <p style='margin: 0 0 12px 0;'><b style='color:#f87171'>🔒 Locks (Control):</b> The number of faces you have fully subjugated.</p>
+                            <div style='background: rgba(34, 197, 94, 0.1); border-left: 3px solid #22c55e; padding: 10px; border-radius: 0 8px 8px 0; text-align: center; color: #4ade80; box-shadow: inset 0 0 10px rgba(0,0,0,0.3);'>
+                                Gather <b style='font-size: 16px;'>16 Locks</b> to rewrite Fate!
+                            </div>
+                        </div>`
+                    );
+                }
+            };
+
+            // 📜 ТУЛТИП ДЛЯ ОРАКУЛА
+            oBlock.onclick = (e) => {
+                if(window.showStatInfo) {
+                    window.showStatInfo(e, 
+                        `<style>
+                            div:has(> .abs-power-box), div:has(> div > .abs-power-box) { width: 320px !important; max-width: 90vw !important; }
+                            .abs-power-box { box-sizing: border-box; text-align: left; font-size: 14px; line-height: 1.4; word-break: break-word; overflow-wrap: break-word; width: 100%; }
+                        </style>
+                        <div class='abs-power-box'>
+                            <h3 style='margin: 0 0 10px 0; color: #ef4444; text-align: center; text-shadow: 0 0 8px rgba(239,68,68,0.5); font-size: 18px;'>👁️ СИЛА ОРАКУЛА</h3>
+                            <p style='margin: 0 0 8px 0;'>Древняя сущность накапливает мощь по тем же законам, что и вы.</p>
+                            <p style='margin: 0 0 12px 0;'>Оракул копит <b style='color:#fbbf24'>⚡ Искры</b>, чтобы стирать ваши связи и возводить свои <b style='color:#f87171'>🔒 Замки</b>.</p>
+                            <div style='background: rgba(239, 68, 68, 0.1); border-left: 3px solid #ef4444; padding: 10px; border-radius: 0 8px 8px 0; text-align: center; color: #f87171; box-shadow: inset 0 0 10px rgba(0,0,0,0.3);'>
+                                Опасайтесь! Если у него накопится <b style='font-size: 16px;'>3 Искры</b>, он сможет разрушить один из ваших Замков.
+                            </div>
+                        </div>`,
+                        `<style>
+                            div:has(> .abs-power-box), div:has(> div > .abs-power-box) { width: 320px !important; max-width: 90vw !important; }
+                            .abs-power-box { box-sizing: border-box; text-align: left; font-size: 14px; line-height: 1.4; word-break: break-word; overflow-wrap: break-word; width: 100%; }
+                        </style>
+                        <div class='abs-power-box'>
+                            <h3 style='margin: 0 0 10px 0; color: #ef4444; text-align: center; text-shadow: 0 0 8px rgba(239,68,68,0.5); font-size: 18px;'>👁️ ORACLE'S POWER</h3>
+                            <p style='margin: 0 0 8px 0;'>The ancient entity gathers power by the exact same laws as you do.</p>
+                            <p style='margin: 0 0 12px 0;'>The Oracle hoards <b style='color:#fbbf24'>⚡ Sparks</b> to sever your connections and build his own <b style='color:#f87171'>🔒 Locks</b>.</p>
+                            <div style='background: rgba(239, 68, 68, 0.1); border-left: 3px solid #ef4444; padding: 10px; border-radius: 0 8px 8px 0; text-align: center; color: #f87171; box-shadow: inset 0 0 10px rgba(0,0,0,0.3);'>
+                                Beware! If he accumulates <b style='font-size: 16px;'>3 Sparks</b>, he can shatter one of your Locks.
+                            </div>
+                        </div>`
+                    );
+                }
+            };
+        }
+
+        // === ГЕНЕРАТОР МОДАЛЬНОГО ОКНА ПРАВИЛ ===
+        if (!window.showAbsoluteRules) {
+            window.showAbsoluteRules = function() {
+                let overlay = document.getElementById('abs-rules-overlay');
+                if (!overlay) {
+                    overlay = document.createElement('div');
+                    overlay.id = 'abs-rules-overlay';
+                    
+                    overlay.onclick = () => { window.hideAbsoluteRules(); };
+
+                    const modal = document.createElement('div');
+                    modal.id = 'abs-rules-modal';
+                    
+                    modal.innerHTML = `
+                        <div class="abs-rules-close" onclick="window.hideAbsoluteRules()">×</div>
+                        <h2>📜 ДОГМАТ АБСОЛЮТА</h2>
+                        <div style="margin-bottom: 14px; color: #94a3b8; line-height: 1.5;">Вы вступаете в схватку с Оракулом за контроль над самими нитями вероятностей этой вселенной. Единственный объект, обладающий достаточным могуществом для подобной битвы - первородная структура, имя которой АБСОЛЮТ. Ни одно живое существо не в силах противостоять мощи АБСОЛЮТА, поэтому были призваны симбиоты. Они являются воплощением ваших с Оракулом сущностей. Ваша исходная воля наделяет Ваш симбиот должной энергией. Если Вы выбрали СВЕТ ИСТИНЫ, то Ваш симбиот явится в облике яркого белого света, но если Ваш выбор пал на ТЬМУ ПУСТОТЫ, то симбиот наполнится черной аурой забвения.</div>
+                        
+                        <div style="margin-bottom: 14px;">👑 <span class="rules-accent">ЦЕЛЬ:</span><br> Утвердите свою власть над мирозданием, возведя <strong>16 нерушимых Замков</strong> на гранях Абсолюта раньше, чем это сделает Оракул.</div>
+                        
+                        <div style="margin-bottom: 14px;">⚡ <span class="rules-accent">ЭНЕРГИЯ И СВЯЗЬ:</span><br>
+                        Каждый ваш ход рождает <strong>1 искру ⚡</strong>, но ни одна сущность во вселенной не в силах хранить более трёх искр одновременно! Призывая Абсолют, вы определяете ту грань судьбы, где суждено случиться разлому реальностей. Потратив <strong>1 искру ⚡</strong>, вы можете подчинить нейтральную грань пустоты себе или укрепить контроль над своей гранью.
+                        <ul style="margin: 6px 0; padding-left: 20px;">
+                            <li style="margin-bottom: 4px;"><strong>1 слой:</strong> Связь — грань откликается на Вашу волю.</li>
+                            <li style="margin-bottom: 4px;"><strong>2 слоя:</strong> Резонанс — грань обращается к Вам, насыщаясь Вашей энергией.</li>
+                            <li><strong>3 слоя:</strong> Замок 🔒 — грань нитей вероятностей принимает Вашу реальность, обретая нерушимую ауру. Обычные атаки врага ей больше не страшны.</li>
+                        </ul>
+                        </div>
+
+                        <div style="margin-bottom: 14px;">⚔️ <span class="rules-accent">ПЕРЕЛОМ ВОЛИ:</span><br>
+                        Нити судьбы можно переплетать. Вы вправе стирать влияние Оракула с граней Абсолюта, пока он не успел возвести на них Замок своей воли.
+                        <ul style="margin: 6px 0; padding-left: 20px;">
+                            <li style="margin-bottom: 4px;"><strong>Первое подавление</strong> вражеского слоя на Вашем ходу дается <strong>бесплатно</strong> — это чистая сила Вашего намерения.</li>
+                            <li style="margin-bottom: 4px;"><strong>Каждое последующее разрушение</strong> слоев на текущем ходу потребует <strong>1 ⚡</strong>.</li>
+                        </ul>
+                        <div style="color: #f87171; margin-top: 8px; font-size: 13px; text-shadow: 0 0 5px rgba(248, 113, 113, 0.2);">Но запомните: Оракул — древняя сущность, он подчиняется тем же законам бытия, обладает аналогичными способностями и безжалостно будет стирать ваши уязвимые связи.</div>
+                        </div>
+
+                        <div>🔮 <span class="rules-accent">ИЗЛОМ СУДЬБЫ:</span><br>
+                        <ul style="margin: 6px 0; padding-left: 20px;">
+                            <li style="margin-bottom: 6px;"><strong>Слом Замка (Трата: 3 ⚡):</strong> Накопив абсолютную мощь, вы способны сокрушить нерушимое. Чужая печать будет безжалостно расколота, а Замок врага падёт, сбросив его влияние до 2 слоев (Резонанса), открывая брешь в его обороне.</li>
+                            <li style="margin-bottom: 6px;"><strong>Искажение Вероятности (Трата: 1 ⚡):</strong> Вердикт структуры не благосклонен к вам? Пожертвуйте своей энергией, чтобы отринуть результат и заставьте Абсолют вновь прийти в движение.</li>
+                            <li style="color: #4ade80;"><strong>Милость Истины:</strong> Если Абсолют останавливается на грани, запечатанной вашим собственным Замком, вы получаете дар бесплатного призыва. Истина защищает тех, кто надежно хранит свои владения.</li>
+                        </ul>
+                        </div>
+                    `;
+                    modal.style.maxHeight = '85vh';
+                    modal.style.overflowY = 'auto';
+                    modal.style.scrollbarWidth = 'thin';
+                    modal.style.scrollbarColor = '#4f46e5 transparent';
+                    
+                    overlay.appendChild(modal);
+                    document.body.appendChild(overlay);
+                }
+
+                if(typeof App !== 'undefined' && App.playSoundEffect) App.playSoundEffect('click');
+                overlay.style.display = 'flex';
+                setTimeout(() => overlay.classList.add('active'), 10); 
+            };
+
+            window.hideAbsoluteRules = function() {
+                const overlay = document.getElementById('abs-rules-overlay');
+                if(overlay) {
+                    if(typeof App !== 'undefined' && App.playSoundEffect) App.playSoundEffect('tick');
+                    overlay.classList.remove('active');
+                    setTimeout(() => overlay.style.display = 'none', 400); 
+                }
+            };
+        }
+
+        // 2. Красим квадратики легенды под цвет игрока
+        if (myColor) {
+            const pColors = myColor === 'green' ? 
+                ['#065f46', '#10b981', '#22c55e'] : ['#991b1b', '#dc2626', '#ef4444'];
+
+            const allElements = stage.querySelectorAll('*');
+            allElements.forEach(el => {
+                const text = el.textContent ? el.textContent.trim() : '';
+                
+                if (text.includes('1 слой') && text.length < 20) {
+                    let box = el.querySelector('div, span, i') || el.previousElementSibling;
+                    if (box) { box.style.background = pColors[0]; box.style.borderColor = pColors[0]; }
+                    if (el.parentElement) {
+                        el.parentElement.classList.add('abs-legend-block');
+                        el.parentElement.onclick = () => window.showAbsoluteRules();
+                    }
+                }
+                if (text.includes('2 слоя') && text.length < 20) {
+                    let box = el.querySelector('div, span, i') || el.previousElementSibling;
+                    if (box) { box.style.background = pColors[1]; box.style.borderColor = pColors[1]; }
+                }
+                if (text.includes('3 слоя') && text.length < 20) {
+                    let parent = el.parentElement;
+                    if (parent) {
+                        let icon = parent.querySelector('i, svg, path');
+                        if (!icon && parent.previousElementSibling) {
+                            icon = parent.previousElementSibling.querySelector('i, svg, path') || parent.previousElementSibling;
+                        }
+                        if (icon) { 
+                            icon.style.setProperty('color', pColors[2], 'important');
+                            icon.style.setProperty('fill', pColors[2], 'important'); 
+                            icon.style.setProperty('opacity', '1', 'important');
+                            icon.style.setProperty('filter', 'none', 'important');
+                            icon.style.background = 'transparent'; 
+                        }
+                    }
+                }
+            });
+        }
+
+        // 🔥 МЕГА-ФИКС: ПРОКАЧИВАЕМ ЗАГОЛОВК "АБСОЛЮТ" И ТЯНЕМ ВВЕРХ 🔥
+        const absTitle = document.getElementById('absoluteBottomTitle');
+        if (absTitle) {
+            absTitle.onclick = (e) => {
+                if(window.showStatInfo) {
+                    window.showStatInfo(e, 
+                        `<style>
+                            div:has(> .abs-lore-scroll-box), div:has(> div > .abs-lore-scroll-box) { width: 340px !important; max-width: 90vw !important; max-height: 92vh !important; }
+                            .abs-lore-scroll-box { display: block !important; width: 100% !important; max-height: 80vh !important; overflow-y: auto !important; overflow-x: hidden !important; box-sizing: border-box !important; text-align: left !important; font-size: 14px !important; line-height: 1.5 !important; padding-right: 12px !important; padding-bottom: 20px !important; word-break: break-word !important; pointer-events: auto !important; scrollbar-width: thin !important; scrollbar-color: #4f46e5 transparent !important; }
+                            body.is-abs-game-active div#abs-lore-ru::-webkit-scrollbar { display: block !important; width: 4px !important; -webkit-appearance: none !important; }
+                            body.is-abs-game-active div#abs-lore-ru::-webkit-scrollbar-track { display: block !important; background: rgba(15, 23, 42, 0.8) !important; border-radius: 10px !important; }
+                            body.is-abs-game-active div#abs-lore-ru::-webkit-scrollbar-thumb { display: block !important; background: #4f46e5 !important; border-radius: 10px !important; box-shadow: inset 0 0 6px rgba(0,0,0,0.5) !important; }
+                        </style>
+                        <div id='abs-lore-ru' class='abs-lore-scroll-box'>
+                            <h2 style='text-align: center; margin-top: 0; font-size: 20px;'>👁️ АБСОЛЮТ</h2>
+                            <p style='margin: 0 0 10px 0;'><b style='color: #818cf8; text-shadow: 0 0 8px rgba(129,140,248,0.5);'>АБСОЛЮТ</b> — это первородная структура в мире Игр Судьбы, заключенная в идеальный <b style='color: #cbd5e1;'>42-гранный</b> тетракаидекатриаконтаэдр. Каждая из его граней — это фрагмент самой реальности.</p>
+                            <p style='margin: 0 0 10px 0;'>В этой финальной битве <b style='color: #ef4444; text-shadow: 0 0 8px rgba(239,68,68,0.5);'>Оракул</b> не просто бросает вызов — он пытается захватить контроль над тканью мироздания.</p>
+                            <p style='margin: 0 0 10px 0;'>Первородная структура нестабильна и немыслимо сложна, а потому невозможно сломить её волю обычной логикой полного завоевания.</p>
+                            <div style='background: rgba(99, 102, 241, 0.1); border-left: 3px solid #6366f1; padding: 12px; margin: 16px 0; border-radius: 0 8px 8px 0; box-shadow: inset 0 0 10px rgba(0,0,0,0.5);'>
+                                Древними был найден метод подчинения воли Абсолюта: тот, кто первым подчинит себе <b style='color: #10b981; font-size: 16px; text-shadow: 0 0 8px rgba(16,185,129,0.5);'>16 граней</b>, получит право <b style='color: #ffffff; letter-spacing: 0.5px;'>переписать саму Судьбу</b>.
+                            </div>
+                            <p style='margin: 0; font-style: italic; color: #94a3b8; text-align: center; font-size: 13px;'>Выбор цвета перед началом битвы — это выбор того, какой энергией будет наполнена новая реальность.</p>
+                        </div>`, 
+                        `<style>
+                            div:has(> .abs-lore-scroll-box), div:has(> div > .abs-lore-scroll-box) { width: 340px !important; max-width: 90vw !important; max-height: 92vh !important; }
+                            .abs-lore-scroll-box { display: block !important; width: 100% !important; max-height: 80vh !important; overflow-y: auto !important; overflow-x: hidden !important; box-sizing: border-box !important; text-align: left !important; font-size: 14px !important; line-height: 1.5 !important; padding-right: 12px !important; padding-bottom: 20px !important; word-break: break-word !important; pointer-events: auto !important; scrollbar-width: thin !important; scrollbar-color: #4f46e5 transparent !important; }
+                            body.is-abs-game-active div#abs-lore-en::-webkit-scrollbar { display: block !important; width: 4px !important; -webkit-appearance: none !important; }
+                            body.is-abs-game-active div#abs-lore-en::-webkit-scrollbar-track { display: block !important; background: rgba(15, 23, 42, 0.8) !important; border-radius: 10px !important; }
+                            body.is-abs-game-active div#abs-lore-en::-webkit-scrollbar-thumb { display: block !important; background: #4f46e5 !important; border-radius: 10px !important; box-shadow: inset 0 0 6px rgba(0,0,0,0.5) !important; }
+                        </style>
+                        <div id='abs-lore-en' class='abs-lore-scroll-box'>
+                            <h2 style='text-align: center; margin-top: 0; font-size: 20px;'>👁️ THE ABSOLUTE</h2>
+                            <p style='margin: 0 0 10px 0;'><b style='color: #818cf8; text-shadow: 0 0 8px rgba(129,140,248,0.5);'>THE ABSOLUTE</b> is a primordial structure in the world of the Games of Fate, enclosed in a perfect <b style='color: #cbd5e1;'>42-sided</b> tetrakaiadecathriacontahedron. Each of its faces is a fragment of reality itself.</p>
+                            <p style='margin: 0 0 10px 0;'>In this final battle, the <b style='color: #ef4444; text-shadow: 0 0 8px rgba(239,68,68,0.5);'>Oracle</b> is not merely issuing a challenge — he seeks to seize control over the very fabric of the universe.</p>
+                            <p style='margin: 0 0 10px 0;'>This primordial structure is unstable and inconceivably complex, so its will cannot be broken by the ordinary logic of total conquest.</p>
+                            <div style='background: rgba(99, 102, 241, 0.1); border-left: 3px solid #6366f1; padding: 12px; margin: 16px 0; border-radius: 0 8px 8px 0; box-shadow: inset 0 0 10px rgba(0,0,0,0.5);'>
+                                The Ancients found a method to subjugate the Absolute's will: whoever is first to capture <b style='color: #10b981; font-size: 16px; text-shadow: 0 0 8px rgba(16,185,129,0.5);'>16 faces</b> earns the right to <b style='color: #ffffff; letter-spacing: 0.5px;'>rewrite Fate itself</b>.
+                            </div>
+                            <p style='margin: 0; font-style: italic; color: #94a3b8; text-align: center; font-size: 13px;'>The choice of color before the battle is the choice of the energy that will fill the new reality.</p>
+                        </div>`
+                    );
+                }
+            };
+        }
+    }
+
    // 🛡️ ГЛОБАЛЬНЫЕ СЛУШАТЕЛИ: Мгновенное сохранение при сворачивании Telegram
     window.addEventListener('beforeunload', () => { if (isGameActive) saveState(); });
     window.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden' && isGameActive) saveState(); });
@@ -16318,147 +16706,6 @@ const animStyle = document.createElement('style');
 
         } else {
             callback();
-        }
-    }
-
-    // === ОБНОВЛЕНИЕ СТАТИЧНОГО ИНТЕРФЕЙСА (ЛЕГЕНДА И ПОДСКАЗКИ) ===
-    function syncStaticUI() {
-        const stage = document.getElementById('absoluteGameStage');
-        if (!stage) return;
-
-        // 1. АБСОЛЮТНОЕ УНИЧТОЖЕНИЕ ТЕКСТА (Через TreeWalker)
-        const walker = document.createTreeWalker(stage, NodeFilter.SHOW_TEXT, null, false);
-        let node;
-        while ((node = walker.nextNode())) {
-            // Ищем совпадение без учета регистра
-            if (node.nodeValue.toUpperCase().includes('ПЕРЕТАЩИТЕ ДЛЯ ПОВОРОТА')) {
-                if (node.parentElement) {
-                    node.parentElement.style.setProperty('display', 'none', 'important');
-                    node.parentElement.style.setProperty('opacity', '0', 'important');
-                }
-            }
-        }
-
-
-    // === ГЕНЕРАТОР МОДАЛЬНОГО ОКНА ПРАВИЛ ===
-    function showAbsoluteRules() {
-        let overlay = document.getElementById('abs-rules-overlay');
-        
-        if (!overlay) {
-            overlay = document.createElement('div');
-            overlay.id = 'abs-rules-overlay';
-            
-            // 🔥 ФИКС: Теперь закрываем окно по клику В ЛЮБОЕ МЕСТО
-            overlay.onclick = () => {
-                hideAbsoluteRules();
-            };
-
-            const modal = document.createElement('div');
-            modal.id = 'abs-rules-modal';
-            
-            modal.innerHTML = `
-                <div class="abs-rules-close" onclick="hideAbsoluteRules()">×</div>
-                <h2>📜 ДОГМАТ АБСОЛЮТА</h2>
-                <div style="margin-bottom: 14px; color: #94a3b8; line-height: 1.5;">Вы вступаете в схватку с Оракулом за контроль над самими нитями вероятностей этой вселенной. Единственный объект, обладающий достаточным могуществом для подобной битвы - первородная структура, имя которой АБСОЛЮТ. Ни одно живое существо не в силах противостоять мощи АБСОЛЮТА, поэтому были призваны симбиоты. Они являются воплощением ваших с Оракулом сущностей. Ваша исходная воля наделяет Ваш симбиот должной энергией. Если Вы выбрали СВЕТ ИСТИНЫ, то Ваш симбиот явится в облике яркого белого света, но если Ваш выбор пал на ТЬМУ ПУСТОТЫ, то симбиот наполнится черной аурой забвения.</div>
-                
-                <div style="margin-bottom: 14px;">👑 <span class="rules-accent">ЦЕЛЬ:</span><br> Утвердите свою власть над мирозданием, возведя <strong>16 нерушимых Замков</strong> на гранях Абсолюта раньше, чем это сделает Оракул.</div>
-                
-                <div style="margin-bottom: 14px;">⚡ <span class="rules-accent">ЭНЕРГИЯ И СВЯЗЬ:</span><br>
-                Каждый ваш ход рождает  <strong>1 искру ⚡</strong>, но ни одна сущность во вселенной не в силах хранить более трёх искр одновременно! Призывая Абсолют, вы определяете ту грань судьбы, где суждено случиться разлому реальностей. Потратив <strong>1 искру ⚡</strong>, Вы можете подчинить нейтральную грань пустоты себе или укрепить контроль над своей гранью.
-                <ul style="margin: 6px 0; padding-left: 20px;">
-                    <li style="margin-bottom: 4px;"><strong>1 слой: Связь</strong> — грань откликается на Вашу волю.</li>
-                    <li style="margin-bottom: 4px;"><strong>2 слоя: Резонанс</strong> — грань обращается к Вам, насыщаясь Вашей энергией.</li>
-                    <li><strong>3 слоя: Замок </strong>🔒 — грань нитей вероятностей принимает Вашу реальность, обретая нерушимую ауру. Обычные атаки врага ей больше не страшны.</li>
-                </ul>
-                </div>
-
-                <div style="margin-bottom: 14px;">⚔️ <span class="rules-accent">ПЕРЕЛОМ ВОЛИ:</span><br>
-                Нити судьбы можно переплетать. Вы вправе стирать влияние Оракула с граней Абсолюта, пока он не успел возвести на них Замок своей воли.
-                <ul style="margin: 6px 0; padding-left: 20px;">
-                    <li style="margin-bottom: 4px;"><strong>Первое подавление</strong> вражеского слоя на Вашем ходу дается <strong>бесплатно</strong> — это чистая сила Вашего намерения.</li>
-                    <li style="margin-bottom: 4px;"><strong>Каждое последующее разрушение</strong> слоев на текущем ходу потребует <strong>1 ⚡</strong>.</li>
-                </ul>
-                <div style="color: #f87171; margin-top: 8px; font-size: 13px; text-shadow: 0 0 5px rgba(248, 113, 113, 0.2);">Но запомните: Оракул — древняя сущность, он подчиняется тем же законам бытия, обладает аналогичными способностями и безжалостно будет стирать ваши уязвимые связи.</div>
-                </div>
-
-                <div>🔮 <span class="rules-accent">ИЗЛОМ СУДЬБЫ:</span><br>
-                <ul style="margin: 6px 0; padding-left: 20px;">
-                    <li style="margin-bottom: 6px;"><strong>Слом Замка (Трата: 3 ⚡):</strong> Накопив абсолютную мощь, вы способны сокрушить нерушимое. Чужая печать будет безжалостно расколота, а Замок врага падёт, сбросив его влияние до 2 слоев (Резонанса), открывая брешь в его обороне.</li>
-                    <li style="margin-bottom: 6px;"><strong>Искажение Вероятности (Трата: 1 ⚡):</strong> Вердикт структуры не благосклонен к вам? Пожертвуйте своей энергией, чтобы отринуть результат и заставьте Абсолют вновь прийти в движение.</li>
-                    <li style="color: #4ade80;"><strong>Милость Истины:</strong> Если Абсолют останавливается на грани, запечатанной вашим собственным Замком, вы получаете дар бесплатного призыва. Истина защищает тех, кто надежно хранит свои владения.</li>
-                </ul>
-                </div>
-            `;
-            
-            // Задаем максимальную высоту, чтобы на маленьких экранах текст можно было аккуратно скроллить
-            modal.style.maxHeight = '85vh';
-            modal.style.overflowY = 'auto';
-            
-            // Чтобы скроллбар внутри модалки выглядел красиво, а не стандартным системным ползунком
-            modal.style.scrollbarWidth = 'thin';
-            modal.style.scrollbarColor = '#4f46e5 transparent';
-            
-            overlay.appendChild(modal);
-            document.body.appendChild(overlay);
-        }
-
-        if(typeof App !== 'undefined' && App.playSoundEffect) App.playSoundEffect('click');
-        overlay.style.display = 'flex';
-        setTimeout(() => overlay.classList.add('active'), 10); 
-    }
-
-    window.hideAbsoluteRules = function() {
-        const overlay = document.getElementById('abs-rules-overlay');
-        if(overlay) {
-            if(typeof App !== 'undefined' && App.playSoundEffect) App.playSoundEffect('tick');
-            overlay.classList.remove('active');
-            setTimeout(() => overlay.style.display = 'none', 400); // Ждем конец анимации
-        }
-    };
-
-    // Слушатель клика по легенде
-    document.addEventListener('click', (e) => {
-        if (e.target.closest('.abs-legend-block')) {
-            showAbsoluteRules();
-        }
-    });
-
-        // 2. Красим квадратики легенды под цвет игрока
-        if (myColor) {
-            const pColors = myColor === 'green' ? ['#065f46', '#10b981', '#22c55e'] : ['#991b1b', '#dc2626', '#ef4444'];
-            const allElements = stage.querySelectorAll('*');
-            
-            allElements.forEach(el => {
-                const text = el.textContent ? el.textContent.trim() : '';
-                
-                if (text.includes('1 слой') && text.length < 20) {
-                    let box = el.querySelector('div, span, i') || el.previousElementSibling;
-                    if (box) { box.style.background = pColors[0]; box.style.borderColor = pColors[0]; }
-                    if (el.parentElement) el.parentElement.classList.add('abs-legend-block');
-                }
-                if (text.includes('2 слоя') && text.length < 20) {
-                    let box = el.querySelector('div, span, i') || el.previousElementSibling;
-                    if (box) { box.style.background = pColors[1]; box.style.borderColor = pColors[1]; }
-                }
-                if (text.includes('3 слоя') && text.length < 20) {
-                    // Ищем иконку глубже (пробиваем SVG и Path)
-                    let parent = el.parentElement;
-                    if (parent) {
-                        let icon = parent.querySelector('i, svg, path');
-                        // Если иконка лежит в соседнем блоке
-                        if (!icon && parent.previousElementSibling) {
-                            icon = parent.previousElementSibling.querySelector('i, svg, path') || parent.previousElementSibling;
-                        }
-                        if (icon) { 
-                            icon.style.setProperty('color', pColors[2], 'important');
-                            icon.style.setProperty('fill', pColors[2], 'important'); // Заливка для SVG
-                            icon.style.setProperty('opacity', '1', 'important');
-                            icon.style.setProperty('filter', 'none', 'important');
-                            icon.style.background = 'transparent'; 
-                        }
-                    }
-                }
-            });
         }
     }
 
@@ -17739,9 +17986,25 @@ const animStyle = document.createElement('style');
         }
     }
 
-    // === 1. БРОСОК ИГРОКА ===
+// === 1. БРОСОК ИГРОКА ===
     function rollAbsolute() {
-        autoRotate = false; clearTimeout(engineTimer);
+        // Внедряем легкие CSS-классы для вспышки без тормозов
+        if (!document.getElementById('abs-flash-styles')) {
+            const style = document.createElement('style');
+            style.id = 'abs-flash-styles';
+            style.innerHTML = `
+                #absoluteObj.abs-dimmed-faces .absolute-face:not(.abs-winner-flash) { opacity: 0.3 !important; }
+                #absoluteObj .absolute-face.abs-winner-flash {
+                    opacity: 1 !important; background: #ffffff !important;
+                    box-shadow: 0 0 30px 10px #ffffff !important; border-color: #ffffff !important;
+                    transition: none !important; z-index: 10 !important;
+                }
+            `;
+            document.head.appendChild(style);
+        }
+
+        autoRotate = false;
+        clearTimeout(engineTimer);
         if (typeof inertiaFrame !== 'undefined') cancelAnimationFrame(inertiaFrame);
 
         let targetRIdx = Math.floor(Math.random() * TOTAL_FACES);
@@ -17754,16 +18017,19 @@ const animStyle = document.createElement('style');
         const rollDuration = 2200 + Math.floor(Math.random() * 1000); 
         const wobbleDur = 600; const flightDur = rollDuration - wobbleDur;
         const targetRotX = -facesData[targetRIdx].rotX; const targetRotY = -facesData[targetRIdx].rotY;
-        const spinsX = 360 * (2 + Math.floor(Math.random() * 2)); const spinsY = 360 * (2 + Math.floor(Math.random() * 2)); 
-        const baseRotX = Math.round(rotX / 360) * 360; const baseRotY = Math.round(rotY / 360) * 360; 
+        const spinsX = 360 * (2 + Math.floor(Math.random() * 2));
+        const spinsY = 360 * (2 + Math.floor(Math.random() * 2)); 
+        const baseRotX = Math.round(rotX / 360) * 360;
+        const baseRotY = Math.round(rotY / 360) * 360; 
         
-        rotX = baseRotX + spinsX + targetRotX; rotY = baseRotY + spinsY + targetRotY; rotZ = 0; 
-        const overX = rotX + (Math.random() * 40 - 20); const overY = rotY + (Math.random() * 40 - 20);
+        rotX = baseRotX + spinsX + targetRotX;
+        rotY = baseRotY + spinsY + targetRotY; rotZ = 0; 
+        const overX = rotX + (Math.random() * 40 - 20);
+        const overY = rotY + (Math.random() * 40 - 20);
         
         const obj = document.getElementById('absoluteObj'); const pSph = document.getElementById('pSphere');
         const oSph = document.getElementById('oSphere'); const scene = document.getElementById('absoluteScene');
         const wrapBack = document.getElementById('wrapperBack'); const wrapFront = document.getElementById('wrapperFront');
-        
         const heavyEls = [obj, scene, pSph, oSph, wrapBack, wrapFront];
         heavyEls.forEach(el => { if(el) el.style.willChange = 'transform'; });
 
@@ -17793,15 +18059,12 @@ const animStyle = document.createElement('style');
             if(wrapFront) { wrapFront.style.transition = flightTrans; wrapFront.style.transform = `${invRot} translateZ(45px)`; }
         }
 
-        // 🔥 МОМЕНТ УДАРА О ЗЕМЛЮ (ЗВУК + ВСПЫШКА)
+        // 🔥 МОМЕНТ УДАРА О ЗЕМЛЮ (ФИКС ЛАГОВ)
         safeTimeout(() => { 
             triggerImpact('heavy'); 
             playHeavyThud(); 
 
-            // Снимаем анти-лаг щит, чтобы включить тени для красивой вспышки
-            if (obj) obj.classList.remove('abs-rolling-mode');
-
-            // Запускаем физику покачивания
+            // ⚠️ Оставляем анти-лаг щит ВКЛЮЧЕННЫМ во время покачивания!
             if(obj) {
                 const wobbleTrans = `transform ${wobbleDur / 1000}s cubic-bezier(0.34, 1.56, 0.64, 1)`; 
                 obj.style.transition = wobbleTrans;
@@ -17812,29 +18075,30 @@ const animStyle = document.createElement('style');
                 if(oSph) { oSph.style.transition = wobbleTrans; oSph.style.transform = `translate3d(20px, 10px, -20px) ${invRot2}`; }
                 if(wrapBack) { wrapBack.style.transition = wobbleTrans; wrapBack.style.transform = `${invRot2} translateZ(-45px)`; }
                 if(wrapFront) { wrapFront.style.transition = wobbleTrans; wrapFront.style.transform = `${invRot2} translateZ(45px)`; }
+
+                // Применяем CSS-затемнение ко всем граням без тяжелого JS цикла
+                obj.classList.add('abs-dimmed-faces');
             }
 
-            // Мгновенно гасим проигравшие грани и делаем белую вспышку на победителе
-            document.querySelectorAll('.absolute-face').forEach(f => {
-                const faceIdx = parseInt(f.id.replace('abs-face-', ''));
-                f.style.transition = 'opacity 0.2s ease, background 0.2s ease, box-shadow 0.2s ease';
-                
-                if (faceIdx === targetRIdx) {
-                    f.style.opacity = '1';
-                    f.style.background = '#ffffff';
-                    f.style.boxShadow = '0 0 30px 10px #ffffff';
-                    
-                    // Плавно возвращаем цвет через 150мс
-                    setTimeout(() => { updateFaceVisual(faceIdx); }, 150);
-                } else {
-                    f.style.opacity = '0.3';
-                }
-            });
+            // Мгновенная белая вспышка на победителе аппаратно через класс
+            const winnerFace = document.getElementById(`abs-face-${targetRIdx}`);
+            if (winnerFace) winnerFace.classList.add('abs-winner-flash');
+
+            // Плавно возвращаем цвет через 150мс
+            setTimeout(() => { 
+                if (winnerFace) winnerFace.classList.remove('abs-winner-flash');
+                updateFaceVisual(targetRIdx); 
+            }, 150);
+
         }, flightDur);
         
-        // ФИНАЛИЗАЦИЯ ПОСЛЕ ПОКАЧИВАНИЯ
+        // ФИНАЛИЗАЦИЯ (Когда анимация движения ПОЛНОСТЬЮ завершена)
         safeTimeout(() => {
-            if(obj) obj.style.transition = 'none'; 
+            if(obj) {
+                obj.style.transition = 'none'; 
+                // Снимаем щиты только сейчас, когда это безопасно
+                obj.classList.remove('abs-rolling-mode', 'abs-dimmed-faces');
+            }
             if(pSph) pSph.style.transition = 'width 1s, height 1s, margin 1s, background 1s, box-shadow 1s';
             if(oSph) oSph.style.transition = 'width 1s, height 1s, margin 1s, background 1s, box-shadow 1s';
             if(wrapBack) wrapBack.style.transition = 'none';
@@ -17842,16 +18106,22 @@ const animStyle = document.createElement('style');
             
             heavyEls.forEach(el => { if(el) el.style.willChange = 'auto'; });
             
+            // Теперь можно спокойно вернуть всем граням их CSS-переходы
             document.querySelectorAll('.absolute-face').forEach(f => {
                 f.style.transition = 'background 0.3s, border 0.3s, box-shadow 0.3s, opacity 0.4s, transform 0.4s ease, filter 0.4s ease';
+                const faceIdx = parseInt(f.id.replace('abs-face-', ''));
+                if (faceIdx !== targetRIdx) f.style.opacity = '0.3';
+                else f.style.opacity = '1';
             });
+            
             finalizeRoll(targetRIdx);
         }, rollDuration + 50);
     }
 
     // === 2. БРОСОК ОРАКУЛА ===
     function rollOracleAbsolute() {
-        autoRotate = false; clearTimeout(engineTimer);
+        autoRotate = false;
+        clearTimeout(engineTimer);
         if (typeof inertiaFrame !== 'undefined') cancelAnimationFrame(inertiaFrame);
 
         const targetRIdx = Math.floor(Math.random() * TOTAL_FACES);
@@ -17859,16 +18129,19 @@ const animStyle = document.createElement('style');
         const rollDuration = 2200 + Math.floor(Math.random() * 1000); 
         const wobbleDur = 600; const flightDur = rollDuration - wobbleDur;
         const targetRotX = -facesData[targetRIdx].rotX; const targetRotY = -facesData[targetRIdx].rotY;
-        const spinsX = 360 * (2 + Math.floor(Math.random() * 2)) + 720; const spinsY = 360 * (2 + Math.floor(Math.random() * 2)) + 720; 
-        const baseRotX = Math.round(rotX / 360) * 360; const baseRotY = Math.round(rotY / 360) * 360; 
+        const spinsX = 360 * (2 + Math.floor(Math.random() * 2)) + 720;
+        const spinsY = 360 * (2 + Math.floor(Math.random() * 2)) + 720; 
+        const baseRotX = Math.round(rotX / 360) * 360;
+        const baseRotY = Math.round(rotY / 360) * 360; 
         
-        rotX = baseRotX + spinsX + targetRotX; rotY = baseRotY + spinsY + targetRotY; rotZ = 0; 
-        const overX = rotX + (Math.random() * 40 - 20); const overY = rotY + (Math.random() * 40 - 20);
+        rotX = baseRotX + spinsX + targetRotX;
+        rotY = baseRotY + spinsY + targetRotY; rotZ = 0; 
+        const overX = rotX + (Math.random() * 40 - 20);
+        const overY = rotY + (Math.random() * 40 - 20);
         
         const obj = document.getElementById('absoluteObj'); const pSph = document.getElementById('pSphere');
         const oSph = document.getElementById('oSphere'); const scene = document.getElementById('absoluteScene');
         const wrapBack = document.getElementById('wrapperBack'); const wrapFront = document.getElementById('wrapperFront');
-        
         const heavyEls = [obj, scene, pSph, oSph, wrapBack, wrapFront];
         heavyEls.forEach(el => { if(el) el.style.willChange = 'transform'; });
 
@@ -17898,12 +18171,10 @@ const animStyle = document.createElement('style');
             if(wrapFront) { wrapFront.style.transition = flightTrans; wrapFront.style.transform = `${invRot} translateZ(45px)`; }
         }
 
-        // 🔥 МОМЕНТ УДАРА О ЗЕМЛЮ ОРАКУЛА
+        // 🔥 МОМЕНТ УДАРА О ЗЕМЛЮ ОРАКУЛА (ФИКС ЛАГОВ)
         safeTimeout(() => { 
             triggerImpact('heavy'); 
             playHeavyThud(); 
-
-            if (obj) obj.classList.remove('abs-rolling-mode');
 
             if(obj) {
                 const wobbleTrans = `transform ${wobbleDur / 1000}s cubic-bezier(0.34, 1.56, 0.64, 1)`; 
@@ -17915,24 +18186,26 @@ const animStyle = document.createElement('style');
                 if(oSph) { oSph.style.transition = wobbleTrans; oSph.style.transform = `translate3d(20px, 10px, -20px) ${invRot2}`; }
                 if(wrapBack) { wrapBack.style.transition = wobbleTrans; wrapBack.style.transform = `${invRot2} translateZ(-45px)`; }
                 if(wrapFront) { wrapFront.style.transition = wobbleTrans; wrapFront.style.transform = `${invRot2} translateZ(45px)`; }
+
+                obj.classList.add('abs-dimmed-faces');
             }
 
-            document.querySelectorAll('.absolute-face').forEach(f => {
-                const faceIdx = parseInt(f.id.replace('abs-face-', ''));
-                f.style.transition = 'opacity 0.2s ease, background 0.2s ease, box-shadow 0.2s ease';
-                if (faceIdx === targetRIdx) {
-                    f.style.opacity = '1';
-                    f.style.background = '#ffffff';
-                    f.style.boxShadow = '0 0 30px 10px #ffffff';
-                    setTimeout(() => { updateFaceVisual(faceIdx); }, 150);
-                } else {
-                    f.style.opacity = '0.3';
-                }
-            });
+            const winnerFace = document.getElementById(`abs-face-${targetRIdx}`);
+            if (winnerFace) winnerFace.classList.add('abs-winner-flash');
+
+            setTimeout(() => { 
+                if (winnerFace) winnerFace.classList.remove('abs-winner-flash');
+                updateFaceVisual(targetRIdx); 
+            }, 150);
+
         }, flightDur);
         
+        // ФИНАЛИЗАЦИЯ (Когда анимация движения ПОЛНОСТЬЮ завершена)
         safeTimeout(() => {
-            if(obj) obj.style.transition = 'none'; 
+            if(obj) {
+                obj.style.transition = 'none'; 
+                obj.classList.remove('abs-rolling-mode', 'abs-dimmed-faces');
+            }
             if(pSph) pSph.style.transition = 'width 1s, height 1s, margin 1s, background 1s, box-shadow 1s';
             if(oSph) oSph.style.transition = 'width 1s, height 1s, margin 1s, background 1s, box-shadow 1s';
             if(wrapBack) wrapBack.style.transition = 'none';
@@ -17942,6 +18215,9 @@ const animStyle = document.createElement('style');
             
             document.querySelectorAll('.absolute-face').forEach(f => {
                 f.style.transition = 'background 0.3s, border 0.3s, box-shadow 0.3s, opacity 0.4s, transform 0.4s ease, filter 0.4s ease';
+                const faceIdx = parseInt(f.id.replace('abs-face-', ''));
+                if (faceIdx !== targetRIdx) f.style.opacity = '0.3';
+                else f.style.opacity = '1';
             });
             
             freeRemovalUsed = false; 
@@ -17950,7 +18226,7 @@ const animStyle = document.createElement('style');
             
         }, rollDuration + 50);
     }
-
+    
     function handleFaceClick(faceIndex) {
         // 👇 1. АБСОЛЮТНАЯ ЗАЩИТА ОТ ДВОЙНЫХ КЛИКОВ (ФИКС БАГА С ЭНЕРГИЕЙ) 👇
         const now = Date.now();
