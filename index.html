@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Игры Судьбы. v0.9.0.44</title>
+    <title>Игры Судьбы. v0.9.0.45</title>
     <!-- Эмодзи-иконка для вкладки браузера -->
     <link rel="icon" href='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">🔮</text></svg>'>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
@@ -129,8 +129,7 @@
             animation: seal-flash 0.5s ease-out forwards;
         }
 
-
-		/* ЭФФЕКТ ПЛАВНОЙ СМЕНЫ ПРИ ЗАКРЫТИИ ИНВЕНТАРЯ */
+        		/* ЭФФЕКТ ПЛАВНОЙ СМЕНЫ ПРИ ЗАКРЫТИИ ИНВЕНТАРЯ */
 		body.visual-transitioning .stage, 
 		body.visual-transitioning .stage *, 
 		body.visual-transitioning .rps-hand,
@@ -2960,6 +2959,49 @@ window.findItemById = function(id) {
     return null;
 };
 
+// === АБСОЛЮТНАЯ БРОНЯ ОТ КЛИКОВ В МОЛОКО (При создании игрока) ===
+    document.addEventListener('click', function(e) {
+        // Если мы ждем подтверждения нового игрока (висит маячок)
+        if (window.pendingLoreModal) {
+            const renameModal = document.getElementById('renameProfileModal');
+            
+            if (renameModal) {
+                // Ищем внутренний блок с контентом (само окошко, а не его темный фон)
+                const innerBox = renameModal.classList.contains('settings-modal') 
+                    ? renameModal 
+                    : (renameModal.querySelector('.settings-modal') || renameModal);
+                
+                // Если клик пришелся КУДА УГОДНО, кроме внутренностей окошка (инпута/кнопок)
+                if (!innerBox.contains(e.target)) {
+                    // Убиваем клик намертво!
+                    e.stopPropagation();
+                    e.preventDefault();
+                    return false;
+                }
+            }
+        }
+    }, true); // <- "true" здесь это фаза перехвата. Ни одна другая функция игры этот клик не увидит.
+
+// === ЛОГИКА СВИТКА СУДЬБЫ (ПЛАВНАЯ) ===
+    window.showLoreModal = function() {
+        const modal = document.getElementById('loreModalOverlay');
+        if (modal) {
+            modal.style.opacity = '1';
+            modal.style.pointerEvents = 'auto';
+        }
+    };
+
+    window.hideLoreModal = function() {
+        const modal = document.getElementById('loreModalOverlay');
+        if (modal) {
+            modal.style.opacity = '0';
+            modal.style.pointerEvents = 'none';
+        }
+        if(typeof App !== 'undefined' && typeof App.playSoundEffect === 'function') {
+            App.playSoundEffect('magic');
+        }
+    };
+
 // 2. Глобальный контроллер: создается в body, игнорирует маски и скроллы
 window.toggleShopTooltip = function(e, btn, title, text) {
     e.stopPropagation();
@@ -3289,6 +3331,12 @@ setInterval(() => {
         <div class="profiles-grid" id="profilesGrid"></div>
 
         <div class="global-bottom-nav">
+            <!-- Кнопка вызова Свитка Истины (Исправленная) -->
+            <div class="nav-btn" onclick="if(typeof App !== 'undefined' && App.playSoundEffect) App.playSoundEffect('click'); window.showLoreModal();">
+                <i class="fas fa-scroll"></i>
+            </div>
+            
+            <!-- Кнопка настроек -->
             <div class="nav-btn" onclick="App.toggleSettings(true)">
                 <i class="fas fa-cog"></i>
             </div>
@@ -3297,7 +3345,7 @@ setInterval(() => {
         <div style="position: absolute; bottom: 15px; left: 15px; font-size: 10px; color: rgba(162, 155, 254, 0.6); font-weight: bold; letter-spacing: 1px; text-transform: uppercase; z-index: 500;">
             <a href="https://t.me/Antis_Corpus" style="color: inherit; text-decoration: none;">t.me/Antis_Corpus</a>
         </div>
-        <div class="version" style="position: absolute; bottom: 15px; right: 15px; pointer-events: none; z-index: 500;">v0.9.0.44</div>
+        <div class="version" style="position: absolute; bottom: 15px; right: 15px; pointer-events: none; z-index: 500;">v0.9.0.45</div>
     </div>
 
     <!-- ========================================== -->
@@ -5045,7 +5093,7 @@ function updateHistoryModalTitle() {
     if (typeof updateMenuBankUI === 'function') updateMenuBankUI();
 }
 
-    // === 3. СОЗДАНИЕ ИГРОКА (Без призраков Абсолюта) ===
+// === 3. СОЗДАНИЕ ИГРОКА (Без призраков Абсолюта) ===
     function createNewProfile(e) {
         if (e) e.stopPropagation();
         
@@ -5096,8 +5144,11 @@ function updateHistoryModalTitle() {
         updateMenuBankUI();
         if (typeof updateSubModeHighlights === 'function') updateSubModeHighlights();
         if (typeof ShopGame !== 'undefined' && ShopGame.applyAllEquippedVisuals) ShopGame.applyAllEquippedVisuals();
+
+        // 🔥 СТАВИМ МАЯЧОК, ЧТО ЭТО НОВЫЙ ИГРОК (ЖДЕМ ПОДТВЕРЖДЕНИЯ ИМЕНИ) 🔥
+        window.pendingLoreModal = true; 
     }
-        
+
     function updateHistoryView() {
     const histBlock = document.getElementById('historyBlock');
     if (!histBlock) return;
@@ -5266,7 +5317,7 @@ function updateHistoryModalTitle() {
 
     function showRenameModal(e, idx) {
         if (e) e.stopPropagation();
-        // 🚀 АБСОЛЮТНЫЙ БЛОК
+         // 🚀 АБСОЛЮТНЫЙ БЛОК
         if (document.body.classList.contains('is-game-busy') || document.getElementById('gameUI').classList.contains('game-ui-visible')) return;
 
         GameState.profileToRename = idx;
@@ -5326,6 +5377,16 @@ function updateHistoryModalTitle() {
                     }
                 }
                 GameState.profileToRename = -1;
+                if (window.pendingLoreModal) {
+            window.pendingLoreModal = false; // Сбрасываем маячок в любом случае
+            
+            // Если игрок нажал ОК (confirm === true)
+            if (confirm) {
+                setTimeout(() => {
+                    if (typeof window.showLoreModal === 'function') window.showLoreModal();
+                }, 400); // Ждем 400мс, пока окно переименования плавно закроется
+            }
+        }
             }
 
             
@@ -15686,62 +15747,133 @@ const animStyle = document.createElement('style');
     // 🎛️ ПРОЦЕДУРНЫЙ СИНТЕЗАТОР ВЗРЫВОВ v7.0 (Случайные 4 пресета Камня и Бетона)
     window.absAudioCtx = window.absAudioCtx || new (window.AudioContext || window.webkitAudioContext)();
 
-    window.playProceduralExplosion = function() {
+    // === ГЛОБАЛЬНЫЙ ЗВУКОВОЙ ДВИЖОК ИГРЫ ===
+    window.playGameSound = function(actionType) {
         try {
-            if (!window.absAudioCtx) {
-                window.absAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            }
+            if (!window.absAudioCtx) window.absAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
             const ctx = window.absAudioCtx;
             if (ctx.state === 'suspended') ctx.resume();
-
-            // Твои фавориты: 1. Сухой кирпич | 2. Пыльный булыжник | 3. Глубинный обвал | 6. Свинцовый блок
-            const presets = [
-                { f1: 90, f2: 20, fDrop: 0.05, dur: 0.3,  nFreq: 400, nGain: 2.0, nDrop: 0.2 },
-                { f1: 70, f2: 15, fDrop: 0.15, dur: 0.5,  nFreq: 300, nGain: 2.0, nDrop: 0.5 },
-                { f1: 60, f2: 10, fDrop: 0.3,  dur: 0.9,  nFreq: 150, nGain: 1.0, nDrop: 0.8 },
-                { f1: 50, f2: 10, fDrop: 0.05, dur: 0.4,  nFreq: 200, nGain: 1.2, nDrop: 0.3 }
-            ];
             
-            // Выбираем случайный пресет
-            const p = presets[Math.floor(Math.random() * presets.length)];
-            const now = ctx.currentTime;
+            const master = ctx.createGain(); 
+            master.gain.value = 0.5; // Защита от перегруза
+            master.connect(ctx.destination);
+            
+            // 1. Синтезатор чистых тонов (для захвата)
+            const synth = (type, f1, f2, tFreq, vol, atk, dec) => {
+                const now = ctx.currentTime;
+                const o = ctx.createOscillator(); const g = ctx.createGain();
+                o.type = type; o.frequency.setValueAtTime(f1, now);
+                if(f2) o.frequency.exponentialRampToValueAtTime(f2, now + tFreq);
+                g.gain.setValueAtTime(0, now);
+                g.gain.linearRampToValueAtTime(vol, now + Math.max(0.001, atk));
+                g.gain.exponentialRampToValueAtTime(0.001, now + atk + dec);
+                o.connect(g); g.connect(master);
+                o.start(now); o.stop(now + atk + dec);
+            };
 
-            const osc = ctx.createOscillator();
-            const oscGain = ctx.createGain();
-            osc.type = 'sine';
-            osc.frequency.setValueAtTime(p.f1, now);
-            osc.frequency.exponentialRampToValueAtTime(Math.max(1, p.f2), now + p.fDrop);
+            // 2. Генератор реверса (Для эффекта Уууиип Замка)
+            const reverse = (type, f1, f2, vol, dur) => {
+                const now = ctx.currentTime;
+                const o = ctx.createOscillator(); const g = ctx.createGain();
+                o.type = type; o.frequency.setValueAtTime(f1, now);
+                o.frequency.exponentialRampToValueAtTime(f2, now + dur);
+                g.gain.setValueAtTime(0.001, now);
+                g.gain.exponentialRampToValueAtTime(vol, now + dur - 0.03);
+                g.gain.linearRampToValueAtTime(0.001, now + dur);
+                o.connect(g); g.connect(master);
+                o.start(now); o.stop(now + dur);
+            };
 
-            oscGain.gain.setValueAtTime(0, now);
-            oscGain.gain.linearRampToValueAtTime(1.5, now + 0.02);
-            oscGain.gain.exponentialRampToValueAtTime(0.01, now + p.dur);
+            // 3. 8-битный генератор разрушений (для обвалов и хруста)
+            const nesCrunch = (toneFreq, toneDrop, toneDur, noiseLen, noiseStep = 4, noiseVol = 0.8) => {
+                const now = ctx.currentTime;
+                if (toneDur > 0) {
+                    const o = ctx.createOscillator(); const gO = ctx.createGain();
+                    o.type = 'square'; 
+                    o.frequency.setValueAtTime(toneFreq, now);
+                    o.frequency.exponentialRampToValueAtTime(Math.max(1, toneDrop), now + toneDur);
+                    gO.gain.setValueAtTime(0.5, now);
+                    gO.gain.exponentialRampToValueAtTime(0.01, now + toneDur);
+                    o.connect(gO); gO.connect(master);
+                    o.start(now); o.stop(now + toneDur);
+                }
+                if (noiseLen > 0) {
+                    const bufSize = ctx.sampleRate * noiseLen;
+                    const buf = ctx.createBuffer(1, bufSize, ctx.sampleRate);
+                    const data = buf.getChannelData(0);
+                    let lastVal = 0;
+                    for (let i = 0; i < bufSize; i++) {
+                        if (i % noiseStep === 0) lastVal = (Math.random() * 2 - 1);
+                        data[i] = lastVal;
+                    }
+                    const noise = ctx.createBufferSource();
+                    noise.buffer = buf;
+                    const gN = ctx.createGain();
+                    gN.gain.setValueAtTime(noiseVol, now);
+                    gN.gain.exponentialRampToValueAtTime(0.01, now + noiseLen);
+                    noise.connect(gN); gN.connect(master);
+                    noise.start(now);
+                }
+            };
 
-            const bufferSize = ctx.sampleRate * Math.max(p.dur, p.nDrop);
-            const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
-            const data = buffer.getChannelData(0);
-            for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
-
-            const noise = ctx.createBufferSource();
-            noise.buffer = buffer;
-            const noiseFilter = ctx.createBiquadFilter();
-            const noiseGain = ctx.createGain();
-
-            noiseFilter.type = 'lowpass';
-            noiseFilter.frequency.value = p.nFreq;
-
-            noiseGain.gain.setValueAtTime(0, now);
-            noiseGain.gain.linearRampToValueAtTime(p.nGain, now + 0.02);
-            noiseGain.gain.exponentialRampToValueAtTime(0.01, now + p.nDrop);
-
-            osc.connect(oscGain); oscGain.connect(ctx.destination);
-            noise.connect(noiseFilter); noiseFilter.connect(noiseGain);
-            noiseGain.connect(ctx.destination);
-
-            osc.start(now); osc.stop(now + p.dur);
-            noise.start(now); noise.stop(now + Math.max(p.dur, p.nDrop));
-        } catch (e) {}
+            // === ВЫБОР ЗВУКА ПО КОНТЕКСТУ ===
+            if (actionType === 'CLAIM') {
+                // Обычный захват (1-2 слой)
+                synth('sine', 200, 50, 0.2, 0.8, 0.01, 1.3);
+            } 
+            else if (actionType === 'CLAIM_LOCK') {
+                // 🔥 НОВЫЙ ЗВУК: Создание Замка (Звук 140) 🔥
+                reverse('sine', 40, 200, 0.5, 0.3); 
+                setTimeout(() => {
+                    if (ctx.state === 'running') synth('sine', 200, 50, 0.2, 0.8, 0.01, 1.3);
+                }, 280);
+            }
+            else if (actionType === 'BREAK') {
+                // Обычное разрушение
+                nesCrunch(200, 80, 0.1, 0.15, 1, 0.6); 
+            } 
+            else if (actionType === 'BREAK_LOCK') {
+                // Эпичное разрушение Замка
+                nesCrunch(180, 40, 0.1, 0.25, 5, 0.7); 
+                setTimeout(() => {
+                    if (ctx.state === 'running') nesCrunch(0, 0, 0, 0.7, 16, 0.4);
+                }, 120);
+            }
+        } catch(e) {}
     };
 
+    // 🔮 СИНТЕЗАТОР ЗАХВАТА ГРАНИ (Космический резонанс)
+    window.playProceduralClaim = function() {
+        // Мы используем логику 70-го звука из твоей лаборатории
+        playProceduralSound(70); 
+    };
+
+    // Вспомогательная функция, которая берет логику из твоего файла sounds3
+    function playProceduralSound(preset) {
+        try {
+            if (!window.absAudioCtx) window.absAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const ctx = window.absAudioCtx;
+            if (ctx.state === 'suspended') ctx.resume();
+            const now = ctx.currentTime;
+            const master = ctx.createGain(); master.gain.value = 0.5; master.connect(ctx.destination);
+            
+            const synth = (type, f1, f2, tFreq, vol, atk, dec) => {
+                const o = ctx.createOscillator(); const g = ctx.createGain();
+                o.type = type; o.frequency.setValueAtTime(f1, now);
+                if(f2) o.frequency.exponentialRampToValueAtTime(f2, now + tFreq);
+                g.gain.setValueAtTime(0, now);
+                g.gain.linearRampToValueAtTime(vol, now + Math.max(0.001, atk));
+                g.gain.exponentialRampToValueAtTime(0.001, now + atk + dec);
+                o.connect(g); g.connect(master);
+                o.start(now); o.stop(now + atk + dec);
+            };
+
+            // Логика 70-го звука (Идеальный резонанс)
+            if(preset === 70) {
+                synth('sine', 200, 50, 0.2, 0.8, 0.01, 1.3);
+            }
+        } catch(e) {}
+    }
     
     function updateActionBtn(html, disabled = false, gold = false) {
         let btn = document.getElementById('absoluteActionBtn');
@@ -15789,9 +15921,27 @@ const animStyle = document.createElement('style');
         }
     }
 
+
     function renderColorSelection() {
+        // 🔥 ВНЕДРЯЕМ СТИЛЬ ДЛЯ СКРЫТИЯ ЛЕГЕНДЫ И ДОГМАТА
+        if (!document.getElementById('abs-color-select-style')) {
+            const style = document.createElement('style');
+            style.id = 'abs-color-select-style';
+            style.innerHTML = `
+                body.abs-color-select-active .abs-legend-block,
+                body.abs-color-select-active #absoluteBottomTitle {
+                    opacity: 0 !important;
+                    pointer-events: none !important;
+                    transform: translateX(-50%) translateY(20px) !important;
+                    transition: opacity 0.4s ease, transform 0.4s ease !important;
+                }
+            `;
+            document.head.appendChild(style);
+        }
+        // Включаем режим выбора цвета (прячет интерфейс)
+        document.body.classList.add('abs-color-select-active');
+
         let row = document.getElementById('abs-action-row');
-        
         if (!row) {
             row = document.createElement('div');
             row.id = 'abs-action-row';
@@ -15810,7 +15960,7 @@ const animStyle = document.createElement('style');
         if (!colorContainer) {
             colorContainer = document.createElement('div');
             colorContainer.id = 'colorSelectContainer';
-            row.prepend(colorContainer); // Вставляем цвета ВНУТРИ action-row перед основной кнопкой
+            row.prepend(colorContainer); 
         }
         
         // Жестко задаем стили контейнера
@@ -15835,13 +15985,15 @@ const animStyle = document.createElement('style');
     }
 
     function setColors(playerChoice) {
+        // 🔥 ВОЗВРАЩАЕМ ИНТЕРФЕЙС
+        document.body.classList.remove('abs-color-select-active');
+        
         myColor = playerChoice; oracleColor = (playerChoice === 'green') ? 'red' : 'green';
         
         if(typeof App !== 'undefined' && typeof App.playSoundEffect === 'function') {
             App.playSoundEffect('positive');
         }
         
-        // Удаляем контейнер с выбором цвета
         const container = document.getElementById('colorSelectContainer');
         if (container) container.remove(); 
         
@@ -15858,7 +16010,6 @@ const animStyle = document.createElement('style');
             saveState(); 
         }, 150);
 
-        // 🔥 ВОЗВРАЩАЕМ ОСНОВНУЮ КНОПКУ
         const mainBtn = document.getElementById('absoluteActionBtn');
         if (mainBtn) mainBtn.style.setProperty('display', 'flex', 'important');
         
@@ -16389,7 +16540,7 @@ const animStyle = document.createElement('style');
         } else rightBtn.classList.remove('visible');
     }
 
-    // === ЭКШЕН И АНИМАЦИЯ СГОРАНИЯ КНОПОК ===
+   // === ЭКШЕН И АНИМАЦИЯ СГОРАНИЯ КНОПОК ===
     function handleSideAction(type) {
         if (window.isAbsCinematicPlaying || (typeof isAssembling !== 'undefined' && isAssembling)) return;
         
@@ -16438,7 +16589,10 @@ const animStyle = document.createElement('style');
 
                 animateFaceBurn(activeFaceIndex);
                 if (typeof spawnBurnParticles === 'function') spawnBurnParticles(activeFaceIndex, exactColor);
-                if (typeof window.playProceduralExplosion === 'function') window.playProceduralExplosion();
+                
+                // 🔥 ВОТ ОНО! ЭПИЧНЫЙ ЗВУК СЛОМА ЗАМКА (ЗВУК 113) 🔥
+                if (typeof window.playGameSound === 'function') window.playGameSound('BREAK_LOCK');
+                
                 if (typeof triggerImpact === 'function') triggerImpact('heavy');
                 
                 updateFaceVisual(activeFaceIndex);
@@ -16451,7 +16605,7 @@ const animStyle = document.createElement('style');
                 }, 600);
             }
         }, 600);
-    } 
+    }
 
     function updateFaceInfoText(idx) {
         const infoEl = document.getElementById('abs-face-info');
@@ -18228,18 +18382,14 @@ const animStyle = document.createElement('style');
     }
     
     function handleFaceClick(faceIndex) {
-        // 👇 1. АБСОЛЮТНАЯ ЗАЩИТА ОТ ДВОЙНЫХ КЛИКОВ (ФИКС БАГА С ЭНЕРГИЕЙ) 👇
         const now = Date.now();
         if (window.lastSafeClickTime && (now - window.lastSafeClickTime < 400)) return;
         window.lastSafeClickTime = now;
-        // 👆 КОНЕЦ ЗАЩИТЫ 👆
 
-        // 👇 2. ЗАЩИТА: Блокируем клики по чужим граням 👇
         if (faceIndex !== activeFaceIndex) {
             returnToActiveFace(); 
             return;
         }
-        // 👆 КОНЕЦ ЗАЩИТЫ 👆
 
         let fd = facesData[faceIndex];
         if (fd.layers === 3) {
@@ -18272,34 +18422,33 @@ const animStyle = document.createElement('style');
         if (!isAttack) {
             fd.owner = myColor; fd.layers++;
             
-            // 🔥 Убираем delay: красим мгновенно
             updateFaceVisual(faceIndex); 
             
-            if(typeof App !== 'undefined' && typeof App.playSoundEffect === 'function') App.playSoundEffect('tick');
+            // 🎶 УМНЫЙ ЗВУК ПОДЧИНЕНИЯ 🎶
+            if (typeof window.playGameSound === 'function') {
+                if (fd.layers === 3) window.playGameSound('CLAIM_LOCK'); // 🔥 Эпичная печать замка
+                else window.playGameSound('CLAIM'); // Обычный слой
+            }
             
-            // Запускаем легкую анимацию параллельно
             animateFaceClaim(faceIndex);
             highlightFace(faceIndex);
         } else {
-            // 📸 ПИПЕТКА: Захватываем идеальный цвет прямо с экрана ДО разрушения
             const targetFaceEl = document.getElementById(`abs-face-${faceIndex}`);
             let exactColor = window.getComputedStyle(targetFaceEl).backgroundColor;
             if (exactColor === 'rgba(0, 0, 0, 0)' || exactColor === 'transparent') {
-                exactColor = window.getComputedStyle(targetFaceEl).borderColor; // Страховка
+                exactColor = window.getComputedStyle(targetFaceEl).borderColor; 
             }
             
             freeRemovalUsed = true; fd.layers--;
             if (fd.layers === 0) fd.owner = null;
-            if(typeof App !== 'undefined' && typeof App.playSoundEffect === 'function') App.playSoundEffect('tick');
             
             updateFaceVisual(faceIndex); 
             
-            // Вызываем анимации с захваченным цветом
             animateFaceBurn(faceIndex);
             spawnBurnParticles(faceIndex, exactColor);
 
-            // 🔊 ВЗРЫВАЕМ ВРАЖЕСКУЮ ГРАНЬ С КАМЕННЫМ ЗВУКОМ
-            if (typeof window.playProceduralExplosion === 'function') window.playProceduralExplosion();
+            // 💥 УМНЫЙ ЗВУК РАЗРУШЕНИЯ 💥
+            if (typeof window.playGameSound === 'function') window.playGameSound('BREAK');
         }
         
         updateFaceInfoText(faceIndex);
@@ -18312,55 +18461,52 @@ const animStyle = document.createElement('style');
         const oEnergy = getEnergyCount('o');
         let acted = false;
         let exactColor = null;
+        
+        // Сбрасываем маячок перед началом хода
+        window.lastActionWasOracleLockBreak = false; 
 
-        const rnd = Math.random(); // Фактор каприза Оракула
+        const rnd = Math.random(); 
 
         if (fd.layers === 3) {
             if (fd.owner === myColor) {
-                // 💥 1. Оракул наступил на ТВОЙ ЗАМОК
                 if (oEnergy === 3) {
                     if (rnd < 0.8) { 
-                        // 80% шанс, что он эпично сломает твой замок!
                         spendEnergy('o', 3);
-                        fd.layers = 2; // Понижает до 2 уровня
+                        fd.layers = 2; 
                         acted = true;
+                        
+                        // 🔥 СТАВИМ МАЯЧОК: ОРАКУЛ ТОЛЬКО ЧТО СНЕС ЗАМОК! 🔥
+                        window.lastActionWasOracleLockBreak = true; 
                         
                         const targetFaceEl = document.getElementById(`abs-face-${activeFaceIndex}`);
                         exactColor = window.getComputedStyle(targetFaceEl).backgroundColor;
                         if (exactColor === 'rgba(0, 0, 0, 0)' || exactColor === 'transparent') exactColor = window.getComputedStyle(targetFaceEl).borderColor;
                     }
-                    // В остальных 20% он просто надменно передаст ход, сохранив энергию
                 }
             } else if (fd.owner === oracleColor) {
-                // 2. Свой замок — бесплатный переброс
                 safeTimeout(rollOracleAbsolute, 800);
                 return;
             }
         } 
         else {
-            // 3. Нейтральная или обычная грань
             let cost = (fd.owner === myColor) ? (freeRemovalUsed ? 1 : 0) : 1;
             
             if (oEnergy >= cost) {
                 let willAct = true;
 
-                // --- 🔥 ИЗМЕНЕНИЕ: УМНОЕ НАКОПЛЕНИЕ ---
-                // Если Оракул УЖЕ начал захватывать эту грань (он владелец и слоев 1 или 2),
-                // он НЕ жадничает и бездумно бьет в неё, пока не сделает замок!
                 if (fd.owner === oracleColor && fd.layers > 0) {
                     willAct = true;
                 } else {
-                    // Иначе (если грань чужая или пустая) решает: стоит ли тратить ману
                     if (oEnergy === 3) {
-                        willAct = rnd < 0.85;  // Почти всегда бьет
+                        willAct = true; 
                     } else if (oEnergy === 2) {
-                        willAct = rnd < 0.35; // Жадничает и скипает ход, копит до 3
+                        willAct = rnd < 0.40; 
                     } else if (oEnergy === 1) {
-                        willAct = rnd < 0.85; // Иногда тупит
+                        willAct = rnd < 0.85;
                     }
                 }
 
-                if (cost === 0) willAct = true; // От бесплатного снятия никогда не откажется
+                if (cost === 0) willAct = true; 
 
                 if (willAct) {
                     if (cost > 0) spendEnergy('o', cost);
@@ -18383,29 +18529,41 @@ const animStyle = document.createElement('style');
             }
         }
 
-        // --- ВЫПОЛНЕНИЕ ДЕЙСТВИЯ ---
         if (acted) {
             updateFaceVisual(activeFaceIndex);
             if (exactColor) {
                 animateFaceBurn(activeFaceIndex);
                 spawnBurnParticles(activeFaceIndex, exactColor);
-                if (typeof window.playProceduralExplosion === 'function') window.playProceduralExplosion();
+                
+                // 💥 УМНЫЙ ЗВУК РАЗРУШЕНИЯ ДЛЯ ОРАКУЛА 💥
+                if (typeof window.playGameSound === 'function') {
+                    if (window.lastActionWasOracleLockBreak) {
+                        // Оракул потратил 3 энергии и снес нерушимую грань! Звук 113!
+                        window.playGameSound('BREAK_LOCK');
+                    } else {
+                        // Обычное снятие слоев
+                        window.playGameSound('BREAK');
+                    }
+                }
             } else {
                 animateFaceClaim(activeFaceIndex); 
                 highlightFace(activeFaceIndex);
+                
+                // 🎶 УМНЫЙ ЗВУК ПОДЧИНЕНИЯ 🎶
+                if (typeof window.playGameSound === 'function') {
+                if (fd.layers === 3) window.playGameSound('CLAIM_LOCK');
+                else window.playGameSound('CLAIM');
+             }
             }
 
             updateScoreAndTension(); saveState(); updateTransform();
-            if(typeof App !== 'undefined' && typeof App.playSoundEffect === 'function') App.playSoundEffect('tick');
-
-            // Если осталась мана и грань не замок — может походить еще раз
+            
             if (getEnergyCount('o') > 0 && fd.layers < 3) { 
                 safeTimeout(executeOracleLogic, 800);
             } else { 
                 safeTimeout(passTurnToPlayer, 1200);
             }
         } else { 
-            // Если Оракул решил "капризничать" и пропустить ход
             safeTimeout(passTurnToPlayer, 800);
         }
     }
@@ -19775,6 +19933,27 @@ if (homeBtn) {
         }
     });
 </script>
-</body>
+<div id="loreModalOverlay" style="opacity: 0; pointer-events: none; transition: opacity 0.4s ease; display: flex; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(8px); z-index: 20000; align-items: center; justify-content: center;">
+        
+        <div class="settings-modal" style="display: flex; flex-direction: column; max-height: 85vh; padding: 25px 20px; box-sizing: border-box;">
+            <h2 style="color: var(--sun-gold); text-transform: uppercase; margin-top: 0; text-align: center; text-shadow: 0 0 15px rgba(255, 249, 174, 0.5); letter-spacing: 2px;">Свиток Истины</h2>
+            
+            <div class="rules-content" style="overflow-y: auto; flex-grow: 1; margin-bottom: 25px; font-size: 14px; line-height: 1.5; color: #e2e8f0; text-align: center;">
+                <p style="margin-top: 0; font-size: 16px; color: var(--magic-color); font-weight: bold;">Смертный, ты стоишь на пороге Абсолюта.</p>
+                <p>Оракул даровал тебе эти игры, чтобы испытать твою душу и бросить вызов самой вероятности. Каждое решение здесь сплетает новую нить твоей судьбы.</p>
+                
+                <hr style="border: 0; border-top: 1px solid rgba(162, 155, 254, 0.2); margin: 15px 0;">
+                
+                <h3 style="color: var(--angry-red); margin-bottom: 5px; text-transform: uppercase; text-shadow: 0 0 8px rgba(255, 102, 102, 0.5);">Режим «История»</h3>
+                <p style="margin-top: 0; font-size: 13px; color: #cbd5e1;">Рискни всем. Бросай вызов Оракулу, зарабатывай монеты и кристаллы, покупай стили и перки в Магазине. Твой прогресс сохраняется, но цена ошибки велика. Оракул не прощает слабости.</p>
+                
+                <h3 style="color: #ffffff; margin-bottom: 5px; text-transform: uppercase; text-shadow: 0 0 8px rgba(255, 255, 255, 0.5);">Режим «Аркада»</h3>
+                <p style="margin-top: 0; font-size: 13px; color: #cbd5e1;">Песочница вероятностей. Тренируйся и испытывай удачу без риска для кошелька. Все предметы Магазина открыты сразу для примерки. Прогресс здесь не сохраняется.</p>
+            </div>
+            
+            <button class="close-btn" style="background: var(--friendly-green); color: #000; box-shadow: 0 0 15px rgba(204, 255, 204, 0.4);" onclick="hideLoreModal()">Я ПРИНИМАЮ СУДЬБУ</button>
+        </div>
+    </div>
+    </body>
 </html>
 <!-- --- КОНЕЦ ЧЕТЫРНАДЦАТОЙ ЧАСТИ --- -->
